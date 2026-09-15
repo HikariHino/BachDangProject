@@ -39,7 +39,7 @@ public class BoatCrash : MonoBehaviour
                 // Chìm xuống
                 transform.Translate(Vector3.down * sinkSpeed * Time.deltaTime, Space.World);
                 // Chúi mũi xuống như Titanic (Thử forward/back/right nếu bị lật ngang)
-                transform.Rotate(Vector3.forward * noseDiveSpeed * Time.deltaTime); 
+                transform.Rotate(Vector3.back * noseDiveSpeed * Time.deltaTime); 
                 sinkTimer += Time.deltaTime;
             }
         }
