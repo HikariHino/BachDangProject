@@ -266,6 +266,13 @@ public class MapToTerrainBuilder : EditorWindow
             if (renderer != null) renderer.sharedMaterial = waterMat;
         }
 
+        // XÓA BỎ HOÀN TOÀN Collider trên mặt nước (Nước là chất lỏng, không để Collider cứng hất văng thuyền)
+        Collider waterCol = waterGo.GetComponent<Collider>();
+        if (waterCol != null)
+        {
+            DestroyImmediate(waterCol);
+        }
+
         // Tự động gắn hệ thống Thủy Triều vào mặt nước
         if (waterGo.GetComponent<TideSystem>() == null)
         {

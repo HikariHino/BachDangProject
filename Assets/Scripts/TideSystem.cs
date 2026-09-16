@@ -8,6 +8,9 @@ using UnityEngine;
 /// </summary>
 public class TideSystem : MonoBehaviour
 {
+    // Biến toàn cục để các script khác (như BoatCrash) đọc được mực nước hiện tại
+    public static float CurrentWaterHeight = 14.0f;
+
     [Header("Cài đặt Mực Nước Thủy Triều (mét)")]
     [Tooltip("Mực nước khi Thủy triều rút cạn (lộ bãi cọc & bãi cát)")]
     public float lowTideY = 12.0f;
@@ -34,6 +37,15 @@ public class TideSystem : MonoBehaviour
     void Start()
     {
         currentTargetY = transform.position.y;
+        CurrentWaterHeight = transform.position.y;
+
+        // XÓA NGAY Collider trên mặt nước (nếu có)! 
+        // Nước là chất lỏng, tuyệt đối không được dùng MeshCollider cứng gây hất văng hay quay mòng mòng thuyền!
+        Collider col = GetComponent<Collider>();
+        if (col != null)
+        {
+            Destroy(col);
+        }
     }
 
     void Update()
@@ -60,13 +72,15 @@ public class TideSystem : MonoBehaviour
         Vector3 pos = transform.position;
         pos.y = Mathf.Lerp(pos.y, currentTargetY, Time.deltaTime * 1.5f);
         transform.position = pos;
+
+        // Cập nhật biến toàn cục
+        CurrentWaterHeight = pos.y;
     }
 
     void OnGUI()
     {
         if (!showUI) return;
 
-        // Bảng thông số Thủy Triều ở góc trên bên trái
         GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
         boxStyle.fontSize = 13;
         boxStyle.normal.textColor = Color.white;
