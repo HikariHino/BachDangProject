@@ -261,31 +261,91 @@ public class MapToTerrainBuilder : EditorWindow
 
     private static void AdjustBoatAndSpikes(float waterY)
     {
-        // Tự động nâng thuyền lên ngang mặt nước nếu đang bị chìm bên dưới
-        var boats = Object.FindObjectsByType<BoatCrash>(FindObjectsSortMode.None);
-        foreach (var b in boats)
+        // Gọi hàm bố trí thuyền và bãi cọc
+        PlaceBoatAndSpikesInRiver();
+    }
+
+    [MenuItem("🤖 Trợ lý AI/⚓ Đặt Thuyền & Bãi Cọc Ra Giữa Sông Bạch Đằng")]
+    public static void PlaceBoatAndSpikesInRiver()
+    {
+        float waterY = 14.0f;
+
+        // 1. TỌA ĐỘ VÀNG GIỮA LÒNG SÔNG BẠCH ĐẰNG (NƯỚC SÂU):
+        // X = -200, Y = 14.2 (nổi bập bềnh trên mặt nước), Z = 150
+        Vector3 boatPos = new Vector3(-200f, 14.2f, 150f);
+
+        GameObject boatGo = null;
+        var boatComp = Object.FindFirstObjectByType<BoatCrash>();
+        if (boatComp != null)
         {
-            Vector3 pos = b.transform.position;
-            if (pos.y < waterY)
+            boatGo = boatComp.gameObject;
+        }
+        else
+        {
+            var all = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+            foreach (var go in all)
             {
-                pos.y = waterY + 0.2f;
-                b.transform.position = pos;
+                string n = go.name.ToLower();
+                if (n.Contains("sketchfab") || n.Contains("junk") || n.Contains("boat"))
+                {
+                    boatGo = go;
+                    break;
+                }
             }
         }
 
-        // Tự động nâng các cọc gỗ
-        var allGos = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-        foreach (var go in allGos)
+        if (boatGo != null)
         {
-            if (go.name.ToLower().Contains("spike") || go.name.ToLower().Contains("wood_spike"))
+            Undo.RecordObject(boatGo.transform, "Move Boat To River");
+            boatGo.transform.position = boatPos;
+            boatGo.transform.rotation = Quaternion.Euler(0, 0, 0); // Thuyền hướng mũi về bãi cọc (+X)
+            Debug.Log($"⚓ Đã đưa Thuyền Nam Hán ra giữa dòng sông Bạch Đằng tại: {boatPos}");
+        }
+
+        // 2. BỐ TRÍ HÀNG RÀO CỌC GỖ NGAY TRƯỚC MŨI THUYỀN:
+        // Đặt ở X = -140 (cách thuyền 60m), Y = 13.5 (đầu cọc nhọn nhô sát mặt nước 14m)
+        var spikes = new List<GameObject>();
+        var allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+        foreach (var go in allObjects)
+        {
+            string n = go.name.ToLower();
+            if (n.Contains("spike") || n.Contains("wood_spike"))
             {
-                Vector3 p = go.transform.position;
-                if (p.y < waterY - 5f)
-                {
-                    p.y = waterY - 1.5f; // Đầu cọc nhú sát mặt nước
-                    go.transform.position = p;
-                }
+                spikes.Add(go);
             }
+        }
+
+        if (spikes.Count > 0)
+        {
+            float startZ = 130f;
+            float stepZ = 40f / Mathf.Max(1, spikes.Count - 1);
+
+            for (int i = 0; i < spikes.Count; i++)
+            {
+                Undo.RecordObject(spikes[i].transform, "Arrange Spikes");
+                float z = startZ + i * stepZ + Random.Range(-2f, 2f);
+                float x = -140f + Random.Range(-5f, 5f);
+                spikes[i].transform.position = new Vector3(x, 13.5f, z);
+                spikes[i].transform.rotation = Quaternion.Euler(Random.Range(-5f, 5f), Random.Range(0, 360), Random.Range(-10f, -25f)); // Cọc cắm hơi nghiêng đón thuyền
+            }
+            Debug.Log($"🪵 Đã giăng bãi cọc gỗ ({spikes.Count} cọc) đón đầu thuyền tại X = -140!");
+        }
+
+        // 3. DI CHUYỂN CAMERA LẠI GẦN ĐỂ XEM ĐƯỢC NGAY
+        Camera cam = Camera.main;
+        if (cam != null)
+        {
+            Undo.RecordObject(cam.transform, "Move Camera To Battle");
+            cam.transform.position = new Vector3(-240f, 22f, 150f);
+            cam.transform.LookAt(new Vector3(-170f, 14f, 150f));
+        }
+
+        // 4. FOCUS SCENE VIEW VÀO VỊ TRÍ CHIẾN TRƯỜNG
+        if (SceneView.lastActiveSceneView != null)
+        {
+            SceneView.lastActiveSceneView.pivot = new Vector3(-170f, 15f, 150f);
+            SceneView.lastActiveSceneView.size = 60f;
+            SceneView.lastActiveSceneView.Repaint();
         }
     }
 }
