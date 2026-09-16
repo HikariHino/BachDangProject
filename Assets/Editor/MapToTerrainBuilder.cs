@@ -183,9 +183,9 @@ public class MapToTerrainBuilder : EditorWindow
             AssetDatabase.CreateFolder("Assets", "Prefabs");
         }
 
-        // Tạo 2 loại Cây Đại Thụ (Ancient Trees) cao 12m - 16m có thân gỗ và tán lá xum xuê
-        GameObject bigTreeA = GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_A.prefab", 12f, 0.8f, 7.5f);
-        GameObject bigTreeB = GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_B.prefab", 15f, 1.0f, 9.0f);
+        // Tạo 2 loại Cây Đại Thụ (Ancient Trees) cao 18m - 24m có thân gỗ và tán lá xum xuê
+        GameObject bigTreeA = GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_A.prefab", false);
+        GameObject bigTreeB = GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_B.prefab", true);
 
         string prefabFolder = "Assets/TerrainSampleAssets/Prefabs/";
         var protos = new List<TreePrototype>();
@@ -242,24 +242,24 @@ public class MapToTerrainBuilder : EditorWindow
             }
 
             // VÙNG 2: Rừng rậm nguyên sinh & Cây đại thụ trên đồi (d > beachPixelWidth)
-            if (d > beachPixelWidth + 3f)
+            if (d > beachPixelWidth + 1.5f)
             {
                 TreeInstance tiInland = new TreeInstance();
                 tiInland.position = new Vector3(tx, normH, ty);
 
-                // Ưu tiên 50% là Cây Đại Thụ To Lớn (prototypeIndex 0 và 1)
-                if (Random.value < 0.45f && protos.Count >= 2)
+                // Ưu tiên 65% là Cây Đại Thụ To Lớn (prototypeIndex 0 và 1)
+                if (Random.value < 0.65f && protos.Count >= 2)
                 {
                     tiInland.prototypeIndex = Random.Range(0, 2);
-                    tiInland.widthScale = Random.Range(1.2f, 2.2f);
-                    tiInland.heightScale = Random.Range(1.2f, 2.5f); // Cao 15m - 25m hùng vĩ!
+                    tiInland.widthScale = Random.Range(1.0f, 1.5f);
+                    tiInland.heightScale = Random.Range(1.0f, 1.5f); // Mesh gốc đã cao 18m - 24m rồi!
                 }
                 else
                 {
                     // Cây bụi và dương xỉ rậm rạp
                     tiInland.prototypeIndex = Random.Range(2, pCount);
-                    tiInland.widthScale = Random.Range(3.0f, 6.0f);
-                    tiInland.heightScale = Random.Range(3.0f, 6.5f);
+                    tiInland.widthScale = Random.Range(2.0f, 4.0f);
+                    tiInland.heightScale = Random.Range(2.0f, 4.5f);
                 }
 
                 tiInland.color = tiInland.lightmapColor = Color.white;
@@ -356,10 +356,24 @@ public class MapToTerrainBuilder : EditorWindow
         Debug.Log($"🎉 SA BÀN HOÀN THIỆN: 80.000 CÂY ĐẠI THỤ CỔ THỤ + THẢM CỎ 3D DÀY ĐẶC PHỦ RỢP CHIẾN ĐỊA!");
     }
 
-    private static GameObject GetOrCreateAncientTreePrefab(string prefabPath, float trunkHeight, float trunkRadius, float canopySize)
+    [MenuItem("🤖 Trợ lý AI/🌲 Tạo Lại 2 Prefab Cây Cổ Thụ (Ancient Trees)")]
+    public static void ForceRecreateAncientTreePrefabs()
     {
-        var existing = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-        if (existing != null) return existing;
+        GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_A.prefab", false, true);
+        GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_B.prefab", true, true);
+        Debug.Log("✅ Đã tạo mới hoàn toàn 2 Prefab Cây Cổ Thụ khổng lồ (AncientTree_A & B)!");
+    }
+
+    private static GameObject GetOrCreateAncientTreePrefab(string prefabPath, bool isBanyan, bool forceRecreate = false)
+    {
+        if (!forceRecreate)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (existing != null && existing.GetComponent<MeshFilter>() != null && existing.GetComponent<MeshFilter>().sharedMesh != null)
+            {
+                return existing;
+            }
+        }
 
         string dir = System.IO.Path.GetDirectoryName(prefabPath);
         if (!string.IsNullOrEmpty(dir) && !System.IO.Directory.Exists(dir))
@@ -368,50 +382,141 @@ public class MapToTerrainBuilder : EditorWindow
             AssetDatabase.Refresh();
         }
 
-        GameObject tree = new GameObject(System.IO.Path.GetFileNameWithoutExtension(prefabPath));
-        
-        // 1. Thân cây gỗ (Trunk)
-        GameObject trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        trunk.name = "Trunk";
-        trunk.transform.SetParent(tree.transform);
-        trunk.transform.localPosition = new Vector3(0, trunkHeight / 2f, 0);
-        trunk.transform.localScale = new Vector3(trunkRadius * 2f, trunkHeight / 2f, trunkRadius * 2f);
+        // Lấy primitive cylinder mesh làm thân & cành cây
+        GameObject tempCyl = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        Mesh cylMesh = tempCyl.GetComponent<MeshFilter>().sharedMesh;
+        Object.DestroyImmediate(tempCyl);
 
-        // Tạo material vỏ cây gỗ
+        // Lấy mesh & material tán lá từ Bush_A
+        GameObject bushPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TerrainSampleAssets/Prefabs/Bush_A.prefab");
+        if (bushPrefab == null) bushPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TerrainSampleAssets/Prefabs/Bush_B.prefab");
+        Mesh bushMesh = bushPrefab != null ? bushPrefab.GetComponent<MeshFilter>().sharedMesh : cylMesh;
+        Material bushMat = bushPrefab != null ? bushPrefab.GetComponent<MeshRenderer>().sharedMaterial : null;
+
+        // Tạo Material vỏ cây gỗ sần sùi với Diffuse & Normal Map thực thụ
         string matPath = prefabPath.Replace(".prefab", "_Bark.mat");
         Material woodMat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
         if (woodMat == null)
         {
             woodMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            Texture2D woodTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/TerrainSampleAssets/Textures/Terrain/Soil_Rocks_BaseColor.tif");
-            if (woodTex != null) woodMat.mainTexture = woodTex;
-            woodMat.color = new Color(0.38f, 0.24f, 0.14f);
+            Texture2D diffuseTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/wood-spike/textures/Channel_modelling_mat_1_Diffuse.png");
+            Texture2D normalTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/wood-spike/textures/Channel_modelling_mat_1_Normal_Map.png");
+            if (diffuseTex != null) woodMat.mainTexture = diffuseTex;
+            if (normalTex != null)
+            {
+                woodMat.EnableKeyword("_NORMALMAP");
+                woodMat.SetTexture("_BumpMap", normalTex);
+            }
+            woodMat.color = new Color(0.48f, 0.35f, 0.24f);
+            woodMat.SetFloat("_Smoothness", 0.15f);
             AssetDatabase.CreateAsset(woodMat, matPath);
         }
-        trunk.GetComponent<MeshRenderer>().sharedMaterial = woodMat;
-        Object.DestroyImmediate(trunk.GetComponent<Collider>());
 
-        // 2. Tán lá cây khổng lồ (Canopy)
-        GameObject bushPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TerrainSampleAssets/Prefabs/Bush_A.prefab");
-        if (bushPrefab == null) bushPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TerrainSampleAssets/Prefabs/Bush_B.prefab");
+        List<CombineInstance> woodParts = new List<CombineInstance>();
+        List<CombineInstance> leafParts = new List<CombineInstance>();
 
-        if (bushPrefab != null)
+        if (!isBanyan)
         {
-            GameObject top = (GameObject)PrefabUtility.InstantiatePrefab(bushPrefab, tree.transform);
-            top.transform.localPosition = new Vector3(0, trunkHeight * 0.95f, 0);
-            top.transform.localScale = Vector3.one * canopySize;
+            // ==========================================
+            // ANCIENT TREE A: CÂY GỖ CỔ THỤ THẲNG VƯƠN CAO 18M
+            // ==========================================
+            float trunkH = 14f;
+            float trunkR = 0.95f; // Đường kính thân ~1.9m
+            woodParts.Add(new CombineInstance {
+                mesh = cylMesh,
+                transform = Matrix4x4.TRS(new Vector3(0, trunkH / 2f, 0), Quaternion.identity, new Vector3(trunkR * 2f, trunkH / 2f, trunkR * 2f))
+            });
+            // Cành choãng trái
+            woodParts.Add(new CombineInstance {
+                mesh = cylMesh,
+                transform = Matrix4x4.TRS(new Vector3(-1.6f, 12f, 0.4f), Quaternion.Euler(0, 0, 32f), new Vector3(0.9f, 3.2f, 0.9f))
+            });
+            // Cành choãng phải
+            woodParts.Add(new CombineInstance {
+                mesh = cylMesh,
+                transform = Matrix4x4.TRS(new Vector3(1.6f, 11.5f, -0.4f), Quaternion.Euler(0, 0, -28f), new Vector3(0.85f, 2.8f, 0.85f))
+            });
 
-            GameObject left = (GameObject)PrefabUtility.InstantiatePrefab(bushPrefab, tree.transform);
-            left.transform.localPosition = new Vector3(-canopySize * 0.35f, trunkHeight * 0.8f, canopySize * 0.2f);
-            left.transform.localScale = Vector3.one * (canopySize * 0.85f);
+            // Các vòm lá xum xuê sum sê
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(0, 16.5f, 0), Quaternion.identity, Vector3.one * 11.5f) });
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(-3.8f, 14f, 1f), Quaternion.Euler(15, 30, -10), Vector3.one * 9.5f) });
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(3.8f, 13.5f, -1f), Quaternion.Euler(-10, 60, 15), Vector3.one * 9.0f) });
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(0.5f, 12.5f, 3.5f), Quaternion.Euler(5, 120, -15), Vector3.one * 8.5f) });
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(-0.5f, 12.5f, -3.0f), Quaternion.Euler(-15, -45, 10), Vector3.one * 8.0f) });
+        }
+        else
+        {
+            // ==========================================
+            // ANCIENT TREE B: CÂY ĐA CỔ THỤ ĐẠI NGÀN KHỔNG LỒ 24M
+            // ==========================================
+            float trunkH = 16f;
+            float trunkR = 1.45f; // Thân cây khổng lồ đường kính ~2.9m
+            woodParts.Add(new CombineInstance {
+                mesh = cylMesh,
+                transform = Matrix4x4.TRS(new Vector3(0, trunkH / 2f, 0), Quaternion.identity, new Vector3(trunkR * 2f, trunkH / 2f, trunkR * 2f))
+            });
+            // Cành lớn vươn xa 1
+            woodParts.Add(new CombineInstance {
+                mesh = cylMesh,
+                transform = Matrix4x4.TRS(new Vector3(-2.8f, 14.5f, 1f), Quaternion.Euler(15, 0, 38f), new Vector3(1.3f, 4.5f, 1.3f))
+            });
+            // Cành lớn vươn xa 2
+            woodParts.Add(new CombineInstance {
+                mesh = cylMesh,
+                transform = Matrix4x4.TRS(new Vector3(2.8f, 15f, -1.2f), Quaternion.Euler(-15, 45, -35f), new Vector3(1.2f, 4.2f, 1.2f))
+            });
+            // Cành lớn vươn xa 3
+            woodParts.Add(new CombineInstance {
+                mesh = cylMesh,
+                transform = Matrix4x4.TRS(new Vector3(0.8f, 13.5f, 2.8f), Quaternion.Euler(35, 90, 0), new Vector3(1.1f, 4.0f, 1.1f))
+            });
 
-            GameObject right = (GameObject)PrefabUtility.InstantiatePrefab(bushPrefab, tree.transform);
-            right.transform.localPosition = new Vector3(canopySize * 0.35f, trunkHeight * 0.85f, -canopySize * 0.2f);
-            right.transform.localScale = Vector3.one * (canopySize * 0.85f);
+            // Tán lá khổng lồ sum suê che rợp bóng
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(0, 22.5f, 0), Quaternion.identity, Vector3.one * 15.5f) });
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(-5.5f, 18f, 1.5f), Quaternion.Euler(20, 25, -15), Vector3.one * 13.5f) });
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(5.5f, 18.5f, -2f), Quaternion.Euler(-15, 60, 20), Vector3.one * 13.0f) });
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(1.5f, 17f, 5f), Quaternion.Euler(10, 110, -10), Vector3.one * 12.5f) });
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(-1.5f, 16f, -4.5f), Quaternion.Euler(-20, -50, 15), Vector3.one * 12.0f) });
+            leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(new Vector3(0, 14f, 0), Quaternion.identity, Vector3.one * 14.0f) });
         }
 
-        GameObject saved = PrefabUtility.SaveAsPrefabAsset(tree, prefabPath);
-        Object.DestroyImmediate(tree);
+        // Ghép thân gỗ thành Submesh 0
+        Mesh subWood = new Mesh();
+        subWood.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        subWood.CombineMeshes(woodParts.ToArray(), true, true);
+
+        // Ghép tán lá thành Submesh 1
+        Mesh subLeaves = new Mesh();
+        subLeaves.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        subLeaves.CombineMeshes(leafParts.ToArray(), true, true);
+
+        // Hợp nhất thành 1 Mesh đa submesh duy nhất (Chuẩn 100% Unity Terrain Tree Engine)
+        CombineInstance[] finalCombines = new CombineInstance[2];
+        finalCombines[0].mesh = subWood;
+        finalCombines[0].transform = Matrix4x4.identity;
+        finalCombines[1].mesh = subLeaves;
+        finalCombines[1].transform = Matrix4x4.identity;
+
+        Mesh treeMesh = new Mesh();
+        treeMesh.name = System.IO.Path.GetFileNameWithoutExtension(prefabPath) + "_Mesh";
+        treeMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        treeMesh.CombineMeshes(finalCombines, false, false); // false = Giữ 2 submesh riêng biệt!
+
+        string meshAssetPath = prefabPath.Replace(".prefab", "_Mesh.asset");
+        AssetDatabase.DeleteAsset(meshAssetPath);
+        AssetDatabase.CreateAsset(treeMesh, meshAssetPath);
+
+        // Gắn MeshFilter và MeshRenderer TRỰC TIẾP LÊN ROOT GAMEOBJECT (Bắt buộc cho Unity Terrain Tree Prototype)
+        GameObject treeGO = new GameObject(System.IO.Path.GetFileNameWithoutExtension(prefabPath));
+        MeshFilter mf = treeGO.AddComponent<MeshFilter>();
+        mf.sharedMesh = treeMesh;
+
+        MeshRenderer mr = treeGO.AddComponent<MeshRenderer>();
+        mr.sharedMaterials = new Material[] { woodMat, bushMat };
+
+        AssetDatabase.DeleteAsset(prefabPath);
+        GameObject saved = PrefabUtility.SaveAsPrefabAsset(treeGO, prefabPath);
+        Object.DestroyImmediate(treeGO);
         return saved;
     }
 
