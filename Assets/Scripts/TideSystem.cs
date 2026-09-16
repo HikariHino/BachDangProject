@@ -34,6 +34,23 @@ public class TideSystem : MonoBehaviour
     private bool isRising = false;
     private float timer = 0f;
 
+    void Awake()
+    {
+        // ÉP MỨC NƯỚC RÚT VỀ 10.0M KỂ CẢ KHI INSPECTOR LƯU GIÁ TRỊ CŨ 12M
+        if (lowTideY > 10.1f)
+        {
+            lowTideY = 10.0f;
+        }
+    }
+
+    void OnValidate()
+    {
+        if (lowTideY > 10.1f)
+        {
+            lowTideY = 10.0f;
+        }
+    }
+
     void Start()
     {
         currentTargetY = transform.position.y;
