@@ -24,8 +24,6 @@ public class MapToTerrainBuilder : EditorWindow
 
         // ==========================================
         // 1. TÍNH TOÁN KHOẢNG CÁCH TỪ NƯỚC VÀO BỜ (DISTANCE TRANSFORM)
-        // Tạo dải bãi cát thoai thoải phẳng lì rộng ~50m bao quanh mọi hòn đảo và bờ sông
-        // (Y chang bãi biển nhiệt đới: sóng dập dềnh trên bãi cát phẳng, đồi dốc lùi sâu vào trong)
         // ==========================================
         int tSize = 1025;
         TerrainData td = new TerrainData();
@@ -44,17 +42,16 @@ public class MapToTerrainBuilder : EditorWindow
             }
         }
 
-        // Tính khoảng cách (pixel) từ mỗi điểm đất liền tới mép nước gần nhất
         float[,] distToWater = ComputeDistanceTransform(isWaterMap, tSize);
 
         // ==========================================
-        // 2. KHỞI TẠO ĐỘ CAO THEO TỪNG TẦNG ĐỊA HÌNH
-        // - Lòng sông: Y ~ 4.8m - 6.0m
-        // - Bãi cát bồi thoai thoải (Rộng 50 mét): Y dốc cực nhẹ từ 9.5m lên 16.5m (dốc ~ 7 độ)
-        // - Đất liền & đồi núi: Lùi sâu sau bãi cát, cao 25m - 32m
+        // 2. KHỞI TẠO ĐỊA HÌNH 3 TẦNG CHUẨN LỊCH SỬ BẠCH ĐẰNG 938:
+        // - Tầng 1: Lòng sông sâu (4.8m - 6m)
+        // - Tầng 2: Bờ cát thoai thoải 50 mét (9.5m - 16.5m, dốc phẳng ~7 độ như biển nhiệt đới)
+        // - Tầng 3: Đồi rừng & Dãy núi đá vôi Karst Tràng Kênh (cao 35m - 50m)
         // ==========================================
         float[,] rawH = new float[tSize, tSize];
-        float beachPixelWidth = 18f; // ~53 mét bãi cát thoai thoải phẳng lì
+        float beachPixelWidth = 18f; // ~53 mét bãi cát thoai thoải
 
         for (int y = 0; y < tSize; y++)
         {
@@ -65,7 +62,6 @@ public class MapToTerrainBuilder : EditorWindow
 
                 if (isWaterMap[y, x])
                 {
-                    // Lòng sông sâu
                     rawH[y, x] = 0.08f;
                 }
                 else
@@ -73,28 +69,41 @@ public class MapToTerrainBuilder : EditorWindow
                     float d = distToWater[y, x];
                     if (d <= beachPixelWidth)
                     {
-                        // BÃI BIỂN THOAI THOẢI (NHƯ HÌNH 1):
-                        // Dốc cực kỳ êm từ 9.5m (dưới mực triều rút 10m) lên 16.5m (trên mực triều dâng 15.5m)
+                        // BÃI CÁT PHẲNG THOAI THOẢI (Dốc cực nhẹ đón sóng dập dềnh)
                         float t = d / beachPixelWidth;
                         rawH[y, x] = Mathf.Lerp(0.158f, 0.275f, Mathf.Pow(t, 1.2f));
                     }
                     else
                     {
-                        // ĐẤT LIỀN & ĐỒI NÚI: Nằm sâu bên trong bãi cát
-                        float inlandT = Mathf.Clamp01((d - beachPixelWidth) / 12f);
-                        float perlin = Mathf.PerlinNoise(u * 8f, v * 8f) * 0.10f;
-                        rawH[y, x] = Mathf.Lerp(0.275f, 0.42f + perlin, Mathf.SmoothStep(0f, 1f, inlandT));
+                        // VÙNG ĐẤT LIỀN, ĐỒI RỪNG & DÃY NÚI ĐÁ VÔI TRÀNG KÊNH:
+                        float inlandDist = d - beachPixelWidth;
+                        float inlandT = Mathf.Clamp01(inlandDist / 14f);
+
+                        // Bình nguyên & gò đồi thoải lùi sau bãi cát
+                        float hillBase = Mathf.Lerp(0.275f, 0.38f, inlandT);
+
+                        // Dãy núi đá vôi Karst đồ sộ khi lùi sâu vào đất liền (d > 24 pixel ~ 70m)
+                        float mountainBonus = 0f;
+                        if (d > 24f)
+                        {
+                            float mFactor = Mathf.Clamp01((d - 24f) / 18f);
+                            float perlin1 = Mathf.PerlinNoise(u * 6f, v * 6f);
+                            float perlin2 = Mathf.Abs(Mathf.PerlinNoise(u * 12f + 50f, v * 12f + 50f) * 2f - 1f);
+                            mountainBonus = (perlin1 * 0.28f + perlin2 * 0.16f) * mFactor;
+                        }
+
+                        rawH[y, x] = hillBase + mountainBonus;
                     }
                 }
             }
         }
 
-        // Làm mượt nhẹ nhàng
         float[,] smoothH = SmoothHeights(rawH, tSize, 3);
         td.SetHeights(0, 0, smoothH);
 
         // ==========================================
-        // 3. CẤU HÌNH TEXTURE PBR AAA (PHỦ 100% CÁT VÀNG TRÊN DẢI THOẠI)
+        // 3. CẤU HÌNH TEXTURE PBR AAA (6 LỚP VẬT LIỆU CHÂN THỰC)
+        // 0: Cỏ xanh | 1: Bùn lòng sông | 2: Cát vàng biển | 3: Rêu rừng | 4: Đá vôi Tràng Kênh | 5: Sỏi đất chân núi
         // ==========================================
         string texFolder = "Assets/TerrainSampleAssets/Textures/Terrain/";
 
@@ -110,11 +119,16 @@ public class MapToTerrainBuilder : EditorWindow
         var layerMoss = CreateOrGetLayer("Assets/TL_Grass_Moss.terrainlayer", 
             texFolder + "Grass_Moss_BaseColor.tif", texFolder + "Grass_Moss_Normal.tif", texFolder + "Grass_Moss_MaskMap.tif", new Vector2(16, 16));
 
-        td.terrainLayers = new TerrainLayer[] { layerGrass, layerMud, layerSand, layerMoss };
+        var layerRock = CreateOrGetLayer("Assets/TL_Rock.terrainlayer", 
+            texFolder + "Rock_BaseColor.tif", texFolder + "Rock_Normal.tif", texFolder + "Rock_MaskMap.tif", new Vector2(12, 12));
 
-        // Sơn texture: Bãi cát trải rộng toàn bộ 50 mét bờ biển
+        var layerSoilRocks = CreateOrGetLayer("Assets/TL_Soil_Rocks.terrainlayer", 
+            texFolder + "Soil_Rocks_BaseColor.tif", texFolder + "Soil_Rocks_Normal.tif", texFolder + "Soil_Rocks_MaskMap.tif", new Vector2(10, 10));
+
+        td.terrainLayers = new TerrainLayer[] { layerGrass, layerMud, layerSand, layerMoss, layerRock, layerSoilRocks };
+
         int aRes = td.alphamapResolution;
-        float[,,] splats = new float[aRes, aRes, 4];
+        float[,,] splats = new float[aRes, aRes, 6];
 
         for (int y = 0; y < aRes; y++)
         {
@@ -125,44 +139,66 @@ public class MapToTerrainBuilder : EditorWindow
 
                 bool isWater = isWaterMap[hy, hx];
                 float d = distToWater[hy, hx];
+                float slope = GetSlope(smoothH, hx, hy, tSize);
 
-                splats[y, x, 0] = 0; splats[y, x, 1] = 0; splats[y, x, 2] = 0; splats[y, x, 3] = 0;
+                for (int l = 0; l < 6; l++) splats[y, x, l] = 0f;
 
                 if (isWater)
                 {
-                    // Lòng sông sâu: Bùn lầy
+                    // Lòng sông sâu: Bùn lầy sông ngòi
                     splats[y, x, 1] = 0.85f;
                     splats[y, x, 2] = 0.15f;
                 }
                 else if (d <= beachPixelWidth)
                 {
-                    // 100% CÁT VÀNG MỊN THOAI THOẢI (RỘNG 50M NHƯ HÌNH 1)
+                    // BÃI CÁT VÀNG MỊN THOAI THOẢI 50 MÉT
                     splats[y, x, 2] = 1.0f;
+                }
+                else if (slope > 0.38f)
+                {
+                    // VÁCH NÚI ĐÁ VÔI TRÀNG KÊNH DỰNG ĐỨNG
+                    splats[y, x, 4] = 0.80f; // Đá vôi xám
+                    splats[y, x, 3] = 0.20f; // Rêu phong
+                }
+                else if (slope > 0.24f)
+                {
+                    // CHÂN NÚI SỎI ĐÁ
+                    splats[y, x, 5] = 0.65f; // Đất sỏi
+                    splats[y, x, 0] = 0.35f; // Cỏ
                 }
                 else if (d <= beachPixelWidth + 6f)
                 {
-                    // Vùng chuyển tiếp sau bãi cát: Cát pha cỏ xanh
+                    // Chuyển tiếp cát pha cỏ
                     float t = (d - beachPixelWidth) / 6f;
                     splats[y, x, 2] = 1f - t;
                     splats[y, x, 0] = t;
                 }
                 else
                 {
-                    // Đồi núi & đất liền trên cao: Cỏ xanh mát mắt pha rêu rừng
-                    splats[y, x, 0] = 0.75f;
-                    splats[y, x, 3] = 0.25f;
+                    // Đồng cỏ xanh & rừng nguyên sinh
+                    splats[y, x, 0] = 0.70f;
+                    splats[y, x, 3] = 0.30f;
                 }
             }
         }
         td.SetAlphamaps(0, 0, splats);
 
         // ==========================================
-        // 4. RẢI CÂY CỎ (CHỈ TRỒNG SAU BÃI CÁT)
-        // Bãi cát được giữ sạch bóng 100% cho sóng biển vỗ vào
+        // 4. BỐ TRÍ THỰC VẬT ĐA DẠNG:
+        // - Lau sậy & cỏ hoa ven mép bãi cát
+        // - Rừng dương xỉ & cây bụi rậm rạp trên đồi gò
         // ==========================================
         string prefabFolder = "Assets/TerrainSampleAssets/Prefabs/";
         var protos = new List<TreePrototype>();
-        string[] vegList = { "Fern_A", "Fern_B", "Bush_A", "Bush_B", "Plant_A", "Plant_B", "Grass_A" };
+
+        // Danh mục thực vật lịch sử: Dương xỉ, cây bụi, lau sậy khô, hoa dại
+        string[] vegList = { 
+            "Fern_A", "Fern_B", "Fern_C", 
+            "Bush_A", "Bush_B", "BushDry_A", 
+            "Grass_A", "Grass_C", "GrassDry_A",
+            "Plant_A", "Plant_B", "Heather_A" 
+        };
+
         foreach (var v in vegList)
         {
             var p = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + v + ".prefab");
@@ -172,7 +208,8 @@ public class MapToTerrainBuilder : EditorWindow
 
         var trees = new List<TreeInstance>();
         int pCount = protos.Count;
-        for (int i = 0; pCount > 0 && i < 28000; i++)
+
+        for (int i = 0; pCount > 0 && i < 35000; i++)
         {
             float tx = Random.value;
             float ty = Random.value;
@@ -181,16 +218,40 @@ public class MapToTerrainBuilder : EditorWindow
             int hy = Mathf.Clamp((int)(ty * tSize), 0, tSize - 1);
 
             if (isWaterMap[hy, hx]) continue;
-            // Chỉ trồng cây lùi sâu sau bãi cát (> 50 mét tính từ mép nước)
-            if (distToWater[hy, hx] < beachPixelWidth + 4f) continue;
+            float d = distToWater[hy, hx];
+            float slope = GetSlope(smoothH, hx, hy, tSize);
 
-            TreeInstance ti = new TreeInstance();
-            ti.position = new Vector3(tx, 0f, ty);
-            ti.prototypeIndex = Random.Range(0, pCount);
-            ti.widthScale = Random.Range(0.9f, 1.8f);
-            ti.heightScale = Random.Range(0.9f, 1.8f);
-            ti.color = ti.lightmapColor = Color.white;
-            trees.Add(ti);
+            // Tuyệt đối không mọc trên vách đá đứng (> 0.40)
+            if (slope > 0.40f) continue;
+
+            // VÙNG 1: Mép trên bãi cát (d từ 12 đến 18) -> Rải cụm lau sậy, cỏ lác, hoa dại
+            if (d >= 12f && d <= beachPixelWidth)
+            {
+                if (Random.value < 0.25f) // Rải thưa thớt tự nhiên
+                {
+                    TreeInstance tiShore = new TreeInstance();
+                    tiShore.position = new Vector3(tx, 0f, ty);
+                    // Chọn cỏ dại, lau sậy hoặc hoa dại
+                    tiShore.prototypeIndex = Random.Range(5, pCount);
+                    tiShore.widthScale = Random.Range(0.7f, 1.3f);
+                    tiShore.heightScale = Random.Range(0.7f, 1.3f);
+                    tiShore.color = tiShore.lightmapColor = Color.white;
+                    trees.Add(tiShore);
+                }
+                continue;
+            }
+
+            // VÙNG 2: Rừng rậm nguyên sinh phía trong (d > beachPixelWidth)
+            if (d > beachPixelWidth + 3f)
+            {
+                TreeInstance tiInland = new TreeInstance();
+                tiInland.position = new Vector3(tx, 0f, ty);
+                tiInland.prototypeIndex = Random.Range(0, pCount);
+                tiInland.widthScale = Random.Range(0.9f, 2.0f);
+                tiInland.heightScale = Random.Range(0.9f, 2.2f);
+                tiInland.color = tiInland.lightmapColor = Color.white;
+                trees.Add(tiInland);
+            }
         }
         td.SetTreeInstances(trees.ToArray(), true);
 
@@ -208,20 +269,30 @@ public class MapToTerrainBuilder : EditorWindow
 
         Terrain tComp = terrainGo.GetComponent<Terrain>();
         tComp.drawTreesAndFoliage = true;
-        tComp.treeBillboardDistance = 600f;
+        tComp.treeBillboardDistance = 650f;
         tComp.heightmapPixelError = 3f;
 
         // ==========================================
-        // 6. NÂNG CAO MẶT NƯỚC (OPTIWATER) LÊN Y = 14M
+        // 6. CẬP NHẬT MẶT NƯỚC & BỐ TRÍ CHIẾN TRẬN
         // ==========================================
         float targetWaterY = 14.0f;
         SetupOptiWaterSurface(targetWaterY);
-
-        // Bố trí thuyền và cọc
         PlaceBoatAndSpikesInRiver();
 
         AssetDatabase.SaveAssets();
-        Debug.Log($"🎉 ĐÃ XÂY XONG SA BÀN: Bờ biển thoai thoải 50 mét như bãi biển nhiệt đới, sóng vỗ dạt cát cực đẹp!");
+        Debug.Log($"🎉 SA BÀN BẠCH ĐẰNG 938 HOÀN THIỆN: Núi đá vôi Tràng Kênh sừng sững, bãi cát thoai thoải 50m, lau sậy & rừng nguyên sinh rậm rạp!");
+    }
+
+    private static float GetSlope(float[,] h, int x, int y, int sz)
+    {
+        int x0 = Mathf.Max(0, x - 1);
+        int x1 = Mathf.Min(sz - 1, x + 1);
+        int y0 = Mathf.Max(0, y - 1);
+        int y1 = Mathf.Min(sz - 1, y + 1);
+
+        float dx = (h[y, x1] - h[y, x0]) * 30f;
+        float dy = (h[y1, x] - h[y0, x]) * 30f;
+        return Mathf.Sqrt(dx * dx + dy * dy);
     }
 
     private static float[,] ComputeDistanceTransform(bool[,] isWater, int sz)
@@ -329,14 +400,12 @@ public class MapToTerrainBuilder : EditorWindow
             if (renderer != null) renderer.sharedMaterial = waterMat;
         }
 
-        // XÓA BỎ HOÀN TOÀN Collider trên mặt nước (Nước là chất lỏng, không để Collider cứng hất văng thuyền)
         Collider waterCol = waterGo.GetComponent<Collider>();
         if (waterCol != null)
         {
             DestroyImmediate(waterCol);
         }
 
-        // Tự động gắn hệ thống Thủy Triều vào mặt nước
         if (waterGo.GetComponent<TideSystem>() == null)
         {
             waterGo.AddComponent<TideSystem>();
