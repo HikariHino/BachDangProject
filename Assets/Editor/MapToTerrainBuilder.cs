@@ -62,12 +62,14 @@ public class MapToTerrainBuilder : EditorWindow
             }
         }
 
-        // Làm mượt viền bờ sông nhẹ nhàng
-        float[,] smoothH = SmoothHeights(rawH, tSize, 3);
+        // Làm mượt bờ sông theo 2 lớp:
+        // Lớp 1: Bán kính rộng (5 pixel) tạo dải bờ thoai thoải
+        // Lớp 2: Giữ vách đồi bên trong cao ráo
+        float[,] smoothH = SmoothHeights(rawH, tSize, 5);
         td.SetHeights(0, 0, smoothH);
 
         // ==========================================
-        // 2. CẤU HÌNH TEXTURE PBR AAA
+        // 2. CẤU HÌNH TEXTURE PBR AAA (BỜ CÁT RỘNG RÃI)
         // ==========================================
         string texFolder = "Assets/TerrainSampleAssets/Textures/Terrain/";
 
@@ -78,14 +80,14 @@ public class MapToTerrainBuilder : EditorWindow
             texFolder + "Muddy_BaseColor.tif", texFolder + "Muddy_Normal.tif", texFolder + "Muddy_MaskMap.tif", new Vector2(12, 12));
 
         var layerSand = CreateOrGetLayer("Assets/TL_Sand.terrainlayer", 
-            texFolder + "Sand_BaseColor.tif", texFolder + "Sand_Normal.tif", texFolder + "Sand_MaskMap.tif", new Vector2(10, 10));
+            texFolder + "Sand_BaseColor.tif", texFolder + "Sand_Normal.tif", texFolder + "Sand_MaskMap.tif", new Vector2(8, 8));
 
         var layerMoss = CreateOrGetLayer("Assets/TL_Grass_Moss.terrainlayer", 
             texFolder + "Grass_Moss_BaseColor.tif", texFolder + "Grass_Moss_Normal.tif", texFolder + "Grass_Moss_MaskMap.tif", new Vector2(16, 16));
 
         td.terrainLayers = new TerrainLayer[] { layerGrass, layerMud, layerSand, layerMoss };
 
-        // Sơn texture lên từng vùng
+        // Sơn texture lên từng vùng: Bãi cát vàng mịn trải rộng theo mép nước
         int aRes = td.alphamapResolution;
         float[,,] splats = new float[aRes, aRes, 4];
 
@@ -105,22 +107,28 @@ public class MapToTerrainBuilder : EditorWindow
 
                 splats[y, x, 0] = 0; splats[y, x, 1] = 0; splats[y, x, 2] = 0; splats[y, x, 3] = 0;
 
-                if (isWater || h < 0.20f)
+                if (isWater || h < 0.17f)
                 {
-                    // Lòng sông chìm dưới nước: Bùn lầy sông ngòi
-                    splats[y, x, 1] = 0.8f;
-                    splats[y, x, 2] = 0.2f;
+                    // Lòng sông sâu: Bùn lầy sông
+                    splats[y, x, 1] = 0.85f;
+                    splats[y, x, 2] = 0.15f;
                 }
-                else if (h < 0.32f)
+                else if (h < 0.28f)
                 {
-                    // Mép nước lên bờ: Bãi cát bồi
-                    float t = Mathf.InverseLerp(0.20f, 0.32f, h);
-                    splats[y, x, 2] = 1f - t;
-                    splats[y, x, 0] = t;
+                    // BÃI CÁT VÀNG MỊN THOAI THOẢI (Cao độ 10m - 17m quanh mép nước 14m)
+                    // Cho sóng biển và thủy triều dập dềnh lên bãi cát cực đẹp
+                    splats[y, x, 2] = 1.0f; // 100% Cát vàng
+                }
+                else if (h < 0.35f)
+                {
+                    // Vùng chuyển tiếp: Cát pha cỏ xanh
+                    float t = Mathf.InverseLerp(0.28f, 0.35f, h);
+                    splats[y, x, 2] = 1f - t; // Cát
+                    splats[y, x, 0] = t;      // Cỏ
                 }
                 else
                 {
-                    // Đất liền trên cao: Cỏ xanh mướt pha rêu rừng
+                    // Đất liền & đồi núi trên cao: Cỏ xanh mát mắt pha rêu rừng
                     splats[y, x, 0] = 0.75f;
                     splats[y, x, 3] = 0.25f;
                 }
@@ -256,6 +264,12 @@ public class MapToTerrainBuilder : EditorWindow
         {
             var renderer = waterGo.GetComponent<MeshRenderer>();
             if (renderer != null) renderer.sharedMaterial = waterMat;
+        }
+
+        // Tự động gắn hệ thống Thủy Triều vào mặt nước
+        if (waterGo.GetComponent<TideSystem>() == null)
+        {
+            waterGo.AddComponent<TideSystem>();
         }
     }
 
