@@ -209,7 +209,7 @@ public class MapToTerrainBuilder : EditorWindow
         var trees = new List<TreeInstance>();
         int pCount = protos.Count;
 
-        for (int i = 0; pCount > 0 && i < 35000; i++)
+        for (int i = 0; pCount > 0 && i < 60000; i++)
         {
             float tx = Random.value;
             float ty = Random.value;
@@ -224,31 +224,33 @@ public class MapToTerrainBuilder : EditorWindow
             // Tuyệt đối không mọc trên vách đá đứng (> 0.40)
             if (slope > 0.40f) continue;
 
+            float normH = smoothH[hy, hx]; // CAO ĐỘ THỰC TẾ TRÊN MẶT ĐẤT (0..1) - KHÔNG ĐƯỢC ĐỂ 0F KẺO BỊ CHÔN DƯỚI ĐẤT!
+
             // VÙNG 1: Mép trên bãi cát (d từ 12 đến 18) -> Rải cụm lau sậy, cỏ lác, hoa dại
             if (d >= 12f && d <= beachPixelWidth)
             {
-                if (Random.value < 0.25f) // Rải thưa thớt tự nhiên
+                if (Random.value < 0.35f)
                 {
                     TreeInstance tiShore = new TreeInstance();
-                    tiShore.position = new Vector3(tx, 0f, ty);
-                    // Chọn cỏ dại, lau sậy hoặc hoa dại
+                    tiShore.position = new Vector3(tx, normH, ty);
                     tiShore.prototypeIndex = Random.Range(5, pCount);
-                    tiShore.widthScale = Random.Range(0.7f, 1.3f);
-                    tiShore.heightScale = Random.Range(0.7f, 1.3f);
+                    tiShore.widthScale = Random.Range(1.5f, 2.8f);
+                    tiShore.heightScale = Random.Range(1.5f, 3.0f);
                     tiShore.color = tiShore.lightmapColor = Color.white;
                     trees.Add(tiShore);
                 }
                 continue;
             }
 
-            // VÙNG 2: Rừng rậm nguyên sinh phía trong (d > beachPixelWidth)
+            // VÙNG 2: Rừng rậm nguyên sinh trên đồi (d > beachPixelWidth)
             if (d > beachPixelWidth + 3f)
             {
                 TreeInstance tiInland = new TreeInstance();
-                tiInland.position = new Vector3(tx, 0f, ty);
+                tiInland.position = new Vector3(tx, normH, ty);
                 tiInland.prototypeIndex = Random.Range(0, pCount);
-                tiInland.widthScale = Random.Range(0.9f, 2.0f);
-                tiInland.heightScale = Random.Range(0.9f, 2.2f);
+                // Kích thước to lớn hùng vĩ để nhìn thấy rõ từ góc nhìn toàn sa bàn 3000m
+                tiInland.widthScale = Random.Range(2.5f, 5.0f);
+                tiInland.heightScale = Random.Range(2.5f, 5.5f);
                 tiInland.color = tiInland.lightmapColor = Color.white;
                 trees.Add(tiInland);
             }
@@ -269,7 +271,10 @@ public class MapToTerrainBuilder : EditorWindow
 
         Terrain tComp = terrainGo.GetComponent<Terrain>();
         tComp.drawTreesAndFoliage = true;
-        tComp.treeBillboardDistance = 650f;
+        tComp.treeDistance = 3500f; // TẦM NHÌN VẼ CÂY: 3500M (Bao trọn toàn bộ sa bàn 3000m!)
+        tComp.treeBillboardDistance = 1800f;
+        tComp.treeCrossFadeLength = 50f;
+        tComp.treeMaximumFullLODCount = 3000;
         tComp.heightmapPixelError = 3f;
 
         // ==========================================
