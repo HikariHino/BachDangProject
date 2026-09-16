@@ -7,21 +7,26 @@ public class BoatCrash : MonoBehaviour
     [Header("Tốc độ bơi của thuyền")]
     public float speed = 5f;
     
-    [Header("Tốc độ chìm xuống")]
-    public float sinkSpeed = 1.5f;
+    [Header("Kịch bản đắm tàu Titanic")]
+    [Tooltip("Tốc độ chìm xuống nước (mét/giây)")]
+    public float sinkSpeed = 1.2f;
 
-    [Header("Tốc độ chúi mũi (Độ/giây)")]
-    public float noseDiveSpeed = 60f;
+    [Tooltip("Tốc độ chúi mũi xuống đáy (Độ/giây)")]
+    public float noseDiveSpeed = 25f;
 
-    [Header("Thuyền chìm bao nhiêu giây thì dừng")]
-    public float sinkDuration = 2.0f;
+    [Tooltip("Góc cắm mũi tối đa (độ) - 30 đến 40 độ là chuẩn Titanic")]
+    public float maxNoseDiveAngle = 35f;
+
+    [Tooltip("Thời gian chìm trước khi dừng ở tư thế nửa chìm nửa nổi (giây)")]
+    public float sinkDuration = 2.5f;
 
     [Header("Khoảng cách quét chướng ngại vật phía trước")]
     public float forwardCheckDistance = 2.0f;
     
     private bool isSinking = false;
-    private bool isGroundedOnShore = false; // Mắc cạn vào bờ đất
-    private float sinkTimer = 0f; 
+    private bool isGroundedOnShore = false;
+    private float sinkTimer = 0f;
+    private float currentPitchAngle = 0f;
     private Rigidbody rb;
     private Collider col;
 
@@ -31,10 +36,8 @@ public class BoatCrash : MonoBehaviour
         col = GetComponent<Collider>();
         
         rb.useGravity = false;
-        // Bật Continuous Dynamic để tuyệt đối không bao giờ xuyên thủng vật cản hay bờ đất
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
-        rb.constraints = RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
     }
 
     void FixedUpdate()
@@ -43,41 +46,48 @@ public class BoatCrash : MonoBehaviour
         {
             if (sinkTimer < sinkDuration)
             {
-                // Hạ chìm xuống
-                transform.Translate(Vector3.down * sinkSpeed * Time.fixedDeltaTime, Space.World);
-                // Chúi mũi cắm xuống
-                transform.Rotate(Vector3.back * noseDiveSpeed * Time.fixedDeltaTime);
                 sinkTimer += Time.fixedDeltaTime;
+
+                // 1. Hạ chìm nửa thân tàu xuống nước
+                transform.Translate(Vector3.down * sinkSpeed * Time.fixedDeltaTime, Space.World);
+
+                // 2. Chúi mũi thuyền xuống nước (Xoay quanh trục ngang vuông góc hướng bơi)
+                // Tuyệt đối không bị lật nghiêng mạn thuyền nữa
+                if (currentPitchAngle < maxNoseDiveAngle)
+                {
+                    float angleStep = noseDiveSpeed * Time.fixedDeltaTime;
+                    // Trục ngang vuông góc với hướng bơi (transform.right) và bầu trời (Vector3.up)
+                    Vector3 pitchAxis = Vector3.Cross(transform.right, Vector3.up).normalized;
+                    transform.Rotate(pitchAxis, angleStep, Space.World);
+                    currentPitchAngle += angleStep;
+                }
             }
             return;
         }
 
         if (isGroundedOnShore)
         {
-            // Thuyền đã đâm vào bờ đất -> Mắc cạn đứng im, không thể xuyên qua đất
             rb.linearVelocity = Vector3.zero;
             return;
         }
 
-        // Hướng mũi thuyền di chuyển (Vector3.right theo model của thuyền)
+        // Hướng bơi của thuyền (+X theo mô hình)
         Vector3 moveDir = transform.right;
         Vector3 nextPos = rb.position + moveDir * speed * Time.fixedDeltaTime;
 
-        // Quét Raycast phía trước xem có bờ đất / vật cản không
+        // Quét Raycast phía trước xem có chạm bờ đất không
         RaycastHit hit;
         if (Physics.Raycast(transform.position + Vector3.up * 1f, moveDir, out hit, forwardCheckDistance))
         {
-            // Nếu phía trước là Terrain (Đất liền)
             if (hit.collider.GetComponent<Terrain>() != null || hit.collider.GetComponent<TerrainCollider>() != null || hit.collider.CompareTag("Terrain"))
             {
-                Debug.Log($"🛑 THUYỀN ĐÃ ĐÂM VÀO BỜ ĐẤT '{hit.collider.name}'! Mắc cạn vững chắc, không thể đi xuyên qua đất!");
+                Debug.Log($"🛑 THUYỀN ĐÂM VÀO BỜ ĐẤT: Mắc cạn kiên cố tại bờ sông!");
                 isGroundedOnShore = true;
                 rb.linearVelocity = Vector3.zero;
                 return;
             }
         }
 
-        // Di chuyển bằng vật lý Rigidbody.MovePosition (Đảm bảo gặp vật cứng là dừng, không lún)
         rb.MovePosition(nextPos);
     }
 
@@ -85,23 +95,23 @@ public class BoatCrash : MonoBehaviour
     {
         string hitName = collision.gameObject.name.ToLower();
 
-        // 1. ĐÂM VÀO CỌC GỖ -> KỊCH BẢN ĐẮM THUYỀN TITANIC
+        // 1. ĐÂM TRÚNG CỌC GỖ -> KỊCH BẢN TITANIC
         if (hitName.Contains("spike") || hitName.Contains("wood"))
         {
             if (!isSinking) 
             {
-                Debug.Log("💥 RẦM! TRÚNG CỌC! THUYỀN NAM HÁN ĐANG CHÚI MŨI CHÌM!");
+                Debug.Log("💥 RẦM! THUYỀN ĐÂM TRÚNG CỌC GỖ! MŨI CẮM XUỐNG, ĐUÔI NHỔNG LÊN!");
                 isSinking = true;
                 rb.isKinematic = true; 
                 TaoManhGoVang(collision.contacts[0].point);
             }
         }
-        // 2. ĐÂM VÀO BỜ ĐẤT / TERRAIN -> MẮC CẠN, CẤM XUYÊN QUA
+        // 2. ĐÂM VÀO BỜ ĐẤT -> MẮC CẠN
         else if (collision.gameObject.GetComponent<Terrain>() != null || 
                  collision.gameObject.GetComponent<TerrainCollider>() != null ||
                  hitName.Contains("terrain") || hitName.Contains("saban"))
         {
-            Debug.Log($"🛑 THUYỀN ĐÂM VÀO BỜ ĐẤT: {collision.gameObject.name}! Mắc cạn tại bờ sông!");
+            Debug.Log($"🛑 THUYỀN MẮC CẠN VÀO BỜ ĐẤT!");
             isGroundedOnShore = true;
             rb.linearVelocity = Vector3.zero;
         }
