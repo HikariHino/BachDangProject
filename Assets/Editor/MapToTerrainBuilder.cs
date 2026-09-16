@@ -45,13 +45,10 @@ public class MapToTerrainBuilder : EditorWindow
         float[,] distToWater = ComputeDistanceTransform(isWaterMap, tSize);
 
         // ==========================================
-        // 2. KHỞI TẠO ĐỊA HÌNH 3 TẦNG CHUẨN LỊCH SỬ BẠCH ĐẰNG 938:
-        // - Tầng 1: Lòng sông sâu (4.8m - 6m)
-        // - Tầng 2: Bờ cát thoai thoải 50 mét (9.5m - 16.5m, dốc phẳng ~7 độ như biển nhiệt đới)
-        // - Tầng 3: Đồi rừng & Dãy núi đá vôi Karst Tràng Kênh (cao 35m - 50m)
+        // 2. KHỞI TẠO ĐỊA HÌNH 3 TẦNG CHUẨN LỊCH SỬ BẠCH ĐẰNG 938
         // ==========================================
         float[,] rawH = new float[tSize, tSize];
-        float beachPixelWidth = 18f; // ~53 mét bãi cát thoai thoải
+        float beachPixelWidth = 18f; // ~53 mét bãi cát thoai thoải phẳng lì
 
         for (int y = 0; y < tSize; y++)
         {
@@ -75,14 +72,11 @@ public class MapToTerrainBuilder : EditorWindow
                     }
                     else
                     {
-                        // VÙNG ĐẤT LIỀN, ĐỒI RỪNG & DÃY NÚI ĐÁ VÔI TRÀNG KÊNH:
+                        // VÙNG ĐẤT LIỀN & NÚI ĐÁ VÔI TRÀNG KÊNH
                         float inlandDist = d - beachPixelWidth;
                         float inlandT = Mathf.Clamp01(inlandDist / 14f);
-
-                        // Bình nguyên & gò đồi thoải lùi sau bãi cát
                         float hillBase = Mathf.Lerp(0.275f, 0.38f, inlandT);
 
-                        // Dãy núi đá vôi Karst đồ sộ khi lùi sâu vào đất liền (d > 24 pixel ~ 70m)
                         float mountainBonus = 0f;
                         if (d > 24f)
                         {
@@ -102,8 +96,7 @@ public class MapToTerrainBuilder : EditorWindow
         td.SetHeights(0, 0, smoothH);
 
         // ==========================================
-        // 3. CẤU HÌNH TEXTURE PBR AAA (6 LỚP VẬT LIỆU CHÂN THỰC)
-        // 0: Cỏ xanh | 1: Bùn lòng sông | 2: Cát vàng biển | 3: Rêu rừng | 4: Đá vôi Tràng Kênh | 5: Sỏi đất chân núi
+        // 3. CẤU HÌNH TEXTURE PBR AAA (6 LỚP)
         // ==========================================
         string texFolder = "Assets/TerrainSampleAssets/Textures/Terrain/";
 
@@ -145,26 +138,25 @@ public class MapToTerrainBuilder : EditorWindow
 
                 if (isWater)
                 {
-                    // Lòng sông sâu: Bùn lầy sông ngòi
                     splats[y, x, 1] = 0.85f;
                     splats[y, x, 2] = 0.15f;
                 }
                 else if (d <= beachPixelWidth)
                 {
-                    // BÃI CÁT VÀNG MỊN THOAI THOẢI 50 MÉT
+                    // 100% Cát vàng bãi biển
                     splats[y, x, 2] = 1.0f;
                 }
                 else if (slope > 0.38f)
                 {
-                    // VÁCH NÚI ĐÁ VÔI TRÀNG KÊNH DỰNG ĐỨNG
-                    splats[y, x, 4] = 0.80f; // Đá vôi xám
-                    splats[y, x, 3] = 0.20f; // Rêu phong
+                    // Vách đá vôi xám Tràng Kênh
+                    splats[y, x, 4] = 0.80f;
+                    splats[y, x, 3] = 0.20f;
                 }
                 else if (slope > 0.24f)
                 {
-                    // CHÂN NÚI SỎI ĐÁ
-                    splats[y, x, 5] = 0.65f; // Đất sỏi
-                    splats[y, x, 0] = 0.35f; // Cỏ
+                    // Chân núi sỏi đá
+                    splats[y, x, 5] = 0.65f;
+                    splats[y, x, 0] = 0.35f;
                 }
                 else if (d <= beachPixelWidth + 6f)
                 {
@@ -175,7 +167,7 @@ public class MapToTerrainBuilder : EditorWindow
                 }
                 else
                 {
-                    // Đồng cỏ xanh & rừng nguyên sinh
+                    // Đồng cỏ xanh & rêu rừng
                     splats[y, x, 0] = 0.70f;
                     splats[y, x, 3] = 0.30f;
                 }
@@ -184,19 +176,28 @@ public class MapToTerrainBuilder : EditorWindow
         td.SetAlphamaps(0, 0, splats);
 
         // ==========================================
-        // 4. BỐ TRÍ THỰC VẬT ĐA DẠNG:
-        // - Lau sậy & cỏ hoa ven mép bãi cát
-        // - Rừng dương xỉ & cây bụi rậm rạp trên đồi gò
+        // 4. BỐ TRÍ CÂY LỚN CỔ THỤ & RỪNG NGUYÊN SINH (TREES)
         // ==========================================
+        if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
+        {
+            AssetDatabase.CreateFolder("Assets", "Prefabs");
+        }
+
+        // Tạo 2 loại Cây Đại Thụ (Ancient Trees) cao 12m - 16m có thân gỗ và tán lá xum xuê
+        GameObject bigTreeA = GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_A.prefab", 12f, 0.8f, 7.5f);
+        GameObject bigTreeB = GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_B.prefab", 15f, 1.0f, 9.0f);
+
         string prefabFolder = "Assets/TerrainSampleAssets/Prefabs/";
         var protos = new List<TreePrototype>();
 
-        // Danh mục thực vật lịch sử: Dương xỉ, cây bụi, lau sậy khô, hoa dại
+        // Cây lớn đứng đầu danh sách
+        if (bigTreeA != null) protos.Add(new TreePrototype { prefab = bigTreeA });
+        if (bigTreeB != null) protos.Add(new TreePrototype { prefab = bigTreeB });
+
+        // Cây bụi, dương xỉ, hoa dại
         string[] vegList = { 
-            "Fern_A", "Fern_B", "Fern_C", 
-            "Bush_A", "Bush_B", "BushDry_A", 
-            "Grass_A", "Grass_C", "GrassDry_A",
-            "Plant_A", "Plant_B", "Heather_A" 
+            "Bush_A", "Bush_B", "Fern_A", "Fern_B", "Fern_C", 
+            "BushDry_A", "Grass_A", "Grass_C", "GrassDry_A", "Heather_A", "Plant_A", "Plant_B" 
         };
 
         foreach (var v in vegList)
@@ -209,7 +210,7 @@ public class MapToTerrainBuilder : EditorWindow
         var trees = new List<TreeInstance>();
         int pCount = protos.Count;
 
-        for (int i = 0; pCount > 0 && i < 60000; i++)
+        for (int i = 0; pCount > 0 && i < 80000; i++)
         {
             float tx = Random.value;
             float ty = Random.value;
@@ -221,36 +222,46 @@ public class MapToTerrainBuilder : EditorWindow
             float d = distToWater[hy, hx];
             float slope = GetSlope(smoothH, hx, hy, tSize);
 
-            // Tuyệt đối không mọc trên vách đá đứng (> 0.40)
-            if (slope > 0.40f) continue;
+            if (slope > 0.40f) continue; // Không mọc trên vách đá dựng đứng
+            float normH = smoothH[hy, hx];
 
-            float normH = smoothH[hy, hx]; // CAO ĐỘ THỰC TẾ TRÊN MẶT ĐẤT (0..1) - KHÔNG ĐƯỢC ĐỂ 0F KẺO BỊ CHÔN DƯỚI ĐẤT!
-
-            // VÙNG 1: Mép trên bãi cát (d từ 12 đến 18) -> Rải cụm lau sậy, cỏ lác, hoa dại
+            // VÙNG 1: Mép trên bãi cát (d từ 12 đến 18) -> Cỏ lau sậy, hoa dại
             if (d >= 12f && d <= beachPixelWidth)
             {
                 if (Random.value < 0.35f)
                 {
                     TreeInstance tiShore = new TreeInstance();
                     tiShore.position = new Vector3(tx, normH, ty);
-                    tiShore.prototypeIndex = Random.Range(5, pCount);
-                    tiShore.widthScale = Random.Range(1.5f, 2.8f);
-                    tiShore.heightScale = Random.Range(1.5f, 3.0f);
+                    tiShore.prototypeIndex = Random.Range(6, pCount);
+                    tiShore.widthScale = Random.Range(1.8f, 3.2f);
+                    tiShore.heightScale = Random.Range(1.8f, 3.5f);
                     tiShore.color = tiShore.lightmapColor = Color.white;
                     trees.Add(tiShore);
                 }
                 continue;
             }
 
-            // VÙNG 2: Rừng rậm nguyên sinh trên đồi (d > beachPixelWidth)
+            // VÙNG 2: Rừng rậm nguyên sinh & Cây đại thụ trên đồi (d > beachPixelWidth)
             if (d > beachPixelWidth + 3f)
             {
                 TreeInstance tiInland = new TreeInstance();
                 tiInland.position = new Vector3(tx, normH, ty);
-                tiInland.prototypeIndex = Random.Range(0, pCount);
-                // Kích thước to lớn hùng vĩ để nhìn thấy rõ từ góc nhìn toàn sa bàn 3000m
-                tiInland.widthScale = Random.Range(2.5f, 5.0f);
-                tiInland.heightScale = Random.Range(2.5f, 5.5f);
+
+                // Ưu tiên 50% là Cây Đại Thụ To Lớn (prototypeIndex 0 và 1)
+                if (Random.value < 0.45f && protos.Count >= 2)
+                {
+                    tiInland.prototypeIndex = Random.Range(0, 2);
+                    tiInland.widthScale = Random.Range(1.2f, 2.2f);
+                    tiInland.heightScale = Random.Range(1.2f, 2.5f); // Cao 15m - 25m hùng vĩ!
+                }
+                else
+                {
+                    // Cây bụi và dương xỉ rậm rạp
+                    tiInland.prototypeIndex = Random.Range(2, pCount);
+                    tiInland.widthScale = Random.Range(3.0f, 6.0f);
+                    tiInland.heightScale = Random.Range(3.0f, 6.5f);
+                }
+
                 tiInland.color = tiInland.lightmapColor = Color.white;
                 trees.Add(tiInland);
             }
@@ -258,7 +269,62 @@ public class MapToTerrainBuilder : EditorWindow
         td.SetTreeInstances(trees.ToArray(), true);
 
         // ==========================================
-        // 5. TẠO HOẶC CẬP NHẬT TERRAIN TRONG SCENE
+        // 5. THẢM CỎ 3D DÀY ĐẶC (DETAIL PROTOTYPES)
+        // Phủ bạt ngàn cỏ 3D rậm rạp đung đưa theo gió
+        // ==========================================
+        int dRes = 512;
+        td.SetDetailResolution(dRes, 16);
+
+        var dProtos = new List<DetailPrototype>();
+        string[] grassPrefabs = { "Grass_A", "Grass_B", "Fern_A", "Heather_A" };
+        foreach (var g in grassPrefabs)
+        {
+            var p = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + g + ".prefab");
+            if (p != null)
+            {
+                DetailPrototype dp = new DetailPrototype();
+                dp.prototype = p;
+                dp.usePrototypeMesh = true;
+                dp.renderMode = DetailRenderMode.VertexLit;
+                dp.minWidth = 1.4f; dp.maxWidth = 2.4f;
+                dp.minHeight = 1.4f; dp.maxHeight = 2.5f;
+                dProtos.Add(dp);
+            }
+        }
+        td.detailPrototypes = dProtos.ToArray();
+
+        if (dProtos.Count > 0)
+        {
+            for (int layerIdx = 0; layerIdx < Mathf.Min(2, dProtos.Count); layerIdx++)
+            {
+                int[,] grassMap = new int[dRes, dRes];
+                for (int y = 0; y < dRes; y++)
+                {
+                    for (int x = 0; x < dRes; x++)
+                    {
+                        int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
+                        int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
+
+                        if (isWaterMap[hy, hx]) { grassMap[y, x] = 0; continue; }
+                        float d = distToWater[hy, hx];
+
+                        // Cỏ 3D mọc dày đặc từ sau bãi cát
+                        if (d > 14f)
+                        {
+                            grassMap[y, x] = Random.Range(5, 12); // Rậm rạp cỏ 3D!
+                        }
+                        else
+                        {
+                            grassMap[y, x] = 0;
+                        }
+                    }
+                }
+                td.SetDetailLayer(0, 0, layerIdx, grassMap);
+            }
+        }
+
+        // ==========================================
+        // 6. TẠO HOẶC CẬP NHẬT TERRAIN TRONG SCENE
         // ==========================================
         GameObject oldTerrain = GameObject.Find("SaBan_BachDang_AAA");
         if (oldTerrain == null) oldTerrain = GameObject.Find("SaBan_BachDang_Final");
@@ -271,21 +337,82 @@ public class MapToTerrainBuilder : EditorWindow
 
         Terrain tComp = terrainGo.GetComponent<Terrain>();
         tComp.drawTreesAndFoliage = true;
-        tComp.treeDistance = 3500f; // TẦM NHÌN VẼ CÂY: 3500M (Bao trọn toàn bộ sa bàn 3000m!)
+        tComp.treeDistance = 3500f;
         tComp.treeBillboardDistance = 1800f;
         tComp.treeCrossFadeLength = 50f;
-        tComp.treeMaximumFullLODCount = 3000;
+        tComp.treeMaximumFullLODCount = 4000;
+        tComp.detailObjectDistance = 350f; // Bán kính nhìn thấy thảm cỏ 3D dày đặc 350 mét!
+        tComp.detailObjectDensity = 1.0f;
         tComp.heightmapPixelError = 3f;
 
         // ==========================================
-        // 6. CẬP NHẬT MẶT NƯỚC & BỐ TRÍ CHIẾN TRẬN
+        // 7. CẬP NHẬT MẶT NƯỚC & BỐ TRÍ CHIẾN TRẬN
         // ==========================================
         float targetWaterY = 14.0f;
         SetupOptiWaterSurface(targetWaterY);
         PlaceBoatAndSpikesInRiver();
 
         AssetDatabase.SaveAssets();
-        Debug.Log($"🎉 SA BÀN BẠCH ĐẰNG 938 HOÀN THIỆN: Núi đá vôi Tràng Kênh sừng sững, bãi cát thoai thoải 50m, lau sậy & rừng nguyên sinh rậm rạp!");
+        Debug.Log($"🎉 SA BÀN HOÀN THIỆN: 80.000 CÂY ĐẠI THỤ CỔ THỤ + THẢM CỎ 3D DÀY ĐẶC PHỦ RỢP CHIẾN ĐỊA!");
+    }
+
+    private static GameObject GetOrCreateAncientTreePrefab(string prefabPath, float trunkHeight, float trunkRadius, float canopySize)
+    {
+        var existing = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        if (existing != null) return existing;
+
+        string dir = System.IO.Path.GetDirectoryName(prefabPath);
+        if (!string.IsNullOrEmpty(dir) && !System.IO.Directory.Exists(dir))
+        {
+            System.IO.Directory.CreateDirectory(dir);
+            AssetDatabase.Refresh();
+        }
+
+        GameObject tree = new GameObject(System.IO.Path.GetFileNameWithoutExtension(prefabPath));
+        
+        // 1. Thân cây gỗ (Trunk)
+        GameObject trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        trunk.name = "Trunk";
+        trunk.transform.SetParent(tree.transform);
+        trunk.transform.localPosition = new Vector3(0, trunkHeight / 2f, 0);
+        trunk.transform.localScale = new Vector3(trunkRadius * 2f, trunkHeight / 2f, trunkRadius * 2f);
+
+        // Tạo material vỏ cây gỗ
+        string matPath = prefabPath.Replace(".prefab", "_Bark.mat");
+        Material woodMat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        if (woodMat == null)
+        {
+            woodMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            Texture2D woodTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/TerrainSampleAssets/Textures/Terrain/Soil_Rocks_BaseColor.tif");
+            if (woodTex != null) woodMat.mainTexture = woodTex;
+            woodMat.color = new Color(0.38f, 0.24f, 0.14f);
+            AssetDatabase.CreateAsset(woodMat, matPath);
+        }
+        trunk.GetComponent<MeshRenderer>().sharedMaterial = woodMat;
+        Object.DestroyImmediate(trunk.GetComponent<Collider>());
+
+        // 2. Tán lá cây khổng lồ (Canopy)
+        GameObject bushPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TerrainSampleAssets/Prefabs/Bush_A.prefab");
+        if (bushPrefab == null) bushPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TerrainSampleAssets/Prefabs/Bush_B.prefab");
+
+        if (bushPrefab != null)
+        {
+            GameObject top = (GameObject)PrefabUtility.InstantiatePrefab(bushPrefab, tree.transform);
+            top.transform.localPosition = new Vector3(0, trunkHeight * 0.95f, 0);
+            top.transform.localScale = Vector3.one * canopySize;
+
+            GameObject left = (GameObject)PrefabUtility.InstantiatePrefab(bushPrefab, tree.transform);
+            left.transform.localPosition = new Vector3(-canopySize * 0.35f, trunkHeight * 0.8f, canopySize * 0.2f);
+            left.transform.localScale = Vector3.one * (canopySize * 0.85f);
+
+            GameObject right = (GameObject)PrefabUtility.InstantiatePrefab(bushPrefab, tree.transform);
+            right.transform.localPosition = new Vector3(canopySize * 0.35f, trunkHeight * 0.85f, -canopySize * 0.2f);
+            right.transform.localScale = Vector3.one * (canopySize * 0.85f);
+        }
+
+        GameObject saved = PrefabUtility.SaveAsPrefabAsset(tree, prefabPath);
+        Object.DestroyImmediate(tree);
+        return saved;
     }
 
     private static float GetSlope(float[,] h, int x, int y, int sz)
