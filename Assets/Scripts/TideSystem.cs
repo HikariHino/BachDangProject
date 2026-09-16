@@ -13,7 +13,7 @@ public class TideSystem : MonoBehaviour
 
     [Header("Cài đặt Mực Nước Thủy Triều (mét)")]
     [Tooltip("Mực nước khi Thủy triều rút cạn (lộ bãi cọc & bãi cát)")]
-    public float lowTideY = 12.0f;
+    public float lowTideY = 10.0f; // Rút sâu xuống 10 mét theo yêu cầu của sếp
 
     [Tooltip("Mực nước khi Thủy triều dâng cao (ngập bãi cọc)")]
     public float highTideY = 15.5f;
