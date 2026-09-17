@@ -146,17 +146,17 @@ public class MapToTerrainBuilder : EditorWindow
                     // 100% Cát vàng bãi biển (đến đúng vạch kẻ đỏ của sếp)
                     splats[y, x, 2] = 1.0f;
                 }
-                else if (d <= beachPixelWidth + 2.5f)
+                else if (d <= beachPixelWidth + 2.0f)
                 {
                     // Chuyển tiếp mượt mà từ Cát sang Cỏ Xanh tươi
-                    float t = (d - beachPixelWidth) / 2.5f;
+                    float t = (d - beachPixelWidth) / 2.0f;
                     splats[y, x, 2] = 1f - t;
                     splats[y, x, 0] = t * 0.75f;
                     splats[y, x, 3] = t * 0.25f;
                 }
-                else if (slope > 0.52f)
+                else if (d > 35f && slope > 1.2f)
                 {
-                    // Chỉ vách núi đá dựng đứng mới lộ đá vôi xám Tràng Kênh
+                    // Chỉ vách núi đá dựng đứng sâu trong đất liền mới lộ đá vôi xám Tràng Kênh
                     splats[y, x, 4] = 0.80f;
                     splats[y, x, 3] = 0.20f;
                 }
@@ -217,8 +217,7 @@ public class MapToTerrainBuilder : EditorWindow
             if (isWaterMap[hy, hx]) continue;
             float d = distToWater[hy, hx];
             float slope = GetSlope(smoothH, hx, hy, tSize);
-
-            if (slope > 0.40f) continue; // Không mọc trên vách đá dựng đứng
+            if (d > 35f && slope > 1.0f) continue; // Chỉ không mọc trên vách đá dựng đứng sâu trong đất liền
             float normH = smoothH[hy, hx];
 
             // VÙNG 1: Mép trên bãi cát (d từ 6 đến beachPixelWidth) -> Cụm hoa dại & cỏ lác nhỏ lác đác
