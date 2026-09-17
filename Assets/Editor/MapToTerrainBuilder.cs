@@ -48,7 +48,7 @@ public class MapToTerrainBuilder : EditorWindow
         // 2. KHỞI TẠO ĐỊA HÌNH 3 TẦNG CHUẨN LỊCH SỬ BẠCH ĐẰNG 938
         // ==========================================
         float[,] rawH = new float[tSize, tSize];
-        float beachPixelWidth = 18f; // ~53 mét bãi cát thoai thoải phẳng lì
+        float beachPixelWidth = 9f; // Thu hẹp bãi cát về đúng đường kẻ đỏ (~26 mét)
 
         for (int y = 0; y < tSize; y++)
         {
@@ -66,21 +66,21 @@ public class MapToTerrainBuilder : EditorWindow
                     float d = distToWater[y, x];
                     if (d <= beachPixelWidth)
                     {
-                        // BÃI CÁT PHẲNG THOAI THOẢI (Dốc cực nhẹ đón sóng dập dềnh)
+                        // BÃI CÁT PHẲNG THOAI THOẢI ĐẾN ĐÚNG ĐƯỜNG KẺ ĐỎ CỦA SẾP
                         float t = d / beachPixelWidth;
-                        rawH[y, x] = Mathf.Lerp(0.158f, 0.275f, Mathf.Pow(t, 1.2f));
+                        rawH[y, x] = Mathf.Lerp(0.158f, 0.255f, Mathf.Pow(t, 1.2f));
                     }
                     else
                     {
-                        // VÙNG ĐẤT LIỀN & NÚI ĐÁ VÔI TRÀNG KÊNH
+                        // VÙNG ĐỒI NÚI PHỦ XANH MƯỚT (BẮT ĐẦU NGAY TỪ SAU VẠCH ĐỎ)
                         float inlandDist = d - beachPixelWidth;
-                        float inlandT = Mathf.Clamp01(inlandDist / 14f);
-                        float hillBase = Mathf.Lerp(0.275f, 0.38f, inlandT);
+                        float inlandT = Mathf.Clamp01(inlandDist / 12f);
+                        float hillBase = Mathf.Lerp(0.255f, 0.38f, inlandT);
 
                         float mountainBonus = 0f;
-                        if (d > 24f)
+                        if (d > 18f)
                         {
-                            float mFactor = Mathf.Clamp01((d - 24f) / 18f);
+                            float mFactor = Mathf.Clamp01((d - 18f) / 16f);
                             float perlin1 = Mathf.PerlinNoise(u * 6f, v * 6f);
                             float perlin2 = Mathf.Abs(Mathf.PerlinNoise(u * 12f + 50f, v * 12f + 50f) * 2f - 1f);
                             mountainBonus = (perlin1 * 0.28f + perlin2 * 0.16f) * mFactor;
@@ -143,33 +143,29 @@ public class MapToTerrainBuilder : EditorWindow
                 }
                 else if (d <= beachPixelWidth)
                 {
-                    // 100% Cát vàng bãi biển
+                    // 100% Cát vàng bãi biển (đến đúng vạch kẻ đỏ của sếp)
                     splats[y, x, 2] = 1.0f;
                 }
-                else if (slope > 0.38f)
+                else if (d <= beachPixelWidth + 2.5f)
                 {
-                    // Vách đá vôi xám Tràng Kênh
+                    // Chuyển tiếp mượt mà từ Cát sang Cỏ Xanh tươi
+                    float t = (d - beachPixelWidth) / 2.5f;
+                    splats[y, x, 2] = 1f - t;
+                    splats[y, x, 0] = t * 0.75f;
+                    splats[y, x, 3] = t * 0.25f;
+                }
+                else if (slope > 0.52f)
+                {
+                    // Chỉ vách núi đá dựng đứng mới lộ đá vôi xám Tràng Kênh
                     splats[y, x, 4] = 0.80f;
                     splats[y, x, 3] = 0.20f;
                 }
-                else if (slope > 0.24f)
-                {
-                    // Chân núi sỏi đá
-                    splats[y, x, 5] = 0.65f;
-                    splats[y, x, 0] = 0.35f;
-                }
-                else if (d <= beachPixelWidth + 6f)
-                {
-                    // Chuyển tiếp cát pha cỏ
-                    float t = (d - beachPixelWidth) / 6f;
-                    splats[y, x, 2] = 1f - t;
-                    splats[y, x, 0] = t;
-                }
                 else
                 {
-                    // Đồng cỏ xanh & rêu rừng
-                    splats[y, x, 0] = 0.70f;
-                    splats[y, x, 3] = 0.30f;
+                    // TOÀN BỘ VÙNG TỪ BÃI CÁT TRỞ LÊN PHỦ XANH MƯỚT (Cỏ xanh tươi + Rêu xanh tự nhiên)
+                    // Tuyệt đối không còn dải đá sỏi xám xịt nữa!
+                    splats[y, x, 0] = 0.75f; // layerGrass (TL_Grass_A)
+                    splats[y, x, 3] = 0.25f; // layerMoss (TL_Grass_Moss)
                 }
             }
         }
@@ -225,24 +221,24 @@ public class MapToTerrainBuilder : EditorWindow
             if (slope > 0.40f) continue; // Không mọc trên vách đá dựng đứng
             float normH = smoothH[hy, hx];
 
-            // VÙNG 1: Mép trên bãi cát (d từ 14 đến 18) -> Cụm hoa dại & cỏ lác nhỏ lác đác
-            if (d >= 14f && d <= beachPixelWidth)
+            // VÙNG 1: Mép trên bãi cát (d từ 6 đến beachPixelWidth) -> Cụm hoa dại & cỏ lác nhỏ lác đác
+            if (d >= 6f && d <= beachPixelWidth)
             {
-                if (Random.value < 0.10f) // Chỉ mọc thưa thớt 10%
+                if (Random.value < 0.08f) // Chỉ mọc thưa thớt 8%
                 {
                     TreeInstance tiShore = new TreeInstance();
                     tiShore.position = new Vector3(tx, normH, ty);
                     tiShore.prototypeIndex = Random.Range(6, pCount);
-                    tiShore.widthScale = Random.Range(0.7f, 1.2f);
-                    tiShore.heightScale = Random.Range(0.7f, 1.2f);
+                    tiShore.widthScale = Random.Range(0.6f, 1.0f);
+                    tiShore.heightScale = Random.Range(0.6f, 1.0f);
                     tiShore.color = tiShore.lightmapColor = Color.white;
                     trees.Add(tiShore);
                 }
                 continue;
             }
 
-            // VÙNG 2: Rừng rậm nguyên sinh & Cây đại thụ trên đồi (d > beachPixelWidth)
-            if (d > beachPixelWidth + 1.5f)
+            // VÙNG 2: Rừng rậm nguyên sinh & Cây đại thụ trên đồi (ngay sau vạch đỏ d > beachPixelWidth + 0.8f)
+            if (d > beachPixelWidth + 0.8f)
             {
                 TreeInstance tiInland = new TreeInstance();
                 tiInland.position = new Vector3(tx, normH, ty);
@@ -341,9 +337,9 @@ public class MapToTerrainBuilder : EditorWindow
                     if (isWaterMap[hy, hx]) { greenGrassMap[y, x] = 0; continue; }
                     float d = distToWater[hy, hx];
 
-                    if (d > beachPixelWidth + 1.5f)
+                    if (d > beachPixelWidth + 0.5f)
                     {
-                        greenGrassMap[y, x] = Random.Range(3, 6); // Cỏ xanh mướt mọc vừa tầm mắt dưới rừng cây
+                        greenGrassMap[y, x] = Random.Range(3, 6); // Cỏ xanh mướt mọc dày dặn ngay từ sau vạch đỏ
                     }
                     else
                     {
@@ -368,7 +364,7 @@ public class MapToTerrainBuilder : EditorWindow
                     if (isWaterMap[hy, hx]) { fernMap[y, x] = 0; continue; }
                     float d = distToWater[hy, hx];
 
-                    if (d > beachPixelWidth + 3.0f && Random.value < 0.35f)
+                    if (d > beachPixelWidth + 2.0f && Random.value < 0.35f)
                     {
                         fernMap[y, x] = Random.Range(1, 3);
                     }
@@ -381,7 +377,7 @@ public class MapToTerrainBuilder : EditorWindow
             td.SetDetailLayer(0, 0, 1, fernMap);
         }
 
-        // 3. Phân bổ Cỏ ven cát - GIẢM MẠNH: Chỉ lác đác 1-2 khóm ở 18% diện tích mép cát
+        // 3. Phân bổ Cỏ ven cát - GIẢM MẠNH MẬT ĐỘ: Chỉ lác đác vài cụm nhỏ ở đường giao cát-cỏ
         if (dProtos.Count > 2)
         {
             int[,] shoreMap = new int[dRes, dRes];
@@ -395,9 +391,9 @@ public class MapToTerrainBuilder : EditorWindow
                     if (isWaterMap[hy, hx]) { shoreMap[y, x] = 0; continue; }
                     float d = distToWater[hy, hx];
 
-                    if (d >= 15f && d <= beachPixelWidth + 2f && Random.value < 0.18f)
+                    if (d >= beachPixelWidth - 1f && d <= beachPixelWidth + 1.2f && Random.value < 0.05f)
                     {
-                        shoreMap[y, x] = Random.Range(1, 2); // Chỉ lác đác 1-2 nhánh cỏ nhỏ
+                        shoreMap[y, x] = 1; // Chỉ 1 nhành cỏ nhỏ lác đác
                     }
                     else
                     {
