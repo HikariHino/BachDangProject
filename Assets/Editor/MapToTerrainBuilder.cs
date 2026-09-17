@@ -225,16 +225,16 @@ public class MapToTerrainBuilder : EditorWindow
             if (slope > 0.40f) continue; // Không mọc trên vách đá dựng đứng
             float normH = smoothH[hy, hx];
 
-            // VÙNG 1: Mép trên bãi cát (d từ 12 đến 18) -> Cỏ lau sậy, hoa dại
-            if (d >= 12f && d <= beachPixelWidth)
+            // VÙNG 1: Mép trên bãi cát (d từ 14 đến 18) -> Cụm hoa dại & cỏ lác nhỏ lác đác
+            if (d >= 14f && d <= beachPixelWidth)
             {
-                if (Random.value < 0.35f)
+                if (Random.value < 0.10f) // Chỉ mọc thưa thớt 10%
                 {
                     TreeInstance tiShore = new TreeInstance();
                     tiShore.position = new Vector3(tx, normH, ty);
                     tiShore.prototypeIndex = Random.Range(6, pCount);
-                    tiShore.widthScale = Random.Range(1.8f, 3.2f);
-                    tiShore.heightScale = Random.Range(1.8f, 3.5f);
+                    tiShore.widthScale = Random.Range(0.7f, 1.2f);
+                    tiShore.heightScale = Random.Range(0.7f, 1.2f);
                     tiShore.color = tiShore.lightmapColor = Color.white;
                     trees.Add(tiShore);
                 }
@@ -269,58 +269,143 @@ public class MapToTerrainBuilder : EditorWindow
         td.SetTreeInstances(trees.ToArray(), true);
 
         // ==========================================
-        // 5. THẢM CỎ 3D DÀY ĐẶC (DETAIL PROTOTYPES)
-        // Phủ bạt ngàn cỏ 3D rậm rạp đung đưa theo gió
+        // 5. THẢM CỎ 3D CHI TIẾT (DETAIL PROTOTYPES)
+        // - Cỏ xanh tươi mướt phủ rợp các ngọn đồi có rừng cây cổ thụ
+        // - Dương xỉ nhiệt đới xanh thẫm dưới gốc cây
+        // - Cỏ ven bãi cát được thu ngắn lại (thấp mềm mại) và giảm mật độ cực thưa thớt
         // ==========================================
         int dRes = 512;
         td.SetDetailResolution(dRes, 16);
 
         var dProtos = new List<DetailPrototype>();
-        string[] grassPrefabs = { "Grass_A", "Grass_B", "Fern_A", "Heather_A" };
-        foreach (var g in grassPrefabs)
+
+        // Layer 0: CỎ XANH TƯƠI MƯỚT TRÊN ĐỒI CÂY CỔ THỤ (Grass_C / Grass_A)
+        var pGrassGreen = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Grass_C.prefab");
+        if (pGrassGreen == null) pGrassGreen = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Grass_A.prefab");
+        if (pGrassGreen != null)
         {
-            var p = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + g + ".prefab");
-            if (p != null)
-            {
-                DetailPrototype dp = new DetailPrototype();
-                dp.prototype = p;
-                dp.usePrototypeMesh = true;
-                dp.renderMode = DetailRenderMode.VertexLit;
-                dp.minWidth = 1.4f; dp.maxWidth = 2.4f;
-                dp.minHeight = 1.4f; dp.maxHeight = 2.5f;
-                dProtos.Add(dp);
-            }
+            DetailPrototype dpGreen = new DetailPrototype();
+            dpGreen.prototype = pGrassGreen;
+            dpGreen.usePrototypeMesh = true;
+            dpGreen.renderMode = DetailRenderMode.VertexLit;
+            dpGreen.healthyColor = new Color(0.30f, 0.68f, 0.18f); // Xanh lá non tươi mướt
+            dpGreen.dryColor = new Color(0.38f, 0.65f, 0.22f);
+            dpGreen.minWidth = 0.6f; dpGreen.maxWidth = 1.1f;
+            dpGreen.minHeight = 0.45f; dpGreen.maxHeight = 0.85f; // Chiều cao vừa phải, mềm mại tự nhiên
+            dProtos.Add(dpGreen);
         }
+
+        // Layer 1: DƯƠNG XỈ XANH NHIỆT ĐỚI DƯỚI TÁN CÂY CỔ THỤ (Fern_A)
+        var pFern = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Fern_A.prefab");
+        if (pFern != null)
+        {
+            DetailPrototype dpFern = new DetailPrototype();
+            dpFern.prototype = pFern;
+            dpFern.usePrototypeMesh = true;
+            dpFern.renderMode = DetailRenderMode.VertexLit;
+            dpFern.healthyColor = new Color(0.22f, 0.58f, 0.15f);
+            dpFern.dryColor = new Color(0.32f, 0.62f, 0.20f);
+            dpFern.minWidth = 0.7f; dpFern.maxWidth = 1.2f;
+            dpFern.minHeight = 0.55f; dpFern.maxHeight = 0.95f;
+            dProtos.Add(dpFern);
+        }
+
+        // Layer 2: CỎ VEN BÃI CÁT - THU NGẮN 70% VÀ MẬT ĐỘ CỰC KỲ THƯA THỚT (Grass_A)
+        var pGrassShore = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Grass_A.prefab");
+        if (pGrassShore != null)
+        {
+            DetailPrototype dpShore = new DetailPrototype();
+            dpShore.prototype = pGrassShore;
+            dpShore.usePrototypeMesh = true;
+            dpShore.renderMode = DetailRenderMode.VertexLit;
+            dpShore.healthyColor = new Color(0.55f, 0.65f, 0.45f);
+            dpShore.dryColor = new Color(0.50f, 0.58f, 0.40f);
+            dpShore.minWidth = 0.40f; dpShore.maxWidth = 0.70f;
+            dpShore.minHeight = 0.35f; dpShore.maxHeight = 0.60f; // Cỏ ngắn sát đất, không bị dài lê thê
+            dProtos.Add(dpShore);
+        }
+
         td.detailPrototypes = dProtos.ToArray();
 
+        // 1. Phân bổ Cỏ xanh tươi mát trên toàn bộ vùng đồi có cây cổ thụ (d > beachPixelWidth + 1.5f)
         if (dProtos.Count > 0)
         {
-            for (int layerIdx = 0; layerIdx < Mathf.Min(2, dProtos.Count); layerIdx++)
+            int[,] greenGrassMap = new int[dRes, dRes];
+            for (int y = 0; y < dRes; y++)
             {
-                int[,] grassMap = new int[dRes, dRes];
-                for (int y = 0; y < dRes; y++)
+                for (int x = 0; x < dRes; x++)
                 {
-                    for (int x = 0; x < dRes; x++)
+                    int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
+                    int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
+
+                    if (isWaterMap[hy, hx]) { greenGrassMap[y, x] = 0; continue; }
+                    float d = distToWater[hy, hx];
+
+                    if (d > beachPixelWidth + 1.5f)
                     {
-                        int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
-                        int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
-
-                        if (isWaterMap[hy, hx]) { grassMap[y, x] = 0; continue; }
-                        float d = distToWater[hy, hx];
-
-                        // Cỏ 3D mọc dày đặc từ sau bãi cát
-                        if (d > 14f)
-                        {
-                            grassMap[y, x] = Random.Range(5, 12); // Rậm rạp cỏ 3D!
-                        }
-                        else
-                        {
-                            grassMap[y, x] = 0;
-                        }
+                        greenGrassMap[y, x] = Random.Range(3, 6); // Cỏ xanh mướt mọc vừa tầm mắt dưới rừng cây
+                    }
+                    else
+                    {
+                        greenGrassMap[y, x] = 0;
                     }
                 }
-                td.SetDetailLayer(0, 0, layerIdx, grassMap);
             }
+            td.SetDetailLayer(0, 0, 0, greenGrassMap);
+        }
+
+        // 2. Phân bổ Dương xỉ rải rác dưới gốc cây cổ thụ
+        if (dProtos.Count > 1)
+        {
+            int[,] fernMap = new int[dRes, dRes];
+            for (int y = 0; y < dRes; y++)
+            {
+                for (int x = 0; x < dRes; x++)
+                {
+                    int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
+                    int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
+
+                    if (isWaterMap[hy, hx]) { fernMap[y, x] = 0; continue; }
+                    float d = distToWater[hy, hx];
+
+                    if (d > beachPixelWidth + 3.0f && Random.value < 0.35f)
+                    {
+                        fernMap[y, x] = Random.Range(1, 3);
+                    }
+                    else
+                    {
+                        fernMap[y, x] = 0;
+                    }
+                }
+            }
+            td.SetDetailLayer(0, 0, 1, fernMap);
+        }
+
+        // 3. Phân bổ Cỏ ven cát - GIẢM MẠNH: Chỉ lác đác 1-2 khóm ở 18% diện tích mép cát
+        if (dProtos.Count > 2)
+        {
+            int[,] shoreMap = new int[dRes, dRes];
+            for (int y = 0; y < dRes; y++)
+            {
+                for (int x = 0; x < dRes; x++)
+                {
+                    int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
+                    int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
+
+                    if (isWaterMap[hy, hx]) { shoreMap[y, x] = 0; continue; }
+                    float d = distToWater[hy, hx];
+
+                    if (d >= 15f && d <= beachPixelWidth + 2f && Random.value < 0.18f)
+                    {
+                        shoreMap[y, x] = Random.Range(1, 2); // Chỉ lác đác 1-2 nhánh cỏ nhỏ
+                    }
+                    else
+                    {
+                        shoreMap[y, x] = 0;
+                    }
+                }
+            }
+            td.SetDetailLayer(0, 0, 2, shoreMap);
         }
 
         // ==========================================
