@@ -42,6 +42,12 @@ public class BattleCamera : MonoBehaviour
 
     void Start()
     {
+        Camera cam = GetComponent<Camera>();
+        if (cam != null)
+        {
+            cam.farClipPlane = 4500f; // Tầm nhìn xa bao trọn toàn bộ chiến trường Bạch Đằng 3000m
+        }
+
         FindTargetIfNull();
 
         Vector3 angles = transform.eulerAngles;
