@@ -172,25 +172,26 @@ public class MapToTerrainBuilder : EditorWindow
         td.SetAlphamaps(0, 0, splats);
 
         // ==========================================
-        // 4. BỐ TRÍ CÂY LỚN CỔ THỤ & RỪNG NGUYÊN SINH (TREES)
+        // 4. BỐ TRÍ CÂY CỔ THỤ AAA (NATURE RENDERER) & RỪNG NGUYÊN SINH
         // ==========================================
-        if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
-        {
-            AssetDatabase.CreateFolder("Assets", "Prefabs");
-        }
-
-        // Tạo 2 loại Cây Đại Thụ (Ancient Trees) cao 18m - 24m có thân gỗ và tán lá xum xuê
-        GameObject bigTreeA = GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_A.prefab", false);
-        GameObject bigTreeB = GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_B.prefab", true);
+        string nrArt = "Assets/Visual Design Cafe/Nature Renderer Demo/Realistic/Art/";
+        GameObject cypressTree = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Trees/Cypress.prefab");
+        GameObject coniferTree = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Trees/Conifer.prefab");
+        GameObject rockA = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Rocks/Rock_A_02.prefab");
+        GameObject rockC = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Rocks/Rock_C_01.prefab");
 
         string prefabFolder = "Assets/TerrainSampleAssets/Prefabs/";
         var protos = new List<TreePrototype>();
 
-        // Cây lớn đứng đầu danh sách
-        if (bigTreeA != null) protos.Add(new TreePrototype { prefab = bigTreeA });
-        if (bigTreeB != null) protos.Add(new TreePrototype { prefab = bigTreeB });
+        // 1. Cây Cổ Thụ AAA từ Nature Renderer đứng đầu danh sách
+        if (cypressTree != null) protos.Add(new TreePrototype { prefab = cypressTree });
+        if (coniferTree != null) protos.Add(new TreePrototype { prefab = coniferTree });
 
-        // Cây bụi, dương xỉ, hoa dại
+        // 2. Tảng đá rêu phong ven bờ / chân đồi
+        if (rockA != null) protos.Add(new TreePrototype { prefab = rockA });
+        if (rockC != null) protos.Add(new TreePrototype { prefab = rockC });
+
+        // 3. Cây bụi, dương xỉ, hoa dại rừng nhiệt đới
         string[] vegList = { 
             "Bush_A", "Bush_B", "Fern_A", "Fern_B", "Fern_C", 
             "BushDry_A", "Grass_A", "Grass_C", "GrassDry_A", "Heather_A", "Plant_A", "Plant_B" 
@@ -227,7 +228,7 @@ public class MapToTerrainBuilder : EditorWindow
                 {
                     TreeInstance tiShore = new TreeInstance();
                     tiShore.position = new Vector3(tx, normH, ty);
-                    tiShore.prototypeIndex = Random.Range(6, pCount);
+                    tiShore.prototypeIndex = Random.Range(4, pCount);
                     tiShore.widthScale = Random.Range(0.6f, 1.0f);
                     tiShore.heightScale = Random.Range(0.6f, 1.0f);
                     tiShore.color = tiShore.lightmapColor = Color.white;
@@ -242,19 +243,26 @@ public class MapToTerrainBuilder : EditorWindow
                 TreeInstance tiInland = new TreeInstance();
                 tiInland.position = new Vector3(tx, normH, ty);
 
-                // Ưu tiên 65% là Cây Đại Thụ To Lớn (prototypeIndex 0 và 1)
+                // Ưu tiên 65% là Cây Cổ Thụ AAA (Cypress & Conifer - prototypeIndex 0 & 1)
                 if (Random.value < 0.65f && protos.Count >= 2)
                 {
                     tiInland.prototypeIndex = Random.Range(0, 2);
-                    tiInland.widthScale = Random.Range(1.0f, 1.5f);
-                    tiInland.heightScale = Random.Range(1.0f, 1.5f); // Mesh gốc đã cao 18m - 24m rồi!
+                    tiInland.widthScale = Random.Range(1.1f, 1.6f);
+                    tiInland.heightScale = Random.Range(1.1f, 1.7f);
+                }
+                else if (Random.value < 0.10f && protos.Count >= 4)
+                {
+                    // 10% là Tảng đá rêu phong (Rock_A & Rock_C - prototypeIndex 2 & 3)
+                    tiInland.prototypeIndex = Random.Range(2, 4);
+                    tiInland.widthScale = Random.Range(1.5f, 3.0f);
+                    tiInland.heightScale = Random.Range(1.2f, 2.5f);
                 }
                 else
                 {
-                    // Cây bụi và dương xỉ rậm rạp
-                    tiInland.prototypeIndex = Random.Range(2, pCount);
-                    tiInland.widthScale = Random.Range(2.0f, 4.0f);
-                    tiInland.heightScale = Random.Range(2.0f, 4.5f);
+                    // Cây bụi và dương xỉ rậm rạp dưới tán rừng
+                    tiInland.prototypeIndex = Random.Range(4, pCount);
+                    tiInland.widthScale = Random.Range(1.8f, 3.5f);
+                    tiInland.heightScale = Random.Range(1.8f, 3.5f);
                 }
 
                 tiInland.color = tiInland.lightmapColor = Color.white;
@@ -264,33 +272,60 @@ public class MapToTerrainBuilder : EditorWindow
         td.SetTreeInstances(trees.ToArray(), true);
 
         // ==========================================
-        // 5. THẢM CỎ 3D CHI TIẾT (DETAIL PROTOTYPES)
-        // - Cỏ xanh tươi mướt phủ rợp các ngọn đồi có rừng cây cổ thụ
-        // - Dương xỉ nhiệt đới xanh thẫm dưới gốc cây
-        // - Cỏ ven bãi cát được thu ngắn lại (thấp mềm mại) và giảm mật độ cực thưa thớt
+        // 5. THẢM CỎ 3D CHI TIẾT & HOA DẠI TỪ NATURE RENDERER
         // ==========================================
         int dRes = 512;
         td.SetDetailResolution(dRes, 16);
 
         var dProtos = new List<DetailPrototype>();
 
-        // Layer 0: CỎ XANH TƯƠI MƯỚT TRÊN ĐỒI CÂY CỔ THỤ (Grass_C / Grass_A)
-        var pGrassGreen = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Grass_C.prefab");
-        if (pGrassGreen == null) pGrassGreen = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Grass_A.prefab");
-        if (pGrassGreen != null)
+        // Layer 0: CỎ 3D SIÊU CHI TIẾT (Detailed Grass 01 từ Nature Renderer)
+        var pDetailedGrass = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Grass/Detailed Grass 01 - Variant 2.prefab");
+        if (pDetailedGrass == null) pDetailedGrass = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Grass_C.prefab");
+        if (pDetailedGrass != null)
         {
-            DetailPrototype dpGreen = new DetailPrototype();
-            dpGreen.prototype = pGrassGreen;
-            dpGreen.usePrototypeMesh = true;
-            dpGreen.renderMode = DetailRenderMode.VertexLit;
-            dpGreen.healthyColor = new Color(0.30f, 0.68f, 0.18f); // Xanh lá non tươi mướt
-            dpGreen.dryColor = new Color(0.38f, 0.65f, 0.22f);
-            dpGreen.minWidth = 0.6f; dpGreen.maxWidth = 1.1f;
-            dpGreen.minHeight = 0.45f; dpGreen.maxHeight = 0.85f; // Chiều cao vừa phải, mềm mại tự nhiên
-            dProtos.Add(dpGreen);
+            DetailPrototype dp = new DetailPrototype();
+            dp.prototype = pDetailedGrass;
+            dp.usePrototypeMesh = true;
+            dp.renderMode = DetailRenderMode.VertexLit;
+            dp.healthyColor = new Color(0.35f, 0.72f, 0.20f);
+            dp.dryColor = new Color(0.42f, 0.68f, 0.25f);
+            dp.minWidth = 0.8f; dp.maxWidth = 1.3f;
+            dp.minHeight = 0.7f; dp.maxHeight = 1.2f;
+            dProtos.Add(dp);
         }
 
-        // Layer 1: DƯƠNG XỈ XANH NHIỆT ĐỚI DƯỚI TÁN CÂY CỔ THỤ (Fern_A)
+        // Layer 1: HOA DẠI TRẮNG TỪ NATURE RENDERER (White Flowers 01)
+        var pWhiteFlowers = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Flowers/White Flowers 01 - Variant 1.prefab");
+        if (pWhiteFlowers != null)
+        {
+            DetailPrototype dp = new DetailPrototype();
+            dp.prototype = pWhiteFlowers;
+            dp.usePrototypeMesh = true;
+            dp.renderMode = DetailRenderMode.VertexLit;
+            dp.healthyColor = Color.white;
+            dp.dryColor = new Color(0.9f, 0.9f, 0.85f);
+            dp.minWidth = 0.7f; dp.maxWidth = 1.2f;
+            dp.minHeight = 0.6f; dp.maxHeight = 1.1f;
+            dProtos.Add(dp);
+        }
+
+        // Layer 2: BỤI HOA TỰ NHIÊN (Flowering Plant 02 từ Nature Renderer)
+        var pFloweringPlant = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Flowering Plants/Flowering Plant 02 - Variant 1.prefab");
+        if (pFloweringPlant != null)
+        {
+            DetailPrototype dp = new DetailPrototype();
+            dp.prototype = pFloweringPlant;
+            dp.usePrototypeMesh = true;
+            dp.renderMode = DetailRenderMode.VertexLit;
+            dp.healthyColor = Color.white;
+            dp.dryColor = Color.white;
+            dp.minWidth = 0.8f; dp.maxWidth = 1.3f;
+            dp.minHeight = 0.7f; dp.maxHeight = 1.2f;
+            dProtos.Add(dp);
+        }
+
+        // Layer 3: DƯƠNG XỈ XANH NHIỆT ĐỚI DƯỚI TÁN CÂY (Fern_A)
         var pFern = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Fern_A.prefab");
         if (pFern != null)
         {
@@ -305,27 +340,12 @@ public class MapToTerrainBuilder : EditorWindow
             dProtos.Add(dpFern);
         }
 
-        // Layer 2: CỎ VEN BÃI CÁT - THU NGẮN 70% VÀ MẬT ĐỘ CỰC KỲ THƯA THỚT (Grass_A)
-        var pGrassShore = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Grass_A.prefab");
-        if (pGrassShore != null)
-        {
-            DetailPrototype dpShore = new DetailPrototype();
-            dpShore.prototype = pGrassShore;
-            dpShore.usePrototypeMesh = true;
-            dpShore.renderMode = DetailRenderMode.VertexLit;
-            dpShore.healthyColor = new Color(0.55f, 0.65f, 0.45f);
-            dpShore.dryColor = new Color(0.50f, 0.58f, 0.40f);
-            dpShore.minWidth = 0.40f; dpShore.maxWidth = 0.70f;
-            dpShore.minHeight = 0.35f; dpShore.maxHeight = 0.60f; // Cỏ ngắn sát đất, không bị dài lê thê
-            dProtos.Add(dpShore);
-        }
-
         td.detailPrototypes = dProtos.ToArray();
 
-        // 1. Phân bổ Cỏ xanh tươi mát trên toàn bộ vùng đồi có cây cổ thụ (d > beachPixelWidth + 1.5f)
+        // 1. Phân bổ Cỏ 3D Detailed Grass trên toàn bộ vùng đồi và triền dốc (d > beachPixelWidth + 0.5f)
         if (dProtos.Count > 0)
         {
-            int[,] greenGrassMap = new int[dRes, dRes];
+            int[,] grassMap = new int[dRes, dRes];
             for (int y = 0; y < dRes; y++)
             {
                 for (int x = 0; x < dRes; x++)
@@ -333,24 +353,78 @@ public class MapToTerrainBuilder : EditorWindow
                     int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
                     int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
 
-                    if (isWaterMap[hy, hx]) { greenGrassMap[y, x] = 0; continue; }
+                    if (isWaterMap[hy, hx]) { grassMap[y, x] = 0; continue; }
                     float d = distToWater[hy, hx];
 
                     if (d > beachPixelWidth + 0.5f)
                     {
-                        greenGrassMap[y, x] = Random.Range(3, 6); // Cỏ xanh mướt mọc dày dặn ngay từ sau vạch đỏ
+                        grassMap[y, x] = Random.Range(3, 7); // Cỏ mọc dày mượt mà
                     }
                     else
                     {
-                        greenGrassMap[y, x] = 0;
+                        grassMap[y, x] = 0;
                     }
                 }
             }
-            td.SetDetailLayer(0, 0, 0, greenGrassMap);
+            td.SetDetailLayer(0, 0, 0, grassMap);
         }
 
-        // 2. Phân bổ Dương xỉ rải rác dưới gốc cây cổ thụ
+        // 2. Phân bổ Hoa dại trắng (White Flowers) điểm xuyết trên triền cỏ
         if (dProtos.Count > 1)
+        {
+            int[,] flowerMap = new int[dRes, dRes];
+            for (int y = 0; y < dRes; y++)
+            {
+                for (int x = 0; x < dRes; x++)
+                {
+                    int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
+                    int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
+
+                    if (isWaterMap[hy, hx]) { flowerMap[y, x] = 0; continue; }
+                    float d = distToWater[hy, hx];
+
+                    if (d > beachPixelWidth + 1.0f && Random.value < 0.16f)
+                    {
+                        flowerMap[y, x] = Random.Range(1, 3);
+                    }
+                    else
+                    {
+                        flowerMap[y, x] = 0;
+                    }
+                }
+            }
+            td.SetDetailLayer(0, 0, 1, flowerMap);
+        }
+
+        // 3. Phân bổ Bụi hoa (Flowering Plants) rải rác ven triền đồi
+        if (dProtos.Count > 2)
+        {
+            int[,] plantMap = new int[dRes, dRes];
+            for (int y = 0; y < dRes; y++)
+            {
+                for (int x = 0; x < dRes; x++)
+                {
+                    int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
+                    int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
+
+                    if (isWaterMap[hy, hx]) { plantMap[y, x] = 0; continue; }
+                    float d = distToWater[hy, hx];
+
+                    if (d > beachPixelWidth + 0.8f && d < beachPixelWidth + 8f && Random.value < 0.10f)
+                    {
+                        plantMap[y, x] = 1;
+                    }
+                    else
+                    {
+                        plantMap[y, x] = 0;
+                    }
+                }
+            }
+            td.SetDetailLayer(0, 0, 2, plantMap);
+        }
+
+        // 4. Phân bổ Dương xỉ (Fern_A) rải rác dưới gốc cây cổ thụ
+        if (dProtos.Count > 3)
         {
             int[,] fernMap = new int[dRes, dRes];
             for (int y = 0; y < dRes; y++)
@@ -363,7 +437,7 @@ public class MapToTerrainBuilder : EditorWindow
                     if (isWaterMap[hy, hx]) { fernMap[y, x] = 0; continue; }
                     float d = distToWater[hy, hx];
 
-                    if (d > beachPixelWidth + 2.0f && Random.value < 0.35f)
+                    if (d > beachPixelWidth + 2.5f && Random.value < 0.28f)
                     {
                         fernMap[y, x] = Random.Range(1, 3);
                     }
@@ -373,34 +447,7 @@ public class MapToTerrainBuilder : EditorWindow
                     }
                 }
             }
-            td.SetDetailLayer(0, 0, 1, fernMap);
-        }
-
-        // 3. Phân bổ Cỏ ven cát - GIẢM MẠNH MẬT ĐỘ: Chỉ lác đác vài cụm nhỏ ở đường giao cát-cỏ
-        if (dProtos.Count > 2)
-        {
-            int[,] shoreMap = new int[dRes, dRes];
-            for (int y = 0; y < dRes; y++)
-            {
-                for (int x = 0; x < dRes; x++)
-                {
-                    int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
-                    int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
-
-                    if (isWaterMap[hy, hx]) { shoreMap[y, x] = 0; continue; }
-                    float d = distToWater[hy, hx];
-
-                    if (d >= beachPixelWidth - 1f && d <= beachPixelWidth + 1.2f && Random.value < 0.05f)
-                    {
-                        shoreMap[y, x] = 1; // Chỉ 1 nhành cỏ nhỏ lác đác
-                    }
-                    else
-                    {
-                        shoreMap[y, x] = 0;
-                    }
-                }
-            }
-            td.SetDetailLayer(0, 0, 2, shoreMap);
+            td.SetDetailLayer(0, 0, 3, fernMap);
         }
 
         // ==========================================
@@ -418,12 +465,28 @@ public class MapToTerrainBuilder : EditorWindow
         Terrain tComp = terrainGo.GetComponent<Terrain>();
         tComp.drawTreesAndFoliage = true;
         tComp.treeDistance = 3500f;
-        tComp.treeBillboardDistance = 3500f; // Duy trì Mesh 3D chi tiết lên đến 3.500 mét không bao giờ bị cắt giảm!
+        tComp.treeBillboardDistance = 3500f;
         tComp.treeCrossFadeLength = 0f;
-        tComp.treeMaximumFullLODCount = 100000; // Vẽ toàn bộ 80.000 cây ở chất lượng 3D tối đa, không bị mất lá!
-        tComp.detailObjectDistance = 450f; // Bán kính nhìn thấy thảm cỏ 3D dày đặc 450 mét!
+        tComp.treeMaximumFullLODCount = 100000;
+        tComp.detailObjectDistance = 450f;
         tComp.detailObjectDensity = 1.0f;
-        tComp.heightmapPixelError = 2f; // Độ sắc nét địa hình cao
+        tComp.heightmapPixelError = 2f;
+
+        // TỰ ĐỘNG KÍCH HOẠT GPU COMPUTE SHADER INSTANCING VỚI NATURE RENDERER
+        System.Type nrType = null;
+        foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
+        {
+            nrType = asm.GetType("VisualDesignCafe.Rendering.Nature.NatureRenderer");
+            if (nrType != null) break;
+        }
+        if (nrType != null)
+        {
+            if (terrainGo.GetComponent(nrType) == null)
+            {
+                terrainGo.AddComponent(nrType);
+                Debug.Log("🚀 [NATURE RENDERER] ĐÃ KÍCH HOẠT GPU INSTANCING CHO TOÀN BỘ CÂY & CỎ TRÊN SA BÀN BẠCH ĐẰNG!");
+            }
+        }
 
         // ==========================================
         // 7. CẬP NHẬT MẶT NƯỚC & BỐ TRÍ CHIẾN TRẬN
@@ -433,341 +496,7 @@ public class MapToTerrainBuilder : EditorWindow
         PlaceBoatAndSpikesInRiver();
 
         AssetDatabase.SaveAssets();
-        Debug.Log($"🎉 SA BÀN HOÀN THIỆN: 80.000 CÂY ĐẠI THỤ CỔ THỤ + THẢM CỎ 3D DÀY ĐẶC PHỦ RỢP CHIẾN ĐỊA!");
-    }
-
-    [MenuItem("🤖 Trợ lý AI/🌲 Tạo Lại 2 Prefab Cây Cổ Thụ (Ancient Trees)")]
-    public static void ForceRecreateAncientTreePrefabs()
-    {
-        GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_A.prefab", false, true);
-        GetOrCreateAncientTreePrefab("Assets/Prefabs/AncientTree_B.prefab", true, true);
-        Debug.Log("✅ Đã tạo mới hoàn toàn 2 Prefab Cây Cổ Thụ Hữu Cơ khổng lồ (AncientTree_A & B)!");
-    }
-
-    private static GameObject GetOrCreateAncientTreePrefab(string prefabPath, bool isBanyan, bool forceRecreate = false)
-    {
-        if (!forceRecreate)
-        {
-            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-            if (existing != null && existing.GetComponent<MeshFilter>() != null && existing.GetComponent<MeshFilter>().sharedMesh != null)
-            {
-                return existing;
-            }
-        }
-
-        string dir = System.IO.Path.GetDirectoryName(prefabPath);
-        if (!string.IsNullOrEmpty(dir) && !System.IO.Directory.Exists(dir))
-        {
-            System.IO.Directory.CreateDirectory(dir);
-            AssetDatabase.Refresh();
-        }
-
-        // 1. Tạo Mesh thân & cành cây hữu cơ gân guốc (Organic Trunk & Branches)
-        Mesh subWood = BuildOrganicWoodMesh(isBanyan);
-
-        // 2. Lấy mesh vòm lá từ Bush_A
-        GameObject bushPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TerrainSampleAssets/Prefabs/Bush_A.prefab");
-        if (bushPrefab == null) bushPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TerrainSampleAssets/Prefabs/Bush_B.prefab");
-        Mesh bushMesh = bushPrefab != null ? bushPrefab.GetComponent<MeshFilter>().sharedMesh : null;
-
-        // 3. Material Vỏ cây gỗ thật từ textures wood-spike
-        string matPath = prefabPath.Replace(".prefab", "_Bark.mat");
-        Material woodMat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
-        if (woodMat == null)
-        {
-            woodMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            Texture2D diffuseTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/wood-spike/textures/Channel_modelling_mat_1_Diffuse.png");
-            Texture2D normalTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/wood-spike/textures/Channel_modelling_mat_1_Normal_Map.png");
-            if (diffuseTex != null) woodMat.mainTexture = diffuseTex;
-            if (normalTex != null)
-            {
-                woodMat.EnableKeyword("_NORMALMAP");
-                woodMat.SetTexture("_BumpMap", normalTex);
-            }
-            woodMat.color = new Color(0.48f, 0.35f, 0.24f);
-            woodMat.SetFloat("_Smoothness", 0.15f);
-            AssetDatabase.CreateAsset(woodMat, matPath);
-        }
-
-        // 4. Material Tán lá URP Lit sắc nét (Không bao giờ bị mờ/mất lá khi đứng xa!)
-        Material leavesMat = GetOrCreateLeavesMaterial();
-
-        // 5. Bố trí vòm lá sum suê đan xen theo các cành chạc
-        List<CombineInstance> leafParts = new List<CombineInstance>();
-        if (bushMesh != null)
-        {
-            if (!isBanyan)
-            {
-                Vector3 fork = new Vector3(0.2f, 13.5f, -0.1f);
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(0.2f, 5.8f, 0.1f), Quaternion.identity, Vector3.one * 12.0f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(0.5f, 4.5f, -0.4f), Quaternion.Euler(10, 45, -10), Vector3.one * 10.5f) });
-
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(-4.5f, 4.2f, 1.2f), Quaternion.Euler(15, 30, -15), Vector3.one * 10.0f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(-2.5f, 2.8f, 0.8f), Quaternion.Euler(-10, 60, 10), Vector3.one * 8.5f) });
-
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(4.8f, 4.5f, -1.5f), Quaternion.Euler(-15, 75, 12), Vector3.one * 10.0f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(2.8f, 3.0f, -0.9f), Quaternion.Euler(20, -45, -10), Vector3.one * 8.5f) });
-
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(0.8f, 4.5f, 4.2f), Quaternion.Euler(5, 120, -10), Vector3.one * 9.5f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(0.5f, 2.6f, 2.4f), Quaternion.Euler(-15, 140, 15), Vector3.one * 8.0f) });
-
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(-1.2f, 4.2f, -4.0f), Quaternion.Euler(-20, -50, 15), Vector3.one * 9.5f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(-0.8f, 2.5f, -2.2f), Quaternion.Euler(10, -70, -12), Vector3.one * 8.0f) });
-
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(0, 1.5f, 0), Quaternion.identity, Vector3.one * 11.0f) });
-            }
-            else
-            {
-                Vector3 fork = new Vector3(-0.3f, 15.5f, 0.2f);
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(0.4f, 8.8f, 0.3f), Quaternion.identity, Vector3.one * 16.0f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(-0.2f, 6.5f, -0.5f), Quaternion.Euler(15, 40, -10), Vector3.one * 14.0f) });
-
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(-7.2f, 5.5f, 2.2f), Quaternion.Euler(20, 25, -15), Vector3.one * 14.5f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(-4.2f, 3.5f, 1.2f), Quaternion.Euler(-10, 50, 15), Vector3.one * 12.0f) });
-
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(7.5f, 5.8f, -2.8f), Quaternion.Euler(-15, 60, 20), Vector3.one * 14.5f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(4.5f, 3.8f, -1.6f), Quaternion.Euler(15, -45, -10), Vector3.one * 12.0f) });
-
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(2.2f, 5.0f, 6.8f), Quaternion.Euler(10, 110, -10), Vector3.one * 13.5f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(1.4f, 3.2f, 4.0f), Quaternion.Euler(-15, 130, 12), Vector3.one * 11.5f) });
-
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(-3.0f, 4.8f, -6.5f), Quaternion.Euler(-20, -50, 15), Vector3.one * 13.5f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(-1.8f, 3.0f, -3.8f), Quaternion.Euler(10, -60, -15), Vector3.one * 11.5f) });
-
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(0, 2.0f, 0), Quaternion.identity, Vector3.one * 16.0f) });
-                leafParts.Add(new CombineInstance { mesh = bushMesh, transform = Matrix4x4.TRS(fork + new Vector3(1.5f, 1.0f, -1.0f), Quaternion.Euler(5, 75, -5), Vector3.one * 13.5f) });
-            }
-        }
-
-        // Ghép lá thành Submesh 1
-        Mesh subLeaves = new Mesh();
-        subLeaves.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        if (leafParts.Count > 0)
-        {
-            subLeaves.CombineMeshes(leafParts.ToArray(), true, true);
-        }
-
-        // Hợp nhất thành 1 Mesh đa Submesh duy nhất
-        CombineInstance[] finalCombines = new CombineInstance[2];
-        finalCombines[0].mesh = subWood;
-        finalCombines[0].transform = Matrix4x4.identity;
-        finalCombines[1].mesh = subLeaves;
-        finalCombines[1].transform = Matrix4x4.identity;
-
-        Mesh treeMesh = new Mesh();
-        treeMesh.name = System.IO.Path.GetFileNameWithoutExtension(prefabPath) + "_Mesh";
-        treeMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        treeMesh.CombineMeshes(finalCombines, false, false);
-
-        string meshAssetPath = prefabPath.Replace(".prefab", "_Mesh.asset");
-        AssetDatabase.DeleteAsset(meshAssetPath);
-        AssetDatabase.CreateAsset(treeMesh, meshAssetPath);
-
-        // Gắn MeshFilter và MeshRenderer TRỰC TIẾP LÊN ROOT GAMEOBJECT
-        GameObject treeGO = new GameObject(System.IO.Path.GetFileNameWithoutExtension(prefabPath));
-        MeshFilter mf = treeGO.AddComponent<MeshFilter>();
-        mf.sharedMesh = treeMesh;
-
-        MeshRenderer mr = treeGO.AddComponent<MeshRenderer>();
-        mr.sharedMaterials = new Material[] { woodMat, leavesMat };
-
-        AssetDatabase.DeleteAsset(prefabPath);
-        GameObject saved = PrefabUtility.SaveAsPrefabAsset(treeGO, prefabPath);
-        Object.DestroyImmediate(treeGO);
-        return saved;
-    }
-
-    private static Material GetOrCreateLeavesMaterial()
-    {
-        string matPath = "Assets/Prefabs/AncientTree_Leaves.mat";
-        Material leavesMat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
-        if (leavesMat == null)
-        {
-            leavesMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            Texture2D leafBase = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/TerrainSampleAssets/Textures/Details/Bush_A_BaseColor.tif");
-            Texture2D leafNorm = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/TerrainSampleAssets/Textures/Details/Bush_A_Normal.tif");
-            if (leafBase != null) leavesMat.SetTexture("_BaseMap", leafBase);
-            if (leafNorm != null)
-            {
-                leavesMat.EnableKeyword("_NORMALMAP");
-                leavesMat.SetTexture("_BumpMap", leafNorm);
-            }
-
-            leavesMat.SetFloat("_AlphaClip", 1f);
-            leavesMat.SetFloat("_Cutoff", 0.33f);
-            leavesMat.EnableKeyword("_ALPHATEST_ON");
-
-            leavesMat.SetFloat("_Cull", 0f);
-            leavesMat.EnableKeyword("_DOUBLESIDED_ON");
-
-            leavesMat.SetColor("_BaseColor", new Color(0.92f, 1.05f, 0.90f));
-            leavesMat.SetFloat("_Smoothness", 0.18f);
-
-            leavesMat.renderQueue = 2450;
-            AssetDatabase.CreateAsset(leavesMat, matPath);
-        }
-        else
-        {
-            leavesMat.SetFloat("_AlphaClip", 1f);
-            leavesMat.SetFloat("_Cutoff", 0.33f);
-            leavesMat.SetFloat("_Cull", 0f);
-            leavesMat.EnableKeyword("_ALPHATEST_ON");
-            leavesMat.EnableKeyword("_DOUBLESIDED_ON");
-            EditorUtility.SetDirty(leavesMat);
-        }
-        return leavesMat;
-    }
-
-    private static Mesh BuildOrganicWoodMesh(bool isBanyan)
-    {
-        List<Vector3> verts = new List<Vector3>();
-        List<Vector3> norms = new List<Vector3>();
-        List<Vector2> uvs = new List<Vector2>();
-        List<int> tris = new List<int>();
-
-        if (!isBanyan)
-        {
-            float trunkH = 13.5f;
-            float baseR = 1.15f;
-            float topR = 0.6f;
-
-            AddBranchTube(verts, norms, uvs, tris,
-                new Vector3(0, 0, 0), new Vector3(0.2f, trunkH, -0.1f), new Vector3(0.4f, trunkH * 0.5f, 0.3f),
-                baseR, topR, 12, 10, rootFlare: 0.75f);
-
-            Vector3 fork = new Vector3(0.2f, trunkH, -0.1f);
-
-            AddBranchTube(verts, norms, uvs, tris,
-                fork + new Vector3(-0.3f, 0, 0), fork + new Vector3(-4.5f, 4.2f, 1.2f), fork + new Vector3(-2.5f, 2.0f, 0.5f),
-                topR * 0.65f, 0.18f, 8, 6);
-
-            AddBranchTube(verts, norms, uvs, tris,
-                fork + new Vector3(0.3f, 0, -0.2f), fork + new Vector3(4.8f, 4.5f, -1.5f), fork + new Vector3(2.8f, 2.2f, -0.8f),
-                topR * 0.62f, 0.18f, 8, 6);
-
-            AddBranchTube(verts, norms, uvs, tris,
-                fork + new Vector3(0, 0.3f, 0.3f), fork + new Vector3(0.8f, 4.5f, 4.2f), fork + new Vector3(0.4f, 2.0f, 2.4f),
-                topR * 0.58f, 0.16f, 8, 6);
-
-            AddBranchTube(verts, norms, uvs, tris,
-                fork + new Vector3(-0.1f, 0.4f, -0.3f), fork + new Vector3(-1.2f, 4.2f, -4.0f), fork + new Vector3(-0.7f, 2.0f, -2.2f),
-                topR * 0.55f, 0.15f, 8, 6);
-
-            AddBranchTube(verts, norms, uvs, tris,
-                fork, fork + new Vector3(0.2f, 5.5f, 0.1f), fork + new Vector3(0.1f, 2.8f, -0.1f),
-                topR * 0.6f, 0.15f, 8, 6);
-        }
-        else
-        {
-            float trunkH = 15.5f;
-            float baseR = 1.75f;
-            float topR = 0.95f;
-
-            AddBranchTube(verts, norms, uvs, tris,
-                new Vector3(0, 0, 0), new Vector3(-0.3f, trunkH, 0.2f), new Vector3(-0.6f, trunkH * 0.5f, 0.5f),
-                baseR, topR, 14, 12, rootFlare: 1.05f);
-
-            Vector3 fork = new Vector3(-0.3f, trunkH, 0.2f);
-
-            AddBranchTube(verts, norms, uvs, tris,
-                fork + new Vector3(-0.4f, 0, 0.2f), fork + new Vector3(-7.2f, 5.5f, 2.2f), fork + new Vector3(-4.2f, 2.5f, 1.2f),
-                topR * 0.72f, 0.22f, 10, 7);
-
-            AddBranchTube(verts, norms, uvs, tris,
-                fork + new Vector3(0.5f, 0.2f, -0.3f), fork + new Vector3(7.5f, 5.8f, -2.8f), fork + new Vector3(4.5f, 2.8f, -1.5f),
-                topR * 0.70f, 0.22f, 10, 7);
-
-            AddBranchTube(verts, norms, uvs, tris,
-                fork + new Vector3(0.2f, 0.3f, 0.4f), fork + new Vector3(2.2f, 5.0f, 6.8f), fork + new Vector3(1.2f, 2.5f, 3.8f),
-                topR * 0.65f, 0.20f, 8, 7);
-
-            AddBranchTube(verts, norms, uvs, tris,
-                fork + new Vector3(-0.3f, 0.4f, -0.4f), fork + new Vector3(-3.0f, 4.8f, -6.5f), fork + new Vector3(-1.8f, 2.4f, -3.5f),
-                topR * 0.62f, 0.20f, 8, 7);
-
-            AddBranchTube(verts, norms, uvs, tris,
-                fork, fork + new Vector3(0.4f, 8.5f, 0.3f), fork + new Vector3(0.2f, 4.5f, 0.1f),
-                topR * 0.65f, 0.20f, 8, 7);
-        }
-
-        Mesh m = new Mesh();
-        m.name = isBanyan ? "BanyanWood_Mesh" : "HardwoodWood_Mesh";
-        m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        m.SetVertices(verts);
-        m.SetNormals(norms);
-        m.SetUVs(0, uvs);
-        m.SetTriangles(tris, 0);
-        m.RecalculateBounds();
-        return m;
-    }
-
-    private static void AddBranchTube(
-        List<Vector3> verts, List<Vector3> norms, List<Vector2> uvs, List<int> tris,
-        Vector3 p0, Vector3 p1, Vector3 ctrl,
-        float r0, float r1, int radialSegs, int heightSegs, float rootFlare = 0f)
-    {
-        int baseVertIndex = verts.Count;
-
-        for (int i = 0; i <= heightSegs; i++)
-        {
-            float t = (float)i / heightSegs;
-
-            Vector3 center = (1f - t) * (1f - t) * p0 + 2f * (1f - t) * t * ctrl + t * t * p1;
-
-            Vector3 tangent = 2f * (1f - t) * (ctrl - p0) + 2f * t * (p1 - ctrl);
-            if (tangent.sqrMagnitude < 0.001f) tangent = (p1 - p0).normalized;
-            else tangent.Normalize();
-
-            Vector3 upVec = Mathf.Abs(tangent.y) > 0.9f ? Vector3.forward : Vector3.up;
-            Vector3 right = Vector3.Cross(tangent, upVec).normalized;
-            Vector3 forward = Vector3.Cross(right, tangent).normalized;
-
-            float baseR = Mathf.Lerp(r0, r1, t);
-
-            for (int j = 0; j <= radialSegs; j++)
-            {
-                float phi = (float)j / radialSegs * Mathf.PI * 2f;
-                float cosP = Mathf.Cos(phi);
-                float sinP = Mathf.Sin(phi);
-
-                float currentR = baseR;
-                if (rootFlare > 0f && t < 0.35f)
-                {
-                    float flareT = 1f - (t / 0.35f);
-                    float flare = flareT * rootFlare * (Mathf.Cos(4f * phi) * 0.55f + Mathf.Sin(2f * phi) * 0.25f);
-                    currentR += flare * baseR;
-                }
-
-                Vector3 normal = (right * cosP + forward * sinP).normalized;
-                Vector3 pos = center + normal * currentR;
-
-                verts.Add(pos);
-                norms.Add(normal);
-                uvs.Add(new Vector2((float)j / radialSegs, t * 4f));
-            }
-        }
-
-        for (int i = 0; i < heightSegs; i++)
-        {
-            int ring1 = baseVertIndex + i * (radialSegs + 1);
-            int ring2 = baseVertIndex + (i + 1) * (radialSegs + 1);
-
-            for (int j = 0; j < radialSegs; j++)
-            {
-                int a = ring1 + j;
-                int b = ring1 + j + 1;
-                int c = ring2 + j;
-                int d = ring2 + j + 1;
-
-                tris.Add(a);
-                tris.Add(c);
-                tris.Add(b);
-
-                tris.Add(b);
-                tris.Add(c);
-                tris.Add(d);
-            }
-        }
+        Debug.Log($"🎉 SA BÀN HOÀN THIỆN: 80.000 CÂY CỔ THỤ AAA (NATURE RENDERER) + THẢM CỎ 3D HOA DẠI ĐÃ ĐƯỢC TÍCH HỢP THÀNH CÔNG!");
     }
 
     private static float GetSlope(float[,] h, int x, int y, int sz)
