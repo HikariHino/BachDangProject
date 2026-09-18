@@ -759,6 +759,11 @@ public class MapToTerrainBuilder : EditorWindow
             Undo.RecordObject(cam.transform, "Move Camera To Battle");
             cam.transform.position = new Vector3(-480f, 28f, 300f);
             cam.transform.LookAt(new Vector3(-340f, 14.2f, 300f));
+            cam.farClipPlane = 9500f;
+            if (cam.GetComponent<BattleCamera>() == null)
+            {
+                cam.gameObject.AddComponent<BattleCamera>();
+            }
         }
 
         if (SceneView.lastActiveSceneView != null)
