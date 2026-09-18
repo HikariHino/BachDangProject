@@ -103,7 +103,7 @@ public class MapToTerrainBuilder : EditorWindow
         {
             if (go == null) continue;
             string n = go.name.ToLower();
-            if (n.StartsWith("saban_") || n == "terrain" || n.Contains("he thong nui") || n.Contains("photoscanned") || n.Contains("chiến trường") || n.Contains("cọc ngầm"))
+            if (n.StartsWith("saban_") || n == "terrain" || n.Contains("he thong nui") || n.Contains("hệ thống núi") || n.Contains("photoscanned") || n.Contains("chiến trường") || n.Contains("cọc ngầm") || n.StartsWith("wood_spike_02_sculpted"))
             {
                 Undo.DestroyObjectImmediate(go);
             }
@@ -491,8 +491,14 @@ public class MapToTerrainBuilder : EditorWindow
         FixRockMaterialsToURP();
 
         string parentName = "--- HỆ THỐNG NÚI ĐÁ VÔI PHOTOSCANNED (PBR) ---";
-        GameObject oldParent = GameObject.Find(parentName);
-        if (oldParent != null) Undo.DestroyObjectImmediate(oldParent);
+        var allMounts = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var go in allMounts)
+        {
+            if (go != null && (go.name == parentName || go.name.Contains("HỆ THỐNG NÚI ĐÁ VÔI") || go.name.ToLower().Contains("photoscanned")))
+            {
+                Undo.DestroyObjectImmediate(go);
+            }
+        }
 
         GameObject mountainRoot = new GameObject(parentName);
         mountainRoot.transform.position = Vector3.zero;
@@ -624,8 +630,16 @@ public class MapToTerrainBuilder : EditorWindow
         }
 
         string pName = "--- TRẬN ĐỊA CỌC NGẦM BẠCH ĐẰNG (938) ---";
-        GameObject oldP = GameObject.Find(pName);
-        if (oldP != null) Undo.DestroyObjectImmediate(oldP);
+        var allSpikes = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var go in allSpikes)
+        {
+            if (go == null) continue;
+            string n = go.name;
+            if (n == pName || n.StartsWith("Wood_Spike_02_sculpted") || n.StartsWith("CocGo_Hang") || n.Contains("TRẬN ĐỊA CỌC NGẦM"))
+            {
+                Undo.DestroyObjectImmediate(go);
+            }
+        }
 
         GameObject root = new GameObject(pName);
         root.transform.position = Vector3.zero;
@@ -723,8 +737,15 @@ public class MapToTerrainBuilder : EditorWindow
         GameObject pfBarrels = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Props/pf_barrels_01.prefab");
 
         string campParentName = "--- CHIẾN TRƯỜNG: ĐẠI BẢN DOANH & XƯỞNG CỌC BẠCH ĐẰNG ---";
-        GameObject oldRoot = GameObject.Find(campParentName);
-        if (oldRoot != null) Undo.DestroyObjectImmediate(oldRoot);
+        var allCamps = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var go in allCamps)
+        {
+            if (go == null) continue;
+            if (go.name == campParentName || go.name.Contains("ĐẠI BẢN DOANH") || go.name.Contains("XƯỞNG CỌC"))
+            {
+                Undo.DestroyObjectImmediate(go);
+            }
+        }
 
         GameObject campRoot = new GameObject(campParentName);
         campRoot.transform.position = Vector3.zero;
