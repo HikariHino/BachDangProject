@@ -511,31 +511,39 @@ public class MapToTerrainBuilder : EditorWindow
         Undo.RegisterCreatedObjectUndo(mountainRoot, "Create Photoscanned Mountains");
 
         // =========================================================================
-        // KHÔI PHỤC BỘ NÚI ĐÁ VÔI KARST NGUYÊN BẢN (THETALESFACTORY - ĐẸP & HÙNG VĨ NHẤT)
-        // Loại bỏ hoàn toàn mảnh đá dẹp 01_C, 01_D để triệt tiêu vĩnh viễn lỗi hở đáy!
+        // 1. CÁC MỎM NÚI ĐÁ VÔI KARST CAO VÚT (THETALESFACTORY)
+        // CHỈ DÙNG CÁC CHỎM NHỌN UY NGHI: MountainsRocks03, MountainRocks01_A, 01_B, 02_A
+        // LOẠI BỎ VĨNH VIỄN: Các scan phẳng hoặc mảnh cắt ngang có viền rộng (01, 02, 01_C, 01_D, 02_B)
         // =========================================================================
         string pDir = "Assets/TheTalesFactory/Photoscanned MoutainsRocks PBR/Prefabs/";
-        GameObject pfMain01 = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01.prefab");
-        GameObject pfMain02 = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks02.prefab");
         GameObject pfMain03 = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainsRocks03.prefab");
-
         GameObject pfSub01A = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_A.prefab");
         GameObject pfSub01B = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_B.prefab");
         GameObject pfSub02A = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks02_A.prefab");
-        GameObject pfSub02B = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks02_B.prefab");
 
-        // TẢNG ĐÁ RÊU XANH TỰ NHIÊN (PIZZA&GAMES)
+        var karstPeakPrefabs = new List<GameObject>();
+        if (pfMain03 != null) karstPeakPrefabs.Add(pfMain03);
+        if (pfSub01A != null) karstPeakPrefabs.Add(pfSub01A);
+        if (pfSub01B != null) karstPeakPrefabs.Add(pfSub01B);
+        if (pfSub02A != null) karstPeakPrefabs.Add(pfSub02A);
+
+        // =========================================================================
+        // 2. TẢNG ĐÁ 3D NGUYÊN KHỐI CHO SƯỜN NÚI & CHÂN NÚI (KHÔNG ĐẾ PHẲNG, KHÔNG HỞ CHÂN)
+        // Dùng bộ đá 3D kín: Pizza&Games (SM_LittleRock_GreenMoss) & Visual Design Cafe (Rock_A_02, Rock_C_01)
+        // =========================================================================
         string mossDir = "Assets/Pizza&Games/Realistic Rocks/Prefabs/";
-        var mossBoulders = new List<GameObject>();
+        var closedBoulders = new List<GameObject>();
         for (int i = 1; i <= 6; i++)
         {
             GameObject pf = AssetDatabase.LoadAssetAtPath<GameObject>($"{mossDir}SM_LittleRock_0{i}_GreenMoss.prefab");
             if (pf == null) pf = AssetDatabase.LoadAssetAtPath<GameObject>($"{mossDir}SM_LittleRock_0{i}.prefab");
-            if (pf != null) mossBoulders.Add(pf);
+            if (pf != null) closedBoulders.Add(pf);
         }
 
-        // Danh sách các khối đá vôi karst 3D nguyên khối (KHÔNG CÓ 01_C, 01_D)
-        var naturalKarstPrefabs = new[] { pfMain03, pfMain01, pfSub01A, pfSub01B, pfMain02, pfSub02A, pfSub02B };
+        GameObject vdcRockA = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Visual Design Cafe/Nature Renderer Demo/Realistic/Art/Rocks/Rock_A_02.prefab");
+        GameObject vdcRockC = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Visual Design Cafe/Nature Renderer Demo/Realistic/Art/Rocks/Rock_C_01.prefab");
+        if (vdcRockA != null) closedBoulders.Add(vdcRockA);
+        if (vdcRockC != null) closedBoulders.Add(vdcRockC);
 
         Texture2D mapTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/BachDangMap.png");
 
@@ -550,131 +558,113 @@ public class MapToTerrainBuilder : EditorWindow
 
             Random.InitState(zone.seed);
 
-            // Container 1: Đỉnh Núi Karst Kỳ Vĩ (Nơi các mỏm đá vôi vươn cao đẹp nhất)
+            // Container 1: Đỉnh Núi Karst Kỳ Vĩ (Pinnacle chỏm đá vôi vươn cao trên đỉnh)
             GameObject grpPeak = new GameObject("1_Dinh_Nui_Karst");
             grpPeak.transform.parent = clusterGo.transform;
 
-            // Container 2: Mỏm Đá Sống Núi
+            // Container 2: Mỏm Đá Sống Núi (Chỉ đặt ở các gờ cao bằng phẳng, chôn sâu)
             GameObject grpRidge = new GameObject("2_Mom_Da_Song_Nui");
             grpRidge.transform.parent = clusterGo.transform;
 
-            // Container 3: Vách Đá Giáp Khe Nước
-            GameObject grpGorge = new GameObject("3_Vach_Da_Giap_Khe_Nuoc");
-            grpGorge.transform.parent = clusterGo.transform;
+            // Container 3: Tảng Đá Tự Nhiên Sườn Núi (Đá 3D nguyên khối, tựa vào sườn đồi)
+            GameObject grpBoulders = new GameObject("3_Tang_Da_Suon_Nui");
+            grpBoulders.transform.parent = clusterGo.transform;
+
+            float peakH = tComp.SampleHeight(new Vector3(centerX, 0, centerZ));
 
             // -------------------------------------------------------------
             // 1. CHỎM ĐÁ ĐỈNH CHÍNH (MountainsRocks03 trắng xám nhọn hoắt siêu đẹp)
+            // Đặt ngay đỉnh cao nhất của quả đồi, chôn sâu 3.2x để mép đế ngập 100% trong đất
             // -------------------------------------------------------------
-            GameObject peakPrefab = (zone.seed % 2 == 0) ? pfMain03 : pfMain01;
-            if (peakPrefab == null) peakPrefab = pfMain03 != null ? pfMain03 : pfMain01;
+            GameObject peakPrefab = (pfMain03 != null) ? pfMain03 : (karstPeakPrefabs.Count > 0 ? karstPeakPrefabs[0] : null);
             if (peakPrefab != null)
             {
-                // Đứng thẳng tự nhiên theo trọng lực, chôn sâu 40% vào đỉnh núi
-                Quaternion peakRot = Quaternion.Euler(Random.Range(-3f, 3f), Random.Range(0f, 360f), Random.Range(-3f, 3f));
-                SpawnSingleRockGrounded(peakPrefab, grpPeak.transform, centerX, centerZ, zone.rockScale * 1.05f, tComp, peakRot, 1.6f);
+                Quaternion peakRot = Quaternion.Euler(Random.Range(-2f, 2f), Random.Range(0f, 360f), Random.Range(-2f, 2f));
+                SpawnSingleRockGrounded(peakPrefab, grpPeak.transform, centerX, centerZ, zone.rockScale * 1.15f, tComp, peakRot, 3.2f);
             }
 
             // -------------------------------------------------------------
-            // 2. CÁC MỎM ĐÁ SỐNG NÚI (Đứng thẳng uy nghi, cắm ngập vào lòng đất)
+            // 2. CÁC MỎM ĐÁ SỐNG NÚI (CHỈ ĐẶT KHI ĐỊA HÌNH ĐỦ BẰNG PHẲNG terrNorm.y >= 0.94f)
+            // Tuyệt đối không đặt mỏm đá scan lớn trên sườn dốc nghiêng để triệt tiêu 100% hiện tượng "đĩa bay"!
             // -------------------------------------------------------------
-            int ridgeCount = 6;
-            for (int i = 0; i < ridgeCount; i++)
+            int ridgeSpots = 6;
+            for (int i = 0; i < ridgeSpots; i++)
             {
-                float tRidge = ((float)i / (ridgeCount - 1) - 0.5f) * zone.ridgeLength * 0.70f * 6000f;
-                float rSide = Random.Range(-25f, 25f);
+                float tRidge = ((float)i / (ridgeSpots - 1) - 0.5f) * zone.ridgeLength * 0.70f * 6000f;
+                float rSide = Random.Range(-20f, 20f);
 
                 float rX = centerX + zone.ridgeDirU * tRidge - zone.ridgeDirV * rSide;
                 float rZ = centerZ + zone.ridgeDirV * tRidge + zone.ridgeDirU * rSide;
 
-                if (IsPositionSafeFromWater(mapTex, rX, rZ, terrainOrigin, 60f))
+                if (!IsPositionSafeFromWater(mapTex, rX, rZ, terrainOrigin, 60f)) continue;
+
+                float spotH = tComp.SampleHeight(new Vector3(rX, 0, rZ));
+                float normU = Mathf.Clamp01((rX - terrainOrigin.x) / 6000f);
+                float normV = Mathf.Clamp01((rZ - terrainOrigin.z) / 6000f);
+                Vector3 terrNorm = tComp.terrainData.GetInterpolatedNormal(normU, normV);
+
+                // CHỈ ĐẶT MỎM ĐÁ SCAN NẾU ĐỈNH ĐỦ CAO VÀ ĐỘ DỐC NHỎ (terrNorm.y >= 0.94f)
+                if (terrNorm.y >= 0.94f && spotH >= peakH * 0.85f && karstPeakPrefabs.Count > 0)
                 {
-                    GameObject rPf = naturalKarstPrefabs[(i + zone.seed) % naturalKarstPrefabs.Length];
-                    if (rPf != null)
-                    {
-                        float rScale = zone.rockScale * Random.Range(0.65f, 0.85f);
-                        Quaternion rRot = Quaternion.Euler(Random.Range(-4f, 4f), Random.Range(0f, 360f), Random.Range(-4f, 4f));
-                        SpawnSingleRockGrounded(rPf, grpRidge.transform, rX, rZ, rScale, tComp, rRot, 1.8f);
-                    }
+                    GameObject rPf = karstPeakPrefabs[(i + zone.seed) % karstPeakPrefabs.Count];
+                    float rScale = zone.rockScale * Random.Range(0.70f, 0.90f);
+                    Quaternion rRot = Quaternion.Euler(Random.Range(-3f, 3f), Random.Range(0f, 360f), Random.Range(-3f, 3f));
+                    SpawnSingleRockGrounded(rPf, grpRidge.transform, rX, rZ, rScale, tComp, rRot, 3.0f);
+                }
+                else if (closedBoulders.Count > 0)
+                {
+                    // Nếu ở đoạn sống núi dốc: Điểm xuyết tảng đá 3D nguyên khối (không đế phẳng)
+                    GameObject bPf = closedBoulders[(i + zone.seed) % closedBoulders.Count];
+                    float bScale = Random.Range(3.0f, 5.0f);
+                    Quaternion slopeAlign = Quaternion.FromToRotation(Vector3.up, terrNorm);
+                    Quaternion bRot = slopeAlign * Quaternion.Euler(Random.Range(-10f, 10f), Random.Range(0f, 360f), 0);
+                    SpawnSingleRockGrounded(bPf, grpRidge.transform, rX, rZ, bScale, tComp, bRot, 1.2f);
                 }
             }
 
             // -------------------------------------------------------------
-            // 3. VÁCH ĐÁ TỰ NHIÊN DỌC BỜ KHE NƯỚC (Cắm ngập mép bờ, mặt hướng ra khe)
+            // 3. TẢNG ĐÁ 3D NGUYÊN KHỐI TỰ NHIÊN TRÊN SƯỜN NÚI & CHÂN NÚI
+            // Khối 3D kín, tựa lưng vào sườn núi, tạo vẻ gồ ghề chân thật mà không bao giờ có đĩa phẳng nhô ra
             // -------------------------------------------------------------
-            int angleSteps = 20;
-            for (int a = 0; a < angleSteps; a++)
+            if (closedBoulders.Count > 0)
             {
-                float angle = a * (Mathf.PI * 2f / angleSteps);
-                Vector2 dir2D = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-
-                for (float radFactor = 0.40f; radFactor <= 1.20f; radFactor += 0.20f)
+                int flankCount = 10;
+                for (int f = 0; f < flankCount; f++)
                 {
-                    float dist = zone.radius * radFactor * 6000f;
-                    float checkX = centerX + dir2D.x * dist;
-                    float checkZ = centerZ + dir2D.y * dist;
+                    float angle = Random.Range(0f, Mathf.PI * 2f);
+                    float dist = Random.Range(zone.radius * 0.25f, zone.radius * 0.70f) * 6000f;
 
-                    bool safeFromWaterClose = IsPositionSafeFromWater(mapTex, checkX, checkZ, terrainOrigin, 20f);
-                    bool nearWaterFar = !IsPositionSafeFromWater(mapTex, checkX, checkZ, terrainOrigin, 85f);
+                    float bX = centerX + Mathf.Cos(angle) * dist;
+                    float bZ = centerZ + Mathf.Sin(angle) * dist;
 
-                    if (safeFromWaterClose && nearWaterFar)
-                    {
-                        float h = tComp.SampleHeight(new Vector3(checkX, 0, checkZ));
-                        if (h >= 18.0f)
-                        {
-                            Vector3 faceWater = new Vector3(dir2D.x, 0, dir2D.y).normalized;
-                            Quaternion gorgeRot = Quaternion.LookRotation(faceWater, Vector3.up) * 
-                                Quaternion.Euler(Random.Range(-4f, 4f), Random.Range(-15f, 15f), 0);
+                    if (!IsPositionSafeFromWater(mapTex, bX, bZ, terrainOrigin, 35f)) continue;
 
-                            GameObject gorgePf = naturalKarstPrefabs[(a + (int)(radFactor * 10)) % naturalKarstPrefabs.Length];
-                            if (gorgePf != null)
-                            {
-                                float gScale = zone.rockScale * Random.Range(0.70f, 0.95f);
-                                SpawnSingleRockGrounded(gorgePf, grpGorge.transform, checkX, checkZ, gScale, tComp, gorgeRot, 1.8f);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
+                    float normU = Mathf.Clamp01((bX - terrainOrigin.x) / 6000f);
+                    float normV = Mathf.Clamp01((bZ - terrainOrigin.z) / 6000f);
+                    Vector3 terrNorm = tComp.terrainData.GetInterpolatedNormal(normU, normV);
 
-            // -------------------------------------------------------------
-            // 4. ĐIỂM XUYẾT TẢNG ĐÁ RÊU XANH TỰ NHIÊN DƯỚI CHÂN CÁC MỎM ĐÁ
-            // -------------------------------------------------------------
-            if (mossBoulders.Count > 0)
-            {
-                for (int m = 0; m < 5; m++)
-                {
-                    float tRidge = Random.Range(-zone.ridgeLength * 0.35f, zone.ridgeLength * 0.35f) * 6000f;
-                    float rSide = Random.Range(-35f, 35f);
-
-                    float mX = centerX + zone.ridgeDirU * tRidge - zone.ridgeDirV * rSide;
-                    float mZ = centerZ + zone.ridgeDirV * tRidge + zone.ridgeDirU * rSide;
-
-                    if (IsPositionSafeFromWater(mapTex, mX, mZ, terrainOrigin, 40f))
-                    {
-                        GameObject mPf = mossBoulders[m % mossBoulders.Count];
-                        float mScale = Random.Range(2.5f, 4.0f);
-                        SpawnSingleRockGrounded(mPf, grpRidge.transform, mX, mZ, mScale, tComp, null, 1.3f);
-                    }
+                    GameObject bPf = closedBoulders[(f + zone.seed) % closedBoulders.Count];
+                    float bScale = Random.Range(2.5f, 4.5f);
+                    Quaternion slopeAlign = Quaternion.FromToRotation(Vector3.up, terrNorm);
+                    Quaternion bRot = slopeAlign * Quaternion.Euler(Random.Range(-15f, 15f), Random.Range(0f, 360f), 0);
+                    SpawnSingleRockGrounded(bPf, grpBoulders.transform, bX, bZ, bScale, tComp, bRot, 1.2f);
                 }
             }
         }
 
-        Debug.Log("🏔️ ĐÃ KHÔI PHỤC BỘ NÚI ĐÁ VÔI KARST NGUYÊN BẢN: ĐẸP TỰ NHIÊN, ĐỨNG THẲNG UY NGHI, 100% KHÔNG BỊ LỒI/HỞ CHÂN!");
+        Debug.Log("🏔️ ĐÃ KHÔI PHỤC BỘ NÚI ĐÁ VÔI KARST NGUYÊN BẢN: ĐẸP TỰ NHIÊN, 100% KHÔNG CÒN BẤT KỲ ĐĨA ĐÁ NẰM NGANG NÀO!");
     }
 
     private static void SpawnSingleRockGrounded(GameObject prefab, Transform parent, float worldX, float worldZ, float scale, Terrain tComp, Quaternion? customRot = null, float embedRatio = 1.8f)
     {
-        // 1. CHỐNG TRIỆT ĐỂ LỖI HỞ CHÂN TRÊN SƯỜN DỐC:
-        // Quét độ cao địa hình tại tâm và 8 điểm xung quanh chu vi khối đá (bán kính scale * 2.8m).
-        // Luôn neo vị trí Y theo điểm THẤP NHẤT của địa hình xung quanh để chân đá cắm ngập vào lòng đất 100%!
+        // Neo vị trí Y theo điểm THẤP NHẤT của địa hình xung quanh theo bán kính thực tế
         float centerH = tComp.SampleHeight(new Vector3(worldX, 0, worldZ));
         float minFootprintH = centerH;
 
-        float radius = scale * 2.8f;
-        for (int i = 0; i < 8; i++)
+        float radius = scale * 4.0f;
+        for (int i = 0; i < 16; i++)
         {
-            float ang = i * Mathf.PI * 0.25f;
+            float ang = i * Mathf.PI * 0.125f;
             float px = worldX + Mathf.Cos(ang) * radius;
             float pz = worldZ + Mathf.Sin(ang) * radius;
             float h = tComp.SampleHeight(new Vector3(px, 0, pz));
@@ -696,7 +686,6 @@ public class MapToTerrainBuilder : EditorWindow
         }
         else
         {
-            // Ngả nhẹ theo sườn dốc
             float normU = Mathf.Clamp01((worldX - tComp.transform.position.x) / tComp.terrainData.size.x);
             float normV = Mathf.Clamp01((worldZ - tComp.transform.position.z) / tComp.terrainData.size.z);
             Vector3 terrNorm = tComp.terrainData.GetInterpolatedNormal(normU, normV);
@@ -704,7 +693,7 @@ public class MapToTerrainBuilder : EditorWindow
             if (terrNorm.y < 0.98f)
             {
                 Quaternion slopeAlign = Quaternion.FromToRotation(Vector3.up, terrNorm);
-                rock.transform.rotation = slopeAlign * Quaternion.Euler(Random.Range(-15f, -5f), Random.Range(0f, 360f), 0);
+                rock.transform.rotation = slopeAlign * Quaternion.Euler(Random.Range(-10f, 10f), Random.Range(0f, 360f), 0);
             }
             else
             {
