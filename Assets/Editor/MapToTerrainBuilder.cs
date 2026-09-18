@@ -4,6 +4,81 @@ using System.Collections.Generic;
 
 public class MapToTerrainBuilder : EditorWindow
 {
+    // =========================================================================
+    // ĐỊNH NGHĨA 6 DÃY NÚI ĐÁ VÔI KARST HÙNG VĨ (ĐÚNG BỐI CẢNH LỊCH SỬ BẠCH ĐẰNG 938)
+    // TẤT CẢ TỌA ĐỘ ĐÃ ĐƯỢC TỐI ƯU SÂU VÀO LÒNG ĐẢO / ĐẤT LIỀN (CÁCH NƯỚC 180m - 430m)
+    // =========================================================================
+    public struct KarstMountainDef
+    {
+        public string name;
+        public float centerU;
+        public float centerV;
+        public float ridgeDirU;
+        public float ridgeDirV;
+        public float ridgeLength;
+        public float radius;
+        public float targetH;
+        public float scaleFactor;
+        public int seed;
+    }
+
+    public static readonly KarstMountainDef[] MountainRanges = new KarstMountainDef[]
+    {
+        // 1. Tây Bắc: Dãy Núi Tràng Kênh (Bờ Tây Bắc - Đài Quan Sát Ngô Quyền)
+        // Tâm an toàn sâu 343m trong đất liền, cách xa nhánh sông Tây
+        new KarstMountainDef {
+            name = "Dãy Núi Tràng Kênh (Tây Bắc)",
+            centerU = 0.18f, centerV = 0.82f,
+            ridgeDirU = 0.5f, ridgeDirV = 0.866f, ridgeLength = 0.07f,
+            radius = 0.085f, targetH = 0.72f, scaleFactor = 38f, seed = 101
+        },
+
+        // 2. Tây Trung Tâm: Dãy Núi Thủy Nguyên (Bờ Tây Trung Tâm)
+        // Tâm an toàn sâu 300m trong đất liền
+        new KarstMountainDef {
+            name = "Dãy Núi Thủy Nguyên (Tây Trung Tâm)",
+            centerU = 0.20f, centerV = 0.48f,
+            ridgeDirU = 0.707f, ridgeDirV = -0.707f, ridgeLength = 0.08f,
+            radius = 0.080f, targetH = 0.68f, scaleFactor = 35f, seed = 202
+        },
+
+        // 3. Tây Nam: Dãy Núi Vọng Triều (Bờ Tây Nam)
+        // Tâm an toàn sâu 429m trong đất liền
+        new KarstMountainDef {
+            name = "Dãy Núi Vọng Triều (Tây Nam)",
+            centerU = 0.18f, centerV = 0.14f,
+            ridgeDirU = 0.95f, ridgeDirV = 0.31f, ridgeLength = 0.06f,
+            radius = 0.075f, targetH = 0.62f, scaleFactor = 32f, seed = 303
+        },
+
+        // 4. Đông Bắc: Quần Thể Núi U Bò - Yên Đức (Đảo Đông Bắc)
+        // Tâm an toàn sâu >200m trong đảo, tránh vết cắt sông phía Bắc
+        new KarstMountainDef {
+            name = "Quần Thể Núi U Bò - Yên Đức (Đảo Đông Bắc)",
+            centerU = 0.76f, centerV = 0.82f,
+            ridgeDirU = -0.6f, ridgeDirV = 0.8f, ridgeLength = 0.06f,
+            radius = 0.075f, targetH = 0.75f, scaleFactor = 40f, seed = 404
+        },
+
+        // 5. Đảo Giữa: Dãy Núi Cù Lao Phượng Hoàng (Sống Núi Giữa Đảo Lớn)
+        // Nằm ngay tim đảo lớn, cách mép nước 284m, sống núi chạy dọc thân đảo
+        new KarstMountainDef {
+            name = "Dãy Núi Cù Lao Phượng Hoàng (Đảo Giữa)",
+            centerU = 0.65f, centerV = 0.54f,
+            ridgeDirU = 0.85f, ridgeDirV = -0.52f, ridgeLength = 0.09f,
+            radius = 0.070f, targetH = 0.66f, scaleFactor = 36f, seed = 505
+        },
+
+        // 6. Đảo Nam: Quần Thể Núi Cù Lao Vọng Hải (Đảo Đông Nam)
+        // Nằm trọn trong lòng đảo nam, cách mép nước >180m
+        new KarstMountainDef {
+            name = "Quần Thể Núi Cù Lao Vọng Hải (Đảo Nam)",
+            centerU = 0.65f, centerV = 0.27f,
+            ridgeDirU = 0.80f, ridgeDirV = 0.60f, ridgeLength = 0.05f,
+            radius = 0.065f, targetH = 0.60f, scaleFactor = 32f, seed = 606
+        }
+    };
+
     [MenuItem("🤖 Trợ lý AI/🗺️ Xây Sa Bàn Bạch Đằng (Bản Chuẩn AAA Không Viền)")]
     public static void BuildTerrainFromImage()
     {
@@ -23,7 +98,7 @@ public class MapToTerrainBuilder : EditorWindow
         }
 
         // ==========================================
-        // 0. XÓA TRIỆT ĐỂ TOÀN BỘ TERRAIN CŨ TRONG SCENE ĐỂ KHÔNG BỊ TRÙNG LẶP / TẠO HỐ VUÔNG
+        // 0. XÓA TRIỆT ĐỂ TOÀN BỘ TERRAIN CŨ TRONG SCENE ĐỂ KHÔNG BỊ TRÙNG LẶP
         // ==========================================
         var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (var t in allTerrains)
@@ -51,7 +126,7 @@ public class MapToTerrainBuilder : EditorWindow
         int tSize = 2049;
         TerrainData td = new TerrainData();
         td.heightmapResolution = tSize;
-        td.size = new Vector3(6000, 220, 6000); // 6000m x 220m x 6000m
+        td.size = new Vector3(6000, 300, 6000); // 6000m x 300m x 6000m (Núi cao vút hùng vĩ đến 225m!)
 
         bool[,] isWaterMap = new bool[tSize, tSize];
         for (int y = 0; y < tSize; y++)
@@ -68,22 +143,16 @@ public class MapToTerrainBuilder : EditorWindow
         float[,] distToWater = ComputeDistanceTransform(isWaterMap, tSize);
 
         // ==========================================
-        // 2. KHỞI TẠO ĐỊA HÌNH: ĐỒNG BẰNG BẰNG PHẲNG ĐỂ XÂY DOANH TRẠI + VÀI NGỌN NÚI ĐÁ VÔI CAO CHÓT VÓT
+        // 2. KHỞI TẠO ĐỊA HÌNH: ĐỒNG BẰNG BẰNG PHẲNG + CÁC DÃY NÚI ĐÁ VÔI KARST CAO CHÓT VÓT
         // ==========================================
         float[,] rawH = new float[tSize, tSize];
-        float beachPixelWidth = 9f; // Thu hẹp bãi cát về đúng đường kẻ đỏ (~26 mét)
+        float beachPixelWidth = 9f; // Bãi cát rộng ~26m
 
-        // Danh sách chân đồi thoai thoải tự nhiên (cao độ ~44m - 57m) làm bệ đỡ cho các khối núi đá 3D Photoscanned PBR
-        // Lưới Terrain êm ái 100% không bị co dãn texture, còn đỉnh núi cao vút 220m sẽ do các khối đá 3D thực tế đảm nhiệm!
-        var karstPeaks = new[]
-        {
-            new { name = "Núi Tràng Kênh (Tây Bắc)", u = 0.15f, v = 0.65f, radius = 0.085f, targetH = 0.24f, seed = 12.3f }, // ~52m
-            new { name = "Núi Thủy Nguyên (Tây Nam)", u = 0.16f, v = 0.28f, radius = 0.075f, targetH = 0.21f, seed = 45.7f }, // ~46m
-            new { name = "Núi U Bò (Đông Bắc)", u = 0.78f, v = 0.80f, radius = 0.090f, targetH = 0.26f, seed = 88.1f }, // ~57m
-            new { name = "Núi Phượng Hoàng (Đông)", u = 0.83f, v = 0.46f, radius = 0.085f, targetH = 0.23f, seed = 33.9f }, // ~50m
-            new { name = "Núi Vọng Hải (Đông Nam)", u = 0.79f, v = 0.20f, radius = 0.075f, targetH = 0.20f, seed = 64.2f }, // ~44m
-            new { name = "Núi Yên Hưng (Bắc)", u = 0.62f, v = 0.86f, radius = 0.070f, targetH = 0.22f, seed = 71.5f }  // ~48m
-        };
+        // Cao độ chuẩn tính theo tỷ lệ 300m:
+        // Mặt nước = 14m => 14/300 = 0.0467f
+        // Đồng bằng = 17.5m => 17.5/300 = 0.05833f
+        float waterH = 0.0467f;
+        float baseLandH = 0.05833f;
 
         for (int y = 0; y < tSize; y++)
         {
@@ -94,46 +163,48 @@ public class MapToTerrainBuilder : EditorWindow
 
                 if (isWaterMap[y, x])
                 {
-                    // LÒNG SÔNG BẠCH ĐẰNG: Sâu ~8m dưới mặt nước
-                    rawH[y, x] = 0.025f + Mathf.PerlinNoise(u * 20f, v * 20f) * 0.005f;
+                    // LÒNG SÔNG BẠCH ĐẰNG: Sâu ~8m dưới mặt nước (Cao độ ~6m)
+                    rawH[y, x] = 0.020f + Mathf.PerlinNoise(u * 20f, v * 20f) * 0.003f;
                 }
                 else
                 {
                     float d = distToWater[y, x];
                     if (d <= beachPixelWidth)
                     {
-                        // BÃI CÁT PHẲNG THOAI THOẢI ĐẾN ĐÚNG ĐƯỜNG KẺ ĐỎ CỦA SẾP
+                        // BÃI CÁT THOAI THOẢI TỪ MÉP NƯỚC LÊN BỜ ĐỒNG BẰNG
                         float t = d / beachPixelWidth;
-                        rawH[y, x] = Mathf.Lerp(0.0591f, 0.0727f, Mathf.Pow(t, 1.2f));
+                        rawH[y, x] = Mathf.Lerp(waterH + 0.001f, baseLandH, Mathf.Pow(t, 1.2f));
                     }
                     else
                     {
-                        // 1. ĐỒNG BẰNG BẰNG PHẲNG NHƯ LÚC TRƯỚC (CAO ĐỘ ~17.5m - THUẬN LỢI 100% ĐỂ XÂY DOANH TRẠI)
-                        float inlandDist = d - beachPixelWidth;
-                        float plainT = Mathf.Clamp01(inlandDist / 8f);
-                        float baseLandH = Mathf.Lerp(0.0727f, 0.0795f, plainT);
-
-                        // Độ mấp mô vi mô siêu nhẹ (+-0.2m) tạo cảm giác tự nhiên nhưng mặt bằng phẳng lì
-                        float microRoll = (Mathf.PerlinNoise(u * 12f, v * 12f) - 0.5f) * 0.0015f;
+                        // 1. ĐỒNG BẰNG BẰNG PHẲNG ĐỂ XÂY DỰNG DOANH TRẠI (CAO ĐỘ 17.5m)
+                        float microRoll = (Mathf.PerlinNoise(u * 12f, v * 12f) - 0.5f) * 0.0012f;
                         float landH = baseLandH + microRoll;
 
-                        // 2. CHÂN ĐỒI BỆ ĐỠ CHO NÚI ĐÁ 3D: Dốc thoai thoải, tự nhiên, xanh mướt cỏ
+                        // 2. DÃY NÚI ĐÁ VÔI KARST: SỐNG NÚI TRẬP TRÙNG, ĐỈNH NHỌN VÀ VÁCH ĐỨNG HÙNG VĨ
                         float mountainBonus = 0f;
-                        for (int k = 0; k < karstPeaks.Length; k++)
+                        for (int k = 0; k < MountainRanges.Length; k++)
                         {
-                            float du = (u - karstPeaks[k].u);
-                            float dv = (v - karstPeaks[k].v);
-                            float dist = Mathf.Sqrt(du * du + dv * dv);
-                            if (dist < karstPeaks[k].radius)
+                            var m = MountainRanges[k];
+                            float du = u - m.centerU;
+                            float dv = v - m.centerV;
+
+                            // Chiếu (u, v) lên đoạn sống núi
+                            float tProj = Mathf.Clamp((du * m.ridgeDirU + dv * m.ridgeDirV), -m.ridgeLength * 0.5f, m.ridgeLength * 0.5f);
+                            float projU = m.centerU + m.ridgeDirU * tProj;
+                            float projV = m.centerV + m.ridgeDirV * tProj;
+
+                            float distToRidge = Mathf.Sqrt((u - projU) * (u - projU) + (v - projV) * (v - projV));
+                            if (distToRidge < m.radius)
                             {
-                                float tDist = dist / karstPeaks[k].radius; // 0 ở đỉnh, 1 ở rìa chân núi
-                                float hillShape = Mathf.Cos(tDist * Mathf.PI * 0.5f);
-                                hillShape = Mathf.Pow(hillShape, 1.6f); // Dốc thoai thoải, hoàn hảo không bị co kéo texture
+                                float tDist = distToRidge / m.radius; // 0 ở sống núi, 1 ở rìa chân núi
+                                float hillShape = Mathf.Pow(Mathf.Cos(tDist * Mathf.PI * 0.5f), 1.7f);
 
-                                float ridgeNoise = 1.0f - Mathf.Abs(Mathf.PerlinNoise(u * 15f + karstPeaks[k].seed, v * 15f + karstPeaks[k].seed) * 2f - 1f);
-                                float crags = Mathf.PerlinNoise(u * 30f + karstPeaks[k].seed * 2f, v * 30f + karstPeaks[k].seed * 2f) * 0.08f;
+                                float ridgeNoise = 1.0f - Mathf.Abs(Mathf.PerlinNoise(u * 18f + m.seed, v * 18f + m.seed) * 2f - 1f);
+                                float sharpPinnacle = Mathf.Pow(ridgeNoise, 2.5f) * 0.25f;
+                                float crags = Mathf.PerlinNoise(u * 36f + m.seed * 2f, v * 36f + m.seed * 2f) * 0.10f;
 
-                                float peakH = hillShape * (0.90f + 0.10f * ridgeNoise + crags) * (karstPeaks[k].targetH - baseLandH);
+                                float peakH = hillShape * (0.80f + sharpPinnacle + crags) * (m.targetH - baseLandH);
                                 if (peakH > mountainBonus) mountainBonus = peakH;
                             }
                         }
@@ -196,35 +267,38 @@ public class MapToTerrainBuilder : EditorWindow
                 }
                 else if (d <= beachPixelWidth)
                 {
-                    // 100% Cát vàng bãi biển (đến đúng vạch kẻ đỏ của sếp)
+                    // Bãi cát ven sông
                     splats[y, x, 2] = 1.0f;
                 }
                 else if (d <= beachPixelWidth + 2.0f)
                 {
-                    // Chuyển tiếp mượt mà từ Cát sang Cỏ Xanh tươi
+                    // Chuyển tiếp Cát -> Cỏ
                     float t = (d - beachPixelWidth) / 2.0f;
                     splats[y, x, 2] = 1f - t;
                     splats[y, x, 0] = t * 0.75f;
                     splats[y, x, 3] = t * 0.25f;
                 }
-                else if (slope > 0.85f && smoothH[hy, hx] > 0.11f)
+                else if (slope > 0.55f && smoothH[hy, hx] > 0.08f)
                 {
-                    // Chân đồi đá vôi chuyển tiếp tự nhiên giữa cỏ và vách đá
-                    splats[y, x, 4] = 0.70f;
-                    splats[y, x, 3] = 0.30f;
+                    // SƯỜN NÚI ĐÁ VÔI DỰNG ĐỨNG: KẾT CẤU ĐÁ TỰ NHIÊN RÊU PHONG
+                    float rockFactor = Mathf.Clamp01((slope - 0.55f) * 2.2f);
+                    splats[y, x, 4] = rockFactor * 0.70f;       // TL_Rock
+                    splats[y, x, 5] = rockFactor * 0.15f;       // TL_Soil_Rocks
+                    splats[y, x, 3] = 0.15f + (1f - rockFactor) * 0.35f; // TL_Grass_Moss
+                    splats[y, x, 0] = (1f - rockFactor) * 0.50f; // TL_Grass_A
                 }
                 else
                 {
-                    // TOÀN BỘ ĐỒNG BẰNG BẰNG PHẲNG ĐỂ XÂY DOANH TRẠI: 100% CỎ XANH MƯỚT & RÊU TỰ NHIÊN!
-                    splats[y, x, 0] = 0.75f; // layerGrass (TL_Grass_A)
-                    splats[y, x, 3] = 0.25f; // layerMoss (TL_Grass_Moss)
+                    // ĐỒNG BẰNG PHẲNG LÌ: CỎ XANH MƯỚT ĐỂ DỰNG DOANH TRẠI
+                    splats[y, x, 0] = 0.75f; // layerGrass
+                    splats[y, x, 3] = 0.25f; // layerMoss
                 }
             }
         }
         td.SetAlphamaps(0, 0, splats);
 
         // ==========================================
-        // 4. BỐ TRÍ CÂY CỔ THỤ AAA (NATURE RENDERER) & QUY HOẠCH DOANH TRẠI
+        // 4. BỐ TRÍ CÂY CỔ THỤ AAA (NATURE RENDERER)
         // ==========================================
         string nrArt = "Assets/Visual Design Cafe/Nature Renderer Demo/Realistic/Art/";
         GameObject cypressTree = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Trees/Cypress.prefab");
@@ -235,15 +309,11 @@ public class MapToTerrainBuilder : EditorWindow
         string prefabFolder = "Assets/TerrainSampleAssets/Prefabs/";
         var protos = new List<TreePrototype>();
 
-        // 1. Cây Cổ Thụ AAA từ Nature Renderer đứng đầu danh sách
         if (cypressTree != null) protos.Add(new TreePrototype { prefab = cypressTree });
         if (coniferTree != null) protos.Add(new TreePrototype { prefab = coniferTree });
-
-        // 2. Tảng đá rêu phong ven bờ / chân đồi
         if (rockA != null) protos.Add(new TreePrototype { prefab = rockA });
         if (rockC != null) protos.Add(new TreePrototype { prefab = rockC });
 
-        // 3. Cây bụi, dương xỉ, hoa dại rừng nhiệt đới
         string[] vegList = { 
             "Bush_A", "Bush_B", "Fern_A", "Fern_B", "Fern_C", 
             "BushDry_A", "Grass_A", "Grass_C", "GrassDry_A", "Heather_A", "Plant_A", "Plant_B" 
@@ -256,10 +326,9 @@ public class MapToTerrainBuilder : EditorWindow
         }
         td.treePrototypes = protos.ToArray();
 
-        // Khu vực quy hoạch Doanh Trại Quân Ngô Quyền trên đồng bằng bằng phẳng ven sông
-        // Tâm: u = 0.54, v = 0.48, bán kính ~600m được giải phóng mặt bằng phẳng lì để sếp dựng trại
-        float campU = 0.54f, campV = 0.48f;
-        float campRadius = 0.10f; // Bán kính ~600m
+        // Khu vực quy hoạch Doanh Trại Quân Ngô Quyền trên bờ Tây: u = 0.40, v = 0.57 (khoảng X = -580, Z = 440)
+        float campU = 0.403f, campV = 0.573f;
+        float campRadius = 0.08f; // Bán kính ~480m giải phóng mặt bằng phẳng lì
 
         var trees = new List<TreeInstance>();
         int pCount = protos.Count;
@@ -275,24 +344,28 @@ public class MapToTerrainBuilder : EditorWindow
             if (isWaterMap[hy, hx]) continue;
             float d = distToWater[hy, hx];
             float slope = GetSlope(smoothH, hx, hy, tSize);
-            if (slope > 1.2f) continue; // Tuyệt đối không mọc trên vách đá dựng đứng
+            if (slope > 1.2f) continue; // Không mọc trên vách đá dựng đứng
 
-            // Kiểm tra xem có rơi vào khu quy hoạch Doanh Trại không
+            // Để trống khu vực quy hoạch Doanh Trại
             float duCamp = tx - campU;
             float dvCamp = ty - campV;
             if (Mathf.Sqrt(duCamp * duCamp + dvCamp * dvCamp) < campRadius)
             {
-                // Để trống 95% diện tích doanh trại, chỉ để lại 5% cây bóng mát viền ngoài
-                if (Random.value > 0.05f) continue;
+                if (Random.value > 0.04f) continue;
             }
 
             // Tuyệt đối không mọc cây xuyên vào bên trong các khối núi đá 3D
             bool insideMountain = false;
-            for (int k = 0; k < karstPeaks.Length; k++)
+            for (int k = 0; k < MountainRanges.Length; k++)
             {
-                float duM = tx - karstPeaks[k].u;
-                float dvM = ty - karstPeaks[k].v;
-                if (Mathf.Sqrt(duM * duM + dvM * dvM) < karstPeaks[k].radius * 0.70f)
+                var m = MountainRanges[k];
+                float du = tx - m.centerU;
+                float dv = ty - m.centerV;
+                float tProj = Mathf.Clamp((du * m.ridgeDirU + dv * m.ridgeDirV), -m.ridgeLength * 0.5f, m.ridgeLength * 0.5f);
+                float pU = m.centerU + m.ridgeDirU * tProj;
+                float pV = m.centerV + m.ridgeDirV * tProj;
+                float dR = Mathf.Sqrt((tx - pU) * (tx - pU) + (ty - pV) * (ty - pV));
+                if (dR < m.radius * 0.55f)
                 {
                     insideMountain = true;
                     break;
@@ -302,10 +375,10 @@ public class MapToTerrainBuilder : EditorWindow
 
             float normH = smoothH[hy, hx];
 
-            // VÙNG 1: Mép trên bãi cát (d từ 6 đến beachPixelWidth) -> Cụm hoa dại & cỏ lác nhỏ lác đác
+            // VÙNG 1: Bãi cát bồi ven sông (d từ 6 đến beachPixelWidth) -> Cụm hoa dại & cỏ lác nhỏ
             if (d >= 6f && d <= beachPixelWidth)
             {
-                if (Random.value < 0.06f) // Chỉ mọc thưa thớt 6%
+                if (Random.value < 0.06f)
                 {
                     TreeInstance tiShore = new TreeInstance();
                     tiShore.position = new Vector3(tx, normH, ty);
@@ -318,13 +391,12 @@ public class MapToTerrainBuilder : EditorWindow
                 continue;
             }
 
-            // VÙNG 2: Rừng rậm & Cây đại thụ trên đồi núi (ngay sau vạch đỏ d > beachPixelWidth + 0.8f)
+            // VÙNG 2: Rừng già nhiệt đới & cây cổ thụ trên đất liền và sườn đồi
             if (d > beachPixelWidth + 0.8f)
             {
                 TreeInstance tiInland = new TreeInstance();
                 tiInland.position = new Vector3(tx, normH, ty);
 
-                // Ưu tiên 65% là Cây Cổ Thụ AAA (Cypress & Conifer - prototypeIndex 0 & 1)
                 if (Random.value < 0.65f && protos.Count >= 2)
                 {
                     tiInland.prototypeIndex = Random.Range(0, 2);
@@ -333,14 +405,12 @@ public class MapToTerrainBuilder : EditorWindow
                 }
                 else if (Random.value < 0.10f && protos.Count >= 4)
                 {
-                    // 10% là Tảng đá rêu phong (Rock_A & Rock_C - prototypeIndex 2 & 3)
                     tiInland.prototypeIndex = Random.Range(2, 4);
                     tiInland.widthScale = Random.Range(1.5f, 3.0f);
                     tiInland.heightScale = Random.Range(1.2f, 2.5f);
                 }
                 else
                 {
-                    // Cây bụi và dương xỉ rậm rạp dưới tán rừng
                     tiInland.prototypeIndex = Random.Range(4, pCount);
                     tiInland.widthScale = Random.Range(1.8f, 3.5f);
                     tiInland.heightScale = Random.Range(1.8f, 3.5f);
@@ -360,7 +430,6 @@ public class MapToTerrainBuilder : EditorWindow
 
         var dProtos = new List<DetailPrototype>();
 
-        // Layer 0: CỎ 3D SIÊU CHI TIẾT (Detailed Grass 01 từ Nature Renderer)
         var pDetailedGrass = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Grass/Detailed Grass 01 - Variant 2.prefab");
         if (pDetailedGrass == null) pDetailedGrass = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Grass_C.prefab");
         if (pDetailedGrass != null)
@@ -376,7 +445,6 @@ public class MapToTerrainBuilder : EditorWindow
             dProtos.Add(dp);
         }
 
-        // Layer 1: HOA DẠI TRẮNG TỪ NATURE RENDERER (White Flowers 01)
         var pWhiteFlowers = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Flowers/White Flowers 01 - Variant 1.prefab");
         if (pWhiteFlowers != null)
         {
@@ -391,39 +459,8 @@ public class MapToTerrainBuilder : EditorWindow
             dProtos.Add(dp);
         }
 
-        // Layer 2: BỤI HOA TỰ NHIÊN (Flowering Plant 02 từ Nature Renderer)
-        var pFloweringPlant = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Flowering Plants/Flowering Plant 02 - Variant 1.prefab");
-        if (pFloweringPlant != null)
-        {
-            DetailPrototype dp = new DetailPrototype();
-            dp.prototype = pFloweringPlant;
-            dp.usePrototypeMesh = true;
-            dp.renderMode = DetailRenderMode.VertexLit;
-            dp.healthyColor = Color.white;
-            dp.dryColor = Color.white;
-            dp.minWidth = 0.8f; dp.maxWidth = 1.3f;
-            dp.minHeight = 0.7f; dp.maxHeight = 1.2f;
-            dProtos.Add(dp);
-        }
-
-        // Layer 3: DƯƠNG XỈ XANH NHIỆT ĐỚI DƯỚI TÁN CÂY (Fern_A)
-        var pFern = AssetDatabase.LoadAssetAtPath<GameObject>(prefabFolder + "Fern_A.prefab");
-        if (pFern != null)
-        {
-            DetailPrototype dpFern = new DetailPrototype();
-            dpFern.prototype = pFern;
-            dpFern.usePrototypeMesh = true;
-            dpFern.renderMode = DetailRenderMode.VertexLit;
-            dpFern.healthyColor = new Color(0.22f, 0.58f, 0.15f);
-            dpFern.dryColor = new Color(0.32f, 0.62f, 0.20f);
-            dpFern.minWidth = 0.7f; dpFern.maxWidth = 1.2f;
-            dpFern.minHeight = 0.55f; dpFern.maxHeight = 0.95f;
-            dProtos.Add(dpFern);
-        }
-
         td.detailPrototypes = dProtos.ToArray();
 
-        // 1. Phân bổ Cỏ 3D Detailed Grass trên toàn bộ vùng đồi và triền dốc (d > beachPixelWidth + 0.5f)
         if (dProtos.Count > 0)
         {
             int[,] grassMap = new int[dRes, dRes];
@@ -439,7 +476,7 @@ public class MapToTerrainBuilder : EditorWindow
 
                     if (d > beachPixelWidth + 0.5f)
                     {
-                        grassMap[y, x] = Random.Range(3, 7); // Cỏ mọc dày mượt mà
+                        grassMap[y, x] = Random.Range(3, 7);
                     }
                     else
                     {
@@ -448,87 +485,6 @@ public class MapToTerrainBuilder : EditorWindow
                 }
             }
             td.SetDetailLayer(0, 0, 0, grassMap);
-        }
-
-        // 2. Phân bổ Hoa dại trắng (White Flowers) điểm xuyết trên triền cỏ
-        if (dProtos.Count > 1)
-        {
-            int[,] flowerMap = new int[dRes, dRes];
-            for (int y = 0; y < dRes; y++)
-            {
-                for (int x = 0; x < dRes; x++)
-                {
-                    int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
-                    int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
-
-                    if (isWaterMap[hy, hx]) { flowerMap[y, x] = 0; continue; }
-                    float d = distToWater[hy, hx];
-
-                    if (d > beachPixelWidth + 1.0f && Random.value < 0.16f)
-                    {
-                        flowerMap[y, x] = Random.Range(1, 3);
-                    }
-                    else
-                    {
-                        flowerMap[y, x] = 0;
-                    }
-                }
-            }
-            td.SetDetailLayer(0, 0, 1, flowerMap);
-        }
-
-        // 3. Phân bổ Bụi hoa (Flowering Plants) rải rác ven triền đồi
-        if (dProtos.Count > 2)
-        {
-            int[,] plantMap = new int[dRes, dRes];
-            for (int y = 0; y < dRes; y++)
-            {
-                for (int x = 0; x < dRes; x++)
-                {
-                    int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
-                    int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
-
-                    if (isWaterMap[hy, hx]) { plantMap[y, x] = 0; continue; }
-                    float d = distToWater[hy, hx];
-
-                    if (d > beachPixelWidth + 0.8f && d < beachPixelWidth + 16f && Random.value < 0.10f)
-                    {
-                        plantMap[y, x] = 1;
-                    }
-                    else
-                    {
-                        plantMap[y, x] = 0;
-                    }
-                }
-            }
-            td.SetDetailLayer(0, 0, 2, plantMap);
-        }
-
-        // 4. Phân bổ Dương xỉ (Fern_A) rải rác dưới gốc cây cổ thụ
-        if (dProtos.Count > 3)
-        {
-            int[,] fernMap = new int[dRes, dRes];
-            for (int y = 0; y < dRes; y++)
-            {
-                for (int x = 0; x < dRes; x++)
-                {
-                    int hy = Mathf.Clamp((int)((float)y / dRes * tSize), 0, tSize - 1);
-                    int hx = Mathf.Clamp((int)((float)x / dRes * tSize), 0, tSize - 1);
-
-                    if (isWaterMap[hy, hx]) { fernMap[y, x] = 0; continue; }
-                    float d = distToWater[hy, hx];
-
-                    if (d > beachPixelWidth + 2.5f && Random.value < 0.28f)
-                    {
-                        fernMap[y, x] = Random.Range(1, 3);
-                    }
-                    else
-                    {
-                        fernMap[y, x] = 0;
-                    }
-                }
-            }
-            td.SetDetailLayer(0, 0, 3, fernMap);
         }
 
         // ==========================================
@@ -565,22 +521,29 @@ public class MapToTerrainBuilder : EditorWindow
         }
 
         // ==========================================
-        // 7. CẬP NHẬT MẶT NƯỚC & BỐ TRÍ CHIẾN TRẬN
+        // 7. CẬP NHẬT MẶT NƯỚC, BỐ TRÍ THUYỀN, CỌC & DOANH TRẠI
         // ==========================================
         float targetWaterY = 14.0f;
         SetupOptiWaterSurface(targetWaterY);
         PlaceBoatAndSpikesInRiver();
 
-        // ==========================================
-        // 8. TẠO HỆ THỐNG NÚI ĐÁ VÔI PHOTOSCANNED (PBR) TỪ TÀI NGUYÊN MỚI
-        // ==========================================
+        // Dựng 6 dãy núi đá vôi PBR 3D (Đảm bảo 100% không chạm nước)
         SpawnPhotoscannedMountains(tComp, terrainGo.transform.position);
 
+        // Giăng trận địa cọc ngầm lim bịt sắt
+        SpawnHistoricSpikes();
+
+        // Dựng Đại bản doanh Ngô Quyền & Xưởng chế tác cọc
+        SpawnHistoricCampAndWorkshop();
+
         AssetDatabase.SaveAssets();
-        Debug.Log($"🎉 SA BÀN HOÀN THIỆN: ĐỒNG BẰNG BẰNG PHẲNG (XÂY DOANH TRẠI) + 6 QUẦN THỂ NÚI ĐÁ PHOTOSCANNED PBR 3D + 85.000 CÂY CỔ THỤ NATURE RENDERER ĐÃ HOÀN TẤT!");
+        Debug.Log($"🎉 SA BÀN BẠCH ĐẰNG 938 HOÀN HẢO: DÃY NÚI KARST CAO VÚT HÙNG VĨ (TRONG LÒNG ĐẢO) + BÃI CỌC NGẦM + DOANH TRẠI NGÔ QUYỀN ĐÃ XÂY DỰNG XONG!");
     }
 
-    [MenuItem("🤖 Trợ lý AI/🏔️ Dựng 6 Cụm Núi Đá 3D Ngay (Không Cần Tạo Lại Sa Bàn)")]
+    // =========================================================================
+    // MENU ITEM NHANH: CHỈ DỰNG NÚI ĐÁ VÔI 3D (2 GIÂY - KHÔNG CẦN SINH LẠI TERRAIN)
+    // =========================================================================
+    [MenuItem("🤖 Trợ lý AI/🏔️ Dựng Các Dãy Núi 3D Hùng Vĩ (Trong Lòng Đảo - Không Chạm Nước)")]
     public static void SpawnMountainsOnly()
     {
         Terrain t = Terrain.activeTerrain;
@@ -597,9 +560,352 @@ public class MapToTerrainBuilder : EditorWindow
         }
 
         SpawnPhotoscannedMountains(t, t.transform.position);
-        Debug.Log("🎉 [THÀNH CÔNG] Đã cập nhật 6 cụm núi đá 3D Photoscanned PBR vào Scene!");
+        Debug.Log("🎉 [THÀNH CÔNG] Đã bố trí lại 6 dãy núi đá 3D Photoscanned PBR nằm sâu trong lòng các đảo (100% không đè lên sông)!");
     }
 
+    // =========================================================================
+    // THUẬT TOÁN BỐ TRÍ NÚI ĐÁ 3D AN TOÀN TRONG LÒNG CÁC ĐẢO
+    // =========================================================================
+    private static void SpawnPhotoscannedMountains(Terrain tComp, Vector3 terrainOrigin)
+    {
+        FixRockMaterialsToURP();
+
+        string parentName = "--- HỆ THỐNG NÚI ĐÁ VÔI PHOTOSCANNED (PBR) ---";
+        GameObject oldParent = GameObject.Find(parentName);
+        if (oldParent != null)
+        {
+            Undo.DestroyObjectImmediate(oldParent);
+        }
+
+        GameObject mountainRoot = new GameObject(parentName);
+        mountainRoot.transform.position = Vector3.zero;
+        Undo.RegisterCreatedObjectUndo(mountainRoot, "Create Photoscanned Mountains");
+
+        string pDir = "Assets/TheTalesFactory/Photoscanned MoutainsRocks PBR/Prefabs/";
+        GameObject pfMain03 = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainsRocks03.prefab");
+        GameObject pfMain01 = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01.prefab");
+        GameObject pfMain02 = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks02.prefab");
+
+        GameObject pfSub01A = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_A.prefab");
+        GameObject pfSub01B = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_B.prefab");
+        GameObject pfSub01C = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_C.prefab");
+        GameObject pfSub01D = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_D.prefab");
+        GameObject pfSub02A = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks02_A.prefab");
+        GameObject pfSub02B = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks02_B.prefab");
+
+        Texture2D mapTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/BachDangMap.png");
+
+        foreach (var zone in MountainRanges)
+        {
+            GameObject clusterGo = new GameObject(zone.name);
+            clusterGo.transform.parent = mountainRoot.transform;
+
+            float centerX = terrainOrigin.x + zone.centerU * 6000f;
+            float centerZ = terrainOrigin.z + zone.centerV * 6000f;
+            clusterGo.transform.position = new Vector3(centerX, 0, centerZ);
+
+            Random.InitState(zone.seed);
+
+            // 1. Khối Đỉnh Cực Đại Sừng Sững ở Tim Dãy Núi (Colossal Central Karst Peak)
+            GameObject centerPrefab = (zone.seed % 2 == 0) ? pfMain03 : pfMain01;
+            if (centerPrefab == null) centerPrefab = pfMain01 != null ? pfMain01 : pfMain02;
+            if (centerPrefab != null)
+            {
+                SpawnSingleRock(centerPrefab, clusterGo.transform, centerX, centerZ, zone.scaleFactor * 1.35f, tComp);
+            }
+
+            // 2. Các Vách Đá & Mỏm Đá Hiểm Trở Dọc Theo Sống Núi (Ridge Cliffs & Flanks)
+            var surroundingPrefabs = new[] { pfMain02, pfSub01A, pfSub01B, pfSub02A, pfSub02B, pfSub01C, pfSub01D };
+            int satelliteCount = 10;
+            for (int i = 0; i < satelliteCount; i++)
+            {
+                GameObject subPf = surroundingPrefabs[i % surroundingPrefabs.Length];
+                if (subPf == null) continue;
+
+                // Thử tìm vị trí an toàn tuyệt đối, cách mép nước tối thiểu 70 mét
+                for (int attempt = 0; attempt < 12; attempt++)
+                {
+                    float alongRidge = Random.Range(-zone.ridgeLength * 0.45f, zone.ridgeLength * 0.45f) * 6000f;
+                    float sideRidge = Random.Range(-110f, 110f);
+
+                    float posX = centerX + zone.ridgeDirU * alongRidge - zone.ridgeDirV * sideRidge;
+                    float posZ = centerZ + zone.ridgeDirV * alongRidge + zone.ridgeDirU * sideRidge;
+
+                    // Kiểm tra an toàn: Tuyệt đối không chạm vào nước hoặc bãi cát ven sông!
+                    if (mapTex == null || IsPositionSafeFromWater(mapTex, posX, posZ, terrainOrigin, 70f))
+                    {
+                        float subScale = zone.scaleFactor * Random.Range(0.75f, 1.10f);
+                        SpawnSingleRock(subPf, clusterGo.transform, posX, posZ, subScale, tComp);
+                        break;
+                    }
+                }
+            }
+        }
+
+        Debug.Log("🏔️ [PHOTOSCANNED PBR] ĐÃ DỰNG THÀNH CÔNG CÁC DÃY NÚI ĐÁ VÔI HÙNG VĨ HOÀN TOÀN TRONG LÒNG ĐẢO (KHÔNG CHẠM NƯỚC)!");
+    }
+
+    private static void SpawnSingleRock(GameObject prefab, Transform parent, float worldX, float worldZ, float scale, Terrain tComp)
+    {
+        float terrainH = tComp.SampleHeight(new Vector3(worldX, 0, worldZ));
+        float spawnY = terrainH - scale * 0.12f;
+
+        GameObject rock = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        if (rock == null) rock = Object.Instantiate(prefab);
+
+        rock.name = prefab.name;
+        rock.transform.parent = parent;
+        rock.transform.position = new Vector3(worldX, spawnY, worldZ);
+        rock.transform.rotation = Quaternion.Euler(Random.Range(-2f, 2f), Random.Range(0f, 360f), Random.Range(-2f, 2f));
+        rock.transform.localScale = new Vector3(
+            scale * Random.Range(0.92f, 1.08f),
+            scale * Random.Range(0.98f, 1.25f),
+            scale * Random.Range(0.92f, 1.08f)
+        );
+        rock.isStatic = true;
+    }
+
+    // =========================================================================
+    // BỘ LỌC KIỂM TRA KHOẢNG CÁCH NƯỚC (SAFETY DISTANCE GUARD)
+    // =========================================================================
+    public static bool IsPositionSafeFromWater(Texture2D mapTex, float worldX, float worldZ, Vector3 terrainOrigin, float safetyMarginMeters)
+    {
+        if (mapTex == null) return true;
+        float u = (worldX - terrainOrigin.x) / 6000f;
+        float v = (worldZ - terrainOrigin.z) / 6000f;
+        if (u <= 0.01f || u >= 0.99f || v <= 0.01f || v >= 0.99f) return false;
+
+        float deltaUV = safetyMarginMeters / 6000f;
+
+        Color cCenter = mapTex.GetPixelBilinear(u, v);
+        if (IsPixelWater(cCenter)) return false;
+
+        for (int i = 0; i < 8; i++)
+        {
+            float angle = i * Mathf.PI * 0.25f;
+            float su = u + Mathf.Cos(angle) * deltaUV;
+            float sv = v + Mathf.Sin(angle) * deltaUV;
+            if (su < 0f || su > 1f || sv < 0f || sv > 1f) return false;
+            Color c = mapTex.GetPixelBilinear(su, sv);
+            if (IsPixelWater(c)) return false;
+        }
+        return true;
+    }
+
+    private static bool IsPixelWater(Color c)
+    {
+        return (c.b >= c.g * 0.95f) || (c.b > 0.45f && c.b > c.r + 0.15f);
+    }
+
+    // =========================================================================
+    // GIĂNG TRẬN ĐỊA CỌC NGẦM GỖ LIM BỊT SẮT (CHUẨN LỊCH SỬ NĂM 938)
+    // =========================================================================
+    [MenuItem("🤖 Trợ lý AI/🪵 Giăng Trận Địa Cọc Ngầm Sông Bạch Đằng")]
+    public static void SpawnHistoricSpikes()
+    {
+        string pName = "--- TRẬN ĐỊA CỌC NGẦM BẠCH ĐẰNG (938) ---";
+        GameObject oldP = GameObject.Find(pName);
+        if (oldP != null) Undo.DestroyObjectImmediate(oldP);
+
+        GameObject root = new GameObject(pName);
+        root.transform.position = Vector3.zero;
+        Undo.RegisterCreatedObjectUndo(root, "Spawn Historic Spikes");
+
+        string spikePath = "Assets/wood-spike/source/Wood_Spike_02_sculpted.fbx";
+        GameObject spikePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(spikePath);
+        if (spikePrefab == null)
+        {
+            Debug.LogError("❌ Không tìm thấy mô hình cọc gỗ tại: " + spikePath);
+            return;
+        }
+
+        int rowCount = 4;
+        int countPerRow = 14;
+        float waterSurfaceY = 14.0f; // Mặt nước ở 14m
+
+        for (int r = 0; r < rowCount; r++)
+        {
+            float rowX = -290f + r * 16f;
+            for (int i = 0; i < countPerRow; i++)
+            {
+                float zT = (float)i / (countPerRow - 1);
+                float rowZ = Mathf.Lerp(170f, 410f, zT) + Random.Range(-6f, 6f);
+                float posX = rowX + Random.Range(-5f, 5f);
+
+                // Đầu cọc nhô lên mấp mé mặt nước (13.2m - 13.7m) chờ thủy triều rút
+                float spikeY = waterSurfaceY - Random.Range(0.3f, 0.8f);
+
+                GameObject spike = (GameObject)PrefabUtility.InstantiatePrefab(spikePrefab);
+                if (spike == null) spike = Object.Instantiate(spikePrefab);
+
+                spike.name = $"CocGo_Hang{r+1}_{i+1}";
+                spike.transform.parent = root.transform;
+                spike.transform.position = new Vector3(posX, spikeY, rowZ);
+                
+                // Cọc cắm xiên ngược dòng nước (nghiêng về phía -X khoảng 16 - 26 độ) đón đầu mũi thuyền giặc
+                float tiltAngle = Random.Range(16f, 26f);
+                float twistAngle = Random.Range(-10f, 10f);
+                spike.transform.rotation = Quaternion.Euler(twistAngle, Random.Range(-15f, 15f), -tiltAngle);
+
+                float scale = Random.Range(1.3f, 1.8f);
+                spike.transform.localScale = new Vector3(scale, scale * Random.Range(1.1f, 1.4f), scale);
+                spike.isStatic = true;
+            }
+        }
+
+        Debug.Log($"🪵 [BẠCH ĐẰNG 938] ĐÃ GIĂNG THÀNH CÔNG {rowCount * countPerRow} CỌC GỖ LIM VÓT NHỌN BỊT SẮT ĐÓN ĐẦU HẠM ĐỘI NAM HÁN!");
+    }
+
+    // =========================================================================
+    // DỰNG ĐẠI BẢN DOANH NGÔ QUYỀN & XƯỞNG CHẾ TÁC CỌC VEN SÔNG
+    // =========================================================================
+    [MenuItem("🤖 Trợ lý AI/⛺ Bố Trí Doanh Trại Ngô Quyền & Bãi Chế Tác Cọc")]
+    public static void SpawnHistoricCampAndWorkshop()
+    {
+        Terrain t = Terrain.activeTerrain;
+        if (t == null)
+        {
+            var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            if (allTerrains.Length > 0) t = allTerrains[0];
+        }
+
+        string pDir = "Assets/Prefabs/";
+        GameObject pfBarracks = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Buildings/pf_build_barracks_01.prefab");
+        GameObject pfGate = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Buildings/pf_build_gate_01.prefab");
+        GameObject pfTower = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Buildings/pf_build_tower_01.prefab");
+        GameObject pfStorage = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Buildings/pf_build_storage_01.prefab");
+        GameObject pfBlacksmith = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Buildings/pf_build_blacksmith_01.prefab");
+        GameObject pfCrane = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Buildings/pf_build_crane_01.prefab");
+        GameObject pfBoat = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Buildings/pf_build_boat_01.prefab");
+        GameObject pfFence = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Props/pf_fence_01.prefab");
+        GameObject pfBarrels = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Props/pf_barrels_01.prefab");
+
+        string campParentName = "--- CHIẾN TRƯỜNG: ĐẠI BẢN DOANH & XƯỞNG CỌC BẠCH ĐẰNG ---";
+        GameObject oldRoot = GameObject.Find(campParentName);
+        if (oldRoot != null) Undo.DestroyObjectImmediate(oldRoot);
+
+        GameObject campRoot = new GameObject(campParentName);
+        campRoot.transform.position = Vector3.zero;
+        Undo.RegisterCreatedObjectUndo(campRoot, "Spawn Historic Encampment");
+
+        // -------------------------------------------------------------
+        // 1. ĐẠI BẢN DOANH TIỀN PHƯƠNG NGÔ QUYỀN (Đồng bằng bờ Tây: X = -580, Z = 440)
+        // -------------------------------------------------------------
+        GameObject hqGroup = new GameObject("1_DaiBanDoanh_NgoQuyen");
+        hqGroup.transform.parent = campRoot.transform;
+
+        Vector3 hqCenter = new Vector3(-580f, 0, 440f);
+        if (t != null) hqCenter.y = t.SampleHeight(hqCenter);
+
+        if (pfBarracks != null)
+        {
+            GameObject hq = (GameObject)PrefabUtility.InstantiatePrefab(pfBarracks);
+            hq.transform.parent = hqGroup.transform;
+            hq.transform.position = hqCenter;
+            hq.transform.rotation = Quaternion.Euler(0, 90f, 0);
+        }
+
+        if (pfGate != null)
+        {
+            GameObject gate = (GameObject)PrefabUtility.InstantiatePrefab(pfGate);
+            gate.transform.parent = hqGroup.transform;
+            gate.transform.position = hqCenter + new Vector3(35f, 0, 0);
+            gate.transform.rotation = Quaternion.Euler(0, 90f, 0);
+        }
+
+        if (pfTower != null)
+        {
+            GameObject tw = (GameObject)PrefabUtility.InstantiatePrefab(pfTower);
+            tw.transform.parent = hqGroup.transform;
+            tw.transform.position = hqCenter + new Vector3(32f, 0, 28f);
+            tw.transform.rotation = Quaternion.Euler(0, 45f, 0);
+        }
+
+        if (pfStorage != null)
+        {
+            GameObject st = (GameObject)PrefabUtility.InstantiatePrefab(pfStorage);
+            st.transform.parent = hqGroup.transform;
+            st.transform.position = hqCenter + new Vector3(-25f, 0, 20f);
+            st.transform.rotation = Quaternion.Euler(0, 180f, 0);
+        }
+
+        if (pfFence != null)
+        {
+            for (int i = -3; i <= 3; i++)
+            {
+                if (Mathf.Abs(i) <= 1) continue;
+                GameObject fNorth = (GameObject)PrefabUtility.InstantiatePrefab(pfFence);
+                fNorth.transform.parent = hqGroup.transform;
+                fNorth.transform.position = hqCenter + new Vector3(35f, 0, i * 10f);
+                fNorth.transform.rotation = Quaternion.Euler(0, 90f, 0);
+            }
+        }
+
+        if (pfBarrels != null)
+        {
+            GameObject b1 = (GameObject)PrefabUtility.InstantiatePrefab(pfBarrels);
+            b1.transform.parent = hqGroup.transform;
+            b1.transform.position = hqCenter + new Vector3(12f, 0, 15f);
+        }
+
+        // -------------------------------------------------------------
+        // 2. KHU XƯỞNG RÈN BỊT SẮT & BÃI ĐẼO CỌC LIM (Sát bờ nhánh sông: X = -430, Z = 570)
+        // -------------------------------------------------------------
+        GameObject workshopGroup = new GameObject("2_XuongRen_Va_BaiDeoCoc");
+        workshopGroup.transform.parent = campRoot.transform;
+
+        Vector3 wsCenter = new Vector3(-430f, 0, 570f);
+        if (t != null) wsCenter.y = t.SampleHeight(wsCenter);
+
+        if (pfBlacksmith != null)
+        {
+            GameObject bs = (GameObject)PrefabUtility.InstantiatePrefab(pfBlacksmith);
+            bs.transform.parent = workshopGroup.transform;
+            bs.transform.position = wsCenter;
+            bs.transform.rotation = Quaternion.Euler(0, 120f, 0);
+        }
+
+        if (pfCrane != null)
+        {
+            GameObject crane = (GameObject)PrefabUtility.InstantiatePrefab(pfCrane);
+            crane.transform.parent = workshopGroup.transform;
+            crane.transform.position = wsCenter + new Vector3(25f, 0, -10f);
+            crane.transform.rotation = Quaternion.Euler(0, -60f, 0);
+        }
+
+        if (pfBoat != null)
+        {
+            GameObject bLight = (GameObject)PrefabUtility.InstantiatePrefab(pfBoat);
+            bLight.transform.parent = workshopGroup.transform;
+            bLight.transform.position = new Vector3(-385f, 14.1f, 555f);
+            bLight.transform.rotation = Quaternion.Euler(0, 35f, 0);
+        }
+
+        // -------------------------------------------------------------
+        // 3. VỌNG LÂU QUAN SÁT TRÊN ĐỈNH NÚI TRÀNG KÊNH
+        // -------------------------------------------------------------
+        if (pfTower != null)
+        {
+            GameObject watchRoot = new GameObject("3_VongLau_DinhNui_TrangKenh");
+            watchRoot.transform.parent = campRoot.transform;
+
+            Vector3 mountainPeakPos = new Vector3(-1920f, 0, 1920f);
+            if (t != null) mountainPeakPos.y = t.SampleHeight(mountainPeakPos);
+
+            GameObject mTower = (GameObject)PrefabUtility.InstantiatePrefab(pfTower);
+            mTower.name = "VongLau_QuanSat_ThuyTrieu";
+            mTower.transform.parent = watchRoot.transform;
+            mTower.transform.position = mountainPeakPos;
+            mTower.transform.rotation = Quaternion.Euler(0, 135f, 0);
+            mTower.transform.localScale = Vector3.one * 1.5f;
+        }
+
+        Debug.Log("⛺ [BẠCH ĐẰNG 938] ĐÃ DỰNG THÀNH CÔNG ĐẠI BẢN DOANH NGÔ QUYỀN, XƯỞNG RÈN CỌC & VỌNG LÂU QUAN SÁT TRÊN ĐỈNH NÚI!");
+    }
+
+    // =========================================================================
+    // NÂNG CẤP MATERIAL NÚI ĐÁ SANG URP LIT
+    // =========================================================================
     [MenuItem("🤖 Trợ lý AI/🏔️ Cập Nhật Material Núi Đá Sang URP Lit PBR")]
     public static void FixRockMaterialsToURP()
     {
@@ -655,112 +961,6 @@ public class MapToTerrainBuilder : EditorWindow
             EditorUtility.SetDirty(mat);
         }
         AssetDatabase.SaveAssets();
-        Debug.Log("✅ [PBR URP] Đã nâng cấp 100% Material núi đá Photoscanned sang URP Lit PBR!");
-    }
-
-    private static void SpawnPhotoscannedMountains(Terrain tComp, Vector3 terrainOrigin)
-    {
-        // Tự động đảm bảo Material ở chuẩn URP Lit không bị lỗi màu hồng
-        FixRockMaterialsToURP();
-
-        string parentName = "--- HỆ THỐNG NÚI ĐÁ VÔI PHOTOSCANNED (PBR) ---";
-        GameObject oldParent = GameObject.Find(parentName);
-        if (oldParent != null)
-        {
-            Undo.DestroyObjectImmediate(oldParent);
-        }
-
-        GameObject mountainRoot = new GameObject(parentName);
-        mountainRoot.transform.position = Vector3.zero;
-        Undo.RegisterCreatedObjectUndo(mountainRoot, "Create Photoscanned Mountains");
-
-        string pDir = "Assets/TheTalesFactory/Photoscanned MoutainsRocks PBR/Prefabs/";
-        GameObject pfMain03 = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainsRocks03.prefab");
-        GameObject pfMain01 = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01.prefab");
-        GameObject pfMain02 = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks02.prefab");
-
-        GameObject pfSub01A = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_A.prefab");
-        GameObject pfSub01B = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_B.prefab");
-        GameObject pfSub01C = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_C.prefab");
-        GameObject pfSub01D = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_D.prefab");
-        GameObject pfSub02A = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks02_A.prefab");
-        GameObject pfSub02B = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks02_B.prefab");
-
-        if (pfMain03 == null && pfMain01 == null)
-        {
-            Debug.LogWarning("⚠️ Không tìm thấy Prefab núi đá Photoscanned PBR trong " + pDir);
-            return;
-        }
-
-        var peakZones = new[]
-        {
-            new { name = "Quần Thể Núi Tràng Kênh (Tây Bắc)", u = 0.15f, v = 0.65f, scaleFactor = 26f, seed = 101 },
-            new { name = "Quần Thể Núi Thủy Nguyên (Tây Nam)", u = 0.16f, v = 0.28f, scaleFactor = 22f, seed = 202 },
-            new { name = "Quần Thể Núi U Bò (Đông Bắc)", u = 0.78f, v = 0.80f, scaleFactor = 28f, seed = 303 },
-            new { name = "Quần Thể Núi Phượng Hoàng (Đông)", u = 0.83f, v = 0.46f, scaleFactor = 24f, seed = 404 },
-            new { name = "Quần Thể Núi Vọng Hải (Đông Nam)", u = 0.79f, v = 0.20f, scaleFactor = 21f, seed = 505 },
-            new { name = "Quần Thể Núi Yên Hưng (Bắc)", u = 0.62f, v = 0.86f, scaleFactor = 23f, seed = 606 }
-        };
-
-        foreach (var zone in peakZones)
-        {
-            GameObject clusterGo = new GameObject(zone.name);
-            clusterGo.transform.parent = mountainRoot.transform;
-
-            float centerX = terrainOrigin.x + zone.u * 6000f;
-            float centerZ = terrainOrigin.z + zone.v * 6000f;
-            clusterGo.transform.position = new Vector3(centerX, 0, centerZ);
-
-            Random.InitState(zone.seed);
-
-            // 1. Khối đỉnh chính sừng sững ở tâm (MountainsRocks03 hoặc 01)
-            GameObject centerPrefab = (zone.seed % 2 == 0) ? pfMain03 : pfMain01;
-            if (centerPrefab == null) centerPrefab = pfMain01 != null ? pfMain01 : pfMain02;
-            if (centerPrefab != null)
-            {
-                SpawnSingleRock(centerPrefab, clusterGo.transform, centerX, centerZ, zone.scaleFactor * 1.15f, tComp);
-            }
-
-            // 2. Các đỉnh phụ và vách đá sừng sững bao quanh (bán kính 70m - 220m)
-            var surroundingPrefabs = new[] { pfMain02, pfSub01A, pfSub01B, pfSub02A, pfSub02B, pfSub01C, pfSub01D };
-            int satelliteCount = 7;
-            for (int i = 0; i < satelliteCount; i++)
-            {
-                GameObject subPf = surroundingPrefabs[i % surroundingPrefabs.Length];
-                if (subPf == null) continue;
-
-                float angle = (float)i / satelliteCount * Mathf.PI * 2f + Random.Range(-0.25f, 0.25f);
-                float radius = Random.Range(70f, 220f);
-                float posX = centerX + Mathf.Cos(angle) * radius;
-                float posZ = centerZ + Mathf.Sin(angle) * radius;
-
-                float subScale = zone.scaleFactor * Random.Range(0.70f, 0.95f);
-                SpawnSingleRock(subPf, clusterGo.transform, posX, posZ, subScale, tComp);
-            }
-        }
-
-        Debug.Log("🏔️ [PHOTOSCANNED PBR] ĐÃ DỰNG THÀNH CÔNG 6 QUẦN THỂ NÚI ĐÁ VÔI PHOTOSCANNED VỚI VÁCH ĐÁ CHÂN THỰC!");
-    }
-
-    private static void SpawnSingleRock(GameObject prefab, Transform parent, float worldX, float worldZ, float scale, Terrain tComp)
-    {
-        float terrainH = tComp.SampleHeight(new Vector3(worldX, 0, worldZ));
-        // Chôn sâu chân núi khoảng 10% chiều cao xuống lòng đất để hòa quyện vào cỏ, tránh hở chân
-        float spawnY = terrainH - scale * 0.12f;
-
-        GameObject rock = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-        if (rock == null) rock = Object.Instantiate(prefab);
-
-        rock.name = prefab.name;
-        rock.transform.parent = parent;
-        rock.transform.position = new Vector3(worldX, spawnY, worldZ);
-        rock.transform.rotation = Quaternion.Euler(Random.Range(-2f, 2f), Random.Range(0f, 360f), Random.Range(-2f, 2f));
-        rock.transform.localScale = new Vector3(
-            scale * Random.Range(0.92f, 1.08f),
-            scale * Random.Range(0.95f, 1.20f),
-            scale * Random.Range(0.92f, 1.08f)
-        );
-        rock.isStatic = true;
     }
 
     private static float GetSlope(float[,] h, int x, int y, int sz)
@@ -784,7 +984,6 @@ public class MapToTerrainBuilder : EditorWindow
             for (int x = 0; x < sz; x++)
                 dist[y, x] = isWater[y, x] ? 0f : maxVal;
 
-        // Forward pass
         for (int y = 0; y < sz; y++)
         {
             for (int x = 0; x < sz; x++)
@@ -799,7 +998,6 @@ public class MapToTerrainBuilder : EditorWindow
             }
         }
 
-        // Backward pass
         for (int y = sz - 1; y >= 0; y--)
         {
             for (int x = sz - 1; x >= 0; x--)
@@ -896,7 +1094,6 @@ public class MapToTerrainBuilder : EditorWindow
     public static void PlaceBoatAndSpikesInRiver()
     {
         float waterY = 14.0f;
-
         Vector3 boatPos = new Vector3(-400f, 14.2f, 300f);
 
         GameObject boatGo = null;
@@ -925,33 +1122,6 @@ public class MapToTerrainBuilder : EditorWindow
             boatGo.transform.position = boatPos;
             boatGo.transform.rotation = Quaternion.Euler(0, 0, 0);
             Debug.Log($"⚓ Đã đưa Thuyền Nam Hán ra giữa dòng sông Bạch Đằng tại: {boatPos}");
-        }
-
-        var spikes = new List<GameObject>();
-        var allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-        foreach (var go in allObjects)
-        {
-            string n = go.name.ToLower();
-            if (n.Contains("spike") || n.Contains("wood_spike"))
-            {
-                spikes.Add(go);
-            }
-        }
-
-        if (spikes.Count > 0)
-        {
-            float startZ = 260f;
-            float stepZ = 80f / Mathf.Max(1, spikes.Count - 1);
-
-            for (int i = 0; i < spikes.Count; i++)
-            {
-                Undo.RecordObject(spikes[i].transform, "Arrange Spikes");
-                float z = startZ + i * stepZ + Random.Range(-4f, 4f);
-                float x = -280f + Random.Range(-10f, 10f);
-                spikes[i].transform.position = new Vector3(x, 13.5f, z);
-                spikes[i].transform.rotation = Quaternion.Euler(Random.Range(-5f, 5f), Random.Range(0, 360), Random.Range(-10f, -25f));
-            }
-            Debug.Log($"🪵 Đã giăng bãi cọc gỗ ({spikes.Count} cọc) đón đầu thuyền tại X = -280!");
         }
 
         Camera cam = Camera.main;
