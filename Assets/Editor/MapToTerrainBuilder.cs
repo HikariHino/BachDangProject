@@ -525,9 +525,32 @@ public class MapToTerrainBuilder : EditorWindow
         GameObject pfBoulder01 = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Props/pf_boulder_01.prefab");
         GameObject pfBoulder02 = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Props/pf_boulder_02_025.prefab");
 
-        // CHỈ SỬ DỤNG CÁC KHỐI ĐÁ ĐẶC KHỐI 3D (LOẠI BỎ HOÀN TOÀN MẢNH ĐÁ DẸP MountainRocks01_C, 01_D)
-        var cliffPrefabs = new[] { pfSub01A, pfSub01B, pfSub02A, pfSub02B, pfMain02, pfMain01, pfMain03 };
-        var boulderPrefabs = new[] { pfBoulder01, pfBoulder02 };
+        // =========================================================================
+        // BỘ VÁCH ĐÁ CHÍNH: BLOCKY CLIFF FORMATIONS (GRAY ROCK - URP LIT NATIVE CỦA RAVIBIO)
+        // Cực kỳ hợp bối cảnh Bạch Đằng: Đá vôi karst xám, 5 tầng LOD, khối 3D kín không hở đáy!
+        // =========================================================================
+        string blockyDir = "Assets/Blocky Cliff Formations/Universal Render Pipeline (URP)/Prefabs/Gray Rock/";
+        var blockyCliffs = new List<GameObject>();
+        for (int i = 1; i <= 11; i++)
+        {
+            GameObject pf = AssetDatabase.LoadAssetAtPath<GameObject>($"{blockyDir}Cliff_{i}_LODs.prefab");
+            if (pf != null) blockyCliffs.Add(pf);
+        }
+
+        // TẢNG ĐÁ RÊU XANH BỔ TRỢ: PIZZA&GAMES REALISTIC ROCKS (URP LIT)
+        string mossDir = "Assets/Pizza&Games/Realistic Rocks/Prefabs/";
+        var mossBoulders = new List<GameObject>();
+        for (int i = 1; i <= 6; i++)
+        {
+            GameObject pf = AssetDatabase.LoadAssetAtPath<GameObject>($"{mossDir}SM_LittleRock_0{i}_GreenMoss.prefab");
+            if (pf == null) pf = AssetDatabase.LoadAssetAtPath<GameObject>($"{mossDir}SM_LittleRock_0{i}.prefab");
+            if (pf != null) mossBoulders.Add(pf);
+        }
+
+        // Danh sách dự phòng nếu không tìm thấy pack mới
+        var fallbackCliffs = new[] { pfSub01A, pfSub01B, pfSub02A, pfSub02B, pfMain02, pfMain01, pfMain03 };
+        var cliffPrefabs = blockyCliffs.Count > 0 ? blockyCliffs.ToArray() : fallbackCliffs;
+        var boulderPrefabs = mossBoulders.Count > 0 ? mossBoulders.ToArray() : new[] { pfBoulder01, pfBoulder02 };
 
         Texture2D mapTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/BachDangMap.png");
 
@@ -546,7 +569,7 @@ public class MapToTerrainBuilder : EditorWindow
             GameObject grpPeak = new GameObject("1_Dinh_Va_Song_Nui");
             grpPeak.transform.parent = clusterGo.transform;
 
-            // Container 2: Vách Đá Ốp Dọc Sườn Núi (Giải quyết triệt để lỗi hở chân như hình 1)
+            // Container 2: Vách Đá Ốp Dọc Sườn Núi (Triệt tiêu 100% lỗi hở chân)
             GameObject grpFlank = new GameObject("2_Vach_Da_Suon_Nui");
             grpFlank.transform.parent = clusterGo.transform;
 
@@ -555,13 +578,17 @@ public class MapToTerrainBuilder : EditorWindow
             grpGorge.transform.parent = clusterGo.transform;
 
             // -------------------------------------------------------------
-            // 1. MỎM ĐÁ ĐỈNH CHÍNH & SỐNG NÚI
+            // 1. MỎM ĐÁ ĐỈNH CHÍNH & SỐNG NÚI (Đá vôi xám hùng vĩ)
             // -------------------------------------------------------------
             GameObject centerPrefab = (zone.seed % 2 == 0) ? pfMain03 : pfMain01;
-            if (centerPrefab == null) centerPrefab = pfMain01 != null ? pfMain01 : pfMain02;
+            if (centerPrefab == null || blockyCliffs.Count > 0) 
+            {
+                centerPrefab = blockyCliffs.Count > 0 ? blockyCliffs[zone.seed % blockyCliffs.Count] : pfMain01;
+            }
             if (centerPrefab != null)
             {
-                SpawnSingleRockGrounded(centerPrefab, grpPeak.transform, centerX, centerZ, zone.rockScale * 1.05f, tComp, null, 1.8f);
+                float peakScale = blockyCliffs.Count > 0 ? 2.2f : zone.rockScale * 1.05f;
+                SpawnSingleRockGrounded(centerPrefab, grpPeak.transform, centerX, centerZ, peakScale, tComp, null, 1.8f);
             }
 
             // Mỏm đá sống núi (8 - 10 mỏm)
@@ -579,16 +606,16 @@ public class MapToTerrainBuilder : EditorWindow
                     GameObject rPf = cliffPrefabs[i % cliffPrefabs.Length];
                     if (rPf != null)
                     {
-                        float rScale = zone.rockScale * Random.Range(0.70f, 0.95f);
+                        float rScale = blockyCliffs.Count > 0 ? Random.Range(1.6f, 2.3f) : zone.rockScale * Random.Range(0.70f, 0.95f);
                         SpawnSingleRockGrounded(rPf, grpPeak.transform, rX, rZ, rScale, tComp, null, 1.8f);
                     }
                 }
             }
 
             // -------------------------------------------------------------
-            // 2. VÁCH ĐÁ & TẢNG ĐÁ ỐP SƯỜN NÚI (TỰA VÀO LÒNG NÚI, TUYỆT ĐỐI KHÔNG HỞ CHÂN)
+            // 2. VÁCH ĐÁ & TẢNG ĐÁ RÊU ỐP SƯỜN NÚI (TỰA VÀO LÒNG NÚI, TUYỆT ĐỐI KHÔNG HỞ CHÂN)
             // -------------------------------------------------------------
-            int flankRockCount = 18;
+            int flankRockCount = 16;
             for (int f = 0; f < flankRockCount; f++)
             {
                 float alongRidge = Random.Range(-zone.ridgeLength * 0.45f, zone.ridgeLength * 0.45f) * 6000f;
@@ -616,19 +643,20 @@ public class MapToTerrainBuilder : EditorWindow
                 GameObject flankPf = cliffPrefabs[(f + zone.seed) % cliffPrefabs.Length];
                 if (flankPf != null)
                 {
-                    float fScale = zone.rockScale * Random.Range(0.75f, 1.15f);
+                    float fScale = blockyCliffs.Count > 0 ? Random.Range(1.4f, 2.1f) : zone.rockScale * Random.Range(0.75f, 1.15f);
                     SpawnSingleRockGrounded(flankPf, grpFlank.transform, posX, posZ, fScale, tComp, cliffRot, 2.0f);
                 }
 
-                // Thêm tảng đá lăn nhỏ dưới sườn núi (chôn sâu nửa tảng đá vào đất)
-                if (Random.value < 0.35f && boulderPrefabs[0] != null)
+                // Thêm tảng đá rêu xanh nhỏ dưới sườn núi
+                if (Random.value < 0.45f && boulderPrefabs.Length > 0)
                 {
                     GameObject bPf = boulderPrefabs[Random.Range(0, boulderPrefabs.Length)];
                     if (bPf != null)
                     {
                         Vector3 downhill = new Vector3(terrNorm.x, 0, terrNorm.z).normalized;
                         Vector3 bPos = new Vector3(posX + downhill.x * 12f + Random.Range(-3f, 3f), 0, posZ + downhill.z * 12f + Random.Range(-3f, 3f));
-                        SpawnSingleRockGrounded(bPf, grpFlank.transform, bPos.x, bPos.z, Random.Range(3.5f, 6.0f), tComp, null, 1.8f);
+                        float bScale = mossBoulders.Count > 0 ? Random.Range(2.5f, 4.5f) : Random.Range(3.5f, 6.0f);
+                        SpawnSingleRockGrounded(bPf, grpFlank.transform, bPos.x, bPos.z, bScale, tComp, null, 1.5f);
                     }
                 }
             }
@@ -673,7 +701,7 @@ public class MapToTerrainBuilder : EditorWindow
                             GameObject gorgePf = cliffPrefabs[(a + (int)(radFactor * 10)) % cliffPrefabs.Length];
                             if (gorgePf != null)
                             {
-                                float gScale = zone.rockScale * Random.Range(0.85f, 1.25f);
+                                float gScale = blockyCliffs.Count > 0 ? Random.Range(1.8f, 2.5f) : zone.rockScale * Random.Range(0.85f, 1.25f);
                                 SpawnSingleRockGrounded(gorgePf, grpGorge.transform, checkX, checkZ, gScale, tComp, gorgeRot, 2.2f);
                             }
                             break;
