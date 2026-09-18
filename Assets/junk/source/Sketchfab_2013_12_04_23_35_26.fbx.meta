@@ -3,7 +3,12 @@ guid: be10cd9da7ebb6e4baf8ef785b8819d6
 ModelImporter:
   serializedVersion: 24600
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+    fedelzet: {fileID: 2100000, guid: b1111111111111111111111111111111, type: 2}
+    hajotest: {fileID: 2100000, guid: b2222222222222222222222222222222, type: 2}
+    vitorla: {fileID: 2100000, guid: b3333333333333333333333333333333, type: 2}
+    Material.005: {fileID: 2100000, guid: b4444444444444444444444444444444, type: 2}
+    Material.014: {fileID: 2100000, guid: b5555555555555555555555555555555, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

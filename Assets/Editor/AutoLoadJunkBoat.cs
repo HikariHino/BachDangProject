@@ -7,7 +7,7 @@ public class AutoLoadJunkBoat : MonoBehaviour
     public static void LoadBoat()
     {
         // Đường dẫn chính xác tới file con thuyền
-        string assetPath = "Assets/junk/source/Sketchfab_2013_12_04_23_35_26.blend";
+        string assetPath = "Assets/junk/source/Sketchfab_2013_12_04_23_35_26.fbx";
         
         // Tải mô hình 3D từ thư mục
         GameObject boatPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
@@ -36,7 +36,7 @@ public class AutoLoadJunkBoat : MonoBehaviour
         }
         else
         {
-            Debug.LogError("🤖 Trợ lý AI: Không tìm thấy thuyền! Lưu ý: Máy tính của bạn BẮT BUỘC phải cài phần mềm BLENDER thì Unity mới đọc được file đuôi .blend nhé!");
+            Debug.LogError("🤖 Trợ lý AI: Không tìm thấy thuyền tại: " + assetPath);
         }
     }
 }
