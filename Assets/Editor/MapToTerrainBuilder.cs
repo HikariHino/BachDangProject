@@ -25,10 +25,10 @@ public class MapToTerrainBuilder : EditorWindow
         // ==========================================
         // 1. TÍNH TOÁN KHOẢNG CÁCH TỪ NƯỚC VÀO BỜ (DISTANCE TRANSFORM)
         // ==========================================
-        int tSize = 1025;
+        int tSize = 2049;
         TerrainData td = new TerrainData();
         td.heightmapResolution = tSize;
-        td.size = new Vector3(3000, 60, 3000); // 3000m x 60m x 3000m
+        td.size = new Vector3(6000, 220, 6000); // Mở rộng quy mô gấp 2 lần: 6000m x 220m x 6000m
 
         bool[,] isWaterMap = new bool[tSize, tSize];
         for (int y = 0; y < tSize; y++)
@@ -45,7 +45,7 @@ public class MapToTerrainBuilder : EditorWindow
         float[,] distToWater = ComputeDistanceTransform(isWaterMap, tSize);
 
         // ==========================================
-        // 2. KHỞI TẠO ĐỊA HÌNH 3 TẦNG CHUẨN LỊCH SỬ BẠCH ĐẰNG 938
+        // 2. KHỞI TẠO ĐỊA HÌNH ĐỒI NÚI TRÙNG ĐIỆP CHUẨN LỊCH SỬ BẠCH ĐẰNG 938
         // ==========================================
         float[,] rawH = new float[tSize, tSize];
         float beachPixelWidth = 9f; // Thu hẹp bãi cát về đúng đường kẻ đỏ (~26 mét)
@@ -59,7 +59,9 @@ public class MapToTerrainBuilder : EditorWindow
 
                 if (isWaterMap[y, x])
                 {
-                    rawH[y, x] = 0.08f;
+                    // LÒNG SÔNG BẠCH ĐẰNG: Độ sâu ~8m dưới mặt nước (Y_water = 14m / 220m = 0.0636f)
+                    // Đáy sông ở mức Y = 5.5m -> 6.8m (norm 0.025f -> 0.031f)
+                    rawH[y, x] = 0.025f + Mathf.PerlinNoise(u * 20f, v * 20f) * 0.006f;
                 }
                 else
                 {
@@ -67,32 +69,42 @@ public class MapToTerrainBuilder : EditorWindow
                     if (d <= beachPixelWidth)
                     {
                         // BÃI CÁT PHẲNG THOAI THOẢI ĐẾN ĐÚNG ĐƯỜNG KẺ ĐỎ CỦA SẾP
+                        // Bắt đầu từ mép nước Y = 13.0m (norm 0.0591f) lên bờ cát Y = 16.0m (norm 0.0727f)
                         float t = d / beachPixelWidth;
-                        rawH[y, x] = Mathf.Lerp(0.158f, 0.255f, Mathf.Pow(t, 1.2f));
+                        rawH[y, x] = Mathf.Lerp(0.0591f, 0.0727f, Mathf.Pow(t, 1.2f));
                     }
                     else
                     {
-                        // VÙNG ĐỒI NÚI PHỦ XANH MƯỚT (BẮT ĐẦU NGAY TỪ SAU VẠCH ĐỎ)
+                        // VÙNG ĐỒI NÚI TRÙNG ĐIỆP (BẮT ĐẦU NGAY TỪ SAU VẠCH ĐỎ)
+                        // Tầng 1: Đồi thấp ven sông (d từ 9 đến 26 pixels) - phủ cỏ xanh mướt cao 16m -> 35m
                         float inlandDist = d - beachPixelWidth;
-                        float inlandT = Mathf.Clamp01(inlandDist / 12f);
-                        float hillBase = Mathf.Lerp(0.255f, 0.38f, inlandT);
+                        float hillT = Mathf.Clamp01(inlandDist / 17f);
+                        float hillBase = Mathf.Lerp(0.0727f, 0.159f, Mathf.SmoothStep(0f, 1f, hillT));
+                        float hillNoise = Mathf.PerlinNoise(u * 8f + 10f, v * 8f + 10f) * 0.025f;
 
+                        // Tầng 2: Dãy núi đá vôi Tràng Kênh hùng vĩ, vách đá dựng đứng & hẻm núi (d > 22 pixels)
                         float mountainBonus = 0f;
-                        if (d > 18f)
+                        if (d > 22f)
                         {
-                            float mFactor = Mathf.Clamp01((d - 18f) / 16f);
-                            float perlin1 = Mathf.PerlinNoise(u * 6f, v * 6f);
-                            float perlin2 = Mathf.Abs(Mathf.PerlinNoise(u * 12f + 50f, v * 12f + 50f) * 2f - 1f);
-                            mountainBonus = (perlin1 * 0.28f + perlin2 * 0.16f) * mFactor;
+                            float mFactor = Mathf.Clamp01((d - 22f) / 25f);
+                            // Ridged multifractal noise tạo sống núi đá vôi sắc nhọn đặc trưng Tràng Kênh - Thủy Nguyên
+                            float ridge1 = 1.0f - Mathf.Abs(Mathf.PerlinNoise(u * 4f + 30f, v * 4f + 30f) * 2f - 1f);
+                            float ridge2 = 1.0f - Mathf.Abs(Mathf.PerlinNoise(u * 9f + 70f, v * 9f + 70f) * 2f - 1f);
+                            float broadHills = Mathf.PerlinNoise(u * 2.5f + 5f, v * 2.5f + 5f);
+                            float detailNoise = Mathf.PerlinNoise(u * 20f + 100f, v * 20f + 100f) * 0.04f;
+
+                            float mountainShape = broadHills * 0.45f + Mathf.Pow(ridge1, 1.4f) * 0.35f + ridge2 * 0.16f + detailNoise;
+                            // Đỉnh núi cao tới 170m - 200m (norm 0.75f - 0.88f)
+                            mountainBonus = mountainShape * 0.68f * mFactor;
                         }
 
-                        rawH[y, x] = hillBase + mountainBonus;
+                        rawH[y, x] = hillBase + hillNoise + mountainBonus;
                     }
                 }
             }
         }
 
-        float[,] smoothH = SmoothHeights(rawH, tSize, 3);
+        float[,] smoothH = SmoothHeights(rawH, tSize, 2);
         td.SetHeights(0, 0, smoothH);
 
         // ==========================================
@@ -120,6 +132,7 @@ public class MapToTerrainBuilder : EditorWindow
 
         td.terrainLayers = new TerrainLayer[] { layerGrass, layerMud, layerSand, layerMoss, layerRock, layerSoilRocks };
 
+        td.alphamapResolution = 1024;
         int aRes = td.alphamapResolution;
         float[,,] splats = new float[aRes, aRes, 6];
 
@@ -154,7 +167,7 @@ public class MapToTerrainBuilder : EditorWindow
                     splats[y, x, 0] = t * 0.75f;
                     splats[y, x, 3] = t * 0.25f;
                 }
-                else if (d > 35f && slope > 1.2f)
+                else if (d > 45f && slope > 1.35f)
                 {
                     // Chỉ vách núi đá dựng đứng sâu trong đất liền mới lộ đá vôi xám Tràng Kênh
                     splats[y, x, 4] = 0.80f;
@@ -207,7 +220,7 @@ public class MapToTerrainBuilder : EditorWindow
         var trees = new List<TreeInstance>();
         int pCount = protos.Count;
 
-        for (int i = 0; pCount > 0 && i < 80000; i++)
+        for (int i = 0; pCount > 0 && i < 140000; i++)
         {
             float tx = Random.value;
             float ty = Random.value;
@@ -218,13 +231,13 @@ public class MapToTerrainBuilder : EditorWindow
             if (isWaterMap[hy, hx]) continue;
             float d = distToWater[hy, hx];
             float slope = GetSlope(smoothH, hx, hy, tSize);
-            if (d > 35f && slope > 1.0f) continue; // Chỉ không mọc trên vách đá dựng đứng sâu trong đất liền
+            if (d > 45f && slope > 1.25f) continue; // Chỉ không mọc trên vách đá dựng đứng sâu trong đất liền
             float normH = smoothH[hy, hx];
 
             // VÙNG 1: Mép trên bãi cát (d từ 6 đến beachPixelWidth) -> Cụm hoa dại & cỏ lác nhỏ lác đác
             if (d >= 6f && d <= beachPixelWidth)
             {
-                if (Random.value < 0.08f) // Chỉ mọc thưa thớt 8%
+                if (Random.value < 0.06f) // Chỉ mọc thưa thớt 6%
                 {
                     TreeInstance tiShore = new TreeInstance();
                     tiShore.position = new Vector3(tx, normH, ty);
@@ -247,8 +260,8 @@ public class MapToTerrainBuilder : EditorWindow
                 if (Random.value < 0.65f && protos.Count >= 2)
                 {
                     tiInland.prototypeIndex = Random.Range(0, 2);
-                    tiInland.widthScale = Random.Range(1.1f, 1.6f);
-                    tiInland.heightScale = Random.Range(1.1f, 1.7f);
+                    tiInland.widthScale = Random.Range(1.2f, 1.9f);
+                    tiInland.heightScale = Random.Range(1.2f, 2.0f);
                 }
                 else if (Random.value < 0.10f && protos.Count >= 4)
                 {
@@ -274,7 +287,7 @@ public class MapToTerrainBuilder : EditorWindow
         // ==========================================
         // 5. THẢM CỎ 3D CHI TIẾT & HOA DẠI TỪ NATURE RENDERER
         // ==========================================
-        int dRes = 512;
+        int dRes = 1024;
         td.SetDetailResolution(dRes, 16);
 
         var dProtos = new List<DetailPrototype>();
@@ -410,7 +423,7 @@ public class MapToTerrainBuilder : EditorWindow
                     if (isWaterMap[hy, hx]) { plantMap[y, x] = 0; continue; }
                     float d = distToWater[hy, hx];
 
-                    if (d > beachPixelWidth + 0.8f && d < beachPixelWidth + 8f && Random.value < 0.10f)
+                    if (d > beachPixelWidth + 0.8f && d < beachPixelWidth + 16f && Random.value < 0.10f)
                     {
                         plantMap[y, x] = 1;
                     }
@@ -460,15 +473,15 @@ public class MapToTerrainBuilder : EditorWindow
 
         GameObject terrainGo = Terrain.CreateTerrainGameObject(td);
         terrainGo.name = "SaBan_BachDang_AAA";
-        terrainGo.transform.position = new Vector3(-1500, 0, -1500);
+        terrainGo.transform.position = new Vector3(-3000, 0, -3000);
 
         Terrain tComp = terrainGo.GetComponent<Terrain>();
         tComp.drawTreesAndFoliage = true;
-        tComp.treeDistance = 3500f;
-        tComp.treeBillboardDistance = 3500f;
+        tComp.treeDistance = 6000f;
+        tComp.treeBillboardDistance = 6000f;
         tComp.treeCrossFadeLength = 0f;
-        tComp.treeMaximumFullLODCount = 100000;
-        tComp.detailObjectDistance = 450f;
+        tComp.treeMaximumFullLODCount = 200000;
+        tComp.detailObjectDistance = 500f;
         tComp.detailObjectDensity = 1.0f;
         tComp.heightmapPixelError = 2f;
 
@@ -496,7 +509,7 @@ public class MapToTerrainBuilder : EditorWindow
         PlaceBoatAndSpikesInRiver();
 
         AssetDatabase.SaveAssets();
-        Debug.Log($"🎉 SA BÀN HOÀN THIỆN: 80.000 CÂY CỔ THỤ AAA (NATURE RENDERER) + THẢM CỎ 3D HOA DẠI ĐÃ ĐƯỢC TÍCH HỢP THÀNH CÔNG!");
+        Debug.Log($"🎉 SA BÀN HOÀN THIỆN: 6000M X 6000M - 140.000 CÂY CỔ THỤ AAA (NATURE RENDERER) + ĐỒI NÚI TRÀNG KÊNH HÙNG VĨ ĐÃ ĐƯỢC TẠO THÀNH CÔNG!");
     }
 
     private static float GetSlope(float[,] h, int x, int y, int sz)
@@ -607,7 +620,7 @@ public class MapToTerrainBuilder : EditorWindow
         }
 
         waterGo.transform.position = new Vector3(0, waterY, 0);
-        waterGo.transform.localScale = new Vector3(300, 1, 300);
+        waterGo.transform.localScale = new Vector3(600, 1, 600);
 
         Material waterMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/OptiWater/Runtime/OptiWaterSurface.mat");
         if (waterMat != null)
@@ -633,7 +646,7 @@ public class MapToTerrainBuilder : EditorWindow
     {
         float waterY = 14.0f;
 
-        Vector3 boatPos = new Vector3(-200f, 14.2f, 150f);
+        Vector3 boatPos = new Vector3(-400f, 14.2f, 300f);
 
         GameObject boatGo = null;
         var boatComp = Object.FindFirstObjectByType<BoatCrash>();
@@ -676,32 +689,32 @@ public class MapToTerrainBuilder : EditorWindow
 
         if (spikes.Count > 0)
         {
-            float startZ = 130f;
-            float stepZ = 40f / Mathf.Max(1, spikes.Count - 1);
+            float startZ = 260f;
+            float stepZ = 80f / Mathf.Max(1, spikes.Count - 1);
 
             for (int i = 0; i < spikes.Count; i++)
             {
                 Undo.RecordObject(spikes[i].transform, "Arrange Spikes");
-                float z = startZ + i * stepZ + Random.Range(-2f, 2f);
-                float x = -140f + Random.Range(-5f, 5f);
+                float z = startZ + i * stepZ + Random.Range(-4f, 4f);
+                float x = -280f + Random.Range(-10f, 10f);
                 spikes[i].transform.position = new Vector3(x, 13.5f, z);
                 spikes[i].transform.rotation = Quaternion.Euler(Random.Range(-5f, 5f), Random.Range(0, 360), Random.Range(-10f, -25f));
             }
-            Debug.Log($"🪵 Đã giăng bãi cọc gỗ ({spikes.Count} cọc) đón đầu thuyền tại X = -140!");
+            Debug.Log($"🪵 Đã giăng bãi cọc gỗ ({spikes.Count} cọc) đón đầu thuyền tại X = -280!");
         }
 
         Camera cam = Camera.main;
         if (cam != null)
         {
             Undo.RecordObject(cam.transform, "Move Camera To Battle");
-            cam.transform.position = new Vector3(-240f, 22f, 150f);
-            cam.transform.LookAt(new Vector3(-170f, 14f, 150f));
+            cam.transform.position = new Vector3(-480f, 28f, 300f);
+            cam.transform.LookAt(new Vector3(-340f, 14.2f, 300f));
         }
 
         if (SceneView.lastActiveSceneView != null)
         {
-            SceneView.lastActiveSceneView.pivot = new Vector3(-170f, 15f, 150f);
-            SceneView.lastActiveSceneView.size = 60f;
+            SceneView.lastActiveSceneView.pivot = new Vector3(-340f, 15f, 300f);
+            SceneView.lastActiveSceneView.size = 120f;
             SceneView.lastActiveSceneView.Repaint();
         }
     }

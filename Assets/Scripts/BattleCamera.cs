@@ -31,8 +31,8 @@ public class BattleCamera : MonoBehaviour
     public float maxDistance = 60f;
 
     [Header("Cài đặt Bay tự do (Free-Fly)")]
-    public float flySpeed = 30f;
-    public float fastFlyMultiplier = 2.5f;
+    public float flySpeed = 50f;
+    public float fastFlyMultiplier = 3.5f;
     public float freeLookSensitivity = 3f;
 
     private float currentYaw = 0f;
@@ -45,7 +45,7 @@ public class BattleCamera : MonoBehaviour
         Camera cam = GetComponent<Camera>();
         if (cam != null)
         {
-            cam.farClipPlane = 4500f; // Tầm nhìn xa bao trọn toàn bộ chiến trường Bạch Đằng 3000m
+            cam.farClipPlane = 9500f; // Tầm nhìn xa bao trọn toàn bộ chiến trường Bạch Đằng 6000m
         }
 
         FindTargetIfNull();
