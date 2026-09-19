@@ -278,6 +278,8 @@ public class MapToTerrainBuilder : EditorWindow
         GameObject rockA = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Rocks/Rock_A_02.prefab");
         GameObject rockC = AssetDatabase.LoadAssetAtPath<GameObject>(nrArt + "Rocks/Rock_C_01.prefab");
 
+        EnsureCollidersOnAllNatureAndSpikes();
+
         string prefabFolder = "Assets/TerrainSampleAssets/Prefabs/";
         var protos = new List<TreePrototype>();
 
@@ -685,6 +687,26 @@ public class MapToTerrainBuilder : EditorWindow
             scale * Random.Range(0.92f, 1.08f)
         );
         rock.isStatic = true;
+
+        // ĐẢM BẢO TẤT CẢ TẢNG ĐÁ ĐỀU LÀ VẬT THỂ CỨNG 100% (KHÔNG THỂ ĐI XUYÊN QUA)
+        if (rock.GetComponentInChildren<Collider>() == null)
+        {
+            var meshFilters = rock.GetComponentsInChildren<MeshFilter>();
+            bool addedCol = false;
+            foreach (var mf in meshFilters)
+            {
+                if (mf.sharedMesh != null && !mf.name.ToLower().Contains("lod1") && !mf.name.ToLower().Contains("lod2"))
+                {
+                    mf.gameObject.AddComponent<MeshCollider>();
+                    addedCol = true;
+                    break;
+                }
+            }
+            if (!addedCol)
+            {
+                rock.AddComponent<BoxCollider>();
+            }
+        }
     }
 
     public static bool IsPositionSafeFromWater(Texture2D mapTex, float worldX, float worldZ, Vector3 terrainOrigin, float safetyMarginMeters)
@@ -714,6 +736,80 @@ public class MapToTerrainBuilder : EditorWindow
     private static bool IsPixelWater(Color c)
     {
         return (c.b >= c.g * 0.95f) || (c.b > 0.45f && c.b > c.r + 0.15f);
+    }
+
+    // =========================================================================
+    // MENU ITEM: ĐẢM BẢO CÂY, ĐÁ & CỌC GỖ ĐỀU LÀ VẬT THỂ CỨNG 100% (COLLIDERS)
+    // =========================================================================
+    [MenuItem("🤖 Trợ lý AI/🧱 Đảm Bảo Cây, Đá & Cọc Gỗ Là Vật Thể Cứng (Thêm Colliders)")]
+    public static void EnsureCollidersOnAllNatureAndSpikes()
+    {
+        // 1. Thêm CapsuleCollider vào các Prefab Cây (Cypress, Conifer)
+        string nrArt = "Assets/Visual Design Cafe/Nature Renderer Demo/Realistic/Art/Trees/";
+        string[] treePaths = { nrArt + "Cypress.prefab", nrArt + "Conifer.prefab" };
+        foreach (var path in treePaths)
+        {
+            GameObject contents = PrefabUtility.LoadPrefabContents(path);
+            if (contents != null)
+            {
+                if (contents.GetComponent<CapsuleCollider>() == null)
+                {
+                    CapsuleCollider col = contents.AddComponent<CapsuleCollider>();
+                    col.center = new Vector3(0, 3.5f, 0);
+                    col.radius = 0.5f;
+                    col.height = 7.0f;
+                    PrefabUtility.SaveAsPrefabAsset(contents, path);
+                    Debug.Log($"🌲 Đã thêm CapsuleCollider cứng cho cây: {path}");
+                }
+                PrefabUtility.UnloadPrefabContents(contents);
+            }
+        }
+
+        // 2. Thêm MeshCollider vào các Prefab Đá (Rock_A_02, Rock_C_01)
+        string rockArt = "Assets/Visual Design Cafe/Nature Renderer Demo/Realistic/Art/Rocks/";
+        string[] rockPaths = { rockArt + "Rock_A_02.prefab", rockArt + "Rock_C_01.prefab" };
+        foreach (var path in rockPaths)
+        {
+            GameObject contents = PrefabUtility.LoadPrefabContents(path);
+            if (contents != null)
+            {
+                if (contents.GetComponentInChildren<Collider>() == null)
+                {
+                    var mf = contents.GetComponentInChildren<MeshFilter>();
+                    if (mf != null && mf.sharedMesh != null)
+                    {
+                        mf.gameObject.AddComponent<MeshCollider>();
+                        PrefabUtility.SaveAsPrefabAsset(contents, path);
+                        Debug.Log($"🪨 Đã thêm MeshCollider cứng cho prefab đá: {path}");
+                    }
+                }
+                PrefabUtility.UnloadPrefabContents(contents);
+            }
+        }
+
+        // 3. Quét toàn bộ Scene, gắn MeshCollider cho mọi GameObject đá và cọc gỗ hiện có
+        int rockColsAdded = 0;
+        var allGos = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
+        foreach (var go in allGos)
+        {
+            if (go == null) continue;
+            string n = go.name.ToLower();
+            if (n.Contains("rock") || n.Contains("cocgo") || n.Contains("spike") || n.Contains("dinh_nui") || n.Contains("tang_da") || n.Contains("mom_da"))
+            {
+                if (go.GetComponentInChildren<Collider>() == null)
+                {
+                    var mf = go.GetComponentInChildren<MeshFilter>();
+                    if (mf != null && mf.sharedMesh != null)
+                    {
+                        Undo.AddComponent<MeshCollider>(mf.gameObject);
+                        rockColsAdded++;
+                    }
+                }
+            }
+        }
+
+        AssetDatabase.SaveAssets();
+        Debug.Log($"🎉 ĐÃ CẬP NHẬT HOÀN TẤT VẬT THỂ CỨNG: Cây cối, núi đá và {rockColsAdded} vật thể trong Scene đều đã có Collider bảo vệ!");
     }
 
     // =========================================================================
@@ -806,6 +902,20 @@ public class MapToTerrainBuilder : EditorWindow
                 spike.transform.localScale = new Vector3(thickScale, thickScale, lengthScale);
 
                 spike.isStatic = true;
+
+                // ĐẢM BẢO CỌC GỖ LÀ VẬT THỂ CỨNG 100% (ĐỂ THUYỀN ĐÂM VÀO ĐẮM & NGƯỜI ĐI VA CHẠM)
+                if (spike.GetComponentInChildren<Collider>() == null)
+                {
+                    var mf = spike.GetComponentInChildren<MeshFilter>();
+                    if (mf != null && mf.sharedMesh != null)
+                    {
+                        mf.gameObject.AddComponent<MeshCollider>();
+                    }
+                    else
+                    {
+                        spike.AddComponent<CapsuleCollider>();
+                    }
+                }
             }
         }
 

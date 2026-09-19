@@ -101,7 +101,7 @@ public class BoatCrash : MonoBehaviour
         string hitName = collision.gameObject.name.ToLower();
 
         // 1. ĐÂM TRÚNG CỌC GỖ -> KÍCH HOẠT ĐẮM THUYỀN TITANIC
-        if (hitName.Contains("spike") || hitName.Contains("wood"))
+        if (hitName.Contains("spike") || hitName.Contains("wood") || hitName.Contains("cocgo"))
         {
             if (!isSinking) 
             {
