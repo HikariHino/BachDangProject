@@ -1,4 +1,4 @@
-﻿/*
+/*
 ============================
 Unity Assets by MAKAKA GAMES
 ============================
@@ -69,14 +69,17 @@ public class PublisherReadmeEditor : Editor
 	protected override void OnHeaderGUI()
 	{
 		var readme = (PublisherReadme)target;
+		if (readme == null) return;
 		Init();
 		
 		var iconWidth = Mathf.Min(EditorGUIUtility.currentViewWidth/3f - 20f, 128f);
 		
 		GUILayout.BeginHorizontal("In BigTitle");
 		{
-			GUILayout.Label(readme.icon, GUILayout.Width(iconWidth), GUILayout.Height(iconWidth));
-			GUILayout.Label(readme.title, TitleStyle);
+			if (readme.icon != null)
+				GUILayout.Label(readme.icon, GUILayout.Width(iconWidth), GUILayout.Height(iconWidth));
+			if (!string.IsNullOrEmpty(readme.title))
+				GUILayout.Label(readme.title, TitleStyle);
 		}
 		GUILayout.EndHorizontal();
 	}
@@ -84,10 +87,12 @@ public class PublisherReadmeEditor : Editor
 	public override void OnInspectorGUI()
 	{
 		var readme = (PublisherReadme)target;
+		if (readme == null || readme.sections == null) return;
 		Init();
 		
 		foreach (var section in readme.sections)
 		{
+			if (section == null) continue;
 			if (!string.IsNullOrEmpty(section.heading))
 			{
 				GUILayout.Label(section.heading, HeadingStyle);
@@ -100,7 +105,8 @@ public class PublisherReadmeEditor : Editor
 			{
 				if (LinkLabel(new GUIContent(section.linkText)))
 				{
-					Application.OpenURL(section.url);
+					if (!string.IsNullOrEmpty(section.url))
+						Application.OpenURL(section.url);
 				}
 			}
 			GUILayout.Space(kSpace);
