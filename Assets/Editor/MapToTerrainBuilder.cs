@@ -528,18 +528,10 @@ public class MapToTerrainBuilder : EditorWindow
 
         // =========================================================================
         // 2. TẢNG ĐÁ 3D NGUYÊN KHỐI CHO SỐNG NÚI, SƯỜN NÚI & CHÂN NÚI
-        // Dùng 100% đá khối 3D kín: Pizza&Games (SM_LittleRock_GreenMoss) & Visual Design Cafe (Rock_A_02, Rock_C_01)
+        // Dùng 100% đá khối 3D kín: Visual Design Cafe (Rock_A_02, Rock_C_01)
         // Đá khối 3D tròn đầy tự nhiên, KHÔNG CÓ ĐẾ PHẲNG, TRIỆT TIÊU 100% LỖI VÁN TRƯỢT!
         // =========================================================================
-        string mossDir = "Assets/Pizza&Games/Realistic Rocks/Prefabs/";
         var closedBoulders = new List<GameObject>();
-        for (int i = 1; i <= 6; i++)
-        {
-            GameObject pf = AssetDatabase.LoadAssetAtPath<GameObject>($"{mossDir}SM_LittleRock_0{i}_GreenMoss.prefab");
-            if (pf == null) pf = AssetDatabase.LoadAssetAtPath<GameObject>($"{mossDir}SM_LittleRock_0{i}.prefab");
-            if (pf != null) closedBoulders.Add(pf);
-        }
-
         GameObject vdcRockA = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Visual Design Cafe/Nature Renderer Demo/Realistic/Art/Rocks/Rock_A_02.prefab");
         GameObject vdcRockC = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Visual Design Cafe/Nature Renderer Demo/Realistic/Art/Rocks/Rock_C_01.prefab");
         if (vdcRockA != null) closedBoulders.Add(vdcRockA);
