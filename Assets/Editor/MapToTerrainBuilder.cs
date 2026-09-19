@@ -497,10 +497,16 @@ public class MapToTerrainBuilder : EditorWindow
         FixRockMaterialsToURP();
 
         string parentName = "--- HỆ THỐNG NÚI ĐÁ VÔI PHOTOSCANNED (PBR) ---";
-        var allMounts = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        foreach (var go in allMounts)
+        var allGos = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var go in allGos)
         {
-            if (go != null && (go.name == parentName || go.name.Contains("HỆ THỐNG NÚI ĐÁ VÔI") || go.name.ToLower().Contains("photoscanned")))
+            if (go == null) continue;
+            string n = go.name;
+            string nl = n.ToLower();
+            if (n == parentName || nl.Contains("hệ thống núi") || nl.Contains("photoscanned") ||
+                n.StartsWith("MountainRocks") || n.StartsWith("MountainsRocks") ||
+                n.StartsWith("SM_LittleRock") || n.StartsWith("Rock_A_") || n.StartsWith("Rock_C_") ||
+                n.Contains("1_Dinh_Nui") || n.Contains("2_Mom_Da") || n.Contains("3_Tang_Da") || n.Contains("3_Vach_Da"))
             {
                 Undo.DestroyObjectImmediate(go);
             }
@@ -511,25 +517,17 @@ public class MapToTerrainBuilder : EditorWindow
         Undo.RegisterCreatedObjectUndo(mountainRoot, "Create Photoscanned Mountains");
 
         // =========================================================================
-        // 1. CÁC MỎM NÚI ĐÁ VÔI KARST CAO VÚT (THETALESFACTORY)
-        // CHỈ DÙNG CÁC CHỎM NHỌN UY NGHI: MountainsRocks03, MountainRocks01_A, 01_B, 02_A
-        // LOẠI BỎ VĨNH VIỄN: Các scan phẳng hoặc mảnh cắt ngang có viền rộng (01, 02, 01_C, 01_D, 02_B)
+        // 1. CHỎM ĐÁ ĐỈNH NÚI KARST: CHỈ DÙNG MountainsRocks03 TẠI ĐÚNG ĐỈNH CAO NHẤT
+        // TUYỆT ĐỐI KHÔNG DÙNG CÁC MẢNH CẮT DẸP (01_A, 01_B, 02_A, 01, 02, 01_C, 01_D)
+        // VÌ CHÚNG CÓ ĐÁY PHẲNG BỊ LỒI RA NHƯ VÁN TRƯỢT!
         // =========================================================================
         string pDir = "Assets/TheTalesFactory/Photoscanned MoutainsRocks PBR/Prefabs/";
         GameObject pfMain03 = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainsRocks03.prefab");
-        GameObject pfSub01A = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_A.prefab");
-        GameObject pfSub01B = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks01_B.prefab");
-        GameObject pfSub02A = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "MountainRocks02_A.prefab");
-
-        var karstPeakPrefabs = new List<GameObject>();
-        if (pfMain03 != null) karstPeakPrefabs.Add(pfMain03);
-        if (pfSub01A != null) karstPeakPrefabs.Add(pfSub01A);
-        if (pfSub01B != null) karstPeakPrefabs.Add(pfSub01B);
-        if (pfSub02A != null) karstPeakPrefabs.Add(pfSub02A);
 
         // =========================================================================
-        // 2. TẢNG ĐÁ 3D NGUYÊN KHỐI CHO SƯỜN NÚI & CHÂN NÚI (KHÔNG ĐẾ PHẲNG, KHÔNG HỞ CHÂN)
-        // Dùng bộ đá 3D kín: Pizza&Games (SM_LittleRock_GreenMoss) & Visual Design Cafe (Rock_A_02, Rock_C_01)
+        // 2. TẢNG ĐÁ 3D NGUYÊN KHỐI CHO SỐNG NÚI, SƯỜN NÚI & CHÂN NÚI
+        // Dùng 100% đá khối 3D kín: Pizza&Games (SM_LittleRock_GreenMoss) & Visual Design Cafe (Rock_A_02, Rock_C_01)
+        // Đá khối 3D tròn đầy tự nhiên, KHÔNG CÓ ĐẾ PHẲNG, TRIỆT TIÊU 100% LỖI VÁN TRƯỢT!
         // =========================================================================
         string mossDir = "Assets/Pizza&Games/Realistic Rocks/Prefabs/";
         var closedBoulders = new List<GameObject>();
@@ -558,73 +556,59 @@ public class MapToTerrainBuilder : EditorWindow
 
             Random.InitState(zone.seed);
 
-            // Container 1: Đỉnh Núi Karst Kỳ Vĩ (Pinnacle chỏm đá vôi vươn cao trên đỉnh)
+            // Container 1: Đỉnh Núi Karst (Chỏm đá vôi vươn cao trên đỉnh)
             GameObject grpPeak = new GameObject("1_Dinh_Nui_Karst");
             grpPeak.transform.parent = clusterGo.transform;
 
-            // Container 2: Mỏm Đá Sống Núi (Chỉ đặt ở các gờ cao bằng phẳng, chôn sâu)
+            // Container 2: Tảng Đá Sống Núi (Đá 3D nguyên khối, điểm xuyết tự nhiên)
             GameObject grpRidge = new GameObject("2_Mom_Da_Song_Nui");
             grpRidge.transform.parent = clusterGo.transform;
 
-            // Container 3: Tảng Đá Tự Nhiên Sườn Núi (Đá 3D nguyên khối, tựa vào sườn đồi)
+            // Container 3: Tảng Đá Sườn Núi (Đá 3D nguyên khối, tựa vào sườn đồi)
             GameObject grpBoulders = new GameObject("3_Tang_Da_Suon_Nui");
             grpBoulders.transform.parent = clusterGo.transform;
 
-            float peakH = tComp.SampleHeight(new Vector3(centerX, 0, centerZ));
-
             // -------------------------------------------------------------
             // 1. CHỎM ĐÁ ĐỈNH CHÍNH (MountainsRocks03 trắng xám nhọn hoắt siêu đẹp)
-            // Đặt ngay đỉnh cao nhất của quả đồi, chôn sâu 3.2x để mép đế ngập 100% trong đất
+            // Đặt ngay đỉnh cao nhất (centerX, centerZ), chôn sâu 2.2x vào lòng đồi
+            // Đáy scan ngập sâu hơn 20m dưới lòng đất, chỉ nhô phần tháp nhọn cao vút lên bầu trời!
             // -------------------------------------------------------------
-            GameObject peakPrefab = (pfMain03 != null) ? pfMain03 : (karstPeakPrefabs.Count > 0 ? karstPeakPrefabs[0] : null);
-            if (peakPrefab != null)
+            if (pfMain03 != null)
             {
-                Quaternion peakRot = Quaternion.Euler(Random.Range(-2f, 2f), Random.Range(0f, 360f), Random.Range(-2f, 2f));
-                SpawnSingleRockGrounded(peakPrefab, grpPeak.transform, centerX, centerZ, zone.rockScale * 1.15f, tComp, peakRot, 3.2f);
+                Quaternion peakRot = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+                SpawnSingleRockGrounded(pfMain03, grpPeak.transform, centerX, centerZ, zone.rockScale * 1.05f, tComp, peakRot, 2.2f);
             }
 
             // -------------------------------------------------------------
-            // 2. CÁC MỎM ĐÁ SỐNG NÚI (CHỈ ĐẶT KHI ĐỊA HÌNH ĐỦ BẰNG PHẲNG terrNorm.y >= 0.94f)
-            // Tuyệt đối không đặt mỏm đá scan lớn trên sườn dốc nghiêng để triệt tiêu 100% hiện tượng "đĩa bay"!
+            // 2. TẢNG ĐÁ DỌC SỐNG NÚI (100% ĐÁ KHỐI 3D NGUYÊN KHỐI, KHÔNG CÓ MẢNH DẸP)
             // -------------------------------------------------------------
-            int ridgeSpots = 6;
-            for (int i = 0; i < ridgeSpots; i++)
+            if (closedBoulders.Count > 0)
             {
-                float tRidge = ((float)i / (ridgeSpots - 1) - 0.5f) * zone.ridgeLength * 0.70f * 6000f;
-                float rSide = Random.Range(-20f, 20f);
-
-                float rX = centerX + zone.ridgeDirU * tRidge - zone.ridgeDirV * rSide;
-                float rZ = centerZ + zone.ridgeDirV * tRidge + zone.ridgeDirU * rSide;
-
-                if (!IsPositionSafeFromWater(mapTex, rX, rZ, terrainOrigin, 60f)) continue;
-
-                float spotH = tComp.SampleHeight(new Vector3(rX, 0, rZ));
-                float normU = Mathf.Clamp01((rX - terrainOrigin.x) / 6000f);
-                float normV = Mathf.Clamp01((rZ - terrainOrigin.z) / 6000f);
-                Vector3 terrNorm = tComp.terrainData.GetInterpolatedNormal(normU, normV);
-
-                // CHỈ ĐẶT MỎM ĐÁ SCAN NẾU ĐỈNH ĐỦ CAO VÀ ĐỘ DỐC NHỎ (terrNorm.y >= 0.94f)
-                if (terrNorm.y >= 0.94f && spotH >= peakH * 0.85f && karstPeakPrefabs.Count > 0)
+                int ridgeSpots = 6;
+                for (int i = 0; i < ridgeSpots; i++)
                 {
-                    GameObject rPf = karstPeakPrefabs[(i + zone.seed) % karstPeakPrefabs.Count];
-                    float rScale = zone.rockScale * Random.Range(0.70f, 0.90f);
-                    Quaternion rRot = Quaternion.Euler(Random.Range(-3f, 3f), Random.Range(0f, 360f), Random.Range(-3f, 3f));
-                    SpawnSingleRockGrounded(rPf, grpRidge.transform, rX, rZ, rScale, tComp, rRot, 3.0f);
-                }
-                else if (closedBoulders.Count > 0)
-                {
-                    // Nếu ở đoạn sống núi dốc: Điểm xuyết tảng đá 3D nguyên khối (không đế phẳng)
+                    float tRidge = ((float)i / (ridgeSpots - 1) - 0.5f) * zone.ridgeLength * 0.70f * 6000f;
+                    float rSide = Random.Range(-20f, 20f);
+
+                    float rX = centerX + zone.ridgeDirU * tRidge - zone.ridgeDirV * rSide;
+                    float rZ = centerZ + zone.ridgeDirV * tRidge + zone.ridgeDirU * rSide;
+
+                    if (!IsPositionSafeFromWater(mapTex, rX, rZ, terrainOrigin, 60f)) continue;
+
+                    float normU = Mathf.Clamp01((rX - terrainOrigin.x) / 6000f);
+                    float normV = Mathf.Clamp01((rZ - terrainOrigin.z) / 6000f);
+                    Vector3 terrNorm = tComp.terrainData.GetInterpolatedNormal(normU, normV);
+
                     GameObject bPf = closedBoulders[(i + zone.seed) % closedBoulders.Count];
-                    float bScale = Random.Range(3.0f, 5.0f);
+                    float bScale = Random.Range(3.5f, 6.0f);
                     Quaternion slopeAlign = Quaternion.FromToRotation(Vector3.up, terrNorm);
                     Quaternion bRot = slopeAlign * Quaternion.Euler(Random.Range(-10f, 10f), Random.Range(0f, 360f), 0);
-                    SpawnSingleRockGrounded(bPf, grpRidge.transform, rX, rZ, bScale, tComp, bRot, 1.2f);
+                    SpawnSingleRockGrounded(bPf, grpRidge.transform, rX, rZ, bScale, tComp, bRot, 1.3f);
                 }
             }
 
             // -------------------------------------------------------------
-            // 3. TẢNG ĐÁ 3D NGUYÊN KHỐI TỰ NHIÊN TRÊN SƯỜN NÚI & CHÂN NÚI
-            // Khối 3D kín, tựa lưng vào sườn núi, tạo vẻ gồ ghề chân thật mà không bao giờ có đĩa phẳng nhô ra
+            // 3. TẢNG ĐÁ 3D TỰ NHIÊN TRÊN SƯỜN NÚI & CHÂN NÚI
             // -------------------------------------------------------------
             if (closedBoulders.Count > 0)
             {
