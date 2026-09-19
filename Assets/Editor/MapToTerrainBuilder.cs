@@ -92,13 +92,13 @@ public class MapToTerrainBuilder : EditorWindow
         }
 
         // 0. XÓA TERRAIN CŨ
-        var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include);
         foreach (var t in allTerrains)
         {
             if (t != null && t.gameObject != null) Undo.DestroyObjectImmediate(t.gameObject);
         }
 
-        var allGos = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var allGos = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
         foreach (var go in allGos)
         {
             if (go == null) continue;
@@ -448,11 +448,13 @@ public class MapToTerrainBuilder : EditorWindow
         tComp.heightmapPixelError = 2f;
 
         System.Type nrType = null;
+#pragma warning disable UAC0005
         foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
         {
             nrType = asm.GetType("VisualDesignCafe.Rendering.Nature.NatureRenderer");
             if (nrType != null) break;
         }
+#pragma warning restore UAC0005
         if (nrType != null && terrainGo.GetComponent(nrType) == null)
         {
             terrainGo.AddComponent(nrType);
@@ -478,7 +480,7 @@ public class MapToTerrainBuilder : EditorWindow
         Terrain t = Terrain.activeTerrain;
         if (t == null)
         {
-            var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include);
             if (allTerrains.Length > 0) t = allTerrains[0];
         }
 
@@ -497,7 +499,7 @@ public class MapToTerrainBuilder : EditorWindow
         FixRockMaterialsToURP();
 
         string parentName = "--- HỆ THỐNG NÚI ĐÁ VÔI PHOTOSCANNED (PBR) ---";
-        var allGos = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var allGos = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
         foreach (var go in allGos)
         {
             if (go == null) continue;
@@ -731,12 +733,12 @@ public class MapToTerrainBuilder : EditorWindow
         Terrain tComp = Terrain.activeTerrain;
         if (tComp == null)
         {
-            var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include);
             if (allTerrains.Length > 0) tComp = allTerrains[0];
         }
 
         string pName = "--- TRẬN ĐỊA CỌC NGẦM BẠCH ĐẰNG (938) ---";
-        var allSpikes = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var allSpikes = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
         foreach (var go in allSpikes)
         {
             if (go == null) continue;
@@ -827,7 +829,7 @@ public class MapToTerrainBuilder : EditorWindow
         Terrain t = Terrain.activeTerrain;
         if (t == null)
         {
-            var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include);
             if (allTerrains.Length > 0) t = allTerrains[0];
         }
 
@@ -843,7 +845,7 @@ public class MapToTerrainBuilder : EditorWindow
         GameObject pfBarrels = AssetDatabase.LoadAssetAtPath<GameObject>(pDir + "Props/pf_barrels_01.prefab");
 
         string campParentName = "--- CHIẾN TRƯỜNG: ĐẠI BẢN DOANH & XƯỞNG CỌC BẠCH ĐẰNG ---";
-        var allCamps = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var allCamps = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
         foreach (var go in allCamps)
         {
             if (go == null) continue;
@@ -1142,14 +1144,14 @@ public class MapToTerrainBuilder : EditorWindow
         Vector3 boatPos = new Vector3(-400f, 14.2f, 300f);
 
         GameObject boatGo = null;
-        var boatComp = Object.FindFirstObjectByType<BoatCrash>();
+        var boatComp = Object.FindAnyObjectByType<BoatCrash>();
         if (boatComp != null)
         {
             boatGo = boatComp.gameObject;
         }
         else
         {
-            var all = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+            var all = Object.FindObjectsByType<GameObject>();
             foreach (var go in all)
             {
                 string n = go.name.ToLower();

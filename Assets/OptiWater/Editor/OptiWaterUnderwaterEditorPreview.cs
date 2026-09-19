@@ -50,7 +50,7 @@ namespace Smartomano.OptiWater.Editor
 
                 bool changed = false;
                 var dataList = asset.rendererDataList;
-                bool verbose = s_InjectLogCount < 5;
+                bool verbose = false;
                 if (verbose)
                     Debug.Log($"[OptiWaterUnderwaterEditorPreview] inject attempt #{s_InjectLogCount}: rendererDataList.Length={dataList.Length}");
 

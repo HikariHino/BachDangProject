@@ -457,8 +457,7 @@ namespace Smartomano.OptiWater
             {
                 if (planarRenderer == null)
                 {
-                    var renderers = Object.FindObjectsByType<OptiWaterPlanarReflectionRenderer>(FindObjectsSortMode.None);
-                    if (renderers.Length > 0) planarRenderer = renderers[0];
+                    planarRenderer = Object.FindAnyObjectByType<OptiWaterPlanarReflectionRenderer>();
                 }
                 if (planarRenderer != null)
                     planarRenderer.reflectionEnabled = enabled;

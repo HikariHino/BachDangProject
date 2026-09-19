@@ -60,14 +60,14 @@ public class BattleCamera : MonoBehaviour
     {
         if (boatTarget == null)
         {
-            var boat = FindFirstObjectByType<BoatCrash>();
+            var boat = FindAnyObjectByType<BoatCrash>();
             if (boat != null)
             {
                 boatTarget = boat.transform;
             }
             else
             {
-                var all = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+                var all = FindObjectsByType<GameObject>();
                 foreach (var go in all)
                 {
                     string n = go.name.ToLower();
