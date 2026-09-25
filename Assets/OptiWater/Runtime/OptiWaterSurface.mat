@@ -130,7 +130,7 @@ Material:
     - _SunGlitterSparkle: 0.19
     - _SunGlitterStrength: 1.9
     - _WaterClipThreshold: 4.8
-    - _WaterSurfaceHeight: 14
+    - _WaterSurfaceHeight: 7.1
     - _WaveAmplitude: 1
     - _WaveDirSpeed: 0.15
     - _WaveFoamIntensity: 2.58
