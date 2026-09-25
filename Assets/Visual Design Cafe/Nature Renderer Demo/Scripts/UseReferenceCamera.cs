@@ -1,5 +1,4 @@
 using UnityEngine;
-using VisualDesignCafe.Rendering.Instancing;
 
 namespace NatureRendererDemo
 {
