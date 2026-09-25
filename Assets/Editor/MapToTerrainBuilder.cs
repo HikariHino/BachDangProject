@@ -128,6 +128,7 @@ public class MapToTerrainBuilder : EditorWindow
         }
 
         float[,] distToWater = ComputeDistanceTransform(isWaterMap, tSize);
+        float[,] distToLand = ComputeDistanceToLand(isWaterMap, tSize);
 
         // 2. KHỞI TẠO ĐỊA HÌNH
         float[,] rawH = new float[tSize, tSize];
@@ -145,7 +146,21 @@ public class MapToTerrainBuilder : EditorWindow
 
                 if (isWaterMap[y, x])
                 {
-                    rawH[y, x] = 0.020f + Mathf.PerlinNoise(u * 20f, v * 20f) * 0.003f; // Lòng sông sâu ~6m
+                    // LÒNG SÔNG VÀ ĐÁY BIỂN SÂU HÙNG VĨ:
+                    // Ven bờ (dWater < 14): dốc thoai thoải từ bờ nước 13.8m xuống đáy sâu
+                    // Lòng sông chính: sâu ~12m (đáy tại 2.1m)
+                    // Cửa biển phía Nam (v < 0.45): đáy sâu thẳm ~13.5m - 14m (đáy tại 0.9m)
+                    float dWater = distToLand[y, x];
+                    float targetBedH = 0.007f; // ~2.1m (nước sâu ~11.9m)
+                    if (v < 0.45f)
+                    {
+                        float southSeaFactor = Mathf.Clamp01((0.45f - v) / 0.45f);
+                        targetBedH = Mathf.Lerp(targetBedH, 0.003f, southSeaFactor); // Cửa biển sâu ~13.1m
+                    }
+                    targetBedH += (Mathf.PerlinNoise(u * 20f, v * 20f) - 0.5f) * 0.0015f;
+
+                    float shoreBlend = Mathf.Clamp01(dWater / 14f);
+                    rawH[y, x] = Mathf.Lerp(waterH - 0.001f, targetBedH, Mathf.SmoothStep(0f, 1f, shoreBlend));
                 }
                 else
                 {
@@ -896,9 +911,9 @@ public class MapToTerrainBuilder : EditorWindow
                 Vector3 tiltDirection = new Vector3(Random.Range(-0.24f, -0.36f), 0.93f, Random.Range(-0.08f, 0.08f)).normalized;
                 spike.transform.rotation = Quaternion.LookRotation(tiltDirection, Vector3.up);
 
-                // CỌC BỰ KHỔNG LỒ: Thân to 1.1m - 1.3m, dài 12m - 14m vươn từ đáy sông lên mấp mé mặt nước!
+                // CỌC BỰ KHỔNG LỒ: Thân to 1.1m - 1.3m, dài 14m - 17m vươn từ đáy sông sâu lên mấp mé mặt nước!
                 float thickScale = Random.Range(4.5f, 5.5f);  // Đường kính thân cây khổng lồ
-                float lengthScale = Random.Range(3.8f, 4.3f); // Chiều dài cọc vươn từ đáy sông lên mặt nước
+                float lengthScale = Random.Range(4.5f, 5.2f); // Chiều dài cọc vươn từ đáy sâu lên mặt nước
                 spike.transform.localScale = new Vector3(thickScale, thickScale, lengthScale);
 
                 spike.isStatic = true;
@@ -1168,6 +1183,46 @@ public class MapToTerrainBuilder : EditorWindow
         return dist;
     }
 
+    private static float[,] ComputeDistanceToLand(bool[,] isWater, int sz)
+    {
+        float[,] dist = new float[sz, sz];
+        float maxVal = 9999f;
+
+        for (int y = 0; y < sz; y++)
+            for (int x = 0; x < sz; x++)
+                dist[y, x] = !isWater[y, x] ? 0f : maxVal;
+
+        for (int y = 0; y < sz; y++)
+        {
+            for (int x = 0; x < sz; x++)
+            {
+                if (dist[y, x] == 0f) continue;
+                float d = dist[y, x];
+                if (x > 0) d = Mathf.Min(d, dist[y, x - 1] + 1f);
+                if (y > 0) d = Mathf.Min(d, dist[y - 1, x] + 1f);
+                if (x > 0 && y > 0) d = Mathf.Min(d, dist[y - 1, x - 1] + 1.414f);
+                if (x < sz - 1 && y > 0) d = Mathf.Min(d, dist[y - 1, x + 1] + 1.414f);
+                dist[y, x] = d;
+            }
+        }
+
+        for (int y = sz - 1; y >= 0; y--)
+        {
+            for (int x = sz - 1; x >= 0; x--)
+            {
+                if (dist[y, x] == 0f) continue;
+                float d = dist[y, x];
+                if (x < sz - 1) d = Mathf.Min(d, dist[y, x + 1] + 1f);
+                if (y < sz - 1) d = Mathf.Min(d, dist[y + 1, x] + 1f);
+                if (x < sz - 1 && y < sz - 1) d = Mathf.Min(d, dist[y + 1, x + 1] + 1.414f);
+                if (x > 0 && y < sz - 1) d = Mathf.Min(d, dist[y + 1, x - 1] + 1.414f);
+                dist[y, x] = d;
+            }
+        }
+
+        return dist;
+    }
+
     private static float[,] SmoothHeights(float[,] src, int sz, int radius)
     {
         float[,] dst = new float[sz, sz];
@@ -1238,6 +1293,107 @@ public class MapToTerrainBuilder : EditorWindow
         {
             waterGo.AddComponent<TideSystem>();
         }
+    }
+
+    // =========================================================================
+    // MENU ITEM: LÀM NƯỚC BIỂN & LÒNG SÔNG SÂU HƠN (CẬP NHẬT NGAY VÀO SCENE)
+    // =========================================================================
+    [MenuItem("🤖 Trợ lý AI/🌊 Làm Nước Biển & Lòng Sông Sâu Hơn (Cập Nhật Ngay)")]
+    public static void DeepenSeaAndRiver()
+    {
+        Terrain t = Terrain.activeTerrain;
+        if (t == null)
+        {
+            var allTerrains = Object.FindObjectsByType<Terrain>(FindObjectsInactive.Include);
+            if (allTerrains.Length > 0) t = allTerrains[0];
+        }
+
+        if (t == null)
+        {
+            Debug.LogError("❌ Không tìm thấy Terrain trong Scene! Hãy tạo sa bàn trước.");
+            return;
+        }
+
+        Texture2D mapTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/BachDangMap.png");
+        if (mapTex == null)
+        {
+            Debug.LogError("❌ Không tìm thấy Assets/BachDangMap.png!");
+            return;
+        }
+
+        TerrainData td = t.terrainData;
+        int tSize = td.heightmapResolution;
+        float[,] heights = td.GetHeights(0, 0, tSize, tSize);
+
+        bool[,] isWaterMap = new bool[tSize, tSize];
+        for (int y = 0; y < tSize; y++)
+        {
+            for (int x = 0; x < tSize; x++)
+            {
+                float u = (float)x / (tSize - 1);
+                float v = (float)y / (tSize - 1);
+                Color c = mapTex.GetPixelBilinear(u, v);
+                isWaterMap[y, x] = (c.b >= c.g * 0.95f) || (c.b > 0.45f && c.b > c.r + 0.15f);
+            }
+        }
+
+        float[,] distToLand = ComputeDistanceToLand(isWaterMap, tSize);
+        float waterH = 0.0467f; // 14.0m
+
+        // Hạ độ cao đáy sông & biển xuống sâu hơn
+        for (int y = 0; y < tSize; y++)
+        {
+            for (int x = 0; x < tSize; x++)
+            {
+                if (isWaterMap[y, x])
+                {
+                    float u = (float)x / (tSize - 1);
+                    float v = (float)y / (tSize - 1);
+                    float dWater = distToLand[y, x];
+
+                    float targetBedH = 0.007f; // ~2.1m (nước sâu ~12m)
+                    if (v < 0.45f)
+                    {
+                        float southSeaFactor = Mathf.Clamp01((0.45f - v) / 0.45f);
+                        targetBedH = Mathf.Lerp(targetBedH, 0.003f, southSeaFactor); // Cửa biển sâu ~13.5m - 14m
+                    }
+                    targetBedH += (Mathf.PerlinNoise(u * 20f, v * 20f) - 0.5f) * 0.0015f;
+
+                    float shoreBlend = Mathf.Clamp01(dWater / 14f);
+                    float deepH = Mathf.Lerp(waterH - 0.001f, targetBedH, Mathf.SmoothStep(0f, 1f, shoreBlend));
+
+                    heights[y, x] = Mathf.Min(heights[y, x], deepH);
+                }
+            }
+        }
+
+        // Làm mịn đáy sông để không bị gắt
+        float[,] smoothedHeights = SmoothHeights(heights, tSize, 2);
+        for (int y = 0; y < tSize; y++)
+        {
+            for (int x = 0; x < tSize; x++)
+            {
+                if (isWaterMap[y, x])
+                {
+                    heights[y, x] = smoothedHeights[y, x];
+                }
+            }
+        }
+
+        Undo.RegisterCompleteObjectUndo(td, "Deepen Sea and River");
+        td.SetHeights(0, 0, heights);
+
+        // Cập nhật mặt nước OptiWater
+        SetupOptiWaterSurface(14.0f);
+
+        // Cập nhật lại bãi cọc gỗ để cắm từ đáy sâu
+        SpawnHistoricSpikes();
+
+        // Đặt lại thuyền giặc nổi tại Y = 14.2m
+        PlaceBoatAndSpikesInRiver();
+
+        AssetDatabase.SaveAssets();
+        Debug.Log("🌊 [BẠCH ĐẰNG 938] ĐÃ LÀM NƯỚC BIỂN & LÒNG SÔNG SÂU HƠN THÀNH CÔNG! Đáy sông sâu 12m, cửa biển sâu 14m, bãi cọc và thuyền nổi chuẩn xác.");
     }
 
     [MenuItem("🤖 Trợ lý AI/⚓ Đặt Thuyền & Bãi Cọc Ra Giữa Sông Bạch Đằng")]

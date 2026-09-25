@@ -79,7 +79,7 @@ Material:
     - _DeepFoamFade: 4.1
     - _DeepFoamIntensity: 4.44
     - _DeepFoamStart: 0.3
-    - _DepthBlendFactor: 5
+    - _DepthBlendFactor: 7
     - _DistortionStrength: 0.15
     - _Foam: 1
     - _FoamDepthThreshold: 1.1
@@ -99,7 +99,7 @@ Material:
     - _PlanarReflection: 1
     - _ReflectionIntensity: 0.02
     - _RefractionStrength: 0.071
-    - _ShallowDeepBlendDepth: 3
+    - _ShallowDeepBlendDepth: 6
     - _ShoreWave: 1
     - _ShoreWaveFalloff: 1.53
     - _ShoreWaveFoamMaskFloor: 0
@@ -130,7 +130,7 @@ Material:
     - _SunGlitterSparkle: 0.19
     - _SunGlitterStrength: 1.9
     - _WaterClipThreshold: 4.8
-    - _WaterSurfaceHeight: 7.1
+    - _WaterSurfaceHeight: 14
     - _WaveAmplitude: 1
     - _WaveDirSpeed: 0.15
     - _WaveFoamIntensity: 2.58
@@ -146,9 +146,9 @@ Material:
     - _C_Direction: {r: 0.7, g: 0, b: 0, a: 0}
     - _CrestGlowColor: {r: 1, g: 1, b: 1, a: 1}
     - _D_Direction: {r: -0.5, g: 0, b: 0, a: 0}
-    - _DeepWaterColor: {r: 0.0117647005, g: 0.15597038, b: 0.21960784, a: 1}
+    - _DeepWaterColor: {r: 0.005, g: 0.07, b: 0.16, a: 1}
     - _PlaneNormalWS: {r: 0, g: 1, b: 0, a: 0}
     - _PlanePosWS: {r: 0, g: 0, b: 0, a: 0}
-    - _WaterColor: {r: 0.011764702, g: 0.39607844, b: 0.33041734, a: 1}
+    - _WaterColor: {r: 0.015, g: 0.38, b: 0.36, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
