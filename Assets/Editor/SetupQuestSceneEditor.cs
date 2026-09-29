@@ -100,29 +100,29 @@ public class SetupQuestSceneEditor : EditorWindow
         panelRect.anchorMax = new Vector2(1, 1);
         panelRect.pivot = new Vector2(1, 1);
         panelRect.anchoredPosition = new Vector2(-20, -20);
-        panelRect.sizeDelta = new Vector2(350, 150);
+        panelRect.sizeDelta = new Vector2(500, 250); // Phóng to bảng Panel
         
         // Tạo Title Text
         GameObject titleObj = new GameObject("QuestTitle_Text");
         titleObj.transform.SetParent(panelObj.transform, false);
         TextMeshProUGUI titleText = titleObj.AddComponent<TextMeshProUGUI>();
         titleText.text = "Nhiệm vụ: Chưa có";
-        titleText.fontSize = 24;
+        titleText.fontSize = 32; // Chữ tựa đề to hơn
         titleText.color = Color.yellow;
         RectTransform titleRect = titleObj.GetComponent<RectTransform>();
-        titleRect.anchoredPosition = new Vector2(0, 40);
-        titleRect.sizeDelta = new Vector2(330, 40);
+        titleRect.anchoredPosition = new Vector2(0, 70);
+        titleRect.sizeDelta = new Vector2(460, 60);
         
         // Tạo Description Text
         GameObject descObj = new GameObject("QuestDesc_Text");
         descObj.transform.SetParent(panelObj.transform, false);
         TextMeshProUGUI descText = descObj.AddComponent<TextMeshProUGUI>();
         descText.text = "Mô tả...";
-        descText.fontSize = 18;
+        descText.fontSize = 24; // Chữ mô tả to hơn
         descText.color = Color.white;
         RectTransform descRect = descObj.GetComponent<RectTransform>();
-        descRect.anchoredPosition = new Vector2(0, -20);
-        descRect.sizeDelta = new Vector2(330, 80);
+        descRect.anchoredPosition = new Vector2(0, -30);
+        descRect.sizeDelta = new Vector2(460, 150);
         
         // Tạo Text "Nhấn E"
         GameObject promptObj = new GameObject("InteractPrompt_Text");
