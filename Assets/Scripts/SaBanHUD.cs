@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Bảng Điều Khiển Sa Bàn Chiến Trận Bạch Đằng 938 (Interactive Battle HUD & Director)
-/// Hỗ trợ chuyển đổi nhanh góc quay camera, điều khiển thủy triều và kích hoạt diễn biến chiến trận.
+/// Hỗ trợ chuyển đổi nhanh góc quay camera, điều khiển thủy triều và quan sát bối cảnh.
 /// </summary>
 public class SaBanHUD : MonoBehaviour
 {
@@ -15,8 +15,7 @@ public class SaBanHUD : MonoBehaviour
     private BoatCrash enemyBoat;
     private BattleCamera battleCam;
 
-    // Các vị trí quan sát điện ảnh (Cinematic Camera Viewpoints)
-    private readonly struct CamPreset
+    public readonly struct CamPreset
     {
         public readonly string name;
         public readonly Vector3 position;
@@ -30,7 +29,7 @@ public class SaBanHUD : MonoBehaviour
         }
     }
 
-    private CamPreset[] presets;
+    public CamPreset[] presets;
 
     void Awake()
     {
@@ -46,13 +45,13 @@ public class SaBanHUD : MonoBehaviour
         presets = new CamPreset[]
         {
             // 1. Toàn cảnh Sa bàn từ trên cao (Birds-eye tactical view)
-            new CamPreset("1. Toàn Cảnh Sa Bàn", new Vector3(-450f, 160f, -80f), new Vector3(-350f, 14f, 300f)),
+            new CamPreset("1. Toàn Cảnh Sa Bàn", new Vector3(-550f, 150f, -20f), new Vector3(-380f, 14f, 300f)),
             // 2. Cận cảnh bãi cọc & thuyền giặc Nam Hán
-            new CamPreset("2. Bãi Cọc & Thuyền Giặc", new Vector3(-470f, 26f, 300f), new Vector3(-350f, 14f, 300f)),
-            // 3. Đại Bản Doanh Tướng Ngô Quyền
-            new CamPreset("3. Đại Bản Doanh Ngô Quyền", new Vector3(-770f, 22f, 305f), new Vector3(-808f, 18f, 320f)),
-            // 4. Xưởng Rèn Cọc Lim & Bến Thuyền
-            new CamPreset("4. Xưởng Rèn & Bến Thuyền", new Vector3(-640f, 22f, 290f), new Vector3(-675f, 17.5f, 255f))
+            new CamPreset("2. Bãi Cọc & Chiến Hạm", new Vector3(-430f, 22f, 280f), new Vector3(-350f, 14.2f, 300f)),
+            // 3. Đại Bản Doanh & Tướng Ngô Quyền
+            new CamPreset("3. Đại Bản Doanh Ngô Quyền", new Vector3(-772f, 20.5f, 312f), new Vector3(-808f, 18f, 320f)),
+            // 4. Góc Nhìn Chủ Tướng Hướng Ra Sông
+            new CamPreset("4. Tầm Nhìn Tướng Ngô Quyền", new Vector3(-814f, 19.4f, 320f), new Vector3(-770f, 16.5f, 320f))
         };
     }
 
@@ -108,19 +107,18 @@ public class SaBanHUD : MonoBehaviour
         btnStyle.fontStyle = FontStyle.Bold;
         btnStyle.fixedHeight = 28;
 
-        float panelWidth = 360f;
-        float panelHeight = 240f;
+        float panelWidth = 370f;
+        float panelHeight = 230f;
         GUILayout.BeginArea(new Rect(15, 15, panelWidth, panelHeight), panelStyle);
 
         GUILayout.Label("⚔️ ĐIỀU KHIỂN SA BÀN BẠCH ĐẰNG 938", headerStyle);
-        GUILayout.Space(4);
+        GUILayout.Space(3);
 
         // THỦY TRIỀU
         float waterY = tideSystem != null ? tideSystem.transform.position.y : 14f;
         string tideDesc = waterY > 13.5f ? "<color=#00e676>▲ TRIỀU DÂNG (Ngập đầu cọc)</color>" : "<color=#ff5252>▼ TRIỀU RÚT (Lộ bãi cọc nhọn)</color>";
         GUILayout.Label($"🌊 Mực nước: <b>{waterY:F1}m</b> - Trạng thái: {tideDesc}", bodyStyle);
 
-        GUILayout.BeginHorizontal();
         if (GUILayout.Button("🌊 Đảo Chiều Thủy Triều [T]", btnStyle))
         {
             if (tideSystem != null)
@@ -133,17 +131,16 @@ public class SaBanHUD : MonoBehaviour
                 );
             }
         }
-        GUILayout.EndHorizontal();
 
         GUILayout.Space(6);
 
         // GÓC QUAY CAMERA
-        GUILayout.Label("🎥 <b>Chọn Góc Quan Sát Điện Ảnh [1-4]:</b>", bodyStyle);
+        GUILayout.Label("🎥 <b>Góc Quay Điện Ảnh [Phím 1 - 4]:</b>", bodyStyle);
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("[1] Sa Bàn", btnStyle)) SwitchToPreset(0);
         if (GUILayout.Button("[2] Bãi Cọc", btnStyle)) SwitchToPreset(1);
         if (GUILayout.Button("[3] Bản Doanh", btnStyle)) SwitchToPreset(2);
-        if (GUILayout.Button("[4] Xưởng Rèn", btnStyle)) SwitchToPreset(3);
+        if (GUILayout.Button("[4] Tướng Quân", btnStyle)) SwitchToPreset(3);
         GUILayout.EndHorizontal();
 
         GUILayout.Space(4);
