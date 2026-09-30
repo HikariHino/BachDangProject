@@ -50,10 +50,24 @@ public class BattleCamera : MonoBehaviour
 
         FindTargetIfNull();
 
+        SynchronizeFreeLook();
+        currentYaw = transform.eulerAngles.y;
+    }
+
+    public void SynchronizeFreeLook()
+    {
         Vector3 angles = transform.eulerAngles;
         freeYaw = angles.y;
-        freePitch = angles.x;
-        currentYaw = angles.y;
+        freePitch = Mathf.DeltaAngle(0f, angles.x);
+    }
+
+    public void SetFreeFlyPose(Vector3 position, Vector3 lookAt)
+    {
+        mode = CameraMode.FreeFly;
+        transform.position = position;
+        if ((lookAt - position).sqrMagnitude > 0.0001f)
+            transform.LookAt(lookAt);
+        SynchronizeFreeLook();
     }
 
     void FindTargetIfNull()
@@ -87,6 +101,7 @@ public class BattleCamera : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.C) || Input.GetKeyDown(KeyCode.Tab))
         {
             mode = (mode == CameraMode.FollowBoat) ? CameraMode.FreeFly : CameraMode.FollowBoat;
+            if (mode == CameraMode.FreeFly) SynchronizeFreeLook();
             Debug.Log($"🎥 Đổi chế độ Camera sang: {mode} (Bấm C hoặc Tab để chuyển đổi)");
         }
 
@@ -141,6 +156,9 @@ public class BattleCamera : MonoBehaviour
     // --- 2. CHẾ ĐỘ BAY TỰ DO (SPECTATOR) ---
     void UpdateFreeFly()
     {
+        // Use the visible pose after presets or an external camera transition.
+        SynchronizeFreeLook();
+
         // Xoay góc nhìn khi giữ chuột phải
         if (Input.GetMouseButton(1))
         {
