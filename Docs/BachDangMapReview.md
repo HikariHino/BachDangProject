@@ -2,6 +2,8 @@
 
 Scene: `Assets/Scenes/beachBoat.unity`, Unity 6000.6.0f1.
 
+Lượt tiếp theo đã bổ sung chu kỳ ngày đêm và chỉnh sáu vùng núi. Xem `BachDangSkyMountains.md` để biết trạng thái hiện tại và cách điều khiển; các mục bên dưới mô tả lượt chỉnh ban đầu.
+
 ## Đã thực hiện
 
 - Kết nối Editor bằng Unity CLI trên máy; tạo cấu hình Unity MCP riêng cho project tại `.codex/config.toml`.
