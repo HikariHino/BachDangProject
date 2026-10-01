@@ -59,7 +59,7 @@ PrefabInstance:
     - target: {fileID: 5866666021909216657, guid: c2c2c0df7cb09b04eabe6233d9ca3ecf, type: 3}
       propertyPath: m_Controller
       value: 
-      objectReference: {fileID: 9100000, guid: ab6f6f23eed7420419d1d6b5df6f6df4, type: 2}
+      objectReference: {fileID: 9100000, guid: d35d9c03154ebe14fb2d6c82ab9686f9, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -99,6 +99,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Character_Movement
   rb: {fileID: 1014667463221289388}
   animator: {fileID: 6362254507382496532}
+  walkSpeed: 3
+  runSpeed: 6
+  attackMoveSpeedMultiplier: 0.2
+  attackStateName: Base Layer.Attack
+  attack2StateName: Base Layer.Attack2
+  blockStateName: Base Layer.Block
 --- !u!136 &7967930801426764581
 CapsuleCollider:
   m_ObjectHideFlags: 0
