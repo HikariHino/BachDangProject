@@ -34,6 +34,9 @@ public class TideSystem : MonoBehaviour
     private bool isRising = false;
     private float timer = 0f;
 
+    public float TargetWaterHeight => currentTargetY;
+    public bool IsRising => isRising;
+
     void Awake()
     {
         // ÉP MỨC NƯỚC RÚT VỀ 10.0M KỂ CẢ KHI INSPECTOR LƯU GIÁ TRỊ CŨ 12M
@@ -41,6 +44,9 @@ public class TideSystem : MonoBehaviour
         {
             lowTideY = 10.0f;
         }
+
+        currentTargetY = transform.position.y;
+        CurrentWaterHeight = transform.position.y;
     }
 
     void OnValidate()
@@ -53,9 +59,6 @@ public class TideSystem : MonoBehaviour
 
     void Start()
     {
-        currentTargetY = transform.position.y;
-        CurrentWaterHeight = transform.position.y;
-
         // XÓA NGAY Collider trên mặt nước (nếu có)! 
         // Nước là chất lỏng, tuyệt đối không được dùng MeshCollider cứng gây hất văng hay quay mòng mòng thuyền!
         Collider col = GetComponent<Collider>();
@@ -65,24 +68,45 @@ public class TideSystem : MonoBehaviour
         }
     }
 
+    public void ToggleTide()
+    {
+        SetTide(!isRising);
+    }
+
+    /// <summary>Shared command for keyboard, HUD and the scene director.</summary>
+    public void SetTide(bool high, bool immediate = false)
+    {
+        autoCycle = false;
+        isRising = high;
+        currentTargetY = high ? highTideY : lowTideY;
+
+        if (immediate)
+        {
+            Vector3 position = transform.position;
+            position.y = currentTargetY;
+            transform.position = position;
+            CurrentWaterHeight = position.y;
+        }
+
+        Debug.Log($"🌊 LỆNH THỦY TRIỀU: {(high ? "TRIỀU DÂNG (High Tide)" : "TRIỀU RÚT (Low Tide)")} -> Mục tiêu: {currentTargetY}m");
+    }
+
     void Update()
     {
         // 1. Phím tắt T để chuyển đổi nhanh Thủy Triều
         if (Input.GetKeyDown(toggleTideKey))
         {
-            isRising = !isRising;
-            autoCycle = false; // Tạm dừng tự động khi người chơi tự can thiệp
-            currentTargetY = isRising ? highTideY : lowTideY;
-            Debug.Log($"🌊 LỆNH THỦY TRIỀU: {(isRising ? "TRIỀU DÂNG (High Tide)" : "TRIỀU RÚT (Low Tide)")} -> Mục tiêu: {currentTargetY}m");
+            ToggleTide();
         }
 
         // 2. Chế độ Thủy Triều tự động lên xuống nhịp nhàng
         if (autoCycle)
         {
             timer += Time.deltaTime;
-            float t = (Mathf.Sin((timer / cycleDuration) * Mathf.PI * 2f - Mathf.PI / 2f) + 1f) / 2f;
+            float phase = (timer / Mathf.Max(0.1f, cycleDuration)) * Mathf.PI * 2f - Mathf.PI / 2f;
+            float t = (Mathf.Sin(phase) + 1f) / 2f;
             currentTargetY = Mathf.Lerp(lowTideY, highTideY, t);
-            isRising = Mathf.Cos((timer / cycleDuration) * Mathf.PI * 2f - Mathf.PI / 2f) > 0f;
+            isRising = Mathf.Cos(phase) > 0f;
         }
 
         // 3. Nâng hạ mặt nước êm dịu (Lerp)
@@ -96,12 +120,14 @@ public class TideSystem : MonoBehaviour
 
     void OnGUI()
     {
-        if (!showUI) return;
+        // SaBanHUD owns the combined panel, including its H shortcut.
+        if (!showUI || (SaBanHUD.Instance != null && SaBanHUD.Instance.isActiveAndEnabled)) return;
 
         GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
         boxStyle.fontSize = 13;
         boxStyle.normal.textColor = Color.white;
         boxStyle.alignment = TextAnchor.MiddleLeft;
+        boxStyle.richText = true;
 
         GUILayout.BeginArea(new Rect(20, 20, 320, 115), boxStyle);
         GUILayout.Label($"<b>🌊 THỦY TRIỀU BẠCH ĐẰNG 938</b>", boxStyle);

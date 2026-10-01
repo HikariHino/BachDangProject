@@ -145,13 +145,15 @@ Shader "OptiWater/Water Surface"
             #pragma multi_compile _ _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
+            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
+            #pragma multi_compile_fragment _ _REFLECTION_PROBE_ATLAS
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            #include_with_pragmas "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Fog.hlsl"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
-
-            #define PI 3.14159265359
 
             struct Attributes
             {
@@ -171,6 +173,7 @@ Shader "OptiWater/Water Surface"
                 float3 bitangentWS : TEXCOORD4;
                 float4 screenPos : TEXCOORD5;
                 float3 viewDirWS : TEXCOORD6;
+                half fogFactor : TEXCOORD7;
             };
 
             CBUFFER_START(UnityPerMaterial)
@@ -320,6 +323,10 @@ Shader "OptiWater/Water Surface"
                 OUT.uv.zw = TRANSFORM_TEX(IN.uv, _FoamTex) * 2.0 + uvPan;
                 OUT.screenPos = ComputeScreenPos(OUT.positionCS);
                 OUT.viewDirWS = GetWorldSpaceNormalizeViewDir(OUT.worldPos.xyz);
+                OUT.fogFactor = 0.0;
+#if !defined(_FOG_FRAGMENT)
+                OUT.fogFactor = ComputeFogFactor(OUT.positionCS.z);
+#endif
                 return OUT;
             }
 
@@ -349,7 +356,8 @@ Shader "OptiWater/Water Surface"
                 }
                 else if (hWorld > clipLine)
                 {
-                    return float4(1, 1, 1, 1);
+                    // Preserve the opaque shore/object instead of painting it white.
+                    clip(-1.0);
                 }
 #endif
 
@@ -555,6 +563,11 @@ if (_PlanarReflection > 0.5) {
                 planarUV += planarDistort;
                 reflectionColor = SAMPLE_TEXTURE2D(_ReflectionTex, sampler_ReflectionTex, planarUV).rgb;
 }
+else {
+                // Use URP's sky/probes when no planar reflection camera is configured.
+                reflectionColor = GlossyEnvironmentReflection(
+                    reflectDir, IN.worldPos.xyz, saturate(1.0 - _Smoothness), 1.0, screenUV);
+}
                 reflectionColor *= (_ReflectionIntensity * fresnel);
 
                 float waterDepthMeters = max(0.0, _WaterSurfaceHeight - hWorld);
@@ -618,6 +631,9 @@ if (_BottomDistort > 0.5) {
 #if _DEBUG_SHOREMASK
                 return float4(shoreFoamMask, shoreFoamMask, shoreFoamMask, 1.0);
 #endif
+                // Match URP atmosphere after water, foam and reflection are composed.
+                float fogFactor = InitializeInputDataFog(float4(IN.worldPos.xyz, 1.0), IN.fogFactor);
+                finalColor = MixFog(finalColor, fogFactor);
                 return float4(finalColor, alpha);
             }
             ENDHLSL
