@@ -15,6 +15,7 @@ public class SaBanHUD : MonoBehaviour
     private BoatCrash enemyBoat;
     private BattleCamera battleCam;
     private DayNightCycle dayNightCycle;
+    private bool hasSettlementTour;
 
     public readonly struct CamPreset
     {
@@ -65,6 +66,18 @@ public class SaBanHUD : MonoBehaviour
             // 4. Góc Nhìn Chủ Tướng Hướng Ra Sông
             new CamPreset("4. Tầm Nhìn Tướng Ngô Quyền", new Vector3(-814f, 19.4f, 320f), new Vector3(-770f, 16.5f, 320f))
         };
+
+        foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+        {
+            if (root.name != "BachDang_Living_Settlements") continue;
+            hasSettlementTour = true;
+            System.Array.Resize(ref presets, 8);
+            presets[4] = new CamPreset("5. Làng Chợ", new Vector3(-805f, 60f, 0f), new Vector3(-680f, 20f, 110f));
+            presets[5] = new CamPreset("6. Xóm Chài", new Vector3(20f, 82f, -20f), new Vector3(180f, 20f, 75f));
+            presets[6] = new CamPreset("7. Trại Quân", new Vector3(-1040f, 74f, 120f), new Vector3(-935f, 20f, 220f));
+            presets[7] = new CamPreset("8. Xóm Vườn", new Vector3(-1220f, 68f, 155f), new Vector3(-1090f, 20f, 255f));
+            break;
+        }
     }
 
     void Update()
@@ -79,6 +92,13 @@ public class SaBanHUD : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha2)) SwitchToPreset(1);
         if (Input.GetKeyDown(KeyCode.Alpha3)) SwitchToPreset(2);
         if (Input.GetKeyDown(KeyCode.Alpha4)) SwitchToPreset(3);
+        if (hasSettlementTour)
+        {
+            if (Input.GetKeyDown(KeyCode.Alpha5)) SwitchToPreset(4);
+            if (Input.GetKeyDown(KeyCode.Alpha6)) SwitchToPreset(5);
+            if (Input.GetKeyDown(KeyCode.Alpha7)) SwitchToPreset(6);
+            if (Input.GetKeyDown(KeyCode.Alpha8)) SwitchToPreset(7);
+        }
     }
 
     public void SwitchToPreset(int index)
@@ -128,6 +148,7 @@ public class SaBanHUD : MonoBehaviour
         float panelWidth = 370f;
         bool hasDayNightCycle = dayNightCycle != null && dayNightCycle.isActiveAndEnabled;
         float panelHeight = hasDayNightCycle ? 325f : 230f;
+        if (hasSettlementTour) panelHeight += 34f;
         GUILayout.BeginArea(new Rect(15, 15, panelWidth, panelHeight), panelStyle);
 
         GUILayout.Label("⚔️ ĐIỀU KHIỂN SA BÀN BẠCH ĐẰNG 938", headerStyle);
@@ -163,13 +184,24 @@ public class SaBanHUD : MonoBehaviour
         }
 
         // GÓC QUAY CAMERA
-        GUILayout.Label("🎥 <b>Góc Quay Điện Ảnh [Phím 1 - 4]:</b>", bodyStyle);
+        GUILayout.Label(hasSettlementTour ? "🎥 <b>Góc Quay Điện Ảnh [Phím 1 - 8]:</b>"
+                                         : "🎥 <b>Góc Quay Điện Ảnh [Phím 1 - 4]:</b>", bodyStyle);
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("[1] Sa Bàn", btnStyle)) SwitchToPreset(0);
         if (GUILayout.Button("[2] Bãi Cọc", btnStyle)) SwitchToPreset(1);
-        if (GUILayout.Button("[3] Bản Doanh", btnStyle)) SwitchToPreset(2);
-        if (GUILayout.Button("[4] Tướng Quân", btnStyle)) SwitchToPreset(3);
+        if (GUILayout.Button("[3] Trại", btnStyle)) SwitchToPreset(2);
+        if (GUILayout.Button("[4] Tướng", btnStyle)) SwitchToPreset(3);
         GUILayout.EndHorizontal();
+
+        if (hasSettlementTour)
+        {
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("[5] Làng", btnStyle)) SwitchToPreset(4);
+            if (GUILayout.Button("[6] Bến cá", btnStyle)) SwitchToPreset(5);
+            if (GUILayout.Button("[7] Trại", btnStyle)) SwitchToPreset(6);
+            if (GUILayout.Button("[8] Xóm vườn", btnStyle)) SwitchToPreset(7);
+            GUILayout.EndHorizontal();
+        }
 
         GUILayout.Space(4);
         GUILayout.Label("<i>[Tab/C] Bay tự do | [H] Ẩn/Hiện Menu | [Chuột phải] Xoay</i>", bodyStyle);
