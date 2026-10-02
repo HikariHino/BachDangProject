@@ -42299,6 +42299,40 @@ Transform:
   - {fileID: 902301721}
   m_Father: {fileID: 2064016801}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &595056885 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 177930, guid: f632ee341faffa64ebfa4e2c74d6e422, type: 3}
+  m_PrefabInstance: {fileID: 1882566128}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &595056887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 595056885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1 &595156842
 GameObject:
   m_ObjectHideFlags: 0
@@ -68910,8 +68944,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 961739749}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.162972, y: 0.38767782, z: -0.06984514, w: 0.90458155}
-  m_LocalPosition: {x: -1040, y: 74, z: 120}
+  m_LocalRotation: {x: 0.1071659, y: 0.40907097, z: -0.04844607, w: 0.90489197}
+  m_LocalPosition: {x: -805, y: 60, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -91738,6 +91772,40 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: e1729a2aca9e75b40a8d30f1bc127a5e, type: 3}
   m_PrefabInstance: {fileID: 1280635715}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1281191769 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 177930, guid: f632ee341faffa64ebfa4e2c74d6e422, type: 3}
+  m_PrefabInstance: {fileID: 1509346457}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1281191771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1281191769}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1 &1281448073
 GameObject:
   m_ObjectHideFlags: 0
@@ -107380,7 +107448,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 177930, guid: f632ee341faffa64ebfa4e2c74d6e422, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1281191771}
   m_SourcePrefab: {fileID: 100100000, guid: f632ee341faffa64ebfa4e2c74d6e422, type: 3}
 --- !u!4 &1509346458 stripped
 Transform:
@@ -134570,7 +134641,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 177930, guid: f632ee341faffa64ebfa4e2c74d6e422, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 595056887}
   m_SourcePrefab: {fileID: 100100000, guid: f632ee341faffa64ebfa4e2c74d6e422, type: 3}
 --- !u!4 &1882566129 stripped
 Transform:
