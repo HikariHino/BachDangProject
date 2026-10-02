@@ -4,6 +4,8 @@ Scene: `Assets/Scenes/beachBoat.unity`, Unity 6000.6.0f1.
 
 Lượt tiếp theo đã bổ sung chu kỳ ngày đêm và chỉnh sáu vùng núi. Xem `BachDangSkyMountains.md` để biết trạng thái hiện tại và cách điều khiển; các mục bên dưới mô tả lượt chỉnh ban đầu.
 
+Lượt làng và doanh trại hoàn tất ngày 02/10/2026: xem `BachDangSettlements.md` cho 60 nhà dân, 18 lán quân, bến cá và các góc camera mới **5–8**.
+
 ## Đã thực hiện
 
 - Kết nối Editor bằng Unity CLI trên máy; tạo cấu hình Unity MCP riêng cho project tại `.codex/config.toml`.

@@ -273,6 +273,8 @@ public static class BachDangSettlementBuilder
                 light.type = LightType.Point; light.color = new Color(1, .52f, .19f);
                 light.intensity = 2.1f; light.range = 13; light.shadows = LightShadows.None;
                 light.enabled = true;
+                if (PrefabUtility.IsPartOfPrefabInstance(light))
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(light);
             }
         }
 
