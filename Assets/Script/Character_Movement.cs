@@ -5,9 +5,38 @@ public class Character_Movement : MonoBehaviour
     public Rigidbody rb;
     public Animator animator;
 
-    private bool isGrounded = false;
+    [Header("Movement Speed")]
+    [SerializeField, Min(0f)] private float walkSpeed = 3f;
+    [SerializeField, Min(0f)] private float runSpeed = 6f;
+
+    [Header("Attack")]
+    [Tooltip("Tỉ lệ tốc độ di chuyển khi tấn công: 0.2 = còn 20% tốc độ, giảm 80%.")]
+    [SerializeField, Range(0f, 1f)] private float attackMoveSpeedMultiplier = 0.2f;
+    [Tooltip("Đường dẫn state chém kiếm trên layer 0 của Animator.")]
+    [SerializeField] private string attackStateName = "Base Layer.Attack";
+    [Tooltip("Đường dẫn state đòn chuột phải trên layer 0 của Animator.")]
+    [SerializeField] private string attack2StateName = "Base Layer.Attack2";
+
+    [Header("Shield Block")]
+    [Tooltip("Đường dẫn state đỡ khiên trên layer 0 của Animator.")]
+    [SerializeField] private string blockStateName = "Base Layer.Block";
+
+    private static readonly int BlockParameter = Animator.StringToHash("isBlocking");
+    private int blockStateHash;
+    private bool hasBlockParameter;
+    private bool canBlock;
+    private bool isBlocking;
+
+    private static readonly int AttackTrigger = Animator.StringToHash("attack");
+    private static readonly int Attack2Trigger = Animator.StringToHash("attack2");
+    private int attackStateHash;
+    private int attack2StateHash;
+    private int pendingAttackTrigger;
+    private bool isAttacking;
+    private bool waitingForAttack;
+    private float attackStartDeadline;
+
     private bool isRunning = false;
-    private bool jumpPressed = false;
 
     // Chỉ lưu hướng ngang (X, Z) — KHÔNG có Y
     private float moveX;
@@ -20,11 +49,43 @@ public class Character_Movement : MonoBehaviour
         // Rigidbody điều khiển di chuyển;
         // không áp dụng chuyển động gốc từ animation.
         animator.applyRootMotion = false;
+        attackStateHash = Animator.StringToHash(attackStateName);
+        attack2StateHash = Animator.StringToHash(attack2StateName);
+        blockStateHash = Animator.StringToHash(blockStateName);
+        hasBlockParameter = HasAnimatorParameter(BlockParameter, AnimatorControllerParameterType.Bool);
+        canBlock = hasBlockParameter && animator.HasState(0, blockStateHash);
     }
 
-    // Update: chỉ đọc input
+    // Đọc input và cập nhật trạng thái animation.
     void Update()
     {
+        UpdateAttackState();
+        UpdateBlockState();
+
+        if (!isAttacking && !isBlocking)
+        {
+            // Nếu nhấn đồng thời hai nút, ưu tiên đòn chuột trái.
+            if (Input.GetMouseButtonDown(0))
+            {
+                TryStartAttack(attackStateHash, attackStateName, AttackTrigger, "attack");
+            }
+            else if (Input.GetMouseButtonDown(1))
+            {
+                TryStartAttack(attack2StateHash, attack2StateName, Attack2Trigger, "attack2");
+            }
+        }
+
+        if (isBlocking)
+        {
+            moveX = 0f;
+            moveZ = 0f;
+            isRunning = false;
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isRunning", false);
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            return;
+        }
+
         float ipHorizontal = Input.GetAxis("Horizontal");
         float ipVertical   = Input.GetAxis("Vertical");
 
@@ -51,38 +112,116 @@ public class Character_Movement : MonoBehaviour
         animator.SetBool("isWalking", isMoving);
         animator.SetBool("isRunning", isRunning);
 
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        HandleRotation(moveDir);
+    }
+
+    void TryStartAttack(int stateHash, string stateName, int triggerHash, string triggerName)
+    {
+        if (!animator.HasState(0, stateHash))
         {
-            jumpPressed = true;
+            Debug.LogWarning($"Chưa tìm thấy state '{stateName}' trên layer 0 của Animator.", this);
+            return;
         }
 
-        HandleRotation(moveDir);
+        if (!HasAnimatorParameter(triggerHash, AnimatorControllerParameterType.Trigger))
+        {
+            Debug.LogWarning($"Hãy thêm parameter kiểu Trigger tên '{triggerName}' vào Animator.", this);
+            return;
+        }
+
+        isAttacking = true;
+        waitingForAttack = true;
+        pendingAttackTrigger = triggerHash;
+        // Chỉ giới hạn thời gian chờ vào state; không giới hạn độ dài animation chém.
+        attackStartDeadline = Time.time + 1f;
+        animator.SetTrigger(triggerHash);
+    }
+
+    void UpdateAttackState()
+    {
+        bool attackIsActive = IsAnimationStateActive(attackStateHash) || IsAnimationStateActive(attack2StateHash);
+
+        if (attackIsActive)
+        {
+            waitingForAttack = false;
+        }
+        else if (waitingForAttack && Time.time >= attackStartDeadline)
+        {
+            // Không giữ trạng thái tấn công mãi nếu thiếu transition vào đòn đã chọn.
+            waitingForAttack = false;
+            animator.ResetTrigger(pendingAttackTrigger);
+            Debug.LogWarning("Animator chưa vào state tấn công. Kiểm tra transition Any State -> Attack hoặc Attack2.", this);
+        }
+
+        // Giữ tốc độ di chuyển giảm cả khi đang blend vào hoặc ra khỏi Attack/Attack2.
+        isAttacking = waitingForAttack || attackIsActive;
+    }
+
+    void UpdateBlockState()
+    {
+        if (Input.GetKeyDown(KeyCode.Space) && !canBlock)
+        {
+            Debug.LogWarning($"Đỡ khiên cần parameter Bool 'isBlocking' và state '{blockStateName}' trên layer 0. " +
+                             "Cấu hình Animator rồi chạy lại Play Mode.", this);
+        }
+
+        // Giữ Space để đỡ; đợi chém xong nếu đang tấn công.
+        bool wantsToBlock = canBlock && Input.GetKey(KeyCode.Space) && !isAttacking;
+        if (hasBlockParameter)
+        {
+            animator.SetBool(BlockParameter, wantsToBlock);
+        }
+
+        // Thả Space yêu cầu thoát Block; giữ khóa đến khi blend ra hoàn tất.
+        isBlocking = wantsToBlock || (canBlock && IsAnimationStateActive(blockStateHash));
+    }
+
+    bool IsAnimationStateActive(int stateHash)
+    {
+        return animator.GetCurrentAnimatorStateInfo(0).fullPathHash == stateHash ||
+            (animator.IsInTransition(0) &&
+             animator.GetNextAnimatorStateInfo(0).fullPathHash == stateHash);
+    }
+
+    bool HasAnimatorParameter(int parameterHash, AnimatorControllerParameterType parameterType)
+    {
+        foreach (AnimatorControllerParameter parameter in animator.parameters)
+        {
+            if (parameter.nameHash == parameterHash && parameter.type == parameterType)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void OnDisable()
+    {
+        if (animator != null && hasBlockParameter)
+        {
+            animator.SetBool(BlockParameter, false);
+        }
+
+        isBlocking = false;
     }
 
     // FixedUpdate: xử lý physics
     void FixedUpdate()
     {
-        float moveSpeed = isRunning ? 6f : 3f;
+        float moveSpeed = isRunning ? runSpeed : walkSpeed;
+        if (isBlocking)
+        {
+            moveSpeed = 0f;
+        }
+        else if (isAttacking)
+        {
+            moveSpeed *= attackMoveSpeedMultiplier;
+        }
 
         // Lấy velocity hiện tại, CHỈ thay X và Z, GIỮ NGUYÊN Y (gravity)
         float currentY = rb.linearVelocity.y;
         rb.linearVelocity = new Vector3(moveX * moveSpeed, currentY, moveZ * moveSpeed);
-
-        if (jumpPressed)
-        {
-            rb.AddForce(Vector3.up * 5f, ForceMode.Impulse);
-            animator.SetTrigger("jump");
-            isGrounded = false;
-            jumpPressed = false;
-        }
-    }
-
-    void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = true;
-        }
     }
 
     void HandleRotation(Vector3 moveDir)
