@@ -15,7 +15,17 @@ public class SaBanHUD : MonoBehaviour
     private BoatCrash enemyBoat;
     private BattleCamera battleCam;
     private DayNightCycle dayNightCycle;
+    private float worldScale = 1f;
     private bool hasSettlementTour;
+    private Transform settlementRoot;
+    private CamPreset[] settlementFallbackPresets;
+    private static readonly string[] SettlementTourGroups =
+    {
+        "01_Lang_Cho_Ben_Song",
+        "02_Xom_Chai_Bo_Dong",
+        "04_Trai_Tiep_Van",
+        "03_Xom_Vuon_Bo_Tay"
+    };
 
     public readonly struct CamPreset
     {
@@ -45,6 +55,7 @@ public class SaBanHUD : MonoBehaviour
 
     void Start()
     {
+        worldScale = BachDangWorldScale.ForScene(gameObject.scene);
         tideSystem = FindAnyObjectByType<TideSystem>();
         enemyBoat = FindAnyObjectByType<BoatCrash>();
         battleCam = Camera.main != null ? Camera.main.GetComponent<BattleCamera>() : null;
@@ -66,18 +77,46 @@ public class SaBanHUD : MonoBehaviour
             // 4. Góc Nhìn Chủ Tướng Hướng Ra Sông
             new CamPreset("4. Tầm Nhìn Tướng Ngô Quyền", new Vector3(-814f, 19.4f, 320f), new Vector3(-770f, 16.5f, 320f))
         };
+        for (int index = 0; index < presets.Length; index++)
+            presets[index] = ScalePreset(presets[index]);
 
         foreach (GameObject root in gameObject.scene.GetRootGameObjects())
         {
             if (root.name != "BachDang_Living_Settlements") continue;
             hasSettlementTour = true;
+            settlementRoot = root.transform;
             System.Array.Resize(ref presets, 8);
             presets[4] = new CamPreset("5. Làng Chợ", new Vector3(-805f, 60f, 0f), new Vector3(-680f, 20f, 110f));
             presets[5] = new CamPreset("6. Xóm Chài", new Vector3(20f, 82f, -20f), new Vector3(180f, 20f, 75f));
             presets[6] = new CamPreset("7. Trại Quân", new Vector3(-1040f, 74f, 120f), new Vector3(-935f, 20f, 220f));
             presets[7] = new CamPreset("8. Xóm Vườn", new Vector3(-1220f, 68f, 155f), new Vector3(-1090f, 20f, 255f));
+            settlementFallbackPresets = new CamPreset[4];
+            System.Array.Copy(presets, 4, settlementFallbackPresets, 0, 4);
+            for (int index = 0; index < settlementFallbackPresets.Length; index++)
+                settlementFallbackPresets[index] = ScalePreset(settlementFallbackPresets[index]);
+            for (int index = 4; index < 8; index++)
+                presets[index] = ResolveSettlementPreset(index);
             break;
         }
+    }
+
+    private CamPreset ScalePreset(CamPreset preset)
+    {
+        return new CamPreset(preset.name, preset.position * worldScale, preset.lookAt * worldScale);
+    }
+
+    private CamPreset ResolveSettlementPreset(int index)
+    {
+        int tourIndex = index - 4;
+        CamPreset fallback = settlementFallbackPresets[tourIndex];
+        if (settlementRoot == null) return fallback;
+
+        Transform group = settlementRoot.Find(SettlementTourGroups[tourIndex]);
+        if (group == null) return fallback;
+        Transform cameraAnchor = group.Find("Tour_Camera");
+        Transform targetAnchor = group.Find("Tour_Target");
+        if (cameraAnchor == null || targetAnchor == null) return fallback;
+        return new CamPreset(fallback.name, cameraAnchor.position, targetAnchor.position);
     }
 
     void Update()
@@ -107,6 +146,9 @@ public class SaBanHUD : MonoBehaviour
         Camera cam = Camera.main;
         if (cam == null) return;
 
+        // Read the scene anchors at selection time so moved/scaled villages stay framed.
+        if (index >= 4 && index < 8 && settlementFallbackPresets != null)
+            presets[index] = ResolveSettlementPreset(index);
         var p = presets[index];
         if (battleCam == null || battleCam.gameObject != cam.gameObject)
             battleCam = cam.GetComponent<BattleCamera>();
@@ -155,9 +197,10 @@ public class SaBanHUD : MonoBehaviour
         GUILayout.Space(3);
 
         // THỦY TRIỀU
-        float waterY = tideSystem != null ? tideSystem.transform.position.y : 14f;
-        string tideDesc = waterY > 13.5f ? "<color=#00e676>▲ TRIỀU DÂNG (Ngập đầu cọc)</color>" : "<color=#ff5252>▼ TRIỀU RÚT (Lộ bãi cọc nhọn)</color>";
-        GUILayout.Label($"🌊 Mực nước: <b>{waterY:F1}m</b> - Trạng thái: {tideDesc}", bodyStyle);
+        float waterY = tideSystem != null ? tideSystem.transform.position.y : 14f * worldScale;
+        float waterMetres = waterY / worldScale;
+        string tideDesc = waterY > 13.5f * worldScale ? "<color=#00e676>▲ TRIỀU DÂNG (Ngập đầu cọc)</color>" : "<color=#ff5252>▼ TRIỀU RÚT (Lộ bãi cọc nhọn)</color>";
+        GUILayout.Label($"🌊 Mực nước: <b>{waterMetres:F1}m</b> - Trạng thái: {tideDesc}", bodyStyle);
 
         if (GUILayout.Button("🌊 Đảo Chiều Thủy Triều [T]", btnStyle))
         {
