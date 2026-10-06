@@ -21,6 +21,13 @@ public class Character_Movement : MonoBehaviour
     [Tooltip("Đường dẫn state đỡ khiên trên layer 0 của Animator.")]
     [SerializeField] private string blockStateName = "Base Layer.Block";
 
+    [Header("Combat Damage")]
+    public int attackDamage = 20;
+    public float attackRange = 1.8f;
+    public LayerMask enemyLayer;
+    private bool hasAppliedDamage;
+    private HitEffect hitEffect;
+
     private static readonly int BlockParameter = Animator.StringToHash("isBlocking");
     private int blockStateHash;
     private bool hasBlockParameter;
@@ -44,16 +51,21 @@ public class Character_Movement : MonoBehaviour
 
     void Start()
     {
+        if (rb == null) rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
+
+        if (animator == null) animator = GetComponentInChildren<Animator>();
 
         // Rigidbody điều khiển di chuyển;
         // không áp dụng chuyển động gốc từ animation.
-        animator.applyRootMotion = false;
+        if (animator != null) animator.applyRootMotion = false;
         attackStateHash = Animator.StringToHash(attackStateName);
         attack2StateHash = Animator.StringToHash(attack2StateName);
         blockStateHash = Animator.StringToHash(blockStateName);
         hasBlockParameter = HasAnimatorParameter(BlockParameter, AnimatorControllerParameterType.Bool);
         canBlock = hasBlockParameter && animator.HasState(0, blockStateHash);
+        hitEffect = GetComponent<HitEffect>();
+        hasAppliedDamage = false;
     }
 
     // Đọc input và cập nhật trạng thái animation.
@@ -131,6 +143,7 @@ public class Character_Movement : MonoBehaviour
 
         isAttacking = true;
         waitingForAttack = true;
+        hasAppliedDamage = false;
         pendingAttackTrigger = triggerHash;
         // Chỉ giới hạn thời gian chờ vào state; không giới hạn độ dài animation chém.
         attackStartDeadline = Time.time + 1f;
@@ -151,6 +164,23 @@ public class Character_Movement : MonoBehaviour
             waitingForAttack = false;
             animator.ResetTrigger(pendingAttackTrigger);
             Debug.LogWarning("Animator chưa vào state tấn công. Kiểm tra transition Any State -> Attack hoặc Attack2.", this);
+        }
+
+        // Khi đang ở state chém và chưa áp damage thì áp damage một lần.
+        if (attackIsActive && !hasAppliedDamage)
+        {
+            hasAppliedDamage = true;
+            Collider[] hits = Physics.OverlapSphere(transform.position + transform.forward * 1f, attackRange, enemyLayer);
+            foreach (Collider hit in hits)
+            {
+                var h = hit.GetComponentInParent<Health>();
+                if (h != null)
+                {
+                    h.TakeDamage(attackDamage);
+                    hitEffect?.PlayHit(hit.transform.position + Vector3.up);
+                    Debug.Log($"Chém trúng {h.name}, trừ {attackDamage} HP");
+                }
+            }
         }
 
         // Giữ tốc độ di chuyển giảm cả khi đang blend vào hoặc ra khỏi Attack/Attack2.

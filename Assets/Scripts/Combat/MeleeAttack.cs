@@ -35,6 +35,8 @@ public class MeleeAttack : MonoBehaviour
             {
                 health.TakeDamage(damage);
                 Debug.Log($"Đã trúng mục tiêu: {health.gameObject.name}");
+                HitEffect hitEffect = GetComponent<HitEffect>();
+                hitEffect?.PlayHit(hit.transform.position + Vector3.up);
             }
         }
     }
