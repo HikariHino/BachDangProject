@@ -55,7 +55,6 @@ public class OpeningEvent : MonoBehaviour
     void EndOpening()
     {
         openingPanel.SetActive(false);
-
         if (player != null)
             player.SetActive(true);
     }
