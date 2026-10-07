@@ -106,11 +106,11 @@ public static class BachDangScaledTerrain
         terrain.terrainData = data;
         terrain.transform.position *= factor;
         terrain.transform.localScale = Vector3.one;
-        terrain.detailObjectDistance *= factor;
-        terrain.treeDistance *= factor;
-        terrain.treeBillboardDistance *= factor;
-        terrain.treeCrossFadeLength *= factor;
-        terrain.basemapDistance *= factor;
+        terrain.detailObjectDistance = Mathf.Clamp(terrain.detailObjectDistance * factor, 150f, 400f);
+        terrain.treeDistance = Mathf.Clamp(terrain.treeDistance * factor, 2000f, 4000f);
+        terrain.treeBillboardDistance = Mathf.Clamp(terrain.treeBillboardDistance * factor, 1000f, 1800f);
+        terrain.treeCrossFadeLength = Mathf.Clamp(terrain.treeCrossFadeLength * factor, 20f, 50f);
+        terrain.basemapDistance = Mathf.Clamp(terrain.basemapDistance * factor, 1500f, 3000f);
         if (nature != null)
         {
             Undo.RecordObject(nature, UndoLabel);

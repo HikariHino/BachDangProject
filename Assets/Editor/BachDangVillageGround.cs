@@ -24,6 +24,7 @@ public sealed class BachDangVillageGround
     public Material Pebbles { get; }
     /// <summary>Optional clearance test receiving a grounded world center and maximum world half-width.</summary>
     public Func<Vector3, float, bool> PathPointAllowed { get; set; }
+    public Func<Vector3, Vector3, float, bool> PathSegmentAllowed { get; set; }
 
     public BachDangVillageGround(Terrain terrain, float factor, string ownedFolder, List<string> generatedAssets)
     {
@@ -273,12 +274,14 @@ public sealed class BachDangVillageGround
     bool PathSamplesAllowed(List<Vector3> samples, float maximumHalfWidth)
     {
         var origin = terrain.transform.position; var size = terrain.terrainData.size;
-        foreach (var point in samples)
+        for (int index = 0; index < samples.Count; index++)
         {
+            var point = samples[index];
             // Catmull-Rom may also overshoot the terrain edge; the linear fallback remains available.
             if (!Finite(point.x) || !Finite(point.z) || point.x < origin.x || point.z < origin.z ||
                 point.x > origin.x + size.x || point.z > origin.z + size.z) return false;
             if (PathPointAllowed != null && !PathPointAllowed(OnGround(point, .075f), maximumHalfWidth)) return false;
+            if (index > 0 && PathSegmentAllowed != null && !PathSegmentAllowed(samples[index - 1], point, maximumHalfWidth)) return false;
         }
         return true;
     }

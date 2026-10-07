@@ -275,8 +275,12 @@ public static class BachDangVillageNaturalizer
         void Path(Transform parent, string name, float width, Vector3[] points)
         {
             var obstacles = parts.Select(p => Bounds(p.transform)).ToArray();
-            var route = BachDangVillageRoutes.Route(points, width * 1.1f * F * .5f, parent, obstacles, F);
+            Vector3[] route;
+            try { route = BachDangVillageRoutes.Route(points, width * 1.1f * F * .5f, parent, obstacles, F); }
+            catch (InvalidOperationException error)
+            { throw new InvalidOperationException(parent.name + "/" + name + " (width " + width + "): " + error.Message, error); }
             painter.PathPointAllowed = (point, halfWidth) => !obstacles.Any(b => Inside(b, point, halfWidth + .15f * F));
+            painter.PathSegmentAllowed = (a, b, halfWidth) => BachDangVillageRoutes.SegmentClear(a, b, obstacles, halfWidth + .15f * F);
             var areas = new List<Bounds>();
             painter.CreatePath(parent, name, route, width, painter.Earth, seed++, areas);
             clearings.AddRange(areas); grassExclusions.AddRange(areas); paths++;
@@ -302,6 +306,7 @@ public static class BachDangVillageNaturalizer
         void DressLife(Transform detail, Transform life)
         {
             painter.PathPointAllowed = null; // Crop rows deliberately lie inside their existing garden footprint.
+            painter.PathSegmentAllowed = null;
             foreach (Transform area in life)
             {
                 if (area.name.StartsWith("Vuon_Rau_"))
