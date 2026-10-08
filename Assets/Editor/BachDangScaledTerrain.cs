@@ -114,7 +114,7 @@ public static class BachDangScaledTerrain
         if (nature != null)
         {
             Undo.RecordObject(nature, UndoLabel);
-            natureDistance.floatValue *= factor;
+            natureDistance.floatValue = Mathf.Clamp(natureDistance.floatValue * factor, 1200f, 2000f);
             natureSerialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(nature);
         }
