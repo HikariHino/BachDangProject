@@ -157875,8 +157875,8 @@ MonoBehaviour:
   _detailRenderDistance: 180
   _detailDensityInDistance: 0.125
   _detailDensityInDistanceFalloff: {x: 0.011428571, y: 0.0010714285}
-  _treeShadowDistance: 0
-  _treeRenderDistance: 0
+  _treeShadowDistance: 150
+  _treeRenderDistance: 1800
   _treeDensityInDistance: 1
   _treeDensityInDistanceFalloff: {x: 0, y: 0}
 --- !u!4 &1635677140
