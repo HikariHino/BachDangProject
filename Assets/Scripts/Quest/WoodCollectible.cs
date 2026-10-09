@@ -10,17 +10,26 @@ public class WoodCollectible : MonoBehaviour
 
     void Start()
     {
+        if (interactPromptUI == null)
+            interactPromptUI = GameObject.Find("InteractPrompt");
+
         if (interactPromptUI != null) interactPromptUI.SetActive(false);
         
         GameObject p = GameObject.FindGameObjectWithTag("Player");
+        if (p == null) p = GameObject.Find("Main_Character");
+        if (p == null) p = GameObject.Find("Player_Main_Animated");
         if (p != null) playerTransform = p.transform;
     }
 
     void Update()
     {
-        if (playerTransform == null) return;
+        if (playerTransform == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) playerTransform = p.transform;
+            return;
+        }
 
-        // Tinh khoang cach (do nhan vat khong lo 7x, ban kinh nhan = 15)
         float dist = Vector3.Distance(transform.position, playerTransform.position);
         isPlayerNear = (dist < 15f);
 
@@ -29,19 +38,15 @@ public class WoodCollectible : MonoBehaviour
             if (interactPromptUI != null && !interactPromptUI.activeSelf)
                 interactPromptUI.SetActive(true);
 
-            // Nguoi choi bam E de nhat
             if (Input.GetKeyDown(KeyCode.E))
             {
-                if (QuestManager.Instance != null && QuestManager.Instance.hasActiveQuest)
+                if (QuestManager.Instance != null)
                 {
                     QuestManager.Instance.AddWood();
-                    
-                    // Xoa chu [E]
-                    if (interactPromptUI != null) interactPromptUI.SetActive(false);
-                    
-                    // Huy model go
-                    Destroy(gameObject);
                 }
+                
+                if (interactPromptUI != null) interactPromptUI.SetActive(false);
+                Destroy(gameObject);
             }
         }
         else

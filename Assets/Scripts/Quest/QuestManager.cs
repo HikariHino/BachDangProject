@@ -46,11 +46,9 @@ public class QuestManager : MonoBehaviour
 
     public void AddWood()
     {
-        if (!hasActiveQuest || collectedWood >= totalWoodRequired) return;
-
         collectedWood++;
         
-        if (questDescriptionText != null)
+        if (questDescriptionText != null && hasActiveQuest)
         {
             questDescriptionText.text = $"- Hãy nhặt đủ gỗ trong doanh trại.\n- Mang ra bờ sông để cắm cọc.\n\nTiến độ: ({collectedWood}/{totalWoodRequired}) Gỗ";
         }
