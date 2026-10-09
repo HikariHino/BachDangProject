@@ -151282,7 +151282,7 @@ MonoBehaviour:
   _delayInitialize: 1
   _onlyInitializeWithinRenderingDistance: 1
   _renderingDistanceLimit: 1800
-  _renderTreesWithNatureRenderer: 1
+  _renderTreesWithNatureRenderer: 0
   _renderDetailsWithNatureRenderer: 1
   _optimizePatchSize: 1
   _format: 202200
@@ -157875,8 +157875,8 @@ MonoBehaviour:
   _detailRenderDistance: 180
   _detailDensityInDistance: 0.125
   _detailDensityInDistanceFalloff: {x: 0.011428571, y: 0.0010714285}
-  _treeShadowDistance: 150
-  _treeRenderDistance: 1800
+  _treeShadowDistance: 0
+  _treeRenderDistance: 0
   _treeDensityInDistance: 1
   _treeDensityInDistanceFalloff: {x: 0, y: 0}
 --- !u!4 &1635677140
