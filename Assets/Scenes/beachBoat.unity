@@ -151281,8 +151281,8 @@ MonoBehaviour:
   _enableUnityRendererWhenDisabled: 1
   _delayInitialize: 1
   _onlyInitializeWithinRenderingDistance: 1
-  _renderingDistanceLimit: 35000
-  _renderTreesWithNatureRenderer: 1
+  _renderingDistanceLimit: 1800
+  _renderTreesWithNatureRenderer: 0
   _renderDetailsWithNatureRenderer: 1
   _optimizePatchSize: 1
   _format: 202200
@@ -157871,8 +157871,8 @@ MonoBehaviour:
   m_Script: {fileID: -208243514, guid: b04c77e0938d27643b3f69f2dd39ce77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: VisualDesignCafe.Rendering.Nature.dll::VisualDesignCafe.Rendering.Nature.NatureRendererDefaultSettings
-  _detailShadowDistance: 350
-  _detailRenderDistance: 1050
+  _detailShadowDistance: 50
+  _detailRenderDistance: 180
   _detailDensityInDistance: 0.125
   _detailDensityInDistanceFalloff: {x: 0.011428571, y: 0.0010714285}
   _treeShadowDistance: 0

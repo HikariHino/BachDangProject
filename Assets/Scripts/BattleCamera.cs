@@ -47,7 +47,7 @@ public class BattleCamera : MonoBehaviour
         Camera cam = GetComponent<Camera>();
         if (cam != null)
         {
-            cam.farClipPlane = 9500f * worldScale; // Bao trọn chiến trường ở tỉ lệ hiện tại.
+            cam.farClipPlane = Mathf.Clamp(cam.farClipPlane, 1500f, 3500f);
         }
 
         FindTargetIfNull();

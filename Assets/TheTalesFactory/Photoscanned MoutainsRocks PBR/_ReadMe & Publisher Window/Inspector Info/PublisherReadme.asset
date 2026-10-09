@@ -24,12 +24,12 @@ MonoBehaviour:
     text: To stay informed about our next free content
     linkText: Youtube
     url: https://www.youtube.com/channel/UCLQKfrOXz6o426NQiFqP1vA
-  - heading: 
-    text: 
+  - heading: ""
+    text: ""
     linkText: Instagram
     url: https://www.instagram.com/thetalesfactory/
-  - heading: 
-    text: 
+  - heading: ""
+    text: ""
     linkText: Facebook
     url: https://www.facebook.com/The-Tales-Factory-294882054509299
 
