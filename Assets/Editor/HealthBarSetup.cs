@@ -261,6 +261,22 @@ public static class HealthBarSetup
             health = Undo.AddComponent<Health>(character);
         }
 
+        // Đảm bảo nhân vật có Collider để nhận sát thương khi bị chém
+        CapsuleCollider col = character.GetComponent<CapsuleCollider>();
+        if (col == null)
+        {
+            col = Undo.AddComponent<CapsuleCollider>(character);
+            col.height = 2.0f;
+            col.radius = 0.45f;
+            col.center = new Vector3(0, 1.0f, 0);
+        }
+
+        // Nếu là nhân vật người chơi điều khiển, gắn MeleeCombat để chém gây sát thương
+        if (character.GetComponent<Character_Movement>() != null && character.GetComponent<MeleeCombat>() == null)
+        {
+            Undo.AddComponent<MeleeCombat>(character);
+        }
+
         // 3. Xóa hoặc tìm thanh máu cũ đã tạo nếu có
         Transform existingBar = character.transform.Find("HealthBar");
         if (existingBar != null)
