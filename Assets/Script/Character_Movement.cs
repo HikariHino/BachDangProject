@@ -27,11 +27,10 @@ public class Character_Movement : MonoBehaviour
         {
             anim.enabled = true;
             anim.applyRootMotion = false;
-            // Nếu animator chưa có controller, ép gán Sword_Anima
-            if (anim.runtimeAnimatorController == null && ctrl != null)
+            // Ép gán Sword_Anima để đè lên các controller lỗi mặc định của prefab
+            if (ctrl != null)
             {
                 anim.runtimeAnimatorController = ctrl;
-                Debug.Log("[Movement] Đã gán Controller cho: " + anim.gameObject.name);
             }
         }
     }

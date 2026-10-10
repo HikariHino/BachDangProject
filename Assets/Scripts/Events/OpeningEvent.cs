@@ -99,9 +99,16 @@ public class OpeningEvent : MonoBehaviour
     {
         _openingStartTime = Time.time;
 
-        // Tìm opening canvas ngay
-        _openingCanvas = GetComponentInParent<Canvas>();
+        // Tìm opening canvas từ openingPanel
+        if (openingPanel != null)
+        {
+            _openingCanvas = openingPanel.GetComponentInParent<Canvas>();
+        }
+        
+        // Fallback nếu không có
+        if (_openingCanvas == null) _openingCanvas = GetComponentInParent<Canvas>();
         if (_openingCanvas == null) _openingCanvas = GetComponent<Canvas>();
+        
         if (_openingCanvas != null)
         {
             _openingCanvas.sortingOrder = 9999;
@@ -112,7 +119,11 @@ public class OpeningEvent : MonoBehaviour
         var allCanvasNow = FindObjectsOfType<Canvas>(true);
         foreach (Canvas c in allCanvasNow)
         {
-            if (c != null && c != _openingCanvas)
+            // Bỏ qua opening canvas
+            if (c != null && _openingCanvas != null && c.gameObject == _openingCanvas.gameObject)
+                continue;
+                
+            if (c != null)
                 c.enabled = false;
         }
 
@@ -352,23 +363,13 @@ public class OpeningEvent : MonoBehaviour
             foreach (var anim in animators)
             {
                 anim.enabled = true;
-                if (anim.runtimeAnimatorController == null)
-                {
-                    // Tìm Sword_Anima controller trong Resources hoặc project
-                    var ctrl = Resources.Load<RuntimeAnimatorController>("Sword_Anima");
-                    if (ctrl == null)
-                        ctrl = Resources.Load<RuntimeAnimatorController>("Main_Character/Animation/Sword_Anima");
-                    if (ctrl != null)
-                    {
-                        anim.runtimeAnimatorController = ctrl;
-                        Debug.Log("[OpeningEvent] Đã gán Sword_Anima controller cho " + anim.gameObject.name);
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[OpeningEvent] Không tìm thấy Sword_Anima trong Resources. Vui lòng gán thủ công trong Inspector.");
-                    }
-                }
                 anim.applyRootMotion = false;
+                
+                var ctrl = Resources.Load<RuntimeAnimatorController>("Sword_Anima");
+                if (ctrl != null)
+                {
+                    anim.runtimeAnimatorController = ctrl;
+                }
             }
 
             // Xác định chính xác độ cao mặt đất tại toạ độ mới

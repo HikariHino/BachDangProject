@@ -81,7 +81,7 @@ public class Camera_Script : MonoBehaviour
         // Bám theo mượt mà
         transform.position = Vector3.SmoothDamp(transform.position, desiredPos, ref posVelocity, positionSmoothTime);
         
-        // Nhìn thẳng về phía trước của anchor point
-        transform.LookAt(anchorPoint + rotation * Vector3.forward * distance + rotation * Vector3.right * rightOffset);
+        // Góc nhìn chuẩn: nhìn thẳng về phía trước từ shoulder (song song với hướng nhìn của camera)
+        transform.LookAt(anchorPoint + rotation * Vector3.right * rightOffset);
     }
 }
