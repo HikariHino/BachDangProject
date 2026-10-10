@@ -17,11 +17,15 @@ public class OpeningEvent : MonoBehaviour
     [Header("Player")]
     public GameObject player;
 
+    public static bool IsOpeningActive { get; private set; } = true;
+
     private Canvas[] hiddenCanvases;
     private MonoBehaviour[] hiddenScripts;
     private GameObject[] hiddenQuestPanels;
     private Coroutine openingCoroutine;
     private bool isOpeningEnded = false;
+
+    public bool IsOpeningEnded => isOpeningEnded;
 
     private string[] storyLines =
     {
@@ -35,6 +39,11 @@ public class OpeningEvent : MonoBehaviour
         "Nhưng trước khi trận chiến bắt đầu..."
     };
 
+    void Awake()
+    {
+        IsOpeningActive = true;
+    }
+
     void Start()
     {
         if (player == null)
@@ -42,14 +51,21 @@ public class OpeningEvent : MonoBehaviour
             player = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Main_Character");
         }
 
-        // Tạm ẩn các bảng nhiệm vụ cũ để không bị lộ chữ "Chưa có nhiệm vụ nào" trên màn hình đen
+        // Đảm bảo Canvas của đoạn mở đầu luôn ở tầng cao nhất (đè hoàn toàn các UI khác)
+        Canvas myCanvas = GetComponentInParent<Canvas>();
+        if (myCanvas != null)
+        {
+            myCanvas.sortingOrder = 900;
+        }
+
+        // Tạm ẩn các bảng nhiệm vụ cũ để màn hình đen hoàn toàn sạch sẽ
         HideExistingQuestPanels();
 
         // Ẩn tất cả Canvas UI không liên quan
         hiddenCanvases = FindObjectsOfType<Canvas>();
         foreach (Canvas c in hiddenCanvases)
         {
-            if (c.gameObject.name != "Canvas_Opening" && (openingPanel == null || c.gameObject.name != openingPanel.transform.parent.name))
+            if (c != null && c.gameObject.name != "Canvas_Opening" && (openingPanel == null || c.gameObject.name != openingPanel.transform.parent?.name))
             {
                 c.enabled = false;
             }
@@ -87,9 +103,12 @@ public class OpeningEvent : MonoBehaviour
 
     void Update()
     {
-        // Cho phép người chơi BẤM PHÍM BẤT KỲ ĐỂ BỎ QUA ĐOẠN DẪN TRUYỆN MỞ ĐẦU
         if (!isOpeningEnded)
         {
+            // Đảm bảo trong suốt đoạn mở đầu, bảng nhiệm vụ không bao giờ bị kích hoạt lại
+            SuppressQuestUI();
+
+            // Cho phép người chơi BẤM PHÍM BẤT KỲ ĐỂ BỎ QUA ĐOẠN DẪN TRUYỆN MỞ ĐẦU
             if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.E) || 
                 Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
                 Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(0))
@@ -99,14 +118,23 @@ public class OpeningEvent : MonoBehaviour
         }
     }
 
+    private void SuppressQuestUI()
+    {
+        if (BachDangStoryManager.Instance != null && BachDangStoryManager.Instance.objectiveUIPanel != null)
+        {
+            if (BachDangStoryManager.Instance.objectiveUIPanel.activeSelf)
+                BachDangStoryManager.Instance.objectiveUIPanel.SetActive(false);
+        }
+    }
+
     private void HideExistingQuestPanels()
     {
-        string[] panelNames = { "QuestPanel", "QuestUIPanel", "QuestDesc", "QuestTitle", "NhiemVuPanel" };
+        string[] panelNames = { "QuestPanel", "QuestUIPanel", "QuestDesc", "QuestTitle", "NhiemVuPanel", "StoryUI_Canvas", "ObjectivePanel" };
         var found = new System.Collections.Generic.List<GameObject>();
         foreach (string name in panelNames)
         {
             GameObject obj = GameObject.Find(name);
-            if (obj != null && obj.activeSelf)
+            if (obj != null)
             {
                 obj.SetActive(false);
                 found.Add(obj);
@@ -129,7 +157,7 @@ public class OpeningEvent : MonoBehaviour
 
     IEnumerator PlayOpening()
     {
-        yield return new WaitForSeconds(0.4f);
+        yield return new WaitForSeconds(0.3f);
 
         for (int i = 0; i < storyLines.Length; i++)
         {
@@ -137,21 +165,21 @@ public class OpeningEvent : MonoBehaviour
             {
                 storyText.text = storyLines[i] + "\n\n<size=15><color=#888888>[Nhấn Space hoặc E để vào game ngay]</color></size>";
                 
-                // Fade in nhanh gọn (0.35s)
-                yield return StartCoroutine(FadeText(0f, 1f, 0.35f));
+                // Fade in nhanh hơn (0.25s)
+                yield return StartCoroutine(FadeText(0f, 1f, 0.25f));
                 
-                // Thời gian đọc vừa đủ gọn gàng (khoảng 1.0s đến 2.0s tùy độ dài câu)
-                float waitTime = Mathf.Clamp(storyLines[i].Length * 0.025f, 1.0f, 2.0f);
+                // Thời gian đọc nhanh gọn (từ 0.8s đến 1.4s)
+                float waitTime = Mathf.Clamp(storyLines[i].Length * 0.016f, 0.8f, 1.4f);
                 yield return new WaitForSeconds(waitTime);
                 
-                // Fade out nhanh gọn (0.3s)
-                yield return StartCoroutine(FadeText(1f, 0f, 0.3f));
+                // Fade out nhanh hơn (0.2s)
+                yield return StartCoroutine(FadeText(1f, 0f, 0.2f));
                 
-                yield return new WaitForSeconds(0.15f);
+                yield return new WaitForSeconds(0.1f);
             }
         }
 
-        // Fade out cả màn hình đen nhanh hơn (0.8s) ra cảnh game
+        // Fade out màn hình đen nhanh gọn (0.5s) ra cảnh game
         if (openingPanel != null)
         {
             Image bgImage = openingPanel.GetComponent<Image>();
@@ -159,10 +187,10 @@ public class OpeningEvent : MonoBehaviour
             {
                 float t = 0;
                 Color startColor = bgImage.color;
-                while (t < 0.8f)
+                while (t < 0.5f)
                 {
                     t += Time.deltaTime;
-                    bgImage.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(1f, 0f, t / 0.8f));
+                    bgImage.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(1f, 0f, t / 0.5f));
                     yield return null;
                 }
             }
@@ -190,6 +218,7 @@ public class OpeningEvent : MonoBehaviour
     {
         if (isOpeningEnded) return;
         isOpeningEnded = true;
+        IsOpeningActive = false;
 
         if (openingPanel != null)
             openingPanel.SetActive(false);
@@ -224,7 +253,7 @@ public class OpeningEvent : MonoBehaviour
             }
         }
 
-        // Cập nhật lại UI cốt truyện Bạch Đằng Hồi 1
+        // Bật lại UI nhiệm vụ Bạch Đằng
         if (BachDangStoryManager.Instance != null)
         {
             BachDangStoryManager.Instance.UpdateUI();

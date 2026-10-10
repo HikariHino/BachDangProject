@@ -89,43 +89,47 @@ public class BachDangStoryManager : MonoBehaviour
     /// </summary>
     public void UpdateUI()
     {
-        string title = "";
+        // Nếu đoạn mở đầu (OpeningEvent) đang chiếu, tuyệt đối KHÔNG bật bảng nhiệm vụ!
+        if (OpeningEvent.IsOpeningActive)
+        {
+            if (objectiveUIPanel != null) objectiveUIPanel.SetActive(false);
+            var sceneQPanel = GameObject.Find("QuestPanel");
+            if (sceneQPanel != null) sceneQPanel.SetActive(false);
+            var sceneSCanvas = GameObject.Find("StoryUI_Canvas");
+            if (sceneSCanvas != null) sceneSCanvas.SetActive(false);
+            return;
+        }
+
+        string title = "Nhiệm vụ";
         string desc = "";
 
         switch (currentState)
         {
             case StoryState.Act1_ExploreCamp:
-                title = "HỒI 1: KHỞI ĐẦU";
                 desc = "- Khám phá doanh trại quân ta.\n- Lên đài diện kiến Chủ tướng Ngô Quyền.";
                 break;
 
             case StoryState.Act1_GoToCampGate:
-                title = "HỒI 1: LÊN ĐƯỜNG";
-                desc = "- Di chuyển ra CỔNG DOANH TRẠI.\n- Bấm [E] để lên đường sang Làng Ven Sông.";
+                desc = "- Di chuyển ra cổng doanh trại.\n- Bấm [E] để lên đường sang làng ven sông.";
                 break;
 
             case StoryState.Act2_CollectWoodInVillage:
-                title = "HỒI 2: DÂN LÀNG ĐỒNG LÒNG";
-                desc = $"- Khám phá làng ven sông và hỏi thăm dân làng.\n- Thu thập cọc gỗ: ({collectedWood}/{totalWoodRequired}) khúc gỗ";
+                desc = $"- Thăm hỏi bà con làng ven sông.\n- Thu thập cọc gỗ: ({collectedWood}/{totalWoodRequired}) khúc";
                 break;
 
             case StoryState.Act2_ReturnToCampGate:
-                title = "HỒI 2: VẬN CHUYỂN CỌC GỖ";
-                desc = "- Đã gom đủ 5 cọc gỗ!\n- Ra CỔNG LÀNG bấm [E] để quay về Doanh Trại.";
+                desc = "- Đã gom đủ 5 cọc gỗ!\n- Ra cổng làng bấm [E] để quay về doanh trại.";
                 break;
 
             case StoryState.Act2_ReportToNgoQuyen:
-                title = "HỒI 2: NHẬN QUÂN LỆNH";
                 desc = "- Đến đài chỉ huy gặp lại Chủ tướng Ngô Quyền.\n- Báo cáo số cọc gỗ đã chuẩn bị.";
                 break;
 
             case StoryState.Act2_PlantStakesAtRiver:
-                title = "HỒI 2: ĐÓNG CỌC BẠCH ĐẰNG";
-                desc = "- Chạy ra mép nước sông Bạch Đằng.\n- Bấm [E] tại bãi cọc để đóng cọc xuống lòng sông.";
+                desc = "- Ra mép nước sông Bạch Đằng.\n- Bấm [E] tại bãi cọc để đóng cọc xuống lòng sông.";
                 break;
 
             case StoryState.Act2_CompleteReturnToCamp:
-                title = "HỒI 2: HOÀN THÀNH TRẬN ĐỊA CỌC";
                 desc = "★ Trận địa cọc ngầm đã sẵn sàng mai phục!\n- Quay về doanh trại nghe Chủ tướng phát lệnh xuất trận.";
                 break;
         }
