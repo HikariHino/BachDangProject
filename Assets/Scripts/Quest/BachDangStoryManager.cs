@@ -89,44 +89,62 @@ public class BachDangStoryManager : MonoBehaviour
     /// </summary>
     public void UpdateUI()
     {
-        if (objectiveUIPanel != null) objectiveUIPanel.SetActive(true);
+        string title = "";
+        string desc = "";
 
         switch (currentState)
         {
             case StoryState.Act1_ExploreCamp:
-                if (objectiveTitleText != null) objectiveTitleText.text = "HỒI 1: KHỞI ĐẦU";
-                if (objectiveDescText != null) objectiveDescText.text = "- Khám phá doanh trại quân ta.\n- Lên đài diện kiến Chủ tướng Ngô Quyền.";
+                title = "HỒI 1: KHỞI ĐẦU";
+                desc = "- Khám phá doanh trại quân ta.\n- Lên đài diện kiến Chủ tướng Ngô Quyền.";
                 break;
 
             case StoryState.Act1_GoToCampGate:
-                if (objectiveTitleText != null) objectiveTitleText.text = "HỒI 1: LÊN ĐƯỜNG";
-                if (objectiveDescText != null) objectiveDescText.text = "- Di chuyển ra CỔNG DOANH TRẠI.\n- Bấm [E] để lên đường sang Làng Ven Sông.";
+                title = "HỒI 1: LÊN ĐƯỜNG";
+                desc = "- Di chuyển ra CỔNG DOANH TRẠI.\n- Bấm [E] để lên đường sang Làng Ven Sông.";
                 break;
 
             case StoryState.Act2_CollectWoodInVillage:
-                if (objectiveTitleText != null) objectiveTitleText.text = "HỒI 2: DÂN LÀNG ĐỒNG LÒNG";
-                if (objectiveDescText != null) objectiveDescText.text = $"- Khám phá làng ven sông và hỏi thăm dân làng.\n- Thu thập cọc gỗ: ({collectedWood}/{totalWoodRequired}) khúc gỗ";
+                title = "HỒI 2: DÂN LÀNG ĐỒNG LÒNG";
+                desc = $"- Khám phá làng ven sông và hỏi thăm dân làng.\n- Thu thập cọc gỗ: ({collectedWood}/{totalWoodRequired}) khúc gỗ";
                 break;
 
             case StoryState.Act2_ReturnToCampGate:
-                if (objectiveTitleText != null) objectiveTitleText.text = "HỒI 2: VẬN CHUYỂN CỌC GỖ";
-                if (objectiveDescText != null) objectiveDescText.text = "- Đã gom đủ 5 cọc gỗ!\n- Ra CỔNG LÀNG bấm [E] để quay về Doanh Trại.";
+                title = "HỒI 2: VẬN CHUYỂN CỌC GỖ";
+                desc = "- Đã gom đủ 5 cọc gỗ!\n- Ra CỔNG LÀNG bấm [E] để quay về Doanh Trại.";
                 break;
 
             case StoryState.Act2_ReportToNgoQuyen:
-                if (objectiveTitleText != null) objectiveTitleText.text = "HỒI 2: NHẬN QUÂN LỆNH";
-                if (objectiveDescText != null) objectiveDescText.text = "- Đến đài chỉ huy gặp lại Chủ tướng Ngô Quyền.\n- Báo cáo số cọc gỗ đã chuẩn bị.";
+                title = "HỒI 2: NHẬN QUÂN LỆNH";
+                desc = "- Đến đài chỉ huy gặp lại Chủ tướng Ngô Quyền.\n- Báo cáo số cọc gỗ đã chuẩn bị.";
                 break;
 
             case StoryState.Act2_PlantStakesAtRiver:
-                if (objectiveTitleText != null) objectiveTitleText.text = "HỒI 2: ĐÓNG CỌC BẠCH ĐẰNG";
-                if (objectiveDescText != null) objectiveDescText.text = "- Chạy ra mép nước sông Bạch Đằng.\n- Bấm [E] tại bãi cọc để đóng cọc xuống lòng sông.";
+                title = "HỒI 2: ĐÓNG CỌC BẠCH ĐẰNG";
+                desc = "- Chạy ra mép nước sông Bạch Đằng.\n- Bấm [E] tại bãi cọc để đóng cọc xuống lòng sông.";
                 break;
 
             case StoryState.Act2_CompleteReturnToCamp:
-                if (objectiveTitleText != null) objectiveTitleText.text = "HỒI 2: HOÀN THÀNH TRẬN ĐỊA CỌC";
-                if (objectiveDescText != null) objectiveDescText.text = "★ Trận địa cọc ngầm đã sẵn sàng mai phục!\n- Quay về doanh trại nghe Chủ tướng phát lệnh xuất trận.";
+                title = "HỒI 2: HOÀN THÀNH TRẬN ĐỊA CỌC";
+                desc = "★ Trận địa cọc ngầm đã sẵn sàng mai phục!\n- Quay về doanh trại nghe Chủ tướng phát lệnh xuất trận.";
                 break;
+        }
+
+        if (objectiveUIPanel != null) objectiveUIPanel.SetActive(true);
+        if (objectiveTitleText != null) objectiveTitleText.text = title;
+        if (objectiveDescText != null) objectiveDescText.text = desc;
+
+        // Đồng bộ luôn với các Text Quest có sẵn trong Scene (nếu có)
+        var sceneQuestDesc = GameObject.Find("QuestDesc")?.GetComponent<TextMeshProUGUI>();
+        if (sceneQuestDesc != null) sceneQuestDesc.text = desc;
+
+        var sceneQuestTitle = GameObject.Find("QuestTitle")?.GetComponent<TextMeshProUGUI>();
+        if (sceneQuestTitle != null) sceneQuestTitle.text = title;
+
+        if (QuestManager.Instance != null)
+        {
+            if (QuestManager.Instance.questTitleText != null) QuestManager.Instance.questTitleText.text = title;
+            if (QuestManager.Instance.questDescriptionText != null) QuestManager.Instance.questDescriptionText.text = desc;
         }
     }
 

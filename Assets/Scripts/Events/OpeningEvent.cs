@@ -3,6 +3,11 @@ using TMPro;
 using System.Collections;
 using UnityEngine.UI;
 
+/// <summary>
+/// Đoạn dẫn truyện mở đầu "Năm 938...".
+/// Đã hỗ trợ BỎ QUA TỨC THÌ (bấm Space / E / Enter / Click) để người chơi không phải chờ đợi!
+/// Tự động ẩn các UI nhiệm vụ cũ trong lúc đang chạy intro để không bị lỗi chữ "Chưa có nhiệm vụ nào".
+/// </summary>
 public class OpeningEvent : MonoBehaviour
 {
     [Header("UI")]
@@ -14,6 +19,9 @@ public class OpeningEvent : MonoBehaviour
 
     private Canvas[] hiddenCanvases;
     private MonoBehaviour[] hiddenScripts;
+    private GameObject[] hiddenQuestPanels;
+    private Coroutine openingCoroutine;
+    private bool isOpeningEnded = false;
 
     private string[] storyLines =
     {
@@ -29,7 +37,15 @@ public class OpeningEvent : MonoBehaviour
 
     void Start()
     {
-        // Ẩn tất cả Canvas UI
+        if (player == null)
+        {
+            player = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Main_Character");
+        }
+
+        // Tạm ẩn các bảng nhiệm vụ cũ để không bị lộ chữ "Chưa có nhiệm vụ nào" trên màn hình đen
+        HideExistingQuestPanels();
+
+        // Ẩn tất cả Canvas UI không liên quan
         hiddenCanvases = FindObjectsOfType<Canvas>();
         foreach (Canvas c in hiddenCanvases)
         {
@@ -59,37 +75,78 @@ public class OpeningEvent : MonoBehaviour
         if (storyText != null)
         {
             storyText.fontStyle = FontStyles.Italic;
-            storyText.fontSize = 28; // Thu nhỏ chữ
+            storyText.fontSize = 28;
             storyText.color = new Color(storyText.color.r, storyText.color.g, storyText.color.b, 0);
         }
 
         if (player != null)
             player.SetActive(false);
 
-        StartCoroutine(PlayOpening());
+        openingCoroutine = StartCoroutine(PlayOpening());
+    }
+
+    void Update()
+    {
+        // Cho phép người chơi BẤM PHÍM BẤT KỲ ĐỂ BỎ QUA ĐOẠN DẪN TRUYỆN MỞ ĐẦU
+        if (!isOpeningEnded)
+        {
+            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.E) || 
+                Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
+                Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(0))
+            {
+                SkipOpening();
+            }
+        }
+    }
+
+    private void HideExistingQuestPanels()
+    {
+        string[] panelNames = { "QuestPanel", "QuestUIPanel", "QuestDesc", "QuestTitle", "NhiemVuPanel" };
+        var found = new System.Collections.Generic.List<GameObject>();
+        foreach (string name in panelNames)
+        {
+            GameObject obj = GameObject.Find(name);
+            if (obj != null && obj.activeSelf)
+            {
+                obj.SetActive(false);
+                found.Add(obj);
+            }
+        }
+        hiddenQuestPanels = found.ToArray();
+    }
+
+    public void SkipOpening()
+    {
+        if (isOpeningEnded) return;
+
+        if (openingCoroutine != null)
+        {
+            StopCoroutine(openingCoroutine);
+        }
+
+        EndOpening();
     }
 
     IEnumerator PlayOpening()
     {
-        yield return new WaitForSeconds(1.5f); // Đợi 1 chút tĩnh lặng đầu game
+        yield return new WaitForSeconds(1.0f);
 
         for (int i = 0; i < storyLines.Length; i++)
         {
             if (storyText != null)
             {
-                storyText.text = storyLines[i];
+                storyText.text = storyLines[i] + "\n\n<size=16><color=#AAAAAA>[Nhấn Space hoặc E để vào game]</color></size>";
                 
-                // Fade in (hiện từ từ)
-                yield return StartCoroutine(FadeText(0f, 1f, 1.5f));
+                // Fade in
+                yield return StartCoroutine(FadeText(0f, 1f, 1.0f));
                 
-                // Đợi người chơi đọc (câu dài đợi lâu hơn, câu ngắn lướt nhanh)
-                float waitTime = Mathf.Clamp(storyLines[i].Length * 0.08f, 2.5f, 5f);
+                float waitTime = Mathf.Clamp(storyLines[i].Length * 0.06f, 2f, 4f);
                 yield return new WaitForSeconds(waitTime);
                 
-                // Fade out (biến mất từ từ)
-                yield return StartCoroutine(FadeText(1f, 0f, 1.5f));
+                // Fade out
+                yield return StartCoroutine(FadeText(1f, 0f, 0.8f));
                 
-                yield return new WaitForSeconds(0.5f); // Quãng nghỉ giữa 2 câu
+                yield return new WaitForSeconds(0.3f);
             }
         }
 
@@ -101,10 +158,10 @@ public class OpeningEvent : MonoBehaviour
             {
                 float t = 0;
                 Color startColor = bgImage.color;
-                while (t < 2f)
+                while (t < 1.5f)
                 {
                     t += Time.deltaTime;
-                    bgImage.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(1f, 0f, t / 2f));
+                    bgImage.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(1f, 0f, t / 1.5f));
                     yield return null;
                 }
             }
@@ -130,6 +187,9 @@ public class OpeningEvent : MonoBehaviour
 
     void EndOpening()
     {
+        if (isOpeningEnded) return;
+        isOpeningEnded = true;
+
         if (openingPanel != null)
             openingPanel.SetActive(false);
             
@@ -152,6 +212,12 @@ public class OpeningEvent : MonoBehaviour
             {
                 if (mb != null) mb.enabled = true;
             }
+        }
+
+        // Cập nhật lại UI cốt truyện Bạch Đằng Hồi 1
+        if (BachDangStoryManager.Instance != null)
+        {
+            BachDangStoryManager.Instance.UpdateUI();
         }
     }
 }

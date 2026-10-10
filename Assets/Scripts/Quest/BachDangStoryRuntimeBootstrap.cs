@@ -128,53 +128,65 @@ public static class BachDangStoryRuntimeBootstrap
             canvas = canvasObj.GetComponent<Canvas>();
         }
 
-        // --- Panel Nhiệm vụ (Góc trên bên trái) ---
-        Transform objPanelTr = canvasObj.transform.Find("ObjectivePanel");
-        if (objPanelTr == null)
+        // Kiểm tra xem Scene đã có sẵn QuestPanel/QuestDesc chưa để dùng luôn, tránh bị 2 bảng đè nhau
+        var existingQuestDesc = GameObject.Find("QuestDesc")?.GetComponent<TextMeshProUGUI>();
+        var existingQuestTitle = GameObject.Find("QuestTitle")?.GetComponent<TextMeshProUGUI>();
+
+        if (existingQuestDesc != null)
         {
-            objectivePanel = new GameObject("ObjectivePanel");
-            objectivePanel.transform.SetParent(canvasObj.transform, false);
-
-            var img = objectivePanel.AddComponent<Image>();
-            img.color = new Color(0.08f, 0.08f, 0.1f, 0.75f); // Nền mờ phong cách cổ điển
-
-            RectTransform rt = objectivePanel.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0f, 1f);
-            rt.anchorMax = new Vector2(0f, 1f);
-            rt.pivot = new Vector2(0f, 1f);
-            rt.anchoredPosition = new Vector2(25f, -25f);
-            rt.sizeDelta = new Vector2(380f, 120f);
-
-            // Tiêu đề
-            GameObject tObj = new GameObject("TitleText");
-            tObj.transform.SetParent(objectivePanel.transform, false);
-            titleText = tObj.AddComponent<TextMeshProUGUI>();
-            titleText.fontSize = 20;
-            titleText.fontStyle = FontStyles.Bold;
-            titleText.color = new Color(1f, 0.85f, 0.35f, 1f);
-            RectTransform trt = tObj.GetComponent<RectTransform>();
-            trt.anchorMin = new Vector2(0.05f, 0.65f);
-            trt.anchorMax = new Vector2(0.95f, 0.95f);
-            trt.offsetMin = Vector2.zero;
-            trt.offsetMax = Vector2.zero;
-
-            // Mô tả
-            GameObject dObj = new GameObject("DescText");
-            dObj.transform.SetParent(objectivePanel.transform, false);
-            descText = dObj.AddComponent<TextMeshProUGUI>();
-            descText.fontSize = 15;
-            descText.color = Color.white;
-            RectTransform drt = dObj.GetComponent<RectTransform>();
-            drt.anchorMin = new Vector2(0.05f, 0.08f);
-            drt.anchorMax = new Vector2(0.95f, 0.65f);
-            drt.offsetMin = Vector2.zero;
-            drt.offsetMax = Vector2.zero;
+            objectivePanel = existingQuestDesc.transform.parent != null ? existingQuestDesc.transform.parent.gameObject : existingQuestDesc.gameObject;
+            descText = existingQuestDesc;
+            titleText = existingQuestTitle;
         }
         else
         {
-            objectivePanel = objPanelTr.gameObject;
-            titleText = objPanelTr.Find("TitleText")?.GetComponent<TextMeshProUGUI>();
-            descText = objPanelTr.Find("DescText")?.GetComponent<TextMeshProUGUI>();
+            Transform objPanelTr = canvasObj.transform.Find("ObjectivePanel");
+            if (objPanelTr == null)
+            {
+                objectivePanel = new GameObject("ObjectivePanel");
+                objectivePanel.transform.SetParent(canvasObj.transform, false);
+
+                var img = objectivePanel.AddComponent<Image>();
+                img.color = new Color(0.08f, 0.08f, 0.1f, 0.75f); // Nền mờ phong cách cổ điển
+
+                RectTransform rt = objectivePanel.GetComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0f, 1f);
+                rt.anchorMax = new Vector2(0f, 1f);
+                rt.pivot = new Vector2(0f, 1f);
+                rt.anchoredPosition = new Vector2(25f, -25f);
+                rt.sizeDelta = new Vector2(380f, 120f);
+
+                // Tiêu đề
+                GameObject tObj = new GameObject("TitleText");
+                tObj.transform.SetParent(objectivePanel.transform, false);
+                titleText = tObj.AddComponent<TextMeshProUGUI>();
+                titleText.fontSize = 20;
+                titleText.fontStyle = FontStyles.Bold;
+                titleText.color = new Color(1f, 0.85f, 0.35f, 1f);
+                RectTransform trt = tObj.GetComponent<RectTransform>();
+                trt.anchorMin = new Vector2(0.05f, 0.65f);
+                trt.anchorMax = new Vector2(0.95f, 0.95f);
+                trt.offsetMin = Vector2.zero;
+                trt.offsetMax = Vector2.zero;
+
+                // Mô tả
+                GameObject dObj = new GameObject("DescText");
+                dObj.transform.SetParent(objectivePanel.transform, false);
+                descText = dObj.AddComponent<TextMeshProUGUI>();
+                descText.fontSize = 15;
+                descText.color = Color.white;
+                RectTransform drt = dObj.GetComponent<RectTransform>();
+                drt.anchorMin = new Vector2(0.05f, 0.08f);
+                drt.anchorMax = new Vector2(0.95f, 0.65f);
+                drt.offsetMin = Vector2.zero;
+                drt.offsetMax = Vector2.zero;
+            }
+            else
+            {
+                objectivePanel = objPanelTr.gameObject;
+                titleText = objPanelTr.Find("TitleText")?.GetComponent<TextMeshProUGUI>();
+                descText = objPanelTr.Find("DescText")?.GetComponent<TextMeshProUGUI>();
+            }
         }
 
         // --- Panel Nhắc phím [E] (Ở giữa gần đáy màn hình) ---
