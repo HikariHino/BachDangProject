@@ -129,28 +129,29 @@ public class OpeningEvent : MonoBehaviour
 
     IEnumerator PlayOpening()
     {
-        yield return new WaitForSeconds(1.0f);
+        yield return new WaitForSeconds(0.4f);
 
         for (int i = 0; i < storyLines.Length; i++)
         {
             if (storyText != null)
             {
-                storyText.text = storyLines[i] + "\n\n<size=16><color=#AAAAAA>[Nhấn Space hoặc E để vào game]</color></size>";
+                storyText.text = storyLines[i] + "\n\n<size=15><color=#888888>[Nhấn Space hoặc E để vào game ngay]</color></size>";
                 
-                // Fade in
-                yield return StartCoroutine(FadeText(0f, 1f, 1.0f));
+                // Fade in nhanh gọn (0.35s)
+                yield return StartCoroutine(FadeText(0f, 1f, 0.35f));
                 
-                float waitTime = Mathf.Clamp(storyLines[i].Length * 0.06f, 2f, 4f);
+                // Thời gian đọc vừa đủ gọn gàng (khoảng 1.0s đến 2.0s tùy độ dài câu)
+                float waitTime = Mathf.Clamp(storyLines[i].Length * 0.025f, 1.0f, 2.0f);
                 yield return new WaitForSeconds(waitTime);
                 
-                // Fade out
-                yield return StartCoroutine(FadeText(1f, 0f, 0.8f));
+                // Fade out nhanh gọn (0.3s)
+                yield return StartCoroutine(FadeText(1f, 0f, 0.3f));
                 
-                yield return new WaitForSeconds(0.3f);
+                yield return new WaitForSeconds(0.15f);
             }
         }
 
-        // Fade out cả màn hình đen mờ dần ra cảnh game
+        // Fade out cả màn hình đen nhanh hơn (0.8s) ra cảnh game
         if (openingPanel != null)
         {
             Image bgImage = openingPanel.GetComponent<Image>();
@@ -158,10 +159,10 @@ public class OpeningEvent : MonoBehaviour
             {
                 float t = 0;
                 Color startColor = bgImage.color;
-                while (t < 1.5f)
+                while (t < 0.8f)
                 {
                     t += Time.deltaTime;
-                    bgImage.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(1f, 0f, t / 1.5f));
+                    bgImage.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(1f, 0f, t / 0.8f));
                     yield return null;
                 }
             }
