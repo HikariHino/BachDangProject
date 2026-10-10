@@ -95,12 +95,31 @@ public class OpeningEvent : MonoBehaviour
 
     void Start()
     {
+        // Tìm opening canvas ngay
+        _openingCanvas = GetComponentInParent<Canvas>();
+        if (_openingCanvas == null) _openingCanvas = GetComponent<Canvas>();
+        if (_openingCanvas != null)
+        {
+            _openingCanvas.sortingOrder = 9999;
+            _openingCanvas.enabled = true;
+        }
+
+        // Tắt TẤT CẢ canvas ngay lập tức (trước cả coroutine delay)
+        var allCanvasNow = FindObjectsOfType<Canvas>(true);
+        foreach (Canvas c in allCanvasNow)
+        {
+            if (c != null && c != _openingCanvas)
+                c.enabled = false;
+        }
+
         StartCoroutine(InitOpening());
     }
 
     IEnumerator InitOpening()
     {
-        // Delay 1 frame để Bootstrap kịp tạo StoryUI_Canvas và các UI khác
+        // Delay 3 frame để Bootstrap kịp tạo StoryUI_Canvas và tất cả UI khác
+        yield return null;
+        yield return null;
         yield return null;
 
         if (player == null)
@@ -183,26 +202,29 @@ public class OpeningEvent : MonoBehaviour
 
     private void SuppressQuestUI()
     {
-        // Đảm bảo objectiveUIPanel (NHIỆM VỤ) luôn tắt trong suốt opening
-        if (BachDangStoryManager.Instance != null && BachDangStoryManager.Instance.objectiveUIPanel != null)
-        {
-            if (BachDangStoryManager.Instance.objectiveUIPanel.activeSelf)
-                BachDangStoryManager.Instance.objectiveUIPanel.SetActive(false);
-        }
-
-        // Tắt mạnh bất kỳ Canvas nào không phải opening canvas
+        // Tìm opening canvas nếu chưa có
         if (_openingCanvas == null)
         {
             _openingCanvas = GetComponentInParent<Canvas>();
             if (_openingCanvas == null) _openingCanvas = GetComponent<Canvas>();
         }
-        if (hiddenCanvases != null)
+
+        // Scan TẤT CẢ canvas trong scene mỗi frame, tắt hết trừ opening canvas
+        // (bắt cả canvas được tạo dynamically bởi Bootstrap sau Start)
+        var allCanvases = FindObjectsOfType<Canvas>(true);
+        foreach (Canvas c in allCanvases)
         {
-            foreach (Canvas c in hiddenCanvases)
+            if (c != null && c != _openingCanvas && c.enabled)
             {
-                if (c != null && c != _openingCanvas && c.enabled)
-                    c.enabled = false;
+                c.enabled = false;
             }
+        }
+
+        // Tắt thêm objectiveUIPanel nếu có
+        if (BachDangStoryManager.Instance != null && BachDangStoryManager.Instance.objectiveUIPanel != null)
+        {
+            if (BachDangStoryManager.Instance.objectiveUIPanel.activeSelf)
+                BachDangStoryManager.Instance.objectiveUIPanel.SetActive(false);
         }
     }
 
