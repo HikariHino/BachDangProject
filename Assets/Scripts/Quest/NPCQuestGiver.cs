@@ -24,9 +24,7 @@ public class NPCQuestGiver : MonoBehaviour
 
     private void FindPlayer()
     {
-        GameObject p = GameObject.FindGameObjectWithTag("Player");
-        if (p == null) p = GameObject.Find("Main_Character");
-        if (p == null) p = GameObject.Find("Player_Main_Animated");
+        GameObject p = OpeningEvent.FindPlayerInScene();
         if (p != null) playerTransform = p.transform;
     }
 

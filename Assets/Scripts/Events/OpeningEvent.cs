@@ -42,18 +42,59 @@ public class OpeningEvent : MonoBehaviour
     void Awake()
     {
         IsOpeningActive = true;
+        if (player == null)
+        {
+            player = FindPlayerInScene();
+        }
+    }
+
+    /// <summary>
+    /// Tìm chính xác đối tượng nhân vật chính trong Scene, kể cả khi đối tượng đang bị tắt (Inactive)
+    /// </summary>
+    public static GameObject FindPlayerInScene()
+    {
+        // 1. Thử tìm thông thường nếu đang active
+        var p = GameObject.Find("Player_Main_Animated") ?? GameObject.Find("Main_Character");
+        if (p != null) return p;
+
+        try
+        {
+            var tagged = GameObject.FindGameObjectWithTag("Player");
+            if (tagged != null && !tagged.name.Contains("Camera")) return tagged;
+        }
+        catch { }
+
+        // 2. Quét sâu toàn bộ Scene kể cả INACTIVE GameObject
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if (scene.isLoaded)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                var allTransforms = root.GetComponentsInChildren<Transform>(true);
+                foreach (var t in allTransforms)
+                {
+                    if (t.gameObject.name == "Player_Main_Animated" || 
+                        t.gameObject.name == "Main_Character" || 
+                        (t.gameObject.CompareTag("Player") && !t.gameObject.name.Contains("Camera")))
+                    {
+                        return t.gameObject;
+                    }
+                }
+            }
+        }
+
+        // 3. Fallback theo component Character_Movement
+        var cm = Object.FindAnyObjectByType<Character_Movement>(FindObjectsInactive.Include);
+        if (cm != null) return cm.gameObject;
+
+        return null;
     }
 
     void Start()
     {
         if (player == null)
         {
-            player = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Player_Main_Animated") ?? GameObject.Find("Main_Character");
-            if (player == null)
-            {
-                var cm = Object.FindAnyObjectByType<Character_Movement>(FindObjectsInactive.Include);
-                if (cm != null) player = cm.gameObject;
-            }
+            player = FindPlayerInScene();
         }
 
         // Đảm bảo Canvas của đoạn mở đầu luôn ở tầng cao nhất (đè hoàn toàn các UI khác)
@@ -228,16 +269,52 @@ public class OpeningEvent : MonoBehaviour
         if (openingPanel != null)
             openingPanel.SetActive(false);
             
+        if (player == null)
+        {
+            player = FindPlayerInScene();
+        }
+
         if (player != null)
         {
+            player.SetActive(true);
+
+            // Xác định chính xác độ cao mặt đất tại toạ độ x: -1200, z: 340 (tránh bị lún đất hoặc rơi khỏi map)
+            Vector3 targetPos = new Vector3(-1200f, 40f, 340f);
+            RaycastHit hit;
+            if (Physics.Raycast(new Vector3(targetPos.x, targetPos.y + 60f, targetPos.z), Vector3.down, out hit, 150f))
+            {
+                targetPos.y = hit.point.y + 0.1f;
+            }
+            else if (Terrain.activeTerrain != null)
+            {
+                targetPos.y = Terrain.activeTerrain.SampleHeight(targetPos) + Terrain.activeTerrain.transform.position.y + 0.1f;
+            }
+
             var cc = player.GetComponent<CharacterController>();
             if (cc != null) cc.enabled = false;
-            // Đặt người chơi vào đúng vị trí doanh trại theo yêu cầu (x: -1200, y: 40, z: 340)
-            player.transform.position = new Vector3(-1200f, 40f, 340f);
+
+            var rb = player.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.position = targetPos;
+            }
+
+            player.transform.position = targetPos;
             player.transform.rotation = Quaternion.Euler(0f, 110f, 0f);
+
             if (cc != null) cc.enabled = true;
 
-            player.SetActive(true);
+            // Đảm bảo tất cả Camera_Script đều bám theo nhân vật chính
+            var cameras = Object.FindObjectsByType<Camera_Script>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var cam in cameras)
+            {
+                if (cam != null)
+                {
+                    cam.target = player.transform;
+                }
+            }
         }
             
         // Bật lại các UI Canvas đã giấu

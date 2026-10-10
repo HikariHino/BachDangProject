@@ -63,14 +63,7 @@ public class BachDangStoryManager : MonoBehaviour
 
     private void FindPlayer()
     {
-        GameObject p = GameObject.FindGameObjectWithTag("Player");
-        if (p == null) p = GameObject.Find("Player_Main_Animated");
-        if (p == null) p = GameObject.Find("Main_Character");
-        if (p == null)
-        {
-            var cm = Object.FindAnyObjectByType<Character_Movement>(FindObjectsInactive.Include);
-            if (cm != null) p = cm.gameObject;
-        }
+        GameObject p = OpeningEvent.FindPlayerInScene();
         if (p != null) playerTransform = p.transform;
     }
 

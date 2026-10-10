@@ -71,11 +71,38 @@ public static class BachDangStoryRuntimeBootstrap
 
         // 5. Đưa nhân vật chính xuất hiện trong Doanh Trại tại vị trí (x: -1200, y: 40, z: 340)
         Transform player = storyManager.GetPlayerTransform();
+        if (player == null)
+        {
+            var pObj = OpeningEvent.FindPlayerInScene();
+            if (pObj != null) player = pObj.transform;
+        }
+
         Vector3 campSpawnPos = new Vector3(-1200f, 40f, 340f);
+        RaycastHit spawnHit;
+        if (Physics.Raycast(new Vector3(campSpawnPos.x, campSpawnPos.y + 60f, campSpawnPos.z), Vector3.down, out spawnHit, 150f))
+        {
+            campSpawnPos.y = spawnHit.point.y + 0.1f;
+        }
+        else if (Terrain.activeTerrain != null)
+        {
+            campSpawnPos.y = Terrain.activeTerrain.SampleHeight(campSpawnPos) + Terrain.activeTerrain.transform.position.y + 0.1f;
+        }
+
         if (player != null)
         {
+            player.gameObject.SetActive(true);
+
             var cc = player.GetComponent<CharacterController>();
             if (cc != null) cc.enabled = false;
+
+            var rb = player.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.position = campSpawnPos;
+            }
+
             player.position = campSpawnPos;
             player.rotation = Quaternion.Euler(0f, 110f, 0f);
             if (cc != null) cc.enabled = true;
@@ -84,7 +111,7 @@ public static class BachDangStoryRuntimeBootstrap
             var cameras = Object.FindObjectsByType<Camera_Script>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var cam in cameras)
             {
-                if (cam != null && cam.target == null)
+                if (cam != null)
                 {
                     cam.target = player;
                 }

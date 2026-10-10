@@ -28,7 +28,7 @@ public class TideSystem : MonoBehaviour
     public KeyCode toggleTideKey = KeyCode.T;
 
     [Header("Hiển thị giao diện trạng thái")]
-    public bool showUI = true;
+    public bool showUI = false;
 
     private float currentTargetY;
     private bool isRising = false;
@@ -116,8 +116,8 @@ public class TideSystem : MonoBehaviour
 
     void OnGUI()
     {
-        // SaBanHUD owns the combined panel, including its H shortcut.
-        if (!showUI || (SaBanHUD.Instance != null && SaBanHUD.Instance.isActiveAndEnabled)) return;
+        // Đã tắt vĩnh viễn theo yêu cầu của người chơi
+        return;
 
         GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
         boxStyle.fontSize = 13;

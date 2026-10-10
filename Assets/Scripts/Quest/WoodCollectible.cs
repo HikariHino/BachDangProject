@@ -19,9 +19,7 @@ public class WoodCollectible : MonoBehaviour
 
         if (interactPromptUI != null) interactPromptUI.SetActive(false);
         
-        GameObject p = GameObject.FindGameObjectWithTag("Player");
-        if (p == null) p = GameObject.Find("Main_Character");
-        if (p == null) p = GameObject.Find("Player_Main_Animated");
+        GameObject p = OpeningEvent.FindPlayerInScene();
         if (p != null) playerTransform = p.transform;
     }
 
@@ -29,7 +27,7 @@ public class WoodCollectible : MonoBehaviour
     {
         if (playerTransform == null)
         {
-            GameObject p = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Player_Main_Animated") ?? GameObject.Find("Main_Character");
+            GameObject p = OpeningEvent.FindPlayerInScene();
             if (p != null) playerTransform = p.transform;
             return;
         }
