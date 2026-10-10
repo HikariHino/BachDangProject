@@ -98,8 +98,7 @@ public class CampGateTransition : MonoBehaviour
             ScreenFader.Instance.FadeTransition(narrative, () =>
             {
                 Transform player = story.GetPlayerTransform();
-                Vector3 targetPos = destinationTarget != null ? destinationTarget.position : 
-                    (story.villageSpawnPoint != null ? story.villageSpawnPoint.position : new Vector3(250f, 18f, -1200f));
+                Vector3 targetPos = destinationTarget != null ? destinationTarget.position : new Vector3(225f, 17.6f, -1235f);
 
                 if (player != null)
                 {
@@ -120,8 +119,7 @@ public class CampGateTransition : MonoBehaviour
             ScreenFader.Instance.FadeTransition(narrative, () =>
             {
                 Transform player = story.GetPlayerTransform();
-                Vector3 targetPos = destinationTarget != null ? destinationTarget.position : 
-                    (story.campSpawnPoint != null ? story.campSpawnPoint.position : new Vector3(199f, 17.5f, -1254f));
+                Vector3 targetPos = destinationTarget != null ? destinationTarget.position : new Vector3(-765f, 32.85f, 195f);
 
                 if (player != null)
                 {

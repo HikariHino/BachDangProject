@@ -194,7 +194,16 @@ public class OpeningEvent : MonoBehaviour
             openingPanel.SetActive(false);
             
         if (player != null)
+        {
+            var cc = player.GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+            // Đặt người chơi vào đúng Doanh trại trước đài Ngô Quyền
+            player.transform.position = new Vector3(-783.9f, 32.85f, 180.0f);
+            player.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            if (cc != null) cc.enabled = true;
+
             player.SetActive(true);
+        }
             
         // Bật lại các UI Canvas đã giấu
         if (hiddenCanvases != null)

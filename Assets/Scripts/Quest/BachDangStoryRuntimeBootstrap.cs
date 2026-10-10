@@ -58,36 +58,57 @@ public static class BachDangStoryRuntimeBootstrap
         storyManager.interactPromptPanel = promptPanel;
         storyManager.interactPromptText = promptText;
 
-        // 4. Kết nối Ngô Quyền
-        GameObject ngoQuyen = GameObject.Find("NPC_NgoQuyen") ?? GameObject.Find("1_DaiBanDoanh_NgoQuyen");
+        // 4. Kết nối Ngô Quyền (Ưu tiên NPC_NgoQuyen (1) trên đài gỗ doanh trại tại x:-783, z:159)
+        GameObject ngoQuyen = GameObject.Find("NPC_NgoQuyen (1)") ?? GameObject.Find("NPC_NgoQuyen") ?? GameObject.Find("1_DaiBanDoanh_NgoQuyen");
         if (ngoQuyen != null)
         {
             if (ngoQuyen.GetComponent<NPCQuestGiver>() == null)
             {
-                ngoQuyen.AddComponent<NPCQuestGiver>();
+                var qg = ngoQuyen.AddComponent<NPCQuestGiver>();
+                qg.interactDistance = 15f;
             }
         }
 
-        // 5. Tạo Cổng Doanh Trại (CampGate)
+        // 5. Đưa nhân vật chính xuất hiện ngay trong Doanh Trại (trước đài Ngô Quyền)
+        Transform player = storyManager.GetPlayerTransform();
+        Vector3 campSpawnPos = new Vector3(-783.9f, 32.85f, 180.0f);
+        if (player != null)
+        {
+            var cc = player.GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+            player.position = campSpawnPos;
+            player.rotation = Quaternion.Euler(0f, 180f, 0f); // Hướng nhìn lên đài Ngô Quyền
+            if (cc != null) cc.enabled = true;
+        }
+
+        // 6. Tạo Cổng Doanh Trại (CampGate) tại lối ra của trại lính
         GameObject campGate = GameObject.Find("CampGate_ToVillage");
         if (campGate == null)
         {
             campGate = new GameObject("CampGate_ToVillage");
-            campGate.transform.position = new Vector3(220f, 17.5f, -1245f);
+            campGate.transform.position = new Vector3(-755f, 33.0f, 215f);
             var trans = campGate.AddComponent<CampGateTransition>();
             trans.gateType = CampGateTransition.GateType.CampGate;
-            trans.interactDistance = 10f;
+            trans.interactDistance = 12f;
+        }
+        else
+        {
+            campGate.transform.position = new Vector3(-755f, 33.0f, 215f);
         }
 
-        // 6. Tạo Cổng Làng (VillageGate) & Điểm Spawn Làng
+        // 7. Tạo Cổng Làng (VillageGate) tại lối vào khu làng dân cư
         GameObject villageGate = GameObject.Find("VillageGate_ToCamp");
         if (villageGate == null)
         {
             villageGate = new GameObject("VillageGate_ToCamp");
-            villageGate.transform.position = new Vector3(238f, 18.2f, -1215f);
+            villageGate.transform.position = new Vector3(215f, 17.6f, -1245f);
             var trans = villageGate.AddComponent<CampGateTransition>();
             trans.gateType = CampGateTransition.GateType.VillageGate;
-            trans.interactDistance = 10f;
+            trans.interactDistance = 12f;
+        }
+        else
+        {
+            villageGate.transform.position = new Vector3(215f, 17.6f, -1245f);
         }
 
         storyManager.campSpawnPoint = campGate.transform;
@@ -100,10 +121,10 @@ public static class BachDangStoryRuntimeBootstrap
         var vTrans = villageGate.GetComponent<CampGateTransition>();
         if (vTrans != null) vTrans.destinationTarget = campGate.transform;
 
-        // 7. Tạo 5 khúc cọc gỗ tại các vị trí trong Làng
+        // 8. Tạo 5 khúc cọc gỗ tại các vị trí trong Làng
         SetupVillageWoodLogs();
 
-        // 8. Tạo Điểm Cắm Cọc Bờ Sông (RiverStakeZone)
+        // 9. Tạo Điểm Cắm Cọc Bờ Sông (RiverStakeZone)
         SetupRiverStakeZone(storyManager);
 
         storyManager.UpdateUI();
@@ -287,15 +308,14 @@ public static class BachDangStoryRuntimeBootstrap
         if (riverZone == null)
         {
             riverZone = new GameObject("RiverStakePlantingZone");
-            riverZone.transform.position = new Vector3(450f, 2.0f, -450f); // Mép nước bãi cọc sông Bạch Đằng
+            riverZone.transform.position = new Vector3(-748f, 17.5f, 335f); // Bờ sông ở cuối doanh trại
             var rsz = riverZone.AddComponent<RiverStakeZone>();
-            rsz.interactDistance = 25f;
+            rsz.interactDistance = 20f;
 
             var cocGroup = GameObject.Find("--- TRẬN ĐỊA CỌC NGẦM BẠCH ĐẰNG (938) ---");
             if (cocGroup != null)
             {
                 rsz.stakeGroupObject = cocGroup;
-                riverZone.transform.position = cocGroup.transform.position + new Vector3(0, 3f, 0);
             }
 
             storyManager.riverStakePoint = riverZone.transform;
