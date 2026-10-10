@@ -77,7 +77,7 @@ public static class BachDangStoryRuntimeBootstrap
             if (pObj != null) player = pObj.transform;
         }
 
-        Vector3 campSpawnPos = new Vector3(-1200f, 40f, 340f);
+        Vector3 campSpawnPos = new Vector3(-992.8307f, 17.42352f, 265.8618f);
         RaycastHit spawnHit;
         if (Physics.Raycast(new Vector3(campSpawnPos.x, campSpawnPos.y + 60f, campSpawnPos.z), Vector3.down, out spawnHit, 150f))
         {

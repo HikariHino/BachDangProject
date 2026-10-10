@@ -360,8 +360,8 @@ public class OpeningEvent : MonoBehaviour
                 anim.applyRootMotion = false;
             }
 
-            // Xác định chính xác độ cao mặt đất tại toạ độ x: -1200, z: 340 (tránh bị lún đất hoặc rơi khỏi map)
-            Vector3 targetPos = new Vector3(-1200f, 40f, 340f);
+            // Xác định chính xác độ cao mặt đất tại toạ độ mới
+            Vector3 targetPos = new Vector3(-992.8307f, 17.42352f, 265.8618f);
             RaycastHit hit;
             if (Physics.Raycast(new Vector3(targetPos.x, targetPos.y + 60f, targetPos.z), Vector3.down, out hit, 150f))
             {
