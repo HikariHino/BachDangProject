@@ -36,7 +36,7 @@ public sealed class BachDangVillageGround
         if (!normalized.StartsWith("Assets/", StringComparison.Ordinal) || normalized.Contains("..") ||
             !AssetDatabase.IsValidFolder(normalized)) throw new DirectoryNotFoundException(normalized);
         this.terrain = terrain; this.factor = factor; folder = normalized; assets = generatedAssets;
-        Earth = GroundMaterial("Village_Natural_Earth", "Soil_Rocks_TerrainLayer.terrainlayer", new Color(1.12f, 1.01f, .81f, .86f));
+        Earth = GroundMaterial("Village_Natural_Earth", "Soil_Rocks_TerrainLayer.terrainlayer", new Color(1.55f, 1.32f, .97f, .92f));
         Mud = GroundMaterial("Village_Natural_Mud", "Muddy_TerrainLayer.terrainlayer", new Color(.88f, .77f, .61f, .76f));
         Pebbles = GroundMaterial("Village_Natural_Pebbles", "Pebbles_B_TerrainLayer.terrainlayer", new Color(.96f, .93f, .83f, .64f));
     }
@@ -157,11 +157,11 @@ public sealed class BachDangVillageGround
     }
 
     /// <summary>Combines caller-filtered points into at most two grass meshes, without source prefab edits.</summary>
-    public void AddGrass(Transform parent, string name, Vector3[] worldPoints, int seed)
+    public int AddGrass(Transform parent, string name, Vector3[] worldPoints, int seed)
     {
         if (parent == null) throw new ArgumentNullException(nameof(parent));
         if (worldPoints == null) throw new ArgumentNullException(nameof(worldPoints));
-        if (worldPoints.Length == 0) return;
+        if (worldPoints.Length == 0) return 0;
         foreach (var point in worldPoints) CheckPoint(point);
         var random = new System.Random(seed);
         var instances = new[] { new List<CombineInstance>(), new List<CombineInstance>() };
@@ -169,6 +169,7 @@ public sealed class BachDangVillageGround
         {
             int kind = i % 3 == 0 ? 1 : 0;
             Mesh source = GrassSource(kind);
+            if ((instances[kind].Count + 1) * source.vertexCount > 8000) continue;
             float desiredHeight = Mathf.Lerp(.25f, .4f, (float)random.NextDouble());
             float size = desiredHeight * factor / source.bounds.size.y;
             float yaw = (float)random.NextDouble() * 360;
@@ -190,6 +191,7 @@ public sealed class BachDangVillageGround
             mesh.RecalculateBounds();
             MeshObject(parent, mesh.name, mesh, GrassMaterial(kind), true);
         }
+        return instances[0].Count + instances[1].Count;
     }
 
     Material GroundMaterial(string name, string layerFile, Color color)
@@ -315,8 +317,9 @@ public sealed class BachDangVillageGround
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
         var renderer = go.AddComponent<MeshRenderer>(); renderer.sharedMaterial = material;
         renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = true;
-        // Grass is already combined; all ground dressing can still share batching with nearby fixed scenery.
-        GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.BatchingStatic);
+        // These meshes are unique (and grass already combined). Static batching would
+        // duplicate their vertex buffers without the benefit of reusable source geometry.
+        GameObjectUtility.SetStaticEditorFlags(go, 0);
         return go.transform;
     }
 

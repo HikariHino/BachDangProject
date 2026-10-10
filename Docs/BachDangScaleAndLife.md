@@ -1,5 +1,7 @@
 # Tỷ lệ nhân vật và sinh hoạt làng — 05/10/2026
 
+> Cập nhật 09/10/2026: xem [Làng tự nhiên và ngân sách laptop](BachDangLaptopAndNaturalVillage.md). Thiết lập cây, tầm nhìn và bộ nhớ trong tài liệu mới thay thế các ghi chú Nature Renderer/tầm nhìn trước đây ở trang này.
+
 Scene làm việc: `Assets/Scenes/beachBoat.unity` (bản có núi, ngày–đêm, làng và doanh trại cải tiến).
 
 ## Tỷ lệ

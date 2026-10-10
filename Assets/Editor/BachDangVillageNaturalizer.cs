@@ -50,6 +50,11 @@ public static class BachDangVillageNaturalizer
             var group = Group(Marker, root);
             var builder = new Builder(terrain, root, group, assets);
             for (int index = 0; index < Villages.Length; index++) builder.Village(root.Find(Villages[index]), index);
+            long newMeshBytes = assets.Where(p => p.EndsWith(".asset", StringComparison.Ordinal))
+                .Select(p => AssetDatabase.LoadAssetAtPath<Mesh>(p)).Where(m => m != null)
+                .Sum(m => UnityEngine.Profiling.Profiler.GetRuntimeMemorySizeLong(m));
+            if (newMeshBytes > 12L * 1024 * 1024)
+                throw new InvalidOperationException("New village geometry exceeds its 12 MiB laptop budget.");
             BachDangScaledTerrain.ClearNewDetails(terrain, builder.clearings, F);
             Physics.SyncTransforms();
             foreach (var pair in actors)
@@ -275,10 +280,26 @@ public static class BachDangVillageNaturalizer
         void Path(Transform parent, string name, float width, Vector3[] points)
         {
             var obstacles = parts.Select(p => Bounds(p.transform)).ToArray();
-            Vector3[] route;
-            try { route = BachDangVillageRoutes.Route(points, width * 1.1f * F * .5f, parent, obstacles, F); }
-            catch (InvalidOperationException error)
-            { throw new InvalidOperationException(parent.name + "/" + name + " (width " + width + "): " + error.Message, error); }
+            Vector3[] route = null;
+            InvalidOperationException failure = null;
+            float requestedWidth = width;
+            // Existing yards take priority; an alley can narrow before taking a detour.
+            foreach (float fraction in new[] { 1f, .8f, .65f })
+            {
+                width = Mathf.Max(1.2f, requestedWidth * fraction);
+                try { route = BachDangVillageRoutes.Route(points, width * 1.1f * F * .5f, parent, obstacles, F); break; }
+                catch (InvalidOperationException error) { failure = error; }
+            }
+            if (route == null)
+            {
+                File.WriteAllText(".utmp/NaturalVillage/blocked-route.json", Newtonsoft.Json.JsonConvert.SerializeObject(new {
+                    village = parent.name, name, width,
+                    points = points.Select(p => new { p.x, p.z }).ToArray(),
+                    obstacles = parts.Select(p => new { p.transform.name, minX = Bounds(p.transform).min.x, maxX = Bounds(p.transform).max.x,
+                        minZ = Bounds(p.transform).min.z, maxZ = Bounds(p.transform).max.z }).ToArray()
+                }, Newtonsoft.Json.Formatting.Indented));
+                throw new InvalidOperationException(parent.name + "/" + name + ": " + failure.Message, failure);
+            }
             painter.PathPointAllowed = (point, halfWidth) => !obstacles.Any(b => Inside(b, point, halfWidth + .15f * F));
             painter.PathSegmentAllowed = (a, b, halfWidth) => BachDangVillageRoutes.SegmentClear(a, b, obstacles, halfWidth + .15f * F);
             var areas = new List<Bounds>();
@@ -345,7 +366,8 @@ public static class BachDangVillageNaturalizer
             {
                 float radius = Mathf.Lerp(2.4f, 4.4f, (float)random.NextDouble());
                 var accepted = new List<Vector3>();
-                for (int i = 0; i < 34; i++)
+                // Small local accents, not another field of streamed vegetation.
+                for (int i = 0; i < 8; i++)
                 {
                     float angle = (float)random.NextDouble() * Mathf.PI * 2, r = Mathf.Sqrt((float)random.NextDouble()) * radius * F;
                     var p = Ground(center + new Vector3(Mathf.Cos(angle) * r, 0, Mathf.Sin(angle) * r * .72f));
@@ -361,7 +383,9 @@ public static class BachDangVillageNaturalizer
                 if (!grassExclusions.Any(b => Area(footprint, b) > 0) && !parts.Any(p => Area(footprint, Bounds(p.transform)) > 0))
                     Patch(detail, "Co_Loang_Ven_Xom", patch, seed % 180, radius * 1.8f, radius * 1.35f, meadow, false);
             }
-            painter.AddGrass(detail, "Co_Thap_Chan_Rao", points.ToArray(), seed++); tufts += points.Count;
+            // Even a dense village stays within a fixed geometry budget on 16 GB laptops.
+            var boundedPoints = points.OrderBy(p => random.Next()).Take(240).ToArray();
+            tufts += painter.AddGrass(detail, "Co_Thap_Chan_Rao", boundedPoints, seed++);
         }
         readonly struct Part
         {

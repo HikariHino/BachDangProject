@@ -72,6 +72,7 @@ public class DayNightCycle : MonoBehaviour
     private void OnEnable()
     {
 #if UNITY_EDITOR
+        UnsubscribeEditorCallbacks();
         UnityEditor.EditorApplication.update += EditorPreview;
         UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += BeforeSceneSave;
         UnityEditor.SceneManagement.EditorSceneManager.sceneSaved += AfterSceneSave;
@@ -165,7 +166,7 @@ public class DayNightCycle : MonoBehaviour
 
     private bool CanControlScene()
     {
-        if (!isActiveAndEnabled || !gameObject.scene.IsValid() || !gameObject.scene.isLoaded) return false;
+        if (this == null || !isActiveAndEnabled || !gameObject.scene.IsValid() || !gameObject.scene.isLoaded) return false;
 #if UNITY_EDITOR
         if (UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(gameObject) != null) return false;
 #endif
@@ -217,6 +218,8 @@ public class DayNightCycle : MonoBehaviour
 #if UNITY_EDITOR
     private void EditorPreview()
     {
+        // A scene can unload within the current Editor update invocation list.
+        if (this == null) { UnsubscribeEditorCallbacks(); return; }
         if (Application.isPlaying || UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode || !CanControlScene()) return;
         if (previewDirty || (initialized && (timeOfDay != lastAppliedTime || sourceInUse != skyboxMaterial)))
         {
@@ -228,7 +231,7 @@ public class DayNightCycle : MonoBehaviour
 
     private void BeforeSceneSave(UnityEngine.SceneManagement.Scene scene, string path)
     {
-        if (scene != gameObject.scene || !initialized || RenderSettings.skybox != skyInstance) return;
+        if (this == null || scene != gameObject.scene || !initialized || RenderSettings.skybox != skyInstance) return;
         // Serialize a real asset reference, not the temporary material used for preview.
         RenderSettings.skybox = skyboxMaterial;
         savingSourceSky = true;
@@ -236,24 +239,32 @@ public class DayNightCycle : MonoBehaviour
 
     private void AfterSceneSave(UnityEngine.SceneManagement.Scene scene)
     {
-        if (scene != gameObject.scene || !savingSourceSky) return;
+        if (this == null || scene != gameObject.scene || !savingSourceSky) return;
         savingSourceSky = false;
         ApplyTimeOfDay();
+    }
+
+    private void UnsubscribeEditorCallbacks()
+    {
+        UnityEditor.EditorApplication.update -= EditorPreview;
+        UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= BeforeSceneSave;
+        UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= AfterSceneSave;
     }
 #endif
 
     private void OnDisable()
     {
 #if UNITY_EDITOR
-        UnityEditor.EditorApplication.update -= EditorPreview;
-        UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= BeforeSceneSave;
-        UnityEditor.SceneManagement.EditorSceneManager.sceneSaved -= AfterSceneSave;
+        UnsubscribeEditorCallbacks();
 #endif
         ReleaseSkyInstance();
     }
 
     private void OnDestroy()
     {
+#if UNITY_EDITOR
+        UnsubscribeEditorCallbacks();
+#endif
         ReleaseSkyInstance();
     }
 

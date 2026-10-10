@@ -74,10 +74,12 @@ public static class BachDangVillageRoutes
                 var p = reference.InverseTransformPoint(input[i]); controls[i] = new Vector2(p.x, p.z);
                 loX = Mathf.Min(loX, p.x); loZ = Mathf.Min(loZ, p.z); hiX = Mathf.Max(hiX, p.x); hiZ = Mathf.Max(hiZ, p.z);
             }
-            minX = Mathf.Max(-105, Mathf.FloorToInt(loX - 15));
-            minZ = Mathf.Max(-120, Mathf.FloorToInt(loZ - 15));
-            int maxX = Mathf.Min(105, Mathf.CeilToInt(hiX + 15));
-            int maxZ = Mathf.Min(120, Mathf.CeilToInt(hiZ + 15));
+            // Detours may need to pass around an entire household or work yard.
+            // Still bounded to this village; never allocate a world-sized navigation grid.
+            minX = Mathf.Max(-105, Mathf.FloorToInt(loX - 28));
+            minZ = Mathf.Max(-120, Mathf.FloorToInt(loZ - 28));
+            int maxX = Mathf.Min(105, Mathf.CeilToInt(hiX + 28));
+            int maxZ = Mathf.Min(120, Mathf.CeilToInt(hiZ + 28));
             if (maxX < minX || maxZ < minZ) throw new InvalidOperationException("Proposed route is outside the permitted village area.");
             width = maxX - minX + 1; depth = maxZ - minZ + 1;
             int count = width * depth;
