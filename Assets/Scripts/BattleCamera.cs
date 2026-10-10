@@ -39,13 +39,15 @@ public class BattleCamera : MonoBehaviour
     private float currentPitch = 15f;
     private float freeYaw = 0f;
     private float freePitch = 20f;
+    private float worldScale = 1f;
 
     void Start()
     {
+        worldScale = BachDangWorldScale.ForScene(gameObject.scene);
         Camera cam = GetComponent<Camera>();
         if (cam != null)
         {
-            cam.farClipPlane = 9500f; // Tầm nhìn xa bao trọn toàn bộ chiến trường Bạch Đằng 6000m
+            cam.farClipPlane = Mathf.Clamp(cam.farClipPlane, 1500f, 3500f);
         }
 
         FindTargetIfNull();
@@ -150,7 +152,7 @@ public class BattleCamera : MonoBehaviour
 
         // Di chuyển mượt mà
         transform.position = Vector3.Lerp(transform.position, desiredPos, Time.deltaTime * smoothSpeed);
-        transform.LookAt(targetPos + Vector3.up * 2f);
+        transform.LookAt(targetPos + Vector3.up * (2f * worldScale));
     }
 
     // --- 2. CHẾ ĐỘ BAY TỰ DO (SPECTATOR) ---
