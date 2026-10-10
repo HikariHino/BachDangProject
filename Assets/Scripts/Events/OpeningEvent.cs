@@ -93,8 +93,12 @@ public class OpeningEvent : MonoBehaviour
         return null;
     }
 
+    private float _openingStartTime;
+
     void Start()
     {
+        _openingStartTime = Time.time;
+
         // Tìm opening canvas ngay
         _openingCanvas = GetComponentInParent<Canvas>();
         if (_openingCanvas == null) _openingCanvas = GetComponent<Canvas>();
@@ -181,6 +185,8 @@ public class OpeningEvent : MonoBehaviour
         openingCoroutine = StartCoroutine(PlayOpening());
     }
 
+
+
     void Update()
     {
         if (!isOpeningEnded)
@@ -188,12 +194,17 @@ public class OpeningEvent : MonoBehaviour
             // Đảm bảo trong suốt đoạn mở đầu, bảng nhiệm vụ không bao giờ bị kích hoạt lại
             SuppressQuestUI();
 
-            // Cho phép người chơi BẤM PHÍM BẤT KỲ ĐỂ BỎ QUA ĐOẠN DẪN TRUYỆN MỞ ĐẦU
-            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.E) || 
-                Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
-                Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(0))
+            // Cho phép người chơi BẤM PHÍM ĐỂ BỎ QUA ĐOẠN DẪN TRUYỆN
+            // Bỏ GetMouseButtonDown(0) để tránh click chuột vào màn hình Game gây skip luôn
+            // Thêm điều kiện Time.time > _openingStartTime + 1f để tránh bấm nhầm lúc vừa load scene
+            if (Time.time > _openingStartTime + 1f)
             {
-                SkipOpening();
+                if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.E) || 
+                    Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
+                    Input.GetKeyDown(KeyCode.Escape))
+                {
+                    SkipOpening();
+                }
             }
         }
     }
