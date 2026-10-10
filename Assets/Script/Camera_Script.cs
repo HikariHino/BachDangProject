@@ -21,12 +21,38 @@ public class Camera_Script : MonoBehaviour
 
 
 
+    void Awake()
+    {
+        FindTarget();
+    }
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        if (target == null)
+        {
+            FindTarget();
+        }
+
         Vector3 angles = this.transform.eulerAngles;
-        x= angles.y;
+        x = angles.y;
         y = angles.x;
+    }
+
+    private void FindTarget()
+    {
+        if (target != null) return;
+
+        var p = GameObject.FindGameObjectWithTag("Player");
+        if (p == null) p = GameObject.Find("Player_Main_Animated");
+        if (p == null) p = GameObject.Find("Main_Character");
+        if (p == null)
+        {
+            var cm = Object.FindAnyObjectByType<Character_Movement>(FindObjectsInactive.Include);
+            if (cm != null) p = cm.gameObject;
+        }
+
+        if (p != null) target = p.transform;
     }
 
     // Update is called once per frame
@@ -43,7 +69,13 @@ public class Camera_Script : MonoBehaviour
             Cursor.lockState = Cursor.visible ? CursorLockMode.None : CursorLockMode.Locked;
         }
 
-            CameraMovement();
+        if (target == null)
+        {
+            FindTarget();
+            if (target == null) return; // An toàn tuyệt đối, tránh ném NullReferenceException gây auto-pause
+        }
+
+        CameraMovement();
         rotation = Quaternion.Euler(y, x, 0);
         Vector3 distancevector = offset;
         Vector3 position = rotation * distancevector + target.position;

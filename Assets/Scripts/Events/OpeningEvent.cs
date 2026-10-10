@@ -48,7 +48,12 @@ public class OpeningEvent : MonoBehaviour
     {
         if (player == null)
         {
-            player = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Main_Character");
+            player = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Player_Main_Animated") ?? GameObject.Find("Main_Character");
+            if (player == null)
+            {
+                var cm = Object.FindAnyObjectByType<Character_Movement>(FindObjectsInactive.Include);
+                if (cm != null) player = cm.gameObject;
+            }
         }
 
         // Đảm bảo Canvas của đoạn mở đầu luôn ở tầng cao nhất (đè hoàn toàn các UI khác)
@@ -227,9 +232,9 @@ public class OpeningEvent : MonoBehaviour
         {
             var cc = player.GetComponent<CharacterController>();
             if (cc != null) cc.enabled = false;
-            // Đặt người chơi vào đúng Doanh trại trước đài Ngô Quyền
-            player.transform.position = new Vector3(-783.9f, 32.85f, 180.0f);
-            player.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            // Đặt người chơi vào đúng vị trí doanh trại theo yêu cầu (x: -1200, y: 40, z: 340)
+            player.transform.position = new Vector3(-1200f, 40f, 340f);
+            player.transform.rotation = Quaternion.Euler(0f, 110f, 0f);
             if (cc != null) cc.enabled = true;
 
             player.SetActive(true);

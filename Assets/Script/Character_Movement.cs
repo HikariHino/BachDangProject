@@ -90,11 +90,12 @@ public class Character_Movement : MonoBehaviour
         float ipVertical   = Input.GetAxis("Vertical");
 
         // Lấy hướng camera chiếu xuống mặt phẳng ngang và normalize
-        Vector3 camForward = Camera.main.transform.forward;
+        Camera mainCam = Camera.main;
+        Vector3 camForward = (mainCam != null) ? mainCam.transform.forward : transform.forward;
         camForward.y = 0f;
         camForward.Normalize(); // <-- quan trọng, tránh Y drift
 
-        Vector3 camRight = Camera.main.transform.right;
+        Vector3 camRight = (mainCam != null) ? mainCam.transform.right : transform.right;
         camRight.y = 0f;
         camRight.Normalize();
 

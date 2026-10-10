@@ -69,16 +69,26 @@ public static class BachDangStoryRuntimeBootstrap
             }
         }
 
-        // 5. Đưa nhân vật chính xuất hiện ngay trong Doanh Trại (trước đài Ngô Quyền)
+        // 5. Đưa nhân vật chính xuất hiện trong Doanh Trại tại vị trí (x: -1200, y: 40, z: 340)
         Transform player = storyManager.GetPlayerTransform();
-        Vector3 campSpawnPos = new Vector3(-783.9f, 32.85f, 180.0f);
+        Vector3 campSpawnPos = new Vector3(-1200f, 40f, 340f);
         if (player != null)
         {
             var cc = player.GetComponent<CharacterController>();
             if (cc != null) cc.enabled = false;
             player.position = campSpawnPos;
-            player.rotation = Quaternion.Euler(0f, 180f, 0f); // Hướng nhìn lên đài Ngô Quyền
+            player.rotation = Quaternion.Euler(0f, 110f, 0f);
             if (cc != null) cc.enabled = true;
+
+            // Tự động kết nối target cho tất cả Camera_Script để camera bám theo nhân vật chính
+            var cameras = Object.FindObjectsByType<Camera_Script>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var cam in cameras)
+            {
+                if (cam != null && cam.target == null)
+                {
+                    cam.target = player;
+                }
+            }
         }
 
         // 6. Tạo Cổng Doanh Trại (CampGate) tại lối ra của trại lính

@@ -29,7 +29,7 @@ public class WoodCollectible : MonoBehaviour
     {
         if (playerTransform == null)
         {
-            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            GameObject p = GameObject.FindGameObjectWithTag("Player") ?? GameObject.Find("Player_Main_Animated") ?? GameObject.Find("Main_Character");
             if (p != null) playerTransform = p.transform;
             return;
         }
