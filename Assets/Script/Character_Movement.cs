@@ -69,6 +69,11 @@ public class Character_Movement : MonoBehaviour
     // Đọc input và cập nhật trạng thái animation.
     void Update()
     {
+        // Nếu chưa có Animator hoặc Rigidbody thì thử tìm lại, không ném lỗi
+        if (animator == null) animator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
+        if (rb == null) rb = GetComponent<Rigidbody>();
+        if (animator == null || rb == null) return; // Chưa sẵn sàng, bỏ qua frame này
+
         UpdateAttackState();
         UpdateBlockState();
 
@@ -103,7 +108,7 @@ public class Character_Movement : MonoBehaviour
         Camera mainCam = Camera.main;
         Vector3 camForward = (mainCam != null) ? mainCam.transform.forward : transform.forward;
         camForward.y = 0f;
-        camForward.Normalize(); // <-- quan trọng, tránh Y drift
+        camForward.Normalize();
 
         Vector3 camRight = (mainCam != null) ? mainCam.transform.right : transform.right;
         camRight.y = 0f;
@@ -189,6 +194,7 @@ public class Character_Movement : MonoBehaviour
 
     bool IsAnimationStateActive(int stateHash)
     {
+        if (animator == null) return false;
         return animator.GetCurrentAnimatorStateInfo(0).fullPathHash == stateHash ||
             (animator.IsInTransition(0) &&
              animator.GetNextAnimatorStateInfo(0).fullPathHash == stateHash);
@@ -196,6 +202,7 @@ public class Character_Movement : MonoBehaviour
 
     bool HasAnimatorParameter(int parameterHash, AnimatorControllerParameterType parameterType)
     {
+        if (animator == null) return false;
         foreach (AnimatorControllerParameter parameter in animator.parameters)
         {
             if (parameter.nameHash == parameterHash && parameter.type == parameterType)

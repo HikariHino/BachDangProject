@@ -311,6 +311,9 @@ public class OpeningEvent : MonoBehaviour
         {
             player.SetActive(true);
 
+            // Đảm bảo scale nhân vật đúng 7,7,7
+            player.transform.localScale = new Vector3(7f, 7f, 7f);
+
             // === FIX T-POSE: đảm bảo Animator được enable và có đúng controller ===
             var animators = player.GetComponentsInChildren<Animator>(true);
             foreach (var anim in animators)
