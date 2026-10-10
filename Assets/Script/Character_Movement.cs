@@ -15,6 +15,14 @@ public class Character_Movement : MonoBehaviour
 
     void Start()
     {
+        // Tự động sửa lỗi nếu Inspector bị kẹt số quá nhỏ
+        if (walkSpeed < 10f) 
+        {
+            walkSpeed = 30f;
+            runSpeed = 55f;
+            Debug.Log("[Movement] Đã tự động sửa tốc độ di chuyển thành 30/55 cho nhân vật Scale 7x.");
+        }
+
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
         
