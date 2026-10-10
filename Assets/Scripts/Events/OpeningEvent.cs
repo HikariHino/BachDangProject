@@ -46,6 +46,9 @@ public class OpeningEvent : MonoBehaviour
         {
             player = FindPlayerInScene();
         }
+        // Tắt player ngay lập tức để không bị nhìn thấy trước khi opening kết thúc
+        if (player != null)
+            player.SetActive(false);
     }
 
     /// <summary>
@@ -92,26 +95,38 @@ public class OpeningEvent : MonoBehaviour
 
     void Start()
     {
+        StartCoroutine(InitOpening());
+    }
+
+    IEnumerator InitOpening()
+    {
+        // Delay 1 frame để Bootstrap kịp tạo StoryUI_Canvas và các UI khác
+        yield return null;
+
         if (player == null)
         {
             player = FindPlayerInScene();
         }
 
-        // Đảm bảo Canvas của đoạn mở đầu luôn ở tầng cao nhất (đè hoàn toàn các UI khác)
+        // Đảm bảo Canvas của đoạn mở đầu luôn ở tầng cao nhất (đè hoàn toàn tất cả UI khác)
         Canvas myCanvas = GetComponentInParent<Canvas>();
+        if (myCanvas == null) myCanvas = GetComponent<Canvas>();
         if (myCanvas != null)
         {
-            myCanvas.sortingOrder = 900;
+            myCanvas.sortingOrder = 9999; // Đảm bảo luôn đè lên mọi UI
+            myCanvas.enabled = true;
         }
+        _openingCanvas = myCanvas;
 
         // Tạm ẩn các bảng nhiệm vụ cũ để màn hình đen hoàn toàn sạch sẽ
         HideExistingQuestPanels();
 
-        // Ẩn tất cả Canvas UI không liên quan
-        hiddenCanvases = FindObjectsOfType<Canvas>();
+        // Ẩn tất cả Canvas UI không liên quan (kể cả StoryUI_Canvas do Bootstrap tạo sau frame 1)
+        hiddenCanvases = FindObjectsOfType<Canvas>(true);
+        string openingCanvasName = myCanvas != null ? myCanvas.gameObject.name : "Canvas_Opening";
         foreach (Canvas c in hiddenCanvases)
         {
-            if (c != null && c.gameObject.name != "Canvas_Opening" && (openingPanel == null || c.gameObject.name != openingPanel.transform.parent?.name))
+            if (c != null && c.gameObject.name != openingCanvasName)
             {
                 c.enabled = false;
             }
@@ -164,12 +179,30 @@ public class OpeningEvent : MonoBehaviour
         }
     }
 
+    private Canvas _openingCanvas;
+
     private void SuppressQuestUI()
     {
+        // Đảm bảo objectiveUIPanel (NHIỆM VỤ) luôn tắt trong suốt opening
         if (BachDangStoryManager.Instance != null && BachDangStoryManager.Instance.objectiveUIPanel != null)
         {
             if (BachDangStoryManager.Instance.objectiveUIPanel.activeSelf)
                 BachDangStoryManager.Instance.objectiveUIPanel.SetActive(false);
+        }
+
+        // Tắt mạnh bất kỳ Canvas nào không phải opening canvas
+        if (_openingCanvas == null)
+        {
+            _openingCanvas = GetComponentInParent<Canvas>();
+            if (_openingCanvas == null) _openingCanvas = GetComponent<Canvas>();
+        }
+        if (hiddenCanvases != null)
+        {
+            foreach (Canvas c in hiddenCanvases)
+            {
+                if (c != null && c != _openingCanvas && c.enabled)
+                    c.enabled = false;
+            }
         }
     }
 
