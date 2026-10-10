@@ -1,10 +1,14 @@
 using UnityEngine;
 
+/// <summary>
+/// Khúc cọc gỗ người chơi nhặt tại Làng Ven Sông trong Hồi 2.
+/// </summary>
 public class WoodCollectible : MonoBehaviour
 {
-    [Header("Giao dien (Chữ [E] Nhặt)")]
+    [Header("Giao diện (Chữ [E] Nhặt)")]
     public GameObject interactPromptUI;
 
+    public float interactDistance = 8f;
     private bool isPlayerNear = false;
     private Transform playerTransform;
 
@@ -31,15 +35,24 @@ public class WoodCollectible : MonoBehaviour
         }
 
         float dist = Vector3.Distance(transform.position, playerTransform.position);
-        isPlayerNear = (dist < 15f);
+        isPlayerNear = (dist < interactDistance);
 
         if (isPlayerNear && playerTransform.gameObject.activeInHierarchy)
         {
             if (interactPromptUI != null && !interactPromptUI.activeSelf)
                 interactPromptUI.SetActive(true);
 
+            if (BachDangStoryManager.Instance != null)
+                BachDangStoryManager.Instance.SetInteractPrompt(true, "[E] Nhặt cọc gỗ");
+
             if (Input.GetKeyDown(KeyCode.E))
             {
+                if (BachDangStoryManager.Instance != null)
+                {
+                    BachDangStoryManager.Instance.OnCollectWood();
+                    BachDangStoryManager.Instance.SetInteractPrompt(false);
+                }
+
                 if (QuestManager.Instance != null)
                 {
                     QuestManager.Instance.AddWood();
@@ -53,6 +66,14 @@ public class WoodCollectible : MonoBehaviour
         {
             if (interactPromptUI != null && interactPromptUI.activeSelf)
                 interactPromptUI.SetActive(false);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (BachDangStoryManager.Instance != null)
+        {
+            BachDangStoryManager.Instance.SetInteractPrompt(false);
         }
     }
 }
