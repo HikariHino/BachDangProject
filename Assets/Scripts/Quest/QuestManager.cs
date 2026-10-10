@@ -1,48 +1,68 @@
 using UnityEngine;
-using TMPro; // Thư viện để dùng TextMeshPro
+using TMPro;
 
 public class QuestManager : MonoBehaviour
 {
-    public static QuestManager Instance; // Singleton để các script khác dễ dàng gọi đến
+    public static QuestManager Instance;
 
-    [Header("UI Elements (Kéo thả UI vào đây)")]
+    [Header("UI Elements")]
     public TextMeshProUGUI questTitleText;
     public TextMeshProUGUI questDescriptionText;
-    public GameObject questUIPanel; // Khung nền chứa chữ nhiệm vụ
+    public GameObject questUIPanel;
 
-    [Header("Thông tin Quest hiện tại")]
+    [Header("Thong tin Quest")]
     public string currentQuestTitle = "";
     public bool hasActiveQuest = false;
+    
+    [Header("Tien do Nhap Go")]
+    public int collectedWood = 0;
+    public int totalWoodRequired = 5;
 
     private void Awake()
     {
-        // Khởi tạo Singleton
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }
 
     private void Start()
     {
-        // Khi mới vào game, ẩn bảng nhiệm vụ đi
         if (questUIPanel != null)
         {
             questUIPanel.SetActive(false);
         }
     }
 
-    // Hàm này sẽ được NPC gọi khi người chơi bấm nút nhận quest
     public void ReceiveQuest(string title, string description)
     {
         hasActiveQuest = true;
         currentQuestTitle = title;
+        collectedWood = 0; 
 
-        // Cập nhật chữ trên giao diện
         if (questTitleText != null) questTitleText.text = "Nhiệm vụ: " + title;
-        if (questDescriptionText != null) questDescriptionText.text = description;
+        if (questDescriptionText != null) questDescriptionText.text = description + $"\n(Tiến độ: {collectedWood}/{totalWoodRequired} Gỗ)";
 
-        // Hiện bảng UI lên
         if (questUIPanel != null) questUIPanel.SetActive(true);
+    }
 
-        Debug.Log("Đã nhận nhiệm vụ mới: " + title);
+    public void AddWood()
+    {
+        collectedWood++;
+        
+        if (questDescriptionText != null && hasActiveQuest)
+        {
+            questDescriptionText.text = $"- Hãy nhặt đủ gỗ trong doanh trại.\n- Mang ra bờ sông để cắm cọc.\n\nTiến độ: ({collectedWood}/{totalWoodRequired}) Gỗ";
+        }
+
+        if (collectedWood >= totalWoodRequired)
+        {
+            CompleteWoodQuest();
+        }
+    }
+
+    private void CompleteWoodQuest()
+    {
+        if (questTitleText != null) questTitleText.text = "Nhiệm vụ: CẮM CỌC";
+        if (questDescriptionText != null) questDescriptionText.text = "Bạn đã thu thập đủ gỗ!\nHãy chạy ra mép nước sông Bạch Đằng để cắm cọc.";
+        Debug.Log("Da nhat du go!");
     }
 }

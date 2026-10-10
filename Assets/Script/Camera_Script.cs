@@ -1,75 +1,87 @@
 using UnityEngine;
 
+/// <summary>
+/// Camera góc nhìn thứ 3 (Style PUBG / Over-the-shoulder)
+/// Đã được cân chỉnh tỷ lệ cực lớn cho nhân vật Scale 7x7x7.
+/// </summary>
 public class Camera_Script : MonoBehaviour
 {
-    [Header("Attributes Camera")]
+    [Header("Target")]
     public Transform target;
-    [SerializeField] private Vector3 offset = new Vector3(0, 1.7f, -4f);
-    private Quaternion rotation;
 
-    //attributes for mouse movement
-    private float x;
-    private float y;
-    [SerializeField] private float xSpeed = 5f;
-    [SerializeField] private float ySpeed = 4f;
+    [Header("PUBG Camera Settings (For Scale 7x)")]
+    [Tooltip("Khoảng cách từ camera đến nhân vật")]
+    public float distance = 22f; 
+    [Tooltip("Độ cao của camera so với chân nhân vật (ngang vai/đầu)")]
+    public float heightOffset = 11f; 
+    [Tooltip("Lệch sang phải bao nhiêu (Over-the-shoulder)")]
+    public float rightOffset = 4.5f; 
 
-    [SerializeField] private float xMinRotation = -360f;
-    [SerializeField] private float yMinRotation = 10f;
-    [SerializeField] private float xMaxRotation = 360f;
-    [SerializeField] private float yMaxRotation = 80f;
+    [Header("Mouse Sensitivity")]
+    public float mouseXSpeed = 5f;
+    public float mouseYSpeed = 3f;
 
+    [Header("Vertical Clamp")]
+    public float yMinAngle = -15f;
+    public float yMaxAngle = 70f;
 
+    [Header("Smoothing")]
+    public float positionSmoothTime = 0.05f;
 
+    // --- internal ---
+    private float yaw;
+    private float pitch;
+    private Vector3 posVelocity;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Awake()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
     void Start()
     {
-        Vector3 angles = this.transform.eulerAngles;
-        x= angles.y;
-        y = angles.x;
+        yaw = transform.eulerAngles.y;
+        pitch = transform.eulerAngles.x;
     }
 
-    // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
+        // Nhấn ESC để hiện/ẩn chuột
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            bool locked = Cursor.lockState == CursorLockMode.Locked;
+            Cursor.lockState = locked ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = locked;
+        }
+
+        if (target == null)
+        {
+            var p = OpeningEvent.FindPlayerInScene();
+            if (p != null) target = p.transform;
+            if (target == null) return;
+        }
+
+        // Quay camera bằng chuột
+        if (Cursor.lockState == CursorLockMode.Locked)
+        {
+            yaw += Input.GetAxis("Mouse X") * mouseXSpeed;
+            pitch -= Input.GetAxis("Mouse Y") * mouseYSpeed;
+            pitch = Mathf.Clamp(pitch, yMinAngle, yMaxAngle);
+        }
+
+        Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
         
-    }
-
-    private void LateUpdate()
-    {
-        if (Input.GetKey(KeyCode.Q))
-        {
-            Cursor.visible = !Cursor.visible;
-            Cursor.lockState = Cursor.visible ? CursorLockMode.None : CursorLockMode.Locked;
-        }
-
-            CameraMovement();
-        rotation = Quaternion.Euler(y, x, 0);
-        Vector3 distancevector = offset;
-        Vector3 position = rotation * distancevector + target.position;
-        transform.rotation = rotation;
-        transform.position = position;
-    }
-
-    public void CameraMovement()
-    {
-        x += Input.GetAxis("Mouse X") * xSpeed;
-        y -= Input.GetAxis("Mouse Y") * ySpeed;
+        // Vị trí mỏ neo (ngang vai nhân vật)
+        Vector3 anchorPoint = target.position + Vector3.up * heightOffset;
         
-        x = ClammAngle(x, xMinRotation, xMaxRotation);
-        y = ClammAngle(y, yMinRotation, yMaxRotation);
-    }
+        // Lùi lại (distance) và sang phải (rightOffset) tạo góc PUBG
+        Vector3 desiredPos = anchorPoint - (rotation * Vector3.forward * distance) + (rotation * Vector3.right * rightOffset);
 
-    public float ClammAngle(float angle, float min, float max)
-    {
-        if (angle < -360f)
-        {
-            angle += 360f;
-        }
-        if (angle > 360f)
-        {
-            angle -= 360f;
-        }
-        return Mathf.Clamp(angle, min, max);
+        // Bám theo mượt mà
+        transform.position = Vector3.SmoothDamp(transform.position, desiredPos, ref posVelocity, positionSmoothTime);
+        
+        // Góc nhìn chuẩn: nhìn thẳng về phía trước từ shoulder (song song với hướng nhìn của camera)
+        transform.LookAt(anchorPoint + rotation * Vector3.right * rightOffset);
     }
 }

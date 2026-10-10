@@ -1,60 +1,98 @@
 using UnityEngine;
-using TMPro;
 
+/// <summary>
+/// Gắn lên Chủ tướng Ngô Quyền để giao nhiệm vụ trong Hồi 1 và Hồi 2.
+/// </summary>
 public class NPCQuestGiver : MonoBehaviour
 {
-    [Header("Nội dung Nhiệm vụ")]
-    public string questTitle = "Thu thập cọc gỗ";
-    [TextArea(3, 5)] // Tạo khung nhập text rộng hơn trong Inspector
-    public string questDescription = "Hãy ra bìa rừng nhặt 5 cọc gỗ và đem ra bờ sông Bạch Đằng.";
+    [Header("Cự ly tương tác")]
+    public float interactDistance = 8f;
 
     [Header("Giao diện Tương tác")]
-    public GameObject interactPromptUI; // Kéo thả cái Text "Nhấn E để nói chuyện" vào đây
+    public GameObject interactPromptUI;
 
     private bool isPlayerNear = false;
-    private bool hasGivenQuest = false;
+    private Transform playerTransform;
 
     private void Start()
     {
-        // Giấu chữ "Nhấn E" đi lúc mới đầu
         if (interactPromptUI != null)
             interactPromptUI.SetActive(false);
+
+        FindPlayer();
+    }
+
+    private void FindPlayer()
+    {
+        GameObject p = OpeningEvent.FindPlayerInScene();
+        if (p != null) playerTransform = p.transform;
     }
 
     private void Update()
     {
-        // Nếu người chơi đứng gần + Chưa giao quest + Bấm phím E
-        if (isPlayerNear && !hasGivenQuest && Input.GetKeyDown(KeyCode.E))
+        if (playerTransform == null)
         {
-            // Gửi dữ liệu nhiệm vụ sang QuestManager
-            QuestManager.Instance.ReceiveQuest(questTitle, questDescription);
+            FindPlayer();
+            return;
+        }
 
-            hasGivenQuest = true; // Đánh dấu là đã giao rồi, không giao lại nữa
+        var story = BachDangStoryManager.Instance;
+        if (story == null) return;
 
-            if (interactPromptUI != null)
-                interactPromptUI.SetActive(false); // Tắt chữ "Nhấn E"
+        float dist = Vector3.Distance(transform.position, playerTransform.position);
+        bool canTalk = false;
+        string prompt = "";
+
+        if (story.currentState == BachDangStoryManager.StoryState.Act1_ExploreCamp)
+        {
+            canTalk = true;
+            prompt = "[E] Diện kiến Chủ tướng Ngô Quyền nhận lệnh";
+        }
+        else if (story.currentState == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen)
+        {
+            canTalk = true;
+            prompt = "[E] Báo cáo cọc gỗ & Nhận lệnh cắm cọc";
+        }
+
+        if (dist <= interactDistance && canTalk)
+        {
+            if (!isPlayerNear)
+            {
+                isPlayerNear = true;
+                if (interactPromptUI != null) interactPromptUI.SetActive(true);
+                story.SetInteractPrompt(true, prompt);
+            }
+
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                if (story.currentState == BachDangStoryManager.StoryState.Act1_ExploreCamp)
+                {
+                    story.OnTalkToNgoQuyenAct1();
+                    story.SetInteractPrompt(false);
+                    if (interactPromptUI != null) interactPromptUI.SetActive(false);
+                }
+                else if (story.currentState == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen)
+                {
+                    story.OnReportToNgoQuyenAct2();
+                    story.SetInteractPrompt(false);
+                    if (interactPromptUI != null) interactPromptUI.SetActive(false);
+                }
+            }
+        }
+        else
+        {
+            if (isPlayerNear)
+            {
+                isPlayerNear = false;
+                if (interactPromptUI != null) interactPromptUI.SetActive(false);
+                story.SetInteractPrompt(false);
+            }
         }
     }
 
-    // Phát hiện người chơi đi VÀO vùng tương tác (Nhớ tích chọn "Is Trigger" ở Collider)
-    private void OnTriggerEnter(Collider other)
+    private void OnDrawGizmos()
     {
-        if (other.CompareTag("Player") && !hasGivenQuest)
-        {
-            isPlayerNear = true;
-            if (interactPromptUI != null)
-                interactPromptUI.SetActive(true); // Hiện chữ "Nhấn E"
-        }
-    }
-
-    // Phát hiện người chơi đi RA KHỎI vùng tương tác
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            isPlayerNear = false;
-            if (interactPromptUI != null)
-                interactPromptUI.SetActive(false); // Ẩn chữ "Nhấn E"
-        }
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawWireSphere(transform.position, interactDistance);
     }
 }
