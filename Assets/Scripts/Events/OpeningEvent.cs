@@ -211,17 +211,17 @@ public class OpeningEvent : MonoBehaviour
             {
                 storyText.text = storyLines[i] + "\n\n<size=15><color=#888888>[Nhấn Space hoặc E để vào game ngay]</color></size>";
                 
-                // Fade in nhanh hơn (0.25s)
-                yield return StartCoroutine(FadeText(0f, 1f, 0.25f));
+                // Fade in (0.5s)
+                yield return StartCoroutine(FadeText(0f, 1f, 0.5f));
                 
-                // Thời gian đọc nhanh gọn (từ 0.8s đến 1.4s)
-                float waitTime = Mathf.Clamp(storyLines[i].Length * 0.016f, 0.8f, 1.4f);
+                // Thời gian đọc vừa phải (từ 1.8s đến 3.2s tùy độ dài câu)
+                float waitTime = Mathf.Clamp(storyLines[i].Length * 0.04f, 1.8f, 3.2f);
                 yield return new WaitForSeconds(waitTime);
                 
-                // Fade out nhanh hơn (0.2s)
-                yield return StartCoroutine(FadeText(1f, 0f, 0.2f));
+                // Fade out (0.4s)
+                yield return StartCoroutine(FadeText(1f, 0f, 0.4f));
                 
-                yield return new WaitForSeconds(0.1f);
+                yield return new WaitForSeconds(0.15f);
             }
         }
 
@@ -277,6 +277,30 @@ public class OpeningEvent : MonoBehaviour
         if (player != null)
         {
             player.SetActive(true);
+
+            // === FIX T-POSE: đảm bảo Animator được enable và có đúng controller ===
+            var animators = player.GetComponentsInChildren<Animator>(true);
+            foreach (var anim in animators)
+            {
+                anim.enabled = true;
+                if (anim.runtimeAnimatorController == null)
+                {
+                    // Tìm Sword_Anima controller trong Resources hoặc project
+                    var ctrl = Resources.Load<RuntimeAnimatorController>("Sword_Anima");
+                    if (ctrl == null)
+                        ctrl = Resources.Load<RuntimeAnimatorController>("Main_Character/Animation/Sword_Anima");
+                    if (ctrl != null)
+                    {
+                        anim.runtimeAnimatorController = ctrl;
+                        Debug.Log("[OpeningEvent] Đã gán Sword_Anima controller cho " + anim.gameObject.name);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[OpeningEvent] Không tìm thấy Sword_Anima trong Resources. Vui lòng gán thủ công trong Inspector.");
+                    }
+                }
+                anim.applyRootMotion = false;
+            }
 
             // Xác định chính xác độ cao mặt đất tại toạ độ x: -1200, z: 340 (tránh bị lún đất hoặc rơi khỏi map)
             Vector3 targetPos = new Vector3(-1200f, 40f, 340f);

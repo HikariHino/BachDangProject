@@ -90,7 +90,12 @@ public static class BachDangStoryRuntimeBootstrap
 
         if (player != null)
         {
-            player.gameObject.SetActive(true);
+            // Chỉ tắt player nếu opening đang chạy (OpeningEvent sẽ bật lại sau)
+            bool openingActive = OpeningEvent.IsOpeningActive;
+            if (!openingActive)
+            {
+                player.gameObject.SetActive(true);
+            }
 
             var cc = player.GetComponent<CharacterController>();
             if (cc != null) cc.enabled = false;
@@ -107,13 +112,16 @@ public static class BachDangStoryRuntimeBootstrap
             player.rotation = Quaternion.Euler(0f, 110f, 0f);
             if (cc != null) cc.enabled = true;
 
-            // Tự động kết nối target cho tất cả Camera_Script để camera bám theo nhân vật chính
-            var cameras = Object.FindObjectsByType<Camera_Script>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            foreach (var cam in cameras)
+            // Tự động kết nối target cho tất cả Camera_Script
+            if (!openingActive)
             {
-                if (cam != null)
+                var cameras = Object.FindObjectsByType<Camera_Script>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                foreach (var cam in cameras)
                 {
-                    cam.target = player;
+                    if (cam != null)
+                    {
+                        cam.target = player;
+                    }
                 }
             }
         }

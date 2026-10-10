@@ -6,8 +6,8 @@ public class Character_Movement : MonoBehaviour
     public Animator animator;
 
     [Header("Movement Speed")]
-    [SerializeField, Min(0f)] private float walkSpeed = 3f;
-    [SerializeField, Min(0f)] private float runSpeed = 6f;
+    [Min(0f)] public float walkSpeed = 12f;
+    [Min(0f)] public float runSpeed = 24f;
 
     [Header("Attack")]
     [Tooltip("Tỉ lệ tốc độ di chuyển khi tấn công: 0.2 = còn 20% tốc độ, giảm 80%.")]
@@ -44,16 +44,26 @@ public class Character_Movement : MonoBehaviour
 
     void Start()
     {
-        rb.freezeRotation = true;
+        if (rb == null) rb = GetComponent<Rigidbody>();
+        if (animator == null) animator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
 
-        // Rigidbody điều khiển di chuyển;
-        // không áp dụng chuyển động gốc từ animation.
-        animator.applyRootMotion = false;
-        attackStateHash = Animator.StringToHash(attackStateName);
-        attack2StateHash = Animator.StringToHash(attack2StateName);
-        blockStateHash = Animator.StringToHash(blockStateName);
-        hasBlockParameter = HasAnimatorParameter(BlockParameter, AnimatorControllerParameterType.Bool);
-        canBlock = hasBlockParameter && animator.HasState(0, blockStateHash);
+        if (walkSpeed < 10f)
+        {
+            walkSpeed = 12f;
+            runSpeed = 24f;
+        }
+
+        if (rb != null) rb.freezeRotation = true;
+
+        if (animator != null)
+        {
+            animator.applyRootMotion = false;
+            attackStateHash = Animator.StringToHash(attackStateName);
+            attack2StateHash = Animator.StringToHash(attack2StateName);
+            blockStateHash = Animator.StringToHash(blockStateName);
+            hasBlockParameter = HasAnimatorParameter(BlockParameter, AnimatorControllerParameterType.Bool);
+            canBlock = hasBlockParameter && animator.HasState(0, blockStateHash);
+        }
     }
 
     // Đọc input và cập nhật trạng thái animation.
