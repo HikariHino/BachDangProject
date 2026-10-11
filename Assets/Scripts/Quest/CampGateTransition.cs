@@ -64,7 +64,7 @@ public class CampGateTransition : MonoBehaviour
             if (story.currentState == BachDangStoryManager.StoryState.Act1_GoToCampGate)
             {
                 canInteract = true;
-                promptMessage = "Bấm E để đi đến dân làng";
+                promptMessage = "Bấm E để đến dân làng bên sông";
             }
             else if (story.currentState == BachDangStoryManager.StoryState.Act1_ExploreCamp)
             {

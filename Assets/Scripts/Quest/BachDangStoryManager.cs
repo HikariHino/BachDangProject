@@ -79,13 +79,14 @@ public class BachDangStoryManager : MonoBehaviour
     {
         promptVisible = show;
         promptMessage = message;
-        if (interactPromptPanel != null) interactPromptPanel.SetActive(false);
-        if (show && interactPromptText != null) interactPromptText.text = message;
+        if (interactPromptText != null && show) interactPromptText.text = message;
+        if (interactPromptPanel != null)
+            interactPromptPanel.SetActive(show && !OpeningEvent.IsOpeningActive);
     }
 
     private void OnGUI()
     {
-        if (!promptVisible || OpeningEvent.IsOpeningActive ||
+        if (interactPromptPanel != null || !promptVisible || OpeningEvent.IsOpeningActive ||
             (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen)) return;
         if (promptBoxStyle == null)
         {

@@ -162,24 +162,28 @@ public static class BachDangStoryRuntimeBootstrap
             }
         }
 
-        // 6. Tạo Cổng Doanh Trại (CampGate) tại lối ra của trại lính
+        // 6. Tạo điểm tương tác đúng tại cổng doanh trại.
         GameObject campGate = GameObject.Find("CampGate_ToVillage");
         if (campGate == null)
         {
             campGate = new GameObject("CampGate_ToVillage");
         }
-        // Khung cổng thật nằm ở cuối đài chỉ huy: hqCenter (-820, 320) + (35, 0, 0).
-        Vector3 campGatePosition = new Vector3(-469.1f, 36.29f, -228.4f);
+        // Cổng nằm cạnh đài chỉ huy. Tọa độ cũ (-469, -228) đặt điểm tương tác
+        // cách doanh trại hàng trăm mét và cao khỏi mặt đất nên người chơi không
+        // thể gặp lời nhắc hay chạm vào vật cản.
+        Vector3 campGatePosition = GroundPosition(new Vector3(-785f, 0f, 320f), 0.1f);
+        Transform physicalCampGate = FindPhysicalGateNear(campRoot, campGatePosition, campGate.transform);
+        if (physicalCampGate != null)
+            campGatePosition = GroundPosition(physicalCampGate.position, 0.1f);
         campGate.transform.position = campGatePosition;
-        Transform physicalCampGate = FindPhysicalGateNear(campGatePosition, campGate.transform);
         campGate.transform.rotation = physicalCampGate != null
             ? physicalCampGate.rotation : Quaternion.Euler(0f, 90f, 0f);
         var campTransition = campGate.GetComponent<CampGateTransition>() ?? campGate.AddComponent<CampGateTransition>();
         campTransition.gateType = CampGateTransition.GateType.CampGate;
-        campTransition.interactDistance = 18f;
+        campTransition.interactDistance = 30f;
         campTransition.enabled = true;
         campTransition.RefreshBarrier();
-        EnsureLandmark(campGate, StoryLandmarkMarker.Target.CampGate, "CỔNG TRẠI → LÀNG");
+        EnsureLandmark(campGate, StoryLandmarkMarker.Target.CampGate, "CỔNG DOANH TRẠI\n[E] SANG LÀNG");
 
         // 7. Tạo Cổng Làng (VillageGate) tại lối vào khu làng dân cư
         GameObject villageGate = GameObject.Find("VillageGate_ToCamp");
@@ -430,16 +434,27 @@ public static class BachDangStoryRuntimeBootstrap
         return position;
     }
 
-    private static Transform FindPhysicalGateNear(Vector3 position, Transform transitionGate)
+    private static Transform FindPhysicalGateNear(Transform campRoot, Vector3 expectedPosition, Transform transitionGate)
     {
         Transform closest = null;
-        float bestDistance = 8f;
-        foreach (var item in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+        float bestDistance = 180f;
+        var candidates = campRoot != null
+            ? campRoot.GetComponentsInChildren<Transform>(true)
+            : Object.FindObjectsByType<Transform>(FindObjectsInactive.Include);
+        foreach (var item in candidates)
         {
             if (item == null || item == transitionGate) continue;
             string name = item.name.ToLowerInvariant();
-            if (!name.Contains("gate") || name.Contains("invisiblebarrier")) continue;
-            float distance = Vector3.Distance(item.position, position);
+            if ((!name.Contains("gate") && !name.Contains("cổng") && !name.Contains("cong")) ||
+                name.Contains("invisiblebarrier") || item.GetComponentInParent<CampGateTransition>() != null)
+                continue;
+            // Ignore tiny gate sub-meshes where possible; the transition point
+            // should follow a visible/collidable gate root.
+            if (item.GetComponent<Renderer>() == null && item.GetComponent<Collider>() == null && item.childCount == 0)
+                continue;
+            float distance = Vector2.Distance(
+                new Vector2(item.position.x, item.position.z),
+                new Vector2(expectedPosition.x, expectedPosition.z));
             if (distance < bestDistance) { closest = item; bestDistance = distance; }
         }
         return closest;

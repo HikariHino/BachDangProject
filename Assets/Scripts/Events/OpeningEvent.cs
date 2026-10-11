@@ -42,6 +42,11 @@ public class OpeningEvent : MonoBehaviour
     void Awake()
     {
         IsOpeningActive = true;
+        // The scene serializes the first line as a preview/default value, and
+        // PlayOpening writes the same line again. Clear the preview immediately
+        // so the year is only rendered by the timed intro sequence.
+        if (storyText != null)
+            storyText.text = string.Empty;
         player = FindPlayerInScene();
         DisableDuplicatePlayers(player);
         // Tắt player ngay lập tức để không bị nhìn thấy trước khi opening kết thúc
@@ -442,6 +447,13 @@ public class OpeningEvent : MonoBehaviour
                 if (c != null) c.enabled = true;
             }
         }
+
+        // HideExistingQuestPanels disables the whole story canvas during the
+        // intro. Re-enable its GameObject after the intro so the objective HUD
+        // and interaction prompt can appear again.
+        var storyCanvas = GameObject.Find("StoryUI_Canvas");
+        if (storyCanvas != null)
+            storyCanvas.SetActive(true);
 
         // Bật lại các Script OnGUI
         if (hiddenScripts != null)
