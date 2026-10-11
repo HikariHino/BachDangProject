@@ -38,6 +38,7 @@ public class NPCQuestGiver : MonoBehaviour
 
         var story = BachDangStoryManager.Instance;
         if (story == null) return;
+        if (StoryDialogueUI.InputConsumedThisFrame || (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen)) return;
 
         float dist = Vector3.Distance(transform.position, playerTransform.position);
         bool canTalk = false;
@@ -53,6 +54,11 @@ public class NPCQuestGiver : MonoBehaviour
             canTalk = true;
             prompt = "[E] Báo cáo cọc gỗ & Nhận lệnh cắm cọc";
         }
+        else if (story.currentState == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)
+        {
+            canTalk = true;
+            prompt = "[E] Báo cáo đã hoàn thành trận địa cọc";
+        }
 
         if (dist <= interactDistance && canTalk)
         {
@@ -60,20 +66,27 @@ public class NPCQuestGiver : MonoBehaviour
             {
                 isPlayerNear = true;
                 if (interactPromptUI != null) interactPromptUI.SetActive(true);
-                story.SetInteractPrompt(true, prompt);
             }
+            // Refresh every frame so another nearby interactable cannot permanently clear this prompt.
+            story.SetInteractPrompt(true, prompt);
 
-            if (Input.GetKeyDown(KeyCode.E))
+            if (Input.GetKeyDown(KeyCode.E) && StoryDialogueUI.TryConsumeInput())
             {
                 if (story.currentState == BachDangStoryManager.StoryState.Act1_ExploreCamp)
                 {
-                    story.OnTalkToNgoQuyenAct1();
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Quân Nam Hán đang lăm le xâm phạm bờ cõi. Hãy đến làng ven sông, cùng bà con chuẩn bị gỗ làm cọc. Ta trông cậy vào ngươi.", story.OnTalkToNgoQuyenAct1);
                     story.SetInteractPrompt(false);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }
                 else if (story.currentState == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen)
                 {
-                    story.OnReportToNgoQuyenAct2();
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Tốt lắm. Hãy đưa số cọc này ra mép sông, cho quân đóng thành trận địa. Việc này quyết định thắng bại.", story.OnReportToNgoQuyenAct2);
+                    story.SetInteractPrompt(false);
+                    if (interactPromptUI != null) interactPromptUI.SetActive(false);
+                }
+                else if (story.currentState == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)
+                {
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Trận địa cọc đã hoàn thành. Toàn quân hãy giữ kín kế hoạch, chờ thủy triều và thời cơ đánh giặc!", story.OnReportStakesComplete);
                     story.SetInteractPrompt(false);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }

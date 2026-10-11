@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Đoạn dẫn truyện mở đầu "Năm 938...".
-/// Đã hỗ trợ BỎ QUA TỨC THÌ (bấm Space / E / Enter / Click) để người chơi không phải chờ đợi!
+/// Có thể bỏ qua bằng Space, Enter hoặc Esc; E được dành riêng cho tương tác trong game.
 /// Tự động ẩn các UI nhiệm vụ cũ trong lúc đang chạy intro để không bị lỗi chữ "Chưa có nhiệm vụ nào".
 /// </summary>
 public class OpeningEvent : MonoBehaviour
@@ -42,10 +42,8 @@ public class OpeningEvent : MonoBehaviour
     void Awake()
     {
         IsOpeningActive = true;
-        if (player == null)
-        {
-            player = FindPlayerInScene();
-        }
+        player = FindPlayerInScene();
+        DisableDuplicatePlayers(player);
         // Tắt player ngay lập tức để không bị nhìn thấy trước khi opening kết thúc
         if (player != null)
             player.SetActive(false);
@@ -56,41 +54,56 @@ public class OpeningEvent : MonoBehaviour
     /// </summary>
     public static GameObject FindPlayerInScene()
     {
-        // 1. Thử tìm thông thường nếu đang active
-        var p = GameObject.Find("Player_Main_Animated") ?? GameObject.Find("Main_Character");
-        if (p != null) return p;
-
-        try
-        {
-            var tagged = GameObject.FindGameObjectWithTag("Player");
-            if (tagged != null && !tagged.name.Contains("Camera")) return tagged;
-        }
-        catch { }
-
-        // 2. Quét sâu toàn bộ Scene kể cả INACTIVE GameObject
+        // Chọn object thật sự nhận input di chuyển. Tìm cả object inactive vì intro
+        // chủ động ẩn người chơi cho tới khi kết thúc.
         var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
         if (scene.isLoaded)
         {
+            GameObject best = null;
+            int bestScore = int.MinValue;
             foreach (var root in scene.GetRootGameObjects())
             {
                 var allTransforms = root.GetComponentsInChildren<Transform>(true);
                 foreach (var t in allTransforms)
                 {
-                    if (t.gameObject.name == "Player_Main_Animated" || 
-                        t.gameObject.name == "Main_Character" || 
-                        (t.gameObject.CompareTag("Player") && !t.gameObject.name.Contains("Camera")))
+                    var movement = t.GetComponent<Character_Movement>();
+                    if (movement != null)
                     {
-                        return t.gameObject;
+                        int score = 100 + (t.gameObject.activeInHierarchy ? 10 : 0);
+                        if (t.name == "Player_Main_Animated") score += 5;
+                        if (score > bestScore)
+                        {
+                            best = t.gameObject;
+                            bestScore = score;
+                        }
                     }
                 }
             }
+            if (best != null) return best;
+
+            // Fallback cho scene chưa gắn Character_Movement.
+            foreach (var root in scene.GetRootGameObjects())
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                if (t.name == "Player_Main_Animated" || t.name == "Main_Character")
+                    return t.gameObject;
         }
-
-        // 3. Fallback theo component Character_Movement
-        var cm = Object.FindAnyObjectByType<Character_Movement>(FindObjectsInactive.Include);
-        if (cm != null) return cm.gameObject;
-
         return null;
+    }
+
+    private static void DisableDuplicatePlayers(GameObject chosenPlayer)
+    {
+        if (chosenPlayer == null) return;
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        foreach (var root in scene.GetRootGameObjects())
+        foreach (var t in root.GetComponentsInChildren<Transform>(true))
+        {
+            if (t.gameObject == chosenPlayer) continue;
+            bool isPlayerAncestor = chosenPlayer.transform.IsChildOf(t);
+            if (!isPlayerAncestor && (t.name == "Player_Main_Animated" || t.name == "Main_Character"))
+                t.gameObject.SetActive(false);
+            var otherMovement = t.GetComponent<Character_Movement>();
+            if (otherMovement != null) otherMovement.enabled = false;
+        }
     }
 
     private float _openingStartTime;
@@ -143,7 +156,10 @@ public class OpeningEvent : MonoBehaviour
         }
 
         // Đảm bảo Canvas của đoạn mở đầu luôn ở tầng cao nhất (đè hoàn toàn tất cả UI khác)
-        Canvas myCanvas = GetComponentInParent<Canvas>();
+        Canvas myCanvas = _openingCanvas;
+        if (myCanvas == null && openingPanel != null)
+            myCanvas = openingPanel.GetComponentInParent<Canvas>();
+        if (myCanvas == null) myCanvas = GetComponentInParent<Canvas>();
         if (myCanvas == null) myCanvas = GetComponent<Canvas>();
         if (myCanvas != null)
         {
@@ -157,10 +173,9 @@ public class OpeningEvent : MonoBehaviour
 
         // Ẩn tất cả Canvas UI không liên quan (kể cả StoryUI_Canvas do Bootstrap tạo sau frame 1)
         hiddenCanvases = FindObjectsOfType<Canvas>(true);
-        string openingCanvasName = myCanvas != null ? myCanvas.gameObject.name : "Canvas_Opening";
         foreach (Canvas c in hiddenCanvases)
         {
-            if (c != null && c.gameObject.name != openingCanvasName)
+            if (c != null && c != myCanvas)
             {
                 c.enabled = false;
             }
@@ -205,12 +220,12 @@ public class OpeningEvent : MonoBehaviour
             // Đảm bảo trong suốt đoạn mở đầu, bảng nhiệm vụ không bao giờ bị kích hoạt lại
             SuppressQuestUI();
 
-            // Cho phép người chơi BẤM PHÍM ĐỂ BỎ QUA ĐOẠN DẪN TRUYỆN
+            // E được để dành cho tương tác trong game, không dùng để bỏ qua intro.
             // Bỏ GetMouseButtonDown(0) để tránh click chuột vào màn hình Game gây skip luôn
             // Thêm điều kiện Time.time > _openingStartTime + 1f để tránh bấm nhầm lúc vừa load scene
             if (Time.time > _openingStartTime + 1f)
             {
-                if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.E) || 
+                if (Input.GetKeyDown(KeyCode.Space) ||
                     Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
                     Input.GetKeyDown(KeyCode.Escape))
                 {
@@ -286,7 +301,7 @@ public class OpeningEvent : MonoBehaviour
         {
             if (storyText != null)
             {
-                storyText.text = storyLines[i] + "\n\n<size=15><color=#888888>[Nhấn Space hoặc E để vào game ngay]</color></size>";
+                storyText.text = storyLines[i] + "\n\n<size=15><color=#888888>[Nhấn Space / Enter để bỏ qua]</color></size>";
                 
                 // Fade in (0.5s)
                 yield return StartCoroutine(FadeText(0f, 1f, 0.5f));
@@ -346,34 +361,43 @@ public class OpeningEvent : MonoBehaviour
         if (openingPanel != null)
             openingPanel.SetActive(false);
             
-        if (player == null)
-        {
-            player = FindPlayerInScene();
-        }
+        player = FindPlayerInScene();
 
         if (player != null)
         {
+            DisableDuplicatePlayers(player);
             player.SetActive(true);
+            foreach (var movement in player.GetComponentsInChildren<Character_Movement>(true))
+                movement.enabled = true;
 
             // Đảm bảo scale nhân vật đúng 7,7,7
             player.transform.localScale = new Vector3(7f, 7f, 7f);
 
-            // === FIX T-POSE: đảm bảo Animator được enable và có đúng controller ===
+            // Dùng animation controller có idle thường, không giữ tư thế cầm vũ khí.
             var animators = player.GetComponentsInChildren<Animator>(true);
             foreach (var anim in animators)
             {
                 anim.enabled = true;
                 anim.applyRootMotion = false;
                 
-                var ctrl = Resources.Load<RuntimeAnimatorController>("Sword_Anima");
+                var ctrl = Resources.Load<RuntimeAnimatorController>("Player_Neutral");
                 if (ctrl != null)
                 {
                     anim.runtimeAnimatorController = ctrl;
                 }
+                anim.SetBool("isWalking", false);
+                anim.SetBool("isRunning", false);
             }
 
             // Xác định chính xác độ cao mặt đất tại toạ độ mới
             Vector3 targetPos = new Vector3(-992.8307f, 17.42352f, 265.8618f);
+            var playerColliders = player.GetComponentsInChildren<Collider>(true);
+            var colliderStates = new bool[playerColliders.Length];
+            for (int i = 0; i < playerColliders.Length; i++)
+            {
+                colliderStates[i] = playerColliders[i].enabled;
+                playerColliders[i].enabled = false;
+            }
             RaycastHit hit;
             if (Physics.Raycast(new Vector3(targetPos.x, targetPos.y + 60f, targetPos.z), Vector3.down, out hit, 150f))
             {
@@ -383,6 +407,8 @@ public class OpeningEvent : MonoBehaviour
             {
                 targetPos.y = Terrain.activeTerrain.SampleHeight(targetPos) + Terrain.activeTerrain.transform.position.y + 0.1f;
             }
+            for (int i = 0; i < playerColliders.Length; i++)
+                playerColliders[i].enabled = colliderStates[i];
 
             var cc = player.GetComponent<CharacterController>();
             if (cc != null) cc.enabled = false;
@@ -390,6 +416,11 @@ public class OpeningEvent : MonoBehaviour
             var rb = player.GetComponent<Rigidbody>();
             if (rb != null)
             {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.constraints = RigidbodyConstraints.FreezeRotationX |
+                                 RigidbodyConstraints.FreezeRotationY |
+                                 RigidbodyConstraints.FreezeRotationZ;
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
                 rb.position = targetPos;
@@ -400,15 +431,7 @@ public class OpeningEvent : MonoBehaviour
 
             if (cc != null) cc.enabled = true;
 
-            // Đảm bảo tất cả Camera_Script đều bám theo nhân vật chính
-            var cameras = Object.FindObjectsByType<Camera_Script>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            foreach (var cam in cameras)
-            {
-                if (cam != null)
-                {
-                    cam.target = player.transform;
-                }
-            }
+            SetupPlayerCamera(player.transform);
         }
             
         // Bật lại các UI Canvas đã giấu
@@ -434,5 +457,41 @@ public class OpeningEvent : MonoBehaviour
         {
             BachDangStoryManager.Instance.UpdateUI();
         }
+    }
+
+    public static void SetupPlayerCamera(Transform target)
+    {
+        if (target == null) return;
+        var cameras = Object.FindObjectsByType<Camera>(FindObjectsInactive.Include);
+        Camera mainCamera = null;
+        foreach (var cam in cameras)
+            if (cam != null && cam.gameObject.name == "Main Camera" && cam.gameObject.activeInHierarchy)
+            { mainCamera = cam; break; }
+        if (mainCamera == null) mainCamera = Camera.main;
+        if (mainCamera == null)
+            foreach (var cam in cameras)
+                if (cam != null && cam.enabled && cam.gameObject.activeInHierarchy && cam.CompareTag("MainCamera"))
+                { mainCamera = cam; break; }
+        if (mainCamera == null)
+            foreach (var cam in cameras)
+                if (cam != null && cam.enabled && cam.gameObject.activeInHierarchy) { mainCamera = cam; break; }
+        if (mainCamera == null) return;
+
+        foreach (var cam in cameras)
+            if (cam != null && cam != mainCamera) cam.enabled = false;
+        mainCamera.enabled = true;
+
+        // Chỉ để một script điều khiển transform camera. Camera_Script có góc
+        // over-the-shoulder phù hợp với điều khiển WASD kiểu PUBG.
+        foreach (var driver in Object.FindObjectsByType<Camera_Script>(FindObjectsInactive.Include))
+            if (driver != null) driver.enabled = driver.gameObject == mainCamera.gameObject;
+        foreach (var driver in Object.FindObjectsByType<ThirdPersonCamera>(FindObjectsInactive.Include))
+            if (driver != null) driver.enabled = false;
+        foreach (var driver in Object.FindObjectsByType<SimpleCameraFollow>(FindObjectsInactive.Include))
+            if (driver != null) driver.enabled = false;
+
+        var mainDriver = mainCamera.GetComponent<Camera_Script>();
+        if (mainDriver == null) mainDriver = mainCamera.gameObject.AddComponent<Camera_Script>();
+        mainDriver.target = target;
     }
 }

@@ -1,53 +1,55 @@
 using UnityEngine;
-using TMPro;
 
+/// <summary>Proximity based, keyboard accessible dialogue for ordinary NPCs.</summary>
 public class NPCDialogue : MonoBehaviour
 {
+    [Header("Hội thoại")]
+    public string speakerName = "Dân làng";
     [TextArea(3, 5)]
-    public string dialogueText = "Xin chào, một ngày tốt lành nhé!";
-    
+    public string dialogueText = "Quân ta sẽ góp sức cùng Chủ tướng Ngô Quyền bảo vệ dòng sông.";
+    public float interactDistance = 8f;
+
+    [Header("Tương thích UI cũ (không bắt buộc)")]
     public GameObject interactPromptUI;
 
-    private bool isPlayerNear = false;
-    private bool hasTalked = false;
-
-    private void Start()
-    {
-        if(interactPromptUI != null)
-            interactPromptUI.SetActive(false);
-    }
+    private bool isPlayerNear;
 
     private void Update()
     {
-        if (isPlayerNear && Input.GetKeyDown(KeyCode.E))
+        var story = BachDangStoryManager.Instance;
+        if (story == null) return;
+        if (OpeningEvent.IsOpeningActive) return;
+        if (StoryDialogueUI.InputConsumedThisFrame) return;
+        var player = story.GetPlayerTransform();
+        if (player == null) return;
+
+        // Ordinary NPCs are always conversational and never change the quest state.
+        bool canTalk = true;
+        bool near = canTalk && player.gameObject.activeInHierarchy &&
+                    Vector3.Distance(transform.position, player.position) <= interactDistance;
+
+        if (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen)
+            near = false;
+
+        if (near != isPlayerNear)
         {
-            if (QuestManager.Instance != null && !hasTalked)
-            {
-                // Mượn tạm QuestManager để hiển thị hội thoại
-                QuestManager.Instance.ReceiveQuest("Dân Làng", dialogueText);
-                hasTalked = true;
-            }
+            isPlayerNear = near;
+            if (interactPromptUI != null) interactPromptUI.SetActive(near);
+            if (!near && (StoryDialogueUI.Instance == null || !StoryDialogueUI.Instance.IsOpen))
+                story.SetInteractPrompt(false);
+        }
+
+        if (!near || StoryDialogueUI.Instance == null || StoryDialogueUI.Instance.IsOpen) return;
+        story.SetInteractPrompt(true, "[E] Trò chuyện với " + speakerName);
+        if (Input.GetKeyDown(KeyCode.E) && StoryDialogueUI.TryConsumeInput())
+        {
+            story.SetInteractPrompt(false);
+            StoryDialogueUI.Instance.Show(speakerName, dialogueText);
         }
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnDisable()
     {
-        if (other.CompareTag("Player"))
-        {
-            isPlayerNear = true;
-            if(interactPromptUI != null)
-                interactPromptUI.SetActive(true);
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            isPlayerNear = false;
-            if(interactPromptUI != null)
-                interactPromptUI.SetActive(false);
-            hasTalked = false; // reset để có thể nói chuyện tiếp
-        }
+        if (interactPromptUI != null) interactPromptUI.SetActive(false);
     }
 }

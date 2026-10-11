@@ -7,6 +7,8 @@ public class Character_Movement : MonoBehaviour
     public float walkSpeed = 30f; // Tốc độ lớn cho nhân vật to
     public float runSpeed  = 55f;
     public float rotationSpeed = 15f;
+    public float acceleration = 90f;
+    public float braking = 120f;
 
     private Rigidbody rb;
     private Animator[] animators; // Lưu TẤT CẢ animator để không sót
@@ -24,22 +26,33 @@ public class Character_Movement : MonoBehaviour
         }
 
         rb = GetComponent<Rigidbody>();
-        rb.freezeRotation = true;
+        // Character control needs a dynamic body with X/Z tilt locked, while Y
+        // rotation and horizontal position remain free for movement.
+        rb.isKinematic = false;
+        rb.useGravity = true;
+        rb.constraints = RigidbodyConstraints.FreezeRotationX |
+                         RigidbodyConstraints.FreezeRotationY |
+                         RigidbodyConstraints.FreezeRotationZ;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        // Player runs at high world-space speeds; continuous collision detection
+        // prevents tunnelling through thin hull and prop colliders between physics steps.
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         
         // === SỬA T-POSE TRIỆT ĐỂ ===
         // Quét tất cả con cháu, tìm mọi Animator có thể có
         animators = GetComponentsInChildren<Animator>(true);
-        var ctrl = Resources.Load<RuntimeAnimatorController>("Sword_Anima");
+        var ctrl = Resources.Load<RuntimeAnimatorController>("Player_Neutral");
         
         foreach (var anim in animators)
         {
             anim.enabled = true;
             anim.applyRootMotion = false;
-            // Ép gán Sword_Anima để đè lên các controller lỗi mặc định của prefab
             if (ctrl != null)
             {
                 anim.runtimeAnimatorController = ctrl;
             }
+            anim.SetBool("isWalking", false);
+            anim.SetBool("isRunning", false);
         }
     }
 
@@ -47,18 +60,37 @@ public class Character_Movement : MonoBehaviour
     {
         if (rb == null) return;
 
+        if (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen)
+        {
+            moveDir = Vector3.zero;
+            isRunning = false;
+            return;
+        }
+        if (ScreenFader.Instance != null && ScreenFader.Instance.IsTransitioning)
+        {
+            moveDir = Vector3.zero;
+            isRunning = false;
+            return;
+        }
+
         // Đọc input WASD
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
+        if (Mathf.Abs(h) < 0.01f)
+            h = (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow) ? 1f : 0f) -
+                (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow) ? 1f : 0f);
+        if (Mathf.Abs(v) < 0.01f)
+            v = (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow) ? 1f : 0f) -
+                (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) ? 1f : 0f);
 
-        // Hướng đi dựa trên hướng camera
+        // WASD luôn bám theo mặt phẳng ngang của camera kiểu third-person.
         Camera cam = Camera.main;
         Vector3 forward = cam != null ? cam.transform.forward : transform.forward;
-        Vector3 right   = cam != null ? cam.transform.right   : transform.right;
-        forward.y = 0f; forward.Normalize();
-        right.y   = 0f; right.Normalize();
-
-        moveDir = (forward * v + right * h).normalized;
+        forward.y = 0f;
+        forward = forward.sqrMagnitude > 0.001f ? forward.normalized : transform.forward;
+        Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+        Vector2 input = Vector2.ClampMagnitude(new Vector2(h, v), 1f);
+        moveDir = (forward * input.y + right * input.x).normalized;
         
         // Giữ Shift để chạy
         isRunning = moveDir.magnitude > 0.1f && Input.GetKey(KeyCode.LeftShift);
@@ -82,23 +114,25 @@ public class Character_Movement : MonoBehaviour
     {
         if (rb == null) return;
 
+        // Contacts with props can add yaw torque. Keep the character steady when
+        // there is no movement input; deliberate heading changes come from WASD.
+        bool hasMoveInput = moveDir.sqrMagnitude > 0.001f;
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ |
+                         (hasMoveInput ? RigidbodyConstraints.None : RigidbodyConstraints.FreezeRotationY);
+        rb.angularVelocity = Vector3.zero;
+
         float speed = isRunning ? runSpeed : walkSpeed;
+        Vector3 currentPlanarVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        Vector3 targetPlanarVelocity = moveDir * speed;
+        float rate = moveDir.sqrMagnitude > 0.001f ? acceleration : braking;
+        Vector3 planarVelocity = Vector3.MoveTowards(
+            currentPlanarVelocity, targetPlanarVelocity, rate * Time.fixedDeltaTime);
+        rb.linearVelocity = new Vector3(planarVelocity.x, rb.linearVelocity.y, planarVelocity.z);
 
-        if (moveDir.magnitude > 0.1f)
+        if (hasMoveInput)
         {
-            // Set vận tốc di chuyển vật lý
-            Vector3 vel = moveDir * speed;
-            vel.y = rb.linearVelocity.y; // Giữ trọng lực rơi tự do
-            rb.linearVelocity = vel;
-
-            // Xoay nhân vật mượt mà
-            Quaternion targetRot = Quaternion.LookRotation(moveDir);
+            Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
             rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRot, rotationSpeed * Time.fixedDeltaTime));
-        }
-        else
-        {
-            // Trượt phanh
-            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
         }
     }
 }

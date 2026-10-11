@@ -44,9 +44,10 @@ public class RiverStakeZone : MonoBehaviour
                 story.SetInteractPrompt(true, "[E] Đóng cọc xuống lòng sông Bạch Đằng");
             }
 
-            if (Input.GetKeyDown(KeyCode.E))
+            if (!StoryDialogueUI.InputConsumedThisFrame &&
+                (StoryDialogueUI.Instance == null || !StoryDialogueUI.Instance.IsOpen) && Input.GetKeyDown(KeyCode.E))
             {
-                PlantStakes();
+                if (StoryDialogueUI.TryConsumeInput()) PlantStakes();
             }
         }
         else
@@ -69,16 +70,25 @@ public class RiverStakeZone : MonoBehaviour
 
         string narrative = "Dưới sự chỉ huy thần tốc của Chủ tướng Ngô Quyền,\ntoàn quân dốc sức cắm từng hàng cọc nhọn bọc sắt sâu vào lòng sông Bạch Đằng...";
 
-        ScreenFader.Instance.FadeTransition(narrative, () =>
+        if (ScreenFader.Instance != null)
         {
-            // Bật hoặc định hình nhóm cọc gỗ
-            if (stakeGroupObject != null)
+            ScreenFader.Instance.FadeTransition(narrative, CompletePlanting, 1f, 2.5f);
+        }
+        else
+        {
+            CompletePlanting();
+        }
+    }
+
+    private void CompletePlanting()
+    {
+        var story = BachDangStoryManager.Instance;
+        if (story == null) return;
+        if (stakeGroupObject != null)
             {
                 stakeGroupObject.SetActive(true);
             }
-
-            story.OnPlantStakesComplete();
-        }, 1f, 2.5f);
+        story.OnPlantStakesComplete();
     }
 
     private void OnDrawGizmos()
