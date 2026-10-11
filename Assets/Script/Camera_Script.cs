@@ -1,87 +1,92 @@
 using UnityEngine;
 
-/// <summary>
-/// Camera góc nhìn thứ 3 (Style PUBG / Over-the-shoulder)
-/// Đã được cân chỉnh tỷ lệ cực lớn cho nhân vật Scale 7x7x7.
-/// </summary>
+/// <summary>One orbit camera, independent of character rotation, with shoulder view and obstruction handling.</summary>
+[RequireComponent(typeof(Camera))]
 public class Camera_Script : MonoBehaviour
 {
-    [Header("Target")]
     public Transform target;
+    public float distance = 22f, heightOffset = 11f, rightOffset = 4.5f;
+    public float mouseXSpeed = 5f, mouseYSpeed = 3f;
+    public float yMinAngle = -25f, yMaxAngle = 70f;
+    public float positionSmoothTime = .06f;
+    public LayerMask obstructionLayers = Physics.DefaultRaycastLayers;
+    public float collisionRadius = 1.2f;
+    public float aimDistance = 14f, aimFieldOfView = 48f;
+    public float Yaw => yaw;
+    public bool IsAiming { get; private set; }
+    public bool IsFreeLooking { get; private set; }
+    public bool InputCaptured => Cursor.lockState == CursorLockMode.Locked && !OpeningEvent.IsOpeningActive;
+    float yaw, pitch = 12f, normalFieldOfView, nextTargetSearch;
+    bool initialized;
+    Vector3 velocity, previousTarget;
+    Camera view;
+    readonly RaycastHit[] hits = new RaycastHit[32];
 
-    [Header("PUBG Camera Settings (For Scale 7x)")]
-    [Tooltip("Khoảng cách từ camera đến nhân vật")]
-    public float distance = 22f; 
-    [Tooltip("Độ cao của camera so với chân nhân vật (ngang vai/đầu)")]
-    public float heightOffset = 11f; 
-    [Tooltip("Lệch sang phải bao nhiêu (Over-the-shoulder)")]
-    public float rightOffset = 4.5f; 
-
-    [Header("Mouse Sensitivity")]
-    public float mouseXSpeed = 5f;
-    public float mouseYSpeed = 3f;
-
-    [Header("Vertical Clamp")]
-    public float yMinAngle = -15f;
-    public float yMaxAngle = 70f;
-
-    [Header("Smoothing")]
-    public float positionSmoothTime = 0.05f;
-
-    // --- internal ---
-    private float yaw;
-    private float pitch;
-    private Vector3 posVelocity;
-
-    void Awake()
-    {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
-
+    void Awake() { view = GetComponent<Camera>(); normalFieldOfView = view.fieldOfView; }
     void Start()
     {
-        yaw = transform.eulerAngles.y;
-        pitch = transform.eulerAngles.x;
+        if (target == null) { var p = OpeningEvent.FindPlayerInScene(); if (p != null) target = p.transform; }
+        if (!OpeningEvent.IsOpeningActive) CaptureCursor(true);
+        SnapToTarget();
     }
-
+    public void CaptureCursor(bool capture)
+    { Cursor.lockState = capture ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !capture; }
+    public void SnapToTarget()
+    {
+        if (target == null) return;
+        yaw = target.eulerAngles.y; pitch = 12f; velocity = Vector3.zero;
+        previousTarget = target.position; initialized = true;
+        ApplyPose(true);
+    }
     void LateUpdate()
     {
-        // Nhấn ESC để hiện/ẩn chuột
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            bool locked = Cursor.lockState == CursorLockMode.Locked;
-            Cursor.lockState = locked ? CursorLockMode.None : CursorLockMode.Locked;
-            Cursor.visible = locked;
-        }
-
         if (target == null)
         {
-            var p = OpeningEvent.FindPlayerInScene();
-            if (p != null) target = p.transform;
+            if (Time.unscaledTime < nextTargetSearch) return;
+            nextTargetSearch = Time.unscaledTime + .5f;
+            var p = OpeningEvent.FindPlayerInScene(); if (p != null) target = p.transform;
             if (target == null) return;
         }
-
-        // Quay camera bằng chuột
-        if (Cursor.lockState == CursorLockMode.Locked)
+        if (!initialized) SnapToTarget();
+        if (!OpeningEvent.IsOpeningActive && Input.GetKeyDown(KeyCode.Escape)) CaptureCursor(!InputCaptured);
+        // Click to resume after unlocking; the opening itself never skips on mouse input.
+        if (!OpeningEvent.IsOpeningActive && !InputCaptured && Input.GetMouseButtonDown(0) &&
+            (UnityEngine.EventSystems.EventSystem.current == null || !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())) CaptureCursor(true);
+        IsAiming = InputCaptured && Input.GetMouseButton(1);
+        IsFreeLooking = InputCaptured && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
+        if (InputCaptured)
         {
-            yaw += Input.GetAxis("Mouse X") * mouseXSpeed;
-            pitch -= Input.GetAxis("Mouse Y") * mouseYSpeed;
-            pitch = Mathf.Clamp(pitch, yMinAngle, yMaxAngle);
+            yaw += Input.GetAxisRaw("Mouse X") * mouseXSpeed;
+            pitch = Mathf.Clamp(pitch - Input.GetAxisRaw("Mouse Y") * mouseYSpeed, yMinAngle, yMaxAngle);
         }
-
-        Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
-        
-        // Vị trí mỏ neo (ngang vai nhân vật)
-        Vector3 anchorPoint = target.position + Vector3.up * heightOffset;
-        
-        // Lùi lại (distance) và sang phải (rightOffset) tạo góc PUBG
-        Vector3 desiredPos = anchorPoint - (rotation * Vector3.forward * distance) + (rotation * Vector3.right * rightOffset);
-
-        // Bám theo mượt mà
-        transform.position = Vector3.SmoothDamp(transform.position, desiredPos, ref posVelocity, positionSmoothTime);
-        
-        // Góc nhìn chuẩn: nhìn thẳng về phía trước từ shoulder (song song với hướng nhìn của camera)
-        transform.LookAt(anchorPoint + rotation * Vector3.right * rightOffset);
+        bool teleported = (target.position - previousTarget).sqrMagnitude > distance * distance * 4;
+        ApplyPose(teleported); previousTarget = target.position;
     }
+    void ApplyPose(bool snap)
+    {
+        var rotation = Quaternion.Euler(pitch, yaw, 0);
+        var anchor = target.position + Vector3.up * heightOffset;
+        float back = IsAiming ? aimDistance : distance;
+        var desired = anchor + rotation * new Vector3(rightOffset, 0, -back);
+        desired = ResolveObstruction(anchor, desired);
+        var smoothed = snap ? desired : Vector3.SmoothDamp(transform.position, desired, ref velocity, Mathf.Max(.01f, positionSmoothTime));
+        // Recheck after smoothing so easing away from a wall cannot cut through it.
+        transform.SetPositionAndRotation(ResolveObstruction(anchor, smoothed), rotation);
+        if (snap) velocity = Vector3.zero;
+        if (view != null) view.fieldOfView = Mathf.Lerp(view.fieldOfView, IsAiming ? aimFieldOfView : normalFieldOfView, 1 - Mathf.Exp(-12 * Time.deltaTime));
+    }
+    Vector3 ResolveObstruction(Vector3 anchor, Vector3 destination)
+    {
+        var offset = destination - anchor; float length = offset.magnitude;
+        if (length < .001f) return destination;
+        int count = Physics.SphereCastNonAlloc(anchor, Mathf.Max(.1f, collisionRadius), offset / length, hits, length, obstructionLayers, QueryTriggerInteraction.Ignore);
+        float allowed = length;
+        for (int i = 0; i < count; i++)
+        {
+            if (hits[i].collider == null || hits[i].transform == target || hits[i].transform.IsChildOf(target)) continue;
+            allowed = Mathf.Min(allowed, Mathf.Max(.1f, hits[i].distance - .2f));
+        }
+        return anchor + offset / length * allowed;
+    }
+    void OnDisable() { if (Application.isPlaying) CaptureCursor(false); }
 }

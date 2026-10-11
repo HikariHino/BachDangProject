@@ -91,10 +91,7 @@ public class BachDangStoryManager : MonoBehaviour
         if (OpeningEvent.IsOpeningActive)
         {
             if (objectiveUIPanel != null) objectiveUIPanel.SetActive(false);
-            var sceneQPanel = GameObject.Find("QuestPanel");
-            if (sceneQPanel != null) sceneQPanel.SetActive(false);
-            var sceneSCanvas = GameObject.Find("StoryUI_Canvas");
-            if (sceneSCanvas != null) sceneSCanvas.SetActive(false);
+            if (interactPromptPanel != null) interactPromptPanel.SetActive(false);
             return;
         }
 

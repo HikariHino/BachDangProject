@@ -25,6 +25,7 @@ public class CampGateTransition : MonoBehaviour
 
     private void Update()
     {
+        if (OpeningEvent.IsOpeningActive) return;
         var story = BachDangStoryManager.Instance;
         if (story == null) return;
 
@@ -102,11 +103,7 @@ public class CampGateTransition : MonoBehaviour
 
                 if (player != null)
                 {
-                    var cc = player.GetComponent<CharacterController>();
-                    if (cc != null) cc.enabled = false;
-                    player.position = targetPos;
-                    if (destinationTarget != null) player.rotation = destinationTarget.rotation;
-                    if (cc != null) cc.enabled = true;
+                    TeleportPlayer(player, targetPos, destinationTarget != null ? destinationTarget.rotation : player.rotation);
                 }
 
                 story.currentState = BachDangStoryManager.StoryState.Act2_CollectWoodInVillage;
@@ -123,17 +120,39 @@ public class CampGateTransition : MonoBehaviour
 
                 if (player != null)
                 {
-                    var cc = player.GetComponent<CharacterController>();
-                    if (cc != null) cc.enabled = false;
-                    player.position = targetPos;
-                    if (destinationTarget != null) player.rotation = destinationTarget.rotation;
-                    if (cc != null) cc.enabled = true;
+                    TeleportPlayer(player, targetPos, destinationTarget != null ? destinationTarget.rotation : player.rotation);
                 }
 
                 story.currentState = BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen;
                 story.UpdateUI();
             });
         }
+    }
+
+    private static void TeleportPlayer(Transform player, Vector3 position, Quaternion rotation)
+    {
+        var controller = player.GetComponent<CharacterController>();
+        bool controllerWasEnabled = controller != null && controller.enabled;
+        if (controllerWasEnabled) controller.enabled = false;
+
+        // Update the physics pose as well as the Transform so interpolation cannot restore the old position.
+        var body = player.GetComponent<Rigidbody>();
+        if (body != null)
+        {
+            body.position = position;
+            body.rotation = rotation;
+            if (!body.isKinematic)
+            {
+                body.linearVelocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
+            }
+        }
+        player.SetPositionAndRotation(position, rotation);
+        if (controllerWasEnabled) controller.enabled = true;
+
+        var camera = Camera.main;
+        if (camera != null && camera.TryGetComponent<Camera_Script>(out var orbit) && orbit.target == player)
+            orbit.SnapToTarget();
     }
 
     private void OnDrawGizmos()

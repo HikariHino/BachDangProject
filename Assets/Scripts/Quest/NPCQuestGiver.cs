@@ -30,6 +30,7 @@ public class NPCQuestGiver : MonoBehaviour
 
     private void Update()
     {
+        if (OpeningEvent.IsOpeningActive) return;
         if (playerTransform == null)
         {
             FindPlayer();

@@ -1,104 +1,119 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class Character_Movement : MonoBehaviour
 {
-    [Header("Movement Speed (Scale 7x)")]
-    public float walkSpeed = 30f; // Tốc độ lớn cho nhân vật to
-    public float runSpeed  = 55f;
-    public float rotationSpeed = 15f;
+    [Header("Movement (world units, character scale 7)")]
+    public float walkSpeed = 30f, runSpeed = 55f, rotationSpeed = 15f;
+    public float acceleration = 120f, braking = 180f;
+    public float jumpHeight = 5f, gravityMultiplier = 3f;
+    public bool IsGrounded { get; private set; }
+    Rigidbody body;
+    CapsuleCollider capsule;
+    Camera_Script orbit;
+    Transform view;
+    Vector2 input;
+    bool sprint, aim, freeLook;
+    float jumpUntil = -1;
+    readonly RaycastHit[] groundHits = new RaycastHit[24];
+    readonly List<Animator> animators = new List<Animator>();
+    readonly HashSet<Animator> walking = new HashSet<Animator>(), running = new HashSet<Animator>(), jumping = new HashSet<Animator>();
+    static readonly int Walk = Animator.StringToHash("isWalking"), Run = Animator.StringToHash("isRunning"), Jump = Animator.StringToHash("jump");
 
-    private Rigidbody rb;
-    private Animator[] animators; // Lưu TẤT CẢ animator để không sót
-    private Vector3 moveDir;
-    private bool isRunning;
-
+    void Awake()
+    {
+        body = GetComponent<Rigidbody>(); capsule = GetComponent<CapsuleCollider>();
+        body.constraints |= RigidbodyConstraints.FreezeRotation;
+        body.interpolation = RigidbodyInterpolation.Interpolate;
+        if (!body.isKinematic) body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        foreach (var anim in GetComponentsInChildren<Animator>(true))
+        {
+            // Preserve valid rig/controller assignments and disabled weapon/model variants.
+            if (anim.runtimeAnimatorController == null) anim.runtimeAnimatorController = Resources.Load<RuntimeAnimatorController>("Sword_Anima");
+            if (anim.runtimeAnimatorController == null) continue;
+            anim.applyRootMotion = false; animators.Add(anim);
+            foreach (var parameter in anim.parameters)
+            {
+                if (parameter.nameHash == Walk && parameter.type == AnimatorControllerParameterType.Bool) walking.Add(anim);
+                if (parameter.nameHash == Run && parameter.type == AnimatorControllerParameterType.Bool) running.Add(anim);
+                if (parameter.nameHash == Jump && parameter.type == AnimatorControllerParameterType.Trigger) jumping.Add(anim);
+            }
+        }
+    }
     void Start()
     {
-        // Tự động sửa lỗi nếu Inspector bị kẹt số quá nhỏ
-        if (walkSpeed < 10f) 
-        {
-            walkSpeed = 30f;
-            runSpeed = 55f;
-            Debug.Log("[Movement] Đã tự động sửa tốc độ di chuyển thành 30/55 cho nhân vật Scale 7x.");
-        }
-
-        rb = GetComponent<Rigidbody>();
-        rb.freezeRotation = true;
-        
-        // === SỬA T-POSE TRIỆT ĐỂ ===
-        // Quét tất cả con cháu, tìm mọi Animator có thể có
-        animators = GetComponentsInChildren<Animator>(true);
-        var ctrl = Resources.Load<RuntimeAnimatorController>("Sword_Anima");
-        
-        foreach (var anim in animators)
-        {
-            anim.enabled = true;
-            anim.applyRootMotion = false;
-            // Ép gán Sword_Anima để đè lên các controller lỗi mặc định của prefab
-            if (ctrl != null)
-            {
-                anim.runtimeAnimatorController = ctrl;
-            }
-        }
+        var camera = Camera.main;
+        if (camera != null) { view = camera.transform; orbit = camera.GetComponent<Camera_Script>(); }
     }
-
     void Update()
     {
-        if (rb == null) return;
-
-        // Đọc input WASD
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-
-        // Hướng đi dựa trên hướng camera
-        Camera cam = Camera.main;
-        Vector3 forward = cam != null ? cam.transform.forward : transform.forward;
-        Vector3 right   = cam != null ? cam.transform.right   : transform.right;
-        forward.y = 0f; forward.Normalize();
-        right.y   = 0f; right.Normalize();
-
-        moveDir = (forward * v + right * h).normalized;
-        
-        // Giữ Shift để chạy
-        isRunning = moveDir.magnitude > 0.1f && Input.GetKey(KeyCode.LeftShift);
-
-        // Báo animation cho TẤT CẢ animator
-        bool isWalking = moveDir.magnitude > 0.1f;
-        if (animators != null)
-        {
-            foreach (var anim in animators)
-            {
-                if (anim.gameObject.activeInHierarchy && anim.runtimeAnimatorController != null)
-                {
-                    anim.SetBool("isWalking", isWalking);
-                    anim.SetBool("isRunning", isRunning);
-                }
-            }
-        }
+        bool allowed = !OpeningEvent.IsOpeningActive && Cursor.lockState == CursorLockMode.Locked;
+        input = allowed ? Vector2.ClampMagnitude(new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")), 1) : Vector2.zero;
+        aim = allowed && Input.GetMouseButton(1);
+        freeLook = allowed && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
+        sprint = allowed && !aim && input.y > .1f && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
+        if (allowed && Input.GetKeyDown(KeyCode.Space)) jumpUntil = Time.time + .15f;
+        if (!allowed) jumpUntil = -1;
+        UpdateAnimation(input.sqrMagnitude > .01f, sprint);
     }
-
     void FixedUpdate()
     {
-        if (rb == null) return;
-
-        float speed = isRunning ? runSpeed : walkSpeed;
-
-        if (moveDir.magnitude > 0.1f)
+        if (body == null || body.isKinematic) return;
+        float scale = Mathf.Max(.1f, Mathf.Abs(transform.lossyScale.y));
+        IsGrounded = ProbeGround(scale);
+        Vector3 forward = freeLook ? transform.forward : orbit != null ? Quaternion.Euler(0, orbit.Yaw, 0) * Vector3.forward : view != null ? view.forward : transform.forward;
+        forward.y = 0; forward.Normalize();
+        Vector3 right = Vector3.Cross(Vector3.up, forward);
+        Vector3 direction = forward * input.y + right * input.x;
+        Vector3 desired = direction * (sprint ? runSpeed : walkSpeed) * (aim ? .65f : 1f);
+        Vector3 velocity = body.linearVelocity;
+        Vector3 horizontal = Vector3.MoveTowards(new Vector3(velocity.x, 0, velocity.z), desired,
+            (input.sqrMagnitude > .01f ? acceleration : braking) * Time.fixedDeltaTime);
+        velocity.x = horizontal.x; velocity.z = horizontal.z;
+        if (IsGrounded && jumpUntil >= Time.time)
         {
-            // Set vận tốc di chuyển vật lý
-            Vector3 vel = moveDir * speed;
-            vel.y = rb.linearVelocity.y; // Giữ trọng lực rơi tự do
-            rb.linearVelocity = vel;
-
-            // Xoay nhân vật mượt mà
-            Quaternion targetRot = Quaternion.LookRotation(moveDir);
-            rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRot, rotationSpeed * Time.fixedDeltaTime));
+            velocity.y = Mathf.Sqrt(2 * Mathf.Abs(Physics.gravity.y) * Mathf.Max(1, gravityMultiplier) * Mathf.Max(.1f, jumpHeight));
+            jumpUntil = -1; IsGrounded = false;
+            foreach (var anim in jumping) if (anim != null && anim.isActiveAndEnabled) anim.SetTrigger(Jump);
         }
-        else
+        body.linearVelocity = velocity;
+        if (body.useGravity && !IsGrounded) body.AddForce(Physics.gravity * (Mathf.Max(1, gravityMultiplier) - 1), ForceMode.Acceleration);
+        if (direction.sqrMagnitude > .001f || aim)
         {
-            // Trượt phanh
-            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            Vector3 facing = aim ? forward : direction;
+            if (facing.sqrMagnitude > .001f) body.MoveRotation(Quaternion.Slerp(body.rotation, Quaternion.LookRotation(facing), 1 - Mathf.Exp(-rotationSpeed * Time.fixedDeltaTime)));
         }
+    }
+    bool ProbeGround(float scale)
+    {
+        if (body.linearVelocity.y > .5f * scale) return false;
+        var bounds = capsule.bounds;
+        float radius = Mathf.Min(bounds.extents.x, bounds.extents.z) * .9f;
+        float skin = .08f * scale;
+        var center = new Vector3(bounds.center.x, bounds.min.y + radius + skin, bounds.center.z);
+        int count = Physics.SphereCastNonAlloc(center, Mathf.Max(.01f, radius), Vector3.down, groundHits, skin + .12f * scale, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+        {
+            var hit = groundHits[i];
+            if (hit.collider == null || hit.transform == transform || hit.transform.IsChildOf(transform)) continue;
+            if (Vector3.Dot(hit.normal, Vector3.up) >= .65f) return true;
+        }
+        return false;
+    }
+    void UpdateAnimation(bool moving, bool fast)
+    {
+        foreach (var anim in animators)
+        {
+            if (anim == null || !anim.isActiveAndEnabled) continue;
+            if (walking.Contains(anim)) anim.SetBool(Walk, moving);
+            if (running.Contains(anim)) anim.SetBool(Run, fast);
+        }
+    }
+    void OnDisable()
+    {
+        input = Vector2.zero; jumpUntil = -1;
+        if (body != null && !body.isKinematic) body.linearVelocity = new Vector3(0, body.linearVelocity.y, 0);
+        UpdateAnimation(false, false);
     }
 }

@@ -25,6 +25,7 @@ public class WoodCollectible : MonoBehaviour
 
     void Update()
     {
+        if (OpeningEvent.IsOpeningActive) return;
         if (playerTransform == null)
         {
             GameObject p = OpeningEvent.FindPlayerInScene();

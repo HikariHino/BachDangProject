@@ -35,6 +35,8 @@ public static class BachDangStoryRuntimeBootstrap
 
     public static void SetupAllStoryElements()
     {
+        // These quest coordinates belong to TestQuest, not the separately scaled beachBoat map.
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != "TestQuest") return;
         // 1. Tạo hoặc lấy ScreenFader
         if (ScreenFader.Instance == null)
         {
@@ -106,6 +108,7 @@ public static class BachDangStoryRuntimeBootstrap
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
                 rb.position = campSpawnPos;
+                rb.rotation = Quaternion.Euler(0f, 110f, 0f);
             }
 
             player.position = campSpawnPos;
@@ -173,6 +176,8 @@ public static class BachDangStoryRuntimeBootstrap
         SetupRiverStakeZone(storyManager);
 
         storyManager.UpdateUI();
+        var opening = Object.FindAnyObjectByType<OpeningEvent>();
+        if (opening != null) opening.RefreshHiddenUI();
     }
 
     private static void SetupStoryUI(out GameObject objectivePanel, out TextMeshProUGUI titleText, out TextMeshProUGUI descText,
@@ -334,8 +339,7 @@ public static class BachDangStoryRuntimeBootstrap
 
                 if (logObj.GetComponent<Collider>() == null)
                 {
-                    var col = logObj.AddComponent<BoxCollider>();
-                    col.size = new Vector3(2f, 2f, 2f);
+                    logObj.AddComponent<BoxCollider>();
                 }
 
                 if (logObj.GetComponent<WoodCollectible>() == null)
@@ -343,6 +347,18 @@ public static class BachDangStoryRuntimeBootstrap
                     var wc = logObj.AddComponent<WoodCollectible>();
                     wc.interactDistance = 8f;
                 }
+            }
+
+            // The imported FBX root is scaled 100x. A local 2m box otherwise becomes
+            // a solid 200m obstacle around each pickup and pushes the player out of the village.
+            var pickupBox = logObj.GetComponent<BoxCollider>();
+            if (pickupBox != null)
+            {
+                Vector3 scale = logObj.transform.lossyScale;
+                pickupBox.center = Vector3.zero;
+                pickupBox.size = new Vector3(2f / Mathf.Max(.001f, Mathf.Abs(scale.x)),
+                    2f / Mathf.Max(.001f, Mathf.Abs(scale.y)), 2f / Mathf.Max(.001f, Mathf.Abs(scale.z)));
+                pickupBox.isTrigger = true;
             }
         }
     }

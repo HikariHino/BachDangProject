@@ -1,34 +1,31 @@
-using UnityEngine;
-using TMPro;
 using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// Đoạn dẫn truyện mở đầu "Năm 938...".
-/// Đã hỗ trợ BỎ QUA TỨC THÌ (bấm Space / E / Enter / Click) để người chơi không phải chờ đợi!
-/// Tự động ẩn các UI nhiệm vụ cũ trong lúc đang chạy intro để không bị lỗi chữ "Chưa có nhiệm vụ nào".
-/// </summary>
+/// <summary>Readable, manually advanced introduction; restores only UI it actually hid.</summary>
 public class OpeningEvent : MonoBehaviour
 {
-    [Header("UI")]
     public GameObject openingPanel;
     public TMP_Text storyText;
-
-    [Header("Player")]
     public GameObject player;
+    [Header("Reading")]
+    public bool autoAdvance = false;
+    [Min(2)] public float minimumReadingSeconds = 4;
+    [Min(.03f)] public float secondsPerCharacter = .075f;
+    static OpeningEvent current;
+    public static bool IsOpeningActive => current != null && current.isActiveAndEnabled && !current.IsOpeningEnded;
+    public bool IsOpeningEnded { get; private set; }
+    public int CurrentLine { get; private set; } = -1;
+    readonly Dictionary<Canvas, bool> hiddenCanvases = new Dictionary<Canvas, bool>();
+    readonly Dictionary<SaBanHUD, bool> hiddenHUDs = new Dictionary<SaBanHUD, bool>();
+    readonly Dictionary<Graphic, bool> hiddenGraphics = new Dictionary<Graphic, bool>();
+    Canvas openingCanvas;
+    bool advanceRequested, readyToAdvance;
+    float lineReadyAt, skipHeld;
 
-    public static bool IsOpeningActive { get; private set; } = true;
-
-    private Canvas[] hiddenCanvases;
-    private MonoBehaviour[] hiddenScripts;
-    private GameObject[] hiddenQuestPanels;
-    private Coroutine openingCoroutine;
-    private bool isOpeningEnded = false;
-
-    public bool IsOpeningEnded => isOpeningEnded;
-
-    private string[] storyLines =
-    {
+    readonly string[] storyLines = {
         "Năm 938.",
         "Sau nhiều năm đất nước chìm trong thời kỳ Bắc thuộc, vùng đất Giao Châu vẫn đang đứng trước những biến động lớn.",
         "Nhà Nam Hán ở phương Bắc đang tìm cách đưa quân tiến xuống Giao Châu, với ý định giành lại quyền kiểm soát vùng đất này.",
@@ -39,400 +36,133 @@ public class OpeningEvent : MonoBehaviour
         "Nhưng trước khi trận chiến bắt đầu..."
     };
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetState() => current = null;
+
     void Awake()
     {
-        IsOpeningActive = true;
-        if (player == null)
+        if (current != null && current != this) { enabled = false; return; }
+        if (storyText == null && openingPanel != null) storyText = openingPanel.GetComponentInChildren<TMP_Text>(true);
+        openingCanvas = openingPanel != null ? openingPanel.GetComponentInParent<Canvas>(true) : null;
+        if (openingCanvas == null && storyText != null) openingCanvas = storyText.GetComponentInParent<Canvas>(true);
+        if (openingPanel == null || storyText == null || openingCanvas == null)
         {
-            player = FindPlayerInScene();
+            Debug.LogError("OpeningEvent needs an opening panel, story text and parent Canvas.", this);
+            IsOpeningEnded = true; enabled = false; return;
         }
-        // Tắt player ngay lập tức để không bị nhìn thấy trước khi opening kết thúc
-        if (player != null)
-            player.SetActive(false);
+        current = this;
+        if (player == null) player = FindPlayerInScene();
+        openingCanvas.enabled = true;
+        openingCanvas.sortingOrder = 9999;
+        openingPanel.SetActive(true);
+        var background = openingPanel.GetComponent<Image>();
+        if (background != null) background.color = new Color(0, 0, 0, 1);
+        storyText.color = Color.white;
+        storyText.text = "";
+        RefreshHiddenUI();
     }
 
-    /// <summary>
-    /// Tìm chính xác đối tượng nhân vật chính trong Scene, kể cả khi đối tượng đang bị tắt (Inactive)
-    /// </summary>
-    public static GameObject FindPlayerInScene()
+    IEnumerator Start()
     {
-        // 1. Thử tìm thông thường nếu đang active
-        var p = GameObject.Find("Player_Main_Animated") ?? GameObject.Find("Main_Character");
-        if (p != null) return p;
-
-        try
-        {
-            var tagged = GameObject.FindGameObjectWithTag("Player");
-            if (tagged != null && !tagged.name.Contains("Camera")) return tagged;
-        }
-        catch { }
-
-        // 2. Quét sâu toàn bộ Scene kể cả INACTIVE GameObject
-        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-        if (scene.isLoaded)
-        {
-            foreach (var root in scene.GetRootGameObjects())
-            {
-                var allTransforms = root.GetComponentsInChildren<Transform>(true);
-                foreach (var t in allTransforms)
-                {
-                    if (t.gameObject.name == "Player_Main_Animated" || 
-                        t.gameObject.name == "Main_Character" || 
-                        (t.gameObject.CompareTag("Player") && !t.gameObject.name.Contains("Camera")))
-                    {
-                        return t.gameObject;
-                    }
-                }
-            }
-        }
-
-        // 3. Fallback theo component Character_Movement
-        var cm = Object.FindAnyObjectByType<Character_Movement>(FindObjectsInactive.Include);
-        if (cm != null) return cm.gameObject;
-
-        return null;
-    }
-
-    private float _openingStartTime;
-
-    void Start()
-    {
-        _openingStartTime = Time.time;
-
-        // Tìm opening canvas từ openingPanel
-        if (openingPanel != null)
-        {
-            _openingCanvas = openingPanel.GetComponentInParent<Canvas>();
-        }
-        
-        // Fallback nếu không có
-        if (_openingCanvas == null) _openingCanvas = GetComponentInParent<Canvas>();
-        if (_openingCanvas == null) _openingCanvas = GetComponent<Canvas>();
-        
-        if (_openingCanvas != null)
-        {
-            _openingCanvas.sortingOrder = 9999;
-            _openingCanvas.enabled = true;
-        }
-
-        // Tắt TẤT CẢ canvas ngay lập tức (trước cả coroutine delay)
-        var allCanvasNow = FindObjectsOfType<Canvas>(true);
-        foreach (Canvas c in allCanvasNow)
-        {
-            // Bỏ qua opening canvas
-            if (c != null && _openingCanvas != null && c.gameObject == _openingCanvas.gameObject)
-                continue;
-                
-            if (c != null)
-                c.enabled = false;
-        }
-
-        StartCoroutine(InitOpening());
-    }
-
-    IEnumerator InitOpening()
-    {
-        // Delay 3 frame để Bootstrap kịp tạo StoryUI_Canvas và tất cả UI khác
+        // Story bootstrap creates its UI after Awake. Capture that UI once, not every frame.
         yield return null;
-        yield return null;
-        yield return null;
-
-        if (player == null)
+        RefreshHiddenUI();
+        Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
+        for (int i = 0; i < storyLines.Length; i++)
         {
-            player = FindPlayerInScene();
+            CurrentLine = i; advanceRequested = false; readyToAdvance = false;
+            storyText.text = storyLines[i] + "\n\n<size=60%><color=#BBBBBB>[Space / Enter: tiếp tục]     [Giữ Esc: bỏ qua]</color></size>";
+            yield return FadeText(0, 1, .35f);
+            lineReadyAt = Time.unscaledTime; readyToAdvance = true;
+            float readingTime = Mathf.Max(minimumReadingSeconds, storyLines[i].Length * secondsPerCharacter);
+            while (!advanceRequested && (!autoAdvance || Time.unscaledTime - lineReadyAt < readingTime)) yield return null;
+            readyToAdvance = false;
+            yield return FadeText(1, 0, .25f);
         }
-
-        // Đảm bảo Canvas của đoạn mở đầu luôn ở tầng cao nhất (đè hoàn toàn tất cả UI khác)
-        Canvas myCanvas = GetComponentInParent<Canvas>();
-        if (myCanvas == null) myCanvas = GetComponent<Canvas>();
-        if (myCanvas != null)
-        {
-            myCanvas.sortingOrder = 9999; // Đảm bảo luôn đè lên mọi UI
-            myCanvas.enabled = true;
-        }
-        _openingCanvas = myCanvas;
-
-        // Tạm ẩn các bảng nhiệm vụ cũ để màn hình đen hoàn toàn sạch sẽ
-        HideExistingQuestPanels();
-
-        // Ẩn tất cả Canvas UI không liên quan (kể cả StoryUI_Canvas do Bootstrap tạo sau frame 1)
-        hiddenCanvases = FindObjectsOfType<Canvas>(true);
-        string openingCanvasName = myCanvas != null ? myCanvas.gameObject.name : "Canvas_Opening";
-        foreach (Canvas c in hiddenCanvases)
-        {
-            if (c != null && c.gameObject.name != openingCanvasName)
-            {
-                c.enabled = false;
-            }
-        }
-
-        // Ẩn luôn các UI OnGUI cứng đầu (như Thủy triều, SaBanHUD)
-        hiddenScripts = FindObjectsOfType<MonoBehaviour>();
-        foreach (MonoBehaviour mb in hiddenScripts)
-        {
-            if (mb != null)
-            {
-                string typeName = mb.GetType().Name;
-                if (typeName == "SaBanHUD" || typeName == "TideSystem")
-                {
-                    mb.enabled = false;
-                }
-            }
-        }
-
-        if (openingPanel != null)
-            openingPanel.SetActive(true);
-            
-        if (storyText != null)
-        {
-            storyText.fontStyle = FontStyles.Italic;
-            storyText.fontSize = 28;
-            storyText.color = new Color(storyText.color.r, storyText.color.g, storyText.color.b, 0);
-        }
-
-        if (player != null)
-            player.SetActive(false);
-
-        openingCoroutine = StartCoroutine(PlayOpening());
+        EndOpening();
     }
-
-
 
     void Update()
     {
-        if (!isOpeningEnded)
-        {
-            // Đảm bảo trong suốt đoạn mở đầu, bảng nhiệm vụ không bao giờ bị kích hoạt lại
-            SuppressQuestUI();
-
-            // Cho phép người chơi BẤM PHÍM ĐỂ BỎ QUA ĐOẠN DẪN TRUYỆN
-            // Bỏ GetMouseButtonDown(0) để tránh click chuột vào màn hình Game gây skip luôn
-            // Thêm điều kiện Time.time > _openingStartTime + 1f để tránh bấm nhầm lúc vừa load scene
-            if (Time.time > _openingStartTime + 1f)
-            {
-                if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.E) || 
-                    Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
-                    Input.GetKeyDown(KeyCode.Escape))
-                {
-                    SkipOpening();
-                }
-            }
-        }
+        if (!IsOpeningActive || current != this) return;
+        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) AdvanceLine();
+        skipHeld = Input.GetKey(KeyCode.Escape) ? skipHeld + Time.unscaledDeltaTime : 0;
+        if (skipHeld >= .8f) SkipOpening();
     }
-
-    private Canvas _openingCanvas;
-
-    private void SuppressQuestUI()
+    public void AdvanceLine()
     {
-        // Tìm opening canvas nếu chưa có
-        if (_openingCanvas == null)
-        {
-            _openingCanvas = GetComponentInParent<Canvas>();
-            if (_openingCanvas == null) _openingCanvas = GetComponent<Canvas>();
-        }
-
-        // Scan TẤT CẢ canvas trong scene mỗi frame, tắt hết trừ opening canvas
-        // (bắt cả canvas được tạo dynamically bởi Bootstrap sau Start)
-        var allCanvases = FindObjectsOfType<Canvas>(true);
-        foreach (Canvas c in allCanvases)
-        {
-            if (c != null && c != _openingCanvas && c.enabled)
-            {
-                c.enabled = false;
-            }
-        }
-
-        // Tắt thêm objectiveUIPanel nếu có
-        if (BachDangStoryManager.Instance != null && BachDangStoryManager.Instance.objectiveUIPanel != null)
-        {
-            if (BachDangStoryManager.Instance.objectiveUIPanel.activeSelf)
-                BachDangStoryManager.Instance.objectiveUIPanel.SetActive(false);
-        }
+        if (readyToAdvance && Time.unscaledTime - lineReadyAt >= .25f) advanceRequested = true;
     }
-
-    private void HideExistingQuestPanels()
-    {
-        string[] panelNames = { "QuestPanel", "QuestUIPanel", "QuestDesc", "QuestTitle", "NhiemVuPanel", "StoryUI_Canvas", "ObjectivePanel" };
-        var found = new System.Collections.Generic.List<GameObject>();
-        foreach (string name in panelNames)
-        {
-            GameObject obj = GameObject.Find(name);
-            if (obj != null)
-            {
-                obj.SetActive(false);
-                found.Add(obj);
-            }
-        }
-        hiddenQuestPanels = found.ToArray();
-    }
-
     public void SkipOpening()
     {
-        if (isOpeningEnded) return;
-
-        if (openingCoroutine != null)
-        {
-            StopCoroutine(openingCoroutine);
-        }
-
-        EndOpening();
+        if (IsOpeningEnded) return;
+        StopAllCoroutines(); EndOpening();
     }
-
-    IEnumerator PlayOpening()
+    IEnumerator FadeText(float from, float to, float seconds)
     {
-        yield return new WaitForSeconds(0.3f);
-
-        for (int i = 0; i < storyLines.Length; i++)
+        for (float elapsed = 0; elapsed < seconds; elapsed += Time.unscaledDeltaTime)
+        { if (storyText == null) yield break; storyText.alpha = Mathf.Lerp(from, to, elapsed / seconds); yield return null; }
+        if (storyText != null) storyText.alpha = to;
+    }
+    public void RefreshHiddenUI()
+    {
+        if (!IsOpeningActive || openingCanvas == null) return;
+        // Some scenes share their opening Canvas with quest panels. Keep only the intro branch visible.
+        foreach (var graphic in openingCanvas.GetComponentsInChildren<Graphic>(true))
         {
-            if (storyText != null)
+            if (graphic.transform == openingPanel.transform || graphic.transform.IsChildOf(openingPanel.transform)) continue;
+            if (!hiddenGraphics.ContainsKey(graphic)) hiddenGraphics.Add(graphic, graphic.enabled);
+            graphic.enabled = false;
+        }
+        foreach (var root in gameObject.scene.GetRootGameObjects())
+        {
+            foreach (var canvas in root.GetComponentsInChildren<Canvas>(true))
             {
-                storyText.text = storyLines[i] + "\n\n<size=15><color=#888888>[Nhấn Space hoặc E để vào game ngay]</color></size>";
-                
-                // Fade in (0.5s)
-                yield return StartCoroutine(FadeText(0f, 1f, 0.5f));
-                
-                // Thời gian đọc vừa phải (từ 1.8s đến 3.2s tùy độ dài câu)
-                float waitTime = Mathf.Clamp(storyLines[i].Length * 0.04f, 1.8f, 3.2f);
-                yield return new WaitForSeconds(waitTime);
-                
-                // Fade out (0.4s)
-                yield return StartCoroutine(FadeText(1f, 0f, 0.4f));
-                
-                yield return new WaitForSeconds(0.15f);
+                if (canvas == openingCanvas || canvas.transform.IsChildOf(openingCanvas.transform)) continue;
+                if (!hiddenCanvases.ContainsKey(canvas)) hiddenCanvases.Add(canvas, canvas.enabled);
+                canvas.enabled = false;
+            }
+            foreach (var hud in root.GetComponentsInChildren<SaBanHUD>(true))
+            {
+                if (!hiddenHUDs.ContainsKey(hud)) hiddenHUDs.Add(hud, hud.enabled);
+                hud.enabled = false;
             }
         }
-
-        // Fade out màn hình đen nhanh gọn (0.5s) ra cảnh game
-        if (openingPanel != null)
-        {
-            Image bgImage = openingPanel.GetComponent<Image>();
-            if (bgImage != null)
-            {
-                float t = 0;
-                Color startColor = bgImage.color;
-                while (t < 0.5f)
-                {
-                    t += Time.deltaTime;
-                    bgImage.color = new Color(startColor.r, startColor.g, startColor.b, Mathf.Lerp(1f, 0f, t / 0.5f));
-                    yield return null;
-                }
-            }
-        }
-
-        EndOpening();
     }
-
-    IEnumerator FadeText(float startAlpha, float endAlpha, float duration)
+    void RestoreUI()
     {
-        if (storyText == null) yield break;
-
-        float t = 0;
-        Color c = storyText.color;
-        while (t < duration)
-        {
-            t += Time.deltaTime;
-            storyText.color = new Color(c.r, c.g, c.b, Mathf.Lerp(startAlpha, endAlpha, t / duration));
-            yield return null;
-        }
-        storyText.color = new Color(c.r, c.g, c.b, endAlpha);
+        foreach (var pair in hiddenCanvases) if (pair.Key != null) pair.Key.enabled = pair.Value;
+        foreach (var pair in hiddenHUDs) if (pair.Key != null) pair.Key.enabled = pair.Value;
+        foreach (var pair in hiddenGraphics) if (pair.Key != null) pair.Key.enabled = pair.Value;
+        hiddenCanvases.Clear(); hiddenHUDs.Clear(); hiddenGraphics.Clear();
     }
-
     void EndOpening()
     {
-        if (isOpeningEnded) return;
-        isOpeningEnded = true;
-        IsOpeningActive = false;
+        if (IsOpeningEnded) return;
+        IsOpeningEnded = true;
+        RestoreUI();
+        if (player == null) player = FindPlayerInScene();
+        if (player != null) player.SetActive(true);
+        if (openingPanel != null) openingPanel.SetActive(false);
+        if (BachDangStoryManager.Instance != null) BachDangStoryManager.Instance.UpdateUI();
+        Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false;
+    }
+    void OnDisable()
+    {
+        if (current != this) return;
+        StopAllCoroutines(); RestoreUI(); current = null;
+    }
 
-        if (openingPanel != null)
-            openingPanel.SetActive(false);
-            
-        if (player == null)
+    public static GameObject FindPlayerInScene()
+    {
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if (!scene.IsValid() || !scene.isLoaded) return null;
+        GameObject fallback = null;
+        foreach (var root in scene.GetRootGameObjects()) foreach (var t in root.GetComponentsInChildren<Transform>(true))
         {
-            player = FindPlayerInScene();
+            if (t.name == "Player_Main_Animated" || t.name == "Main_Character") return t.gameObject;
+            if (fallback == null && t.GetComponent<Character_Movement>() != null) fallback = t.gameObject;
         }
-
-        if (player != null)
-        {
-            player.SetActive(true);
-
-            // Đảm bảo scale nhân vật đúng 7,7,7
-            player.transform.localScale = new Vector3(7f, 7f, 7f);
-
-            // === FIX T-POSE: đảm bảo Animator được enable và có đúng controller ===
-            var animators = player.GetComponentsInChildren<Animator>(true);
-            foreach (var anim in animators)
-            {
-                anim.enabled = true;
-                anim.applyRootMotion = false;
-                
-                var ctrl = Resources.Load<RuntimeAnimatorController>("Sword_Anima");
-                if (ctrl != null)
-                {
-                    anim.runtimeAnimatorController = ctrl;
-                }
-            }
-
-            // Xác định chính xác độ cao mặt đất tại toạ độ mới
-            Vector3 targetPos = new Vector3(-992.8307f, 17.42352f, 265.8618f);
-            RaycastHit hit;
-            if (Physics.Raycast(new Vector3(targetPos.x, targetPos.y + 60f, targetPos.z), Vector3.down, out hit, 150f))
-            {
-                targetPos.y = hit.point.y + 0.1f;
-            }
-            else if (Terrain.activeTerrain != null)
-            {
-                targetPos.y = Terrain.activeTerrain.SampleHeight(targetPos) + Terrain.activeTerrain.transform.position.y + 0.1f;
-            }
-
-            var cc = player.GetComponent<CharacterController>();
-            if (cc != null) cc.enabled = false;
-
-            var rb = player.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                rb.position = targetPos;
-            }
-
-            player.transform.position = targetPos;
-            player.transform.rotation = Quaternion.Euler(0f, 110f, 0f);
-
-            if (cc != null) cc.enabled = true;
-
-            // Đảm bảo tất cả Camera_Script đều bám theo nhân vật chính
-            var cameras = Object.FindObjectsByType<Camera_Script>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            foreach (var cam in cameras)
-            {
-                if (cam != null)
-                {
-                    cam.target = player.transform;
-                }
-            }
-        }
-            
-        // Bật lại các UI Canvas đã giấu
-        if (hiddenCanvases != null)
-        {
-            foreach (Canvas c in hiddenCanvases)
-            {
-                if (c != null) c.enabled = true;
-            }
-        }
-
-        // Bật lại các Script OnGUI
-        if (hiddenScripts != null)
-        {
-            foreach (MonoBehaviour mb in hiddenScripts)
-            {
-                if (mb != null) mb.enabled = true;
-            }
-        }
-
-        // Bật lại UI nhiệm vụ Bạch Đằng
-        if (BachDangStoryManager.Instance != null)
-        {
-            BachDangStoryManager.Instance.UpdateUI();
-        }
+        return fallback;
     }
 }

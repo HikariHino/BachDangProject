@@ -17,6 +17,7 @@ public class RiverStakeZone : MonoBehaviour
 
     private void Update()
     {
+        if (OpeningEvent.IsOpeningActive) return;
         if (isStakesPlanted) return;
 
         var story = BachDangStoryManager.Instance;
