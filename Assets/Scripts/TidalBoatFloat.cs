@@ -75,7 +75,10 @@ public class TidalBoatFloat : MonoBehaviour
         if (!waterlineCaptured) CaptureWaterline();
         restRotation = transform.rotation;
         restPosition = transform.position;
-        phase = Mathf.Repeat(restPosition.x * 0.173f + restPosition.z * 0.117f, Mathf.PI * 2f);
+        // Keep the authored phase when the editor scales world positions. The
+        // serialized waterline offset and bob amplitude are already converted.
+        float worldScale = BachDangWorldScale.ForScene(gameObject.scene);
+        phase = Mathf.Repeat((restPosition.x * 0.173f + restPosition.z * 0.117f) / worldScale, Mathf.PI * 2f);
         initialized = true;
     }
 

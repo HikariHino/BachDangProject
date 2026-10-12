@@ -31,11 +31,13 @@ public class BoatCrash : MonoBehaviour
     private Vector3 initialSinkingPos;
     private Rigidbody rb;
     private Collider col;
+    private float worldScale = 1f;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         col = GetComponent<Collider>();
+        worldScale = BachDangWorldScale.ForScene(gameObject.scene);
         
         rb.useGravity = false;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
@@ -82,7 +84,9 @@ public class BoatCrash : MonoBehaviour
 
         // Quét Raycast phía trước xem có bờ đất không
         RaycastHit hit;
-        if (Physics.Raycast(transform.position + Vector3.up * 1f, moveDir, out hit, forwardCheckDistance))
+        // Serialized speeds, offsets and check distance are converted by the editor.
+        // Only this authored one-metre ray origin still needs the scene factor.
+        if (Physics.Raycast(transform.position + Vector3.up * worldScale, moveDir, out hit, forwardCheckDistance))
         {
             if (hit.collider.GetComponent<Terrain>() != null || hit.collider.GetComponent<TerrainCollider>() != null || hit.collider.CompareTag("Terrain"))
             {
@@ -144,17 +148,17 @@ public class BoatCrash : MonoBehaviour
             manhGo.transform.position = toaDoDam + new Vector3(
                 Random.Range(-1f, 1f), 
                 Random.Range(0f, 2f), 
-                Random.Range(-1f, 1f));
+                Random.Range(-1f, 1f)) * worldScale;
             manhGo.transform.localScale = new Vector3(
                 Random.Range(0.1f, 0.3f), 
                 Random.Range(0.1f, 0.5f), 
-                Random.Range(0.5f, 1.5f));
+                Random.Range(0.5f, 1.5f)) * worldScale;
             
             var r = manhGo.GetComponent<Renderer>();
             if (r != null) r.material.color = new Color(0.4f, 0.2f, 0.1f);
 
             Rigidbody rbManhGo = manhGo.AddComponent<Rigidbody>();
-            rbManhGo.AddExplosionForce(500f, toaDoDam, 4f, 2f); 
+            rbManhGo.AddExplosionForce(500f * worldScale, toaDoDam, 4f * worldScale, 2f * worldScale);
             Destroy(manhGo, 3f);
         }
     }

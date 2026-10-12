@@ -2,6 +2,8 @@
 
 Scene: `Assets/Scenes/beachBoat.unity`, Unity 6000.6.0f1.
 
+Bản cập nhật tỷ lệ nhân vật và sinh hoạt ngày 05/10/2026 nằm trong [BachDangScaleAndLife.md](BachDangScaleAndLife.md). Các tọa độ dưới đây ghi theo hệ đơn vị trước khi chuyển tỷ lệ ×7.
+
 ## Nội dung đã lưu
 
 Nhóm `BachDang_Living_Settlements` chứa ba khu dân cư và ba doanh trại bổ sung:

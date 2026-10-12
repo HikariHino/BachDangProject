@@ -33,28 +33,23 @@ public class TideSystem : MonoBehaviour
     private float currentTargetY;
     private bool isRising = false;
     private float timer = 0f;
+    private float worldScale = 1f;
 
     public float TargetWaterHeight => currentTargetY;
     public bool IsRising => isRising;
 
     void Awake()
     {
-        // ÉP MỨC NƯỚC RÚT VỀ 10.0M KỂ CẢ KHI INSPECTOR LƯU GIÁ TRỊ CŨ 12M
-        if (lowTideY > 10.1f)
+        // Preserve the legacy low-tide correction in the scene's world units.
+        // Serialized tide levels are already converted by the editor.
+        worldScale = BachDangWorldScale.ForScene(gameObject.scene);
+        if (lowTideY > 10.1f * worldScale)
         {
-            lowTideY = 10.0f;
+            lowTideY = 10.0f * worldScale;
         }
 
         currentTargetY = transform.position.y;
         CurrentWaterHeight = transform.position.y;
-    }
-
-    void OnValidate()
-    {
-        if (lowTideY > 10.1f)
-        {
-            lowTideY = 10.0f;
-        }
     }
 
     void Start()
@@ -88,7 +83,8 @@ public class TideSystem : MonoBehaviour
             CurrentWaterHeight = position.y;
         }
 
-        Debug.Log($"🌊 LỆNH THỦY TRIỀU: {(high ? "TRIỀU DÂNG (High Tide)" : "TRIỀU RÚT (Low Tide)")} -> Mục tiêu: {currentTargetY}m");
+        float targetMetres = currentTargetY / worldScale;
+        Debug.Log($"🌊 LỆNH THỦY TRIỀU: {(high ? "TRIỀU DÂNG (High Tide)" : "TRIỀU RÚT (Low Tide)")} -> Mục tiêu: {targetMetres:F1}m");
     }
 
     void Update()
@@ -134,7 +130,8 @@ public class TideSystem : MonoBehaviour
         
         string statusText = isRising ? "<color=#00e676>▲ ĐANG DÂNG CAO (Ngập cọc)</color>" : "<color=#ff5252>▼ ĐANG RÚT CẠN (Lộ bãi cọc)</color>";
         GUILayout.Label($"Trạng thái: {statusText}", boxStyle);
-        GUILayout.Label($"Cao độ mặt nước: <b>{transform.position.y:F2} mét</b>", boxStyle);
+        float waterMetres = transform.position.y / worldScale;
+        GUILayout.Label($"Cao độ mặt nước: <b>{waterMetres:F2} mét</b>", boxStyle);
         GUILayout.Label($"<i>[Bấm phím <b>T</b> để Đảo Chiều Thủy Triều]</i>", boxStyle);
         GUILayout.EndArea();
     }
