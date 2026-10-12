@@ -1,0 +1,128 @@
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace BeachBoatStory
+{
+    /// <summary>Scene-owned bindings for Thai's gameplay; contains no map-building or fixed TestQuest coordinates.</summary>
+    [DefaultExecutionOrder(-500)]
+    public sealed class BeachBoatQuestSession : MonoBehaviour
+    {
+        public static BeachBoatQuestSession Instance { get; private set; }
+        public GameObject player;
+        public Camera storyCamera, tourCamera;
+        public Transform playerSpawn;
+        public MonoBehaviour[] tourControls;
+        public WoodCollectible[] woodItems;
+        public bool storyMode = true;
+        bool[] savedControls;
+        string tourTag;
+        bool tourCameraEnabled;
+        bool tourAudioEnabled;
+        AudioListener tourAudio;
+        GameObject questCanvas;
+        public static bool InputBlocked => InteractionBlocked || StoryDialogueUI.InputConsumedThisFrame;
+        public static bool InteractionBlocked => OpeningEvent.IsOpeningActive ||
+            (Instance != null && !Instance.storyMode) ||
+            (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen) ||
+            (ScreenFader.Instance != null && ScreenFader.Instance.IsTransitioning);
+
+        void Awake()
+        {
+            Instance = this;
+            if (player == null || storyCamera == null || tourCamera == null || playerSpawn == null)
+            { Debug.LogError("BeachBoat story bindings are incomplete.", this); enabled = false; return; }
+            savedControls = new bool[tourControls.Length];
+            for (int i = 0; i < tourControls.Length; i++) savedControls[i] = tourControls[i] != null && tourControls[i].enabled;
+            tourTag = tourCamera.tag; tourCameraEnabled = tourCamera.enabled;
+            tourAudio = tourCamera.GetComponent<AudioListener>(); tourAudioEnabled = tourAudio != null && tourAudio.enabled;
+            player.transform.SetPositionAndRotation(playerSpawn.position, playerSpawn.rotation);
+            var body = player.GetComponent<Rigidbody>();
+            body.position = playerSpawn.position; body.rotation = playerSpawn.rotation;
+            body.linearVelocity = Vector3.zero;
+            BuildQuestUI();
+            var dialogue = Child("BeachStoryDialogue"); dialogue.AddComponent<StoryDialogueUI>();
+            var fader = Child("BeachStoryFader"); fader.AddComponent<ScreenFader>();
+            SetStoryMode(true);
+            BuildIntro();
+        }
+
+        public void SetStoryMode(bool value)
+        {
+            storyMode = value;
+            tourCamera.tag = value ? "Untagged" : "MainCamera";
+            storyCamera.tag = value ? "MainCamera" : "Untagged";
+            tourCamera.enabled = !value; storyCamera.enabled = value;
+            if (tourAudio != null) tourAudio.enabled = !value;
+            var audio = storyCamera.GetComponent<AudioListener>(); if (audio != null) audio.enabled = value;
+            for (int i = 0; i < tourControls.Length; i++) if (tourControls[i] != null) tourControls[i].enabled = !value && savedControls[i];
+            player.GetComponent<Character_Movement>().enabled = value;
+            var body = player.GetComponent<Rigidbody>();
+            if (!body.isKinematic) body.linearVelocity = Vector3.zero;
+            body.isKinematic = !value;
+            var orbit = storyCamera.GetComponent<Camera_Script>(); orbit.enabled = value;
+            if (value) orbit.SnapToTarget();
+            orbit.CaptureCursor(value);
+            if (questCanvas != null) questCanvas.SetActive(value);
+        }
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.F9) && !OpeningEvent.IsOpeningActive &&
+                !(StoryDialogueUI.Instance?.IsOpen ?? false) && !(ScreenFader.Instance?.IsTransitioning ?? false)) SetStoryMode(!storyMode);
+        }
+        GameObject Child(string name)
+        { var go = new GameObject(name); go.transform.SetParent(transform, false); return go; }
+        Canvas Canvas(string name)
+        {
+            var go = Child(name); var canvas = go.AddComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = go.AddComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1280, 720); scaler.matchWidthOrHeight = .5f;
+            go.AddComponent<GraphicRaycaster>(); return canvas;
+        }
+        static GameObject Panel(string name, Transform parent, Vector2 min, Vector2 max, Color color)
+        {
+            var go = new GameObject(name, typeof(RectTransform)); go.transform.SetParent(parent, false);
+            var rect = (RectTransform)go.transform; rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            go.AddComponent<Image>().color = color; return go;
+        }
+        static TextMeshProUGUI Text(string name, Transform parent, Vector2 min, Vector2 max, float size)
+        {
+            var go = new GameObject(name, typeof(RectTransform)); go.transform.SetParent(parent, false);
+            var text = go.AddComponent<TextMeshProUGUI>(); text.fontSize = size; text.color = Color.white;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            var rect = text.rectTransform; rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = rect.offsetMax = Vector2.zero;
+            return text;
+        }
+        void BuildQuestUI()
+        {
+            var canvas = Canvas("BeachStoryHUD"); canvas.sortingOrder = 100; questCanvas = canvas.gameObject;
+            var panel = Panel("Objective", canvas.transform, new Vector2(.69f,.72f), new Vector2(.985f,.97f), new Color(.04f,.035f,.025f,.84f));
+            var story = GetComponent<BachDangStoryManager>(); story.objectiveUIPanel = panel;
+            story.objectiveTitleText = Text("Title",panel.transform,new Vector2(.05f,.73f),new Vector2(.95f,.95f),25);
+            story.objectiveDescText = Text("Body",panel.transform,new Vector2(.05f,.05f),new Vector2(.95f,.73f),21);
+            var prompt = Panel("Interaction",canvas.transform,new Vector2(.23f,.10f),new Vector2(.77f,.18f),new Color(.02f,.025f,.03f,.87f));
+            story.interactPromptPanel = prompt;
+            story.interactPromptText = Text("Prompt",prompt.transform,new Vector2(.02f,.06f),new Vector2(.98f,.94f),23);
+            story.interactPromptText.alignment = TextAlignmentOptions.Center; prompt.SetActive(false);
+            var keys = Text("Controls",canvas.transform,new Vector2(.02f,.01f),new Vector2(.98f,.07f),17);
+            keys.text = "WASD: di chuyển • Shift: chạy • Space: nhảy • E: tương tác • F9: sa bàn/chơi • Esc: thả chuột";
+        }
+        void BuildIntro()
+        {
+            var canvas = Canvas("BeachStoryIntro"); canvas.gameObject.SetActive(false);
+            var panel = Panel("Background",canvas.transform,Vector2.zero,Vector2.one,Color.black);
+            var text = Text("Story",panel.transform,new Vector2(.14f,.2f),new Vector2(.86f,.78f),30);
+            text.alignment = TextAlignmentOptions.Center;
+            var opening = canvas.gameObject.AddComponent<OpeningEvent>(); opening.openingPanel = panel; opening.storyText = text; opening.player = player;
+            canvas.gameObject.SetActive(true);
+        }
+        void OnDestroy()
+        {
+            if (Instance != this) return;
+            Instance = null;
+            if (tourCamera != null) { tourCamera.enabled = tourCameraEnabled; tourCamera.tag = tourTag; }
+            if (tourAudio != null) tourAudio.enabled = tourAudioEnabled;
+            if (savedControls != null) for (int i=0;i<tourControls.Length;i++) if (tourControls[i] != null) tourControls[i].enabled = savedControls[i];
+        }
+    }
+}
