@@ -23,10 +23,16 @@ public class Character_Movement : MonoBehaviour
 
     [Header("Combat Damage")]
     public int attackDamage = 20;
-    public float attackRange = 1.8f;
+    public float attackRange = 1f;
     public LayerMask enemyLayer;
     private bool hasAppliedDamage;
     private HitEffect hitEffect;
+
+    [Header("VFX")]
+    [Tooltip("Hiệu ứng chém (Slash VFX) hiển thị khi ra đòn")]
+    [SerializeField] private GameObject slashVFXPrefab;
+    [Tooltip("Vị trí hiển thị slash VFX (thường là nhân vật hoặc vị trí vung kiếm)")]
+    [SerializeField] private Transform slashSpawnPoint;
 
     private static readonly int BlockParameter = Animator.StringToHash("isBlocking");
     private int blockStateHash;
@@ -148,6 +154,24 @@ public class Character_Movement : MonoBehaviour
         // Chỉ giới hạn thời gian chờ vào state; không giới hạn độ dài animation chém.
         attackStartDeadline = Time.time + 1f;
         animator.SetTrigger(triggerHash);
+
+        // Hiển thị hiệu ứng chém ngay khi bắt đầu ra đòn
+        if (slashVFXPrefab != null)
+        {
+            Vector3 spawnPos = slashSpawnPoint != null ? slashSpawnPoint.position : (transform.position + Vector3.up * 1.2f);
+            Quaternion spawnRot = slashSpawnPoint != null ? slashSpawnPoint.rotation : transform.rotation;
+            
+            // Khởi tạo VFX
+            GameObject slash = Instantiate(slashVFXPrefab, spawnPos, spawnRot);
+            
+            // Nếu có điểm spawn (ví dụ gắn ở kiếm/tay), cho VFX làm con của điểm đó để nó di chuyển theo tay
+            if (slashSpawnPoint != null)
+            {
+                slash.transform.SetParent(slashSpawnPoint);
+            }
+            
+            Destroy(slash, 1.5f);
+        }
     }
 
     void UpdateAttackState()
@@ -250,7 +274,12 @@ public class Character_Movement : MonoBehaviour
         }
 
         // Lấy velocity hiện tại, CHỈ thay X và Z, GIỮ NGUYÊN Y (gravity)
+        // Chặn velocity hướng lên (Y > 0) để tránh bị nảy/hất văng lên trời khi va chạm collider khác
         float currentY = rb.linearVelocity.y;
+        if (currentY > 0.1f)
+        {
+            currentY = 0f;
+        }
         rb.linearVelocity = new Vector3(moveX * moveSpeed, currentY, moveZ * moveSpeed);
     }
 

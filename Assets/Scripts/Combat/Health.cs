@@ -11,9 +11,10 @@ public class Health : MonoBehaviour
         currentHP = maxHP;
     }
 
-    public void TakeDamage(int amount)
+    public void TakeDamage(float amount)
     {
-        currentHP -= amount;
+        int damage = Mathf.RoundToInt(amount);
+        currentHP -= damage;
         currentHP = Mathf.Clamp(currentHP, 0, maxHP);
 
         Debug.Log($"{gameObject.name} còn {currentHP}/{maxHP} HP.");

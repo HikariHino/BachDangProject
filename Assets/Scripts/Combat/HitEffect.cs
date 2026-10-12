@@ -20,6 +20,34 @@ public class HitEffect : MonoBehaviour
         StartCoroutine(ShakeCamera());
     }
 
+    /// <summary>
+    /// Play sword swing sound (when attacking, regardless of hit)
+    /// Call this when attack animation starts
+    /// </summary>
+    public void PlaySwing()
+    {
+        if (swingSound != null)
+        {
+            AudioSource source = GetComponent<AudioSource>();
+            if (source != null)
+            {
+                source.PlayOneShot(swingSound);
+            }
+            else if (Camera.main != null)
+            {
+                AudioSource cameraSource = Camera.main.GetComponent<AudioSource>();
+                if (cameraSource != null)
+                {
+                    cameraSource.PlayOneShot(swingSound);
+                }
+                else
+                {
+                    AudioSource.PlayClipAtPoint(swingSound, transform.position);
+                }
+            }
+        }
+    }
+
     // Hiệu ứng trúng đòn: dùng prefab nếu có, fallback quả cầu đỏ tự tạo.
     public IEnumerator PlayHitVisual(Vector3 pos)
     {

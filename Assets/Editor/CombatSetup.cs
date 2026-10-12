@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -387,6 +388,25 @@ public static class CombatSetup
     [MenuItem("BachDang/Redesign Enemy Health Bars")]
     public static void RedesignEnemyHealthBars()
     {
+        // Clean up any stray EnemyHealthBar objects in the scene whose parent is not a valid enemy.
+        var allBars = Resources.FindObjectsOfTypeAll<GameObject>()
+            .Where(go => go != null && !EditorUtility.IsPersistent(go) && go.scene.IsValid() && go.name == "EnemyHealthBar")
+            .ToArray();
+        foreach (var bar in allBars)
+        {
+            if (bar.transform.parent == null)
+            {
+                Undo.DestroyObjectImmediate(bar);
+                continue;
+            }
+            var parentHealth = bar.transform.parent.GetComponent<Health>();
+            var isReal = IsRealEnemy(bar.transform.parent.gameObject);
+            if (parentHealth == null || !isReal)
+            {
+                Undo.DestroyObjectImmediate(bar);
+            }
+        }
+
         int redesignedCount = 0;
         var candidates = Resources.FindObjectsOfTypeAll<GameObject>();
         foreach (GameObject go in candidates)
@@ -466,11 +486,19 @@ public static class CombatSetup
             slider.fillRect = fillRect;
 
             HealthBarUI healthBarUI = barObj.AddComponent<HealthBarUI>();
-            healthBarUI.target = health;
-            healthBarUI.slider = slider;
-            healthBarUI.fillImage = fillImage;
-            healthBarUI.overlayMode = false;
-            healthBarUI.faceCamera = true;
+            if (health == null)
+            {
+                Debug.LogError("[BachDang] Health is null for enemy " + go.name);
+            }
+            else
+            {
+                healthBarUI.target = health;
+                healthBarUI.slider = slider;
+                healthBarUI.fillImage = fillImage;
+                healthBarUI.overlayMode = false;
+                healthBarUI.faceCamera = true;
+                Debug.Log($"[BachDang] Redesigned health bar for {go.name}, targeting {healthBarUI.target.name}");
+            }
 
             Undo.RegisterCreatedObjectUndo(barObj, "Redesign Enemy Health Bars");
             redesignedCount++;
@@ -510,6 +538,12 @@ public static class CombatSetup
             return false;
         }
 
+        // Bỏ qua vũ khí, kiếm, khiên, socket — tránh gán Health/EnemyAttack/thanh máu lên kiếm tên chứa Enemy
+        if (IsExcludedCombatName(go.name))
+        {
+            return false;
+        }
+
         bool nameMatch =
             go.name.IndexOf("Enemy", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
             go.name.IndexOf("LinhDich", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -530,6 +564,26 @@ public static class CombatSetup
     [MenuItem("BachDang/Create Enemy Health Bar")]
     public static void CreateEnemyHealthBar()
     {
+        // Clean up any stray EnemyHealthBar objects in the scene whose parent is not a valid enemy.
+        var allBars = Resources.FindObjectsOfTypeAll<GameObject>()
+            .Where(go => go != null && !EditorUtility.IsPersistent(go) && go.scene.IsValid() && go.name == "EnemyHealthBar")
+            .ToArray();
+        foreach (var bar in allBars)
+        {
+            if (bar.transform.parent == null)
+            {
+                // root object, destroy
+                Undo.DestroyObjectImmediate(bar);
+                continue;
+            }
+            var parentHealth = bar.transform.parent.GetComponent<Health>();
+            var isReal = IsRealEnemy(bar.transform.parent.gameObject);
+            if (parentHealth == null || !isReal)
+            {
+                Undo.DestroyObjectImmediate(bar);
+            }
+        }
+
         int createdCount = 0;
         var candidates = Resources.FindObjectsOfTypeAll<GameObject>();
         foreach (GameObject go in candidates)
@@ -623,11 +677,19 @@ public static class CombatSetup
 
             // HealthBarUI: target = Health của giặc, overlayMode = false, faceCamera = true.
             HealthBarUI healthBarUI = barObj.AddComponent<HealthBarUI>();
-            healthBarUI.target = health;
-            healthBarUI.slider = slider;
-            healthBarUI.fillImage = fillImage;
-            healthBarUI.overlayMode = false;
-            healthBarUI.faceCamera = true;
+            if (health == null)
+            {
+                Debug.LogError("[BachDang] Health is null for enemy " + go.name);
+            }
+            else
+            {
+                healthBarUI.target = health;
+                healthBarUI.slider = slider;
+                healthBarUI.fillImage = fillImage;
+                healthBarUI.overlayMode = false;
+                healthBarUI.faceCamera = true;
+                Debug.Log($"[BachDang] Created health bar for {go.name}, targeting {healthBarUI.target.name}");
+            }
 
             Undo.RegisterCreatedObjectUndo(barObj, "Create Enemy Health Bar");
             createdCount++;
@@ -682,7 +744,7 @@ public static class CombatSetup
         }
         melee.animator = mainCharacter.GetComponent<Animator>();
         melee.damage = 20;
-        melee.attackRange = 1.8f;
+        melee.attackRange = 0.1f;
 
         HitEffect hitEffect = mainCharacter.GetComponent<HitEffect>();
         if (hitEffect == null)
@@ -731,7 +793,7 @@ public static class CombatSetup
                 }
             }
 
-            if (isMain || !isEnemy)
+            if (isMain || !isEnemy || IsExcludedCombatName(go.name))
             {
                 continue;
             }
@@ -1168,14 +1230,127 @@ public static class CombatSetup
         Debug.Log($"BachDang/Clean Combat Setup: hoàn tất. Đã dọn {cleanedCount} object vũ khí/phụ kiện (dính Health/EnemyAttack/thanh máu).");
     }
 
-    // Tên chứa Sword/Shield/Weapon/Bow/WeaponHolder (không phân biệt hoa thường) => không gắn collider/Rigidbody.
+    // Tên chứa Sword/Shield/Weapon/Bow/Socket/WeaponHolder (không phân biệt hoa thường) => không gắn collider/Rigidbody.
     private static bool IsExcludedCombatName(string name)
     {
         return name.IndexOf("Sword", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                name.IndexOf("Shield", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                name.IndexOf("Weapon", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                name.IndexOf("Bow", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+               name.IndexOf("Socket", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                name.IndexOf("WeaponHolder", System.StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    [MenuItem("BachDang/Fix Enemy Sword Attachment")]
+    public static void FixEnemySwordAttachment()
+    {
+        CleanCombatSetup();
+
+        // Tìm Enemy
+        GameObject enemy = null;
+        foreach (GameObject go in Resources.FindObjectsOfTypeAll<GameObject>())
+        {
+            if (go == null || EditorUtility.IsPersistent(go) || !go.scene.IsValid()) continue;
+            if (go.name.IndexOf("Black_Armored_General", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (IsRealEnemy(go) && go.transform.parent == null))
+            {
+                enemy = go;
+                break;
+            }
+        }
+
+        if (enemy == null)
+        {
+            Debug.LogWarning("BachDang/Fix Enemy Sword Attachment: không tìm thấy GameObject enemy trong scene.");
+            return;
+        }
+
+        // Tìm xương RightHand
+        Transform rightHand = null;
+        foreach (Transform t in enemy.GetComponentsInChildren<Transform>(true))
+        {
+            string lower = t.name.ToLower();
+            if ((lower.Contains("righthand") || lower.Contains("right_hand")) &&
+                !lower.Contains("thumb") && !lower.Contains("index") && !lower.Contains("middle") && !lower.Contains("ring") && !lower.Contains("pinky"))
+            {
+                rightHand = t;
+                break;
+            }
+        }
+
+        if (rightHand == null)
+        {
+            Debug.LogError("BachDang/Fix Enemy Sword Attachment: không tìm thấy RightHand trên enemy.");
+            return;
+        }
+
+        // Tìm Socket hoặc tạo Socket
+        Transform socket = null;
+        foreach (Transform t in rightHand.GetComponentsInChildren<Transform>(true))
+        {
+            if (t.name.ToLower().Contains("socket"))
+            {
+                socket = t;
+                break;
+            }
+        }
+
+        if (socket == null)
+        {
+            GameObject sockObj = new GameObject("Sword_Socket");
+            sockObj.transform.SetParent(rightHand, false);
+            sockObj.transform.localPosition = Vector3.zero;
+            sockObj.transform.localRotation = Quaternion.identity;
+            socket = sockObj.transform;
+            Undo.RegisterCreatedObjectUndo(sockObj, "Create Sword_Socket");
+        }
+
+        // Tìm kiếm của enemy
+        GameObject swordObj = null;
+        foreach (GameObject go in Resources.FindObjectsOfTypeAll<GameObject>())
+        {
+            if (go == null || EditorUtility.IsPersistent(go) || !go.scene.IsValid()) continue;
+            if (go.name.IndexOf("Sword_Enemy", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                go.name.IndexOf("Golden_Dragon_Sword", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                swordObj = go;
+                break;
+            }
+        }
+
+        if (swordObj != null)
+        {
+            Undo.RegisterCompleteObjectUndo(swordObj, "Fix Enemy Sword Attachment");
+
+            // Xóa mọi combat script bám trên kiếm
+            foreach (var c in swordObj.GetComponents<Health>()) Undo.DestroyObjectImmediate(c);
+            foreach (var c in swordObj.GetComponents<EnemyAttack>()) Undo.DestroyObjectImmediate(c);
+            foreach (var c in swordObj.GetComponents<Animator>()) Undo.DestroyObjectImmediate(c);
+            foreach (var c in swordObj.GetComponents<Collider>()) Undo.DestroyObjectImmediate(c);
+            foreach (var c in swordObj.GetComponents<Rigidbody>()) Undo.DestroyObjectImmediate(c);
+
+            // Gắn vào socket
+            if (swordObj.transform.parent != socket)
+            {
+                Undo.SetTransformParent(swordObj.transform, socket, "Parent Sword to Socket");
+                swordObj.transform.localPosition = Vector3.zero;
+                swordObj.transform.localRotation = Quaternion.identity;
+                swordObj.transform.localScale = Vector3.one;
+            }
+
+            // Cấu hình SwordAttachment trên enemy
+            SwordAttachment sa = enemy.GetComponent<SwordAttachment>();
+            if (sa == null) sa = Undo.AddComponent<SwordAttachment>(enemy);
+            sa.swordTransform = swordObj.transform;
+            sa.customSocket = socket;
+            sa.keepWorldTransformWhenAttaching = false;
+            sa.localPositionOffset = swordObj.transform.localPosition;
+            sa.localRotationOffset = swordObj.transform.localEulerAngles;
+
+            EditorUtility.SetDirty(enemy);
+            EditorUtility.SetDirty(swordObj);
+            Debug.Log($"BachDang/Fix Enemy Sword Attachment: Đã sửa xong kiếm '{swordObj.name}' gắn chắc vào Socket '{socket.name}' của '{enemy.name}'.");
+        }
     }
 
     // true nếu go nằm bên trong một object nhân vật (Main_Character/enemy) khác => go là bone hoặc child, bỏ qua.
