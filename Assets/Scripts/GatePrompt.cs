@@ -7,6 +7,7 @@ public class GatePrompt : MonoBehaviour
     public Transform destination;
     public float distance = 30f;
     public float fadeDuration = 0.7f;
+    public string promptText = "Bấm E để qua dân làng bên sông";
 
     private bool nearby;
     private bool transitioning;
@@ -58,6 +59,12 @@ public class GatePrompt : MonoBehaviour
             player.SetPositionAndRotation(destination.position, destination.rotation);
         }
 
+        if (BachDangStoryManager.Instance != null && BachDangStoryManager.Instance.currentState == BachDangStoryManager.StoryState.Act2_ReturnToCampGate)
+        {
+            BachDangStoryManager.Instance.currentState = BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen;
+            BachDangStoryManager.Instance.UpdateUI();
+        }
+
         Physics.SyncTransforms();
 
         yield return new WaitForSecondsRealtime(0.25f);
@@ -103,9 +110,10 @@ public class GatePrompt : MonoBehaviour
         promptStyle.fontSize = 26;
         promptStyle.alignment = TextAnchor.MiddleCenter;
 
+        // Thay vì viết cố định "Bấm E để qua dân làng bên sông"
         GUI.Box(
             new Rect(Screen.width / 2 - 230, Screen.height - 130, 460, 70),
-            "Bấm E để qua dân làng bên sông",
+            promptText, // <-- Dùng biến này để chỉnh được trên Inspector
             promptStyle
         );
     }
