@@ -134,6 +134,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
         item.transform.SetParent(parent, false);
 
         var text = item.AddComponent<TextMeshProUGUI>();
+        StoryFont.Apply(text);
         text.fontSize = fontSize;
         text.fontStyle = fontStyle;
         text.color = color;

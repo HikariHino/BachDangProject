@@ -173,16 +173,19 @@ public class SaBanHUD : MonoBehaviour
         panelStyle.padding = new RectOffset(12, 12, 10, 10);
 
         GUIStyle headerStyle = new GUIStyle(GUI.skin.label);
+        headerStyle.font = BeachBoatStory.StoryFont.LegacyFont;
         headerStyle.fontSize = 15;
         headerStyle.fontStyle = FontStyle.Bold;
         headerStyle.normal.textColor = new Color(1f, 0.85f, 0.3f);
 
         GUIStyle bodyStyle = new GUIStyle(GUI.skin.label);
+        bodyStyle.font = BeachBoatStory.StoryFont.LegacyFont;
         bodyStyle.fontSize = 12;
         bodyStyle.normal.textColor = Color.white;
         bodyStyle.richText = true;
 
         GUIStyle btnStyle = new GUIStyle(GUI.skin.button);
+        btnStyle.font = BeachBoatStory.StoryFont.LegacyFont;
         btnStyle.fontSize = 12;
         btnStyle.fontStyle = FontStyle.Bold;
         btnStyle.fixedHeight = 28;
@@ -193,16 +196,16 @@ public class SaBanHUD : MonoBehaviour
         if (hasSettlementTour) panelHeight += 34f;
         GUILayout.BeginArea(new Rect(15, 15, panelWidth, panelHeight), panelStyle);
 
-        GUILayout.Label("⚔️ ĐIỀU KHIỂN SA BÀN BẠCH ĐẰNG 938", headerStyle);
+        GUILayout.Label("ĐIỀU KHIỂN SA BÀN BẠCH ĐẰNG 938", headerStyle);
         GUILayout.Space(3);
 
         // THỦY TRIỀU
         float waterY = tideSystem != null ? tideSystem.transform.position.y : 14f * worldScale;
         float waterMetres = waterY / worldScale;
         string tideDesc = waterY > 13.5f * worldScale ? "<color=#00e676>▲ TRIỀU DÂNG (Ngập đầu cọc)</color>" : "<color=#ff5252>▼ TRIỀU RÚT (Lộ bãi cọc nhọn)</color>";
-        GUILayout.Label($"🌊 Mực nước: <b>{waterMetres:F1}m</b> - Trạng thái: {tideDesc}", bodyStyle);
+        GUILayout.Label($"Mực nước: <b>{waterMetres:F1}m</b> - Trạng thái: {tideDesc}", bodyStyle);
 
-        if (GUILayout.Button("🌊 Đảo Chiều Thủy Triều [T]", btnStyle))
+        if (GUILayout.Button("Đảo Chiều Thủy Triều [T]", btnStyle))
         {
             if (tideSystem != null)
             {
@@ -222,13 +225,14 @@ public class SaBanHUD : MonoBehaviour
             if (GUILayout.Button("Hoàng hôn", btnStyle)) dayNightCycle.SetTimeOfDay(18f);
             if (GUILayout.Button("Đêm", btnStyle)) dayNightCycle.SetTimeOfDay(0f);
             GUILayout.EndHorizontal();
-            dayNightCycle.autoAdvance = GUILayout.Toggle(dayNightCycle.autoAdvance, "Tự chạy chu kỳ ngày / đêm");
+            var toggleStyle = new GUIStyle(GUI.skin.toggle) { font = BeachBoatStory.StoryFont.LegacyFont };
+            dayNightCycle.autoAdvance = GUILayout.Toggle(dayNightCycle.autoAdvance, "Tự chạy chu kỳ ngày / đêm", toggleStyle);
             GUILayout.Space(6);
         }
 
         // GÓC QUAY CAMERA
-        GUILayout.Label(hasSettlementTour ? "🎥 <b>Góc Quay Điện Ảnh [Phím 1 - 8]:</b>"
-                                         : "🎥 <b>Góc Quay Điện Ảnh [Phím 1 - 4]:</b>", bodyStyle);
+        GUILayout.Label(hasSettlementTour ? "<b>Góc Quay Điện Ảnh [Phím 1 - 8]:</b>"
+                                         : "<b>Góc Quay Điện Ảnh [Phím 1 - 4]:</b>", bodyStyle);
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("[1] Sa Bàn", btnStyle)) SwitchToPreset(0);
         if (GUILayout.Button("[2] Bãi Cọc", btnStyle)) SwitchToPreset(1);

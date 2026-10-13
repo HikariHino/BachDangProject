@@ -88,7 +88,7 @@ namespace BeachBoatStory
         static TextMeshProUGUI Text(string name, Transform parent, Vector2 min, Vector2 max, float size)
         {
             var go = new GameObject(name, typeof(RectTransform)); go.transform.SetParent(parent, false);
-            var text = go.AddComponent<TextMeshProUGUI>(); text.fontSize = size; text.color = Color.white;
+            var text = go.AddComponent<TextMeshProUGUI>(); StoryFont.Apply(text); text.fontSize = size; text.color = Color.white;
             text.textWrappingMode = TextWrappingModes.Normal;
             var rect = text.rectTransform; rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = rect.offsetMax = Vector2.zero;
             return text;

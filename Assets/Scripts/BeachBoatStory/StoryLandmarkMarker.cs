@@ -2,6 +2,7 @@
 namespace BeachBoatStory
 {
 using UnityEngine;
+using TMPro;
 
 /// <summary>Billboard label for the current story destination.</summary>
 public sealed class StoryLandmarkMarker : MonoBehaviour
@@ -18,7 +19,7 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
 
     public Target target;
     public string label;
-    private TextMesh labelMesh;
+    private TextMeshPro labelMesh;
 
     private void Awake()
     {
@@ -30,13 +31,17 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
         var labelObject = new GameObject("StoryLandmarkLabel");
         labelObject.transform.SetParent(transform, false);
         ApplyWorldSizedPlacement(labelObject.transform);
-        labelMesh = labelObject.AddComponent<TextMesh>();
+        labelMesh = labelObject.AddComponent<TextMeshPro>();
+        StoryFont.Apply(labelMesh);
         labelMesh.text = label;
-        labelMesh.anchor = TextAnchor.MiddleCenter;
-        labelMesh.alignment = TextAlignment.Center;
-        labelMesh.fontSize = 48;
-        labelMesh.characterSize = 0.45f;
-        labelMesh.fontStyle = FontStyle.Bold;
+        labelMesh.alignment = TextAlignmentOptions.Center;
+        labelMesh.rectTransform.sizeDelta = new Vector2(180, 16);
+        labelMesh.textWrappingMode = TextWrappingModes.NoWrap;
+        labelMesh.overflowMode = TextOverflowModes.Overflow;
+        labelMesh.fontSize = 32;
+        labelMesh.fontStyle = FontStyles.Bold;
+        labelMesh.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        labelMesh.GetComponent<MeshRenderer>().receiveShadows = false;
         labelMesh.color = new Color(1f, 0.83f, 0.38f, 1f);
     }
 

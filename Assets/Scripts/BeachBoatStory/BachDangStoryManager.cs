@@ -116,6 +116,7 @@ public class BachDangStoryManager : MonoBehaviour
             promptBoxStyle.normal.background = MakePromptTexture();
             promptTextStyle = new GUIStyle(GUI.skin.label)
             {
+                font = StoryFont.LegacyFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = Mathf.Clamp(Screen.height / 45, 16, 24),
                 fontStyle = FontStyle.Bold,

@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab2405e7d0072ee4c9cbce243018da04, type: 3}
+  m_Name: FontSettings
+  m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.StoryFontSettings
+  legacyFont: {fileID: 12800000, guid: e3265ab4bf004d28a9537516768c1c75, type: 3}

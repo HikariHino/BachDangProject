@@ -97,6 +97,7 @@ public class ScreenFader : MonoBehaviour
         }
 
         // Mặc định ban đầu trong suốt (nhìn thấy game bình thường)
+        if (subtitleText != null) StoryFont.Apply(subtitleText);
         canvasGroup.alpha = 0f;
         canvasGroup.blocksRaycasts = false;
         canvasGroup.interactable = false;
