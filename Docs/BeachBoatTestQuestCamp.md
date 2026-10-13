@@ -1,5 +1,7 @@
 # Doanh trại TestQuest trong beachBoat
 
+> Cập nhật mật độ sau khi chuyển ra đảo: [BeachBoatCampLife.md](BeachBoatCampLife.md). Tổng số lều hiện tại là 164; các số 25 lều/358 collider dưới đây mô tả bản chuyển trại ban đầu.
+
 Ngày 13/10/2026, thay các công trình cũ bên trong `05_Trai_Du_Bi` bằng `TestQuest_Camp`: 25 lều, đài chỉ huy, hàng rào/chòi canh, cọc trang trí, đuốc và thuyền đóng dở từ bản TestQuest hiện có trên máy. Các doanh trại khác của beachBoat giữ nguyên.
 
 **Cập nhật cùng ngày: đã chuyển toàn bộ trại này ra đảo tương ứng trong ảnh TestQuest**, không còn ở vị trí đất liền. Tọa độ bố cục X/Z được quy đổi ×7 theo terrain beachBoat; kích thước lều/chòi/nhân vật giữ nguyên để không thành công trình khổng lồ. Vì vậy khoảng cách giữa các lều rộng hơn khi nhìn toàn đảo. Căn đáy công trình theo mặt đất, giữ đồ trang trí gần lều/đài.
