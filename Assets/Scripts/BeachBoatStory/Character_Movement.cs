@@ -33,7 +33,7 @@ public class Character_Movement : MonoBehaviour
         foreach (var anim in GetComponentsInChildren<Animator>(true))
         {
             // Preserve valid rig/controller assignments and disabled weapon/model variants.
-            if (anim.runtimeAnimatorController == null) anim.runtimeAnimatorController = Resources.Load<RuntimeAnimatorController>("Sword_Anima");
+            if (anim.runtimeAnimatorController == null) anim.runtimeAnimatorController = Resources.Load<RuntimeAnimatorController>("Player_Neutral") ?? Resources.Load<RuntimeAnimatorController>("Sword_Anima");
             if (anim.runtimeAnimatorController == null) continue;
             anim.applyRootMotion = false; animators.Add(anim);
             foreach (var parameter in anim.parameters)

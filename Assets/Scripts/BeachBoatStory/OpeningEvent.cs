@@ -145,7 +145,20 @@ public class OpeningEvent : MonoBehaviour
         IsOpeningEnded = true;
         RestoreUI();
         if (player == null) player = FindPlayerInScene();
-        if (player != null) player.SetActive(true);
+        if (player != null)
+        {
+            player.SetActive(true);
+            var neutralCtrl = Resources.Load<RuntimeAnimatorController>("Player_Neutral");
+            if (neutralCtrl != null)
+            {
+                foreach (var anim in player.GetComponentsInChildren<Animator>(true))
+                {
+                    anim.runtimeAnimatorController = neutralCtrl;
+                    anim.SetBool("isWalking", false);
+                    anim.SetBool("isRunning", false);
+                }
+            }
+        }
         if (openingPanel != null) openingPanel.SetActive(false);
         if (BachDangStoryManager.Instance != null) BachDangStoryManager.Instance.UpdateUI();
         Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false;
