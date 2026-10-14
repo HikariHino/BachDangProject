@@ -1,5 +1,7 @@
 # Tỷ lệ nhân vật và sinh hoạt làng — 05/10/2026
 
+> Cập nhật 14/10/2026: [Tăng model 2 lần, giữ nguyên map](BeachBoatModelFit.md) thay thế thông tin kích thước model bên dưới. Nhân vật chính beachBoat hiện scale 14; hệ đơn vị địa hình vẫn là 7. Nhiệm vụ từ TestQuest đã được tích hợp vào beachBoat trong các cập nhật sau ngày 05/10.
+
 > Cập nhật 09/10/2026: xem [Làng tự nhiên và ngân sách laptop](BachDangLaptopAndNaturalVillage.md). Thiết lập cây, tầm nhìn và bộ nhớ trong tài liệu mới thay thế các ghi chú Nature Renderer/tầm nhìn trước đây ở trang này.
 
 Scene làm việc: `Assets/Scenes/beachBoat.unity` (bản có núi, ngày–đêm, làng và doanh trại cải tiến).

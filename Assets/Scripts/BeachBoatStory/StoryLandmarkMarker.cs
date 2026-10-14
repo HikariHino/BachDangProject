@@ -19,6 +19,7 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
 
     public Target target;
     public string label;
+    [Min(.1f)] public float worldDisplayScale = 1f;
     private TextMeshPro labelMesh;
 
     private void Awake()
@@ -35,10 +36,10 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
         StoryFont.Apply(labelMesh);
         labelMesh.text = label;
         labelMesh.alignment = TextAlignmentOptions.Center;
-        labelMesh.rectTransform.sizeDelta = new Vector2(180, 16);
+        labelMesh.rectTransform.sizeDelta = new Vector2(180, 16) * worldDisplayScale;
         labelMesh.textWrappingMode = TextWrappingModes.NoWrap;
         labelMesh.overflowMode = TextOverflowModes.Overflow;
-        labelMesh.fontSize = 32;
+        labelMesh.fontSize = 32 * worldDisplayScale;
         labelMesh.fontStyle = FontStyles.Bold;
         labelMesh.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         labelMesh.GetComponent<MeshRenderer>().receiveShadows = false;
@@ -65,7 +66,7 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
         labelTransform.localScale = new Vector3(1f / sx, 1f / sy, 1f / sz);
         float heightAboveTarget = target == Target.NgoQuyen ? 20f : target == Target.Wood ? 8f : 17f;
         if (GetComponent<CampGateTransition>() != null) heightAboveTarget = 65f;
-        labelTransform.localPosition = Vector3.up * (heightAboveTarget / sy);
+        labelTransform.localPosition = Vector3.up * (heightAboveTarget * worldDisplayScale / sy);
     }
 
     private void Update()
