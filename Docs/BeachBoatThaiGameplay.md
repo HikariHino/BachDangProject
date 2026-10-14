@@ -2,6 +2,8 @@
 
 Nguồn đối chiếu: `origin/thai` tại `03aad75`, gồm các commit `ac85205`, `aee7027`, `03aad75`. Chỉ chuyển gameplay; không merge toàn bộ scene TestQuest hoặc map cũ.
 
+Rà soát bổ sung ngày 13/10/2026: [BeachBoatThaiAudit.md](BeachBoatThaiAudit.md) ghi lại nhóm 9 lính, hội thoại, animation và các chức năng tương đương đã đối chiếu với Thái.
+
 Cập nhật 13/10/2026: theo yêu cầu tiếp theo, doanh trại tại `05_Trai_Du_Bi` đã được thay bằng kiến trúc từ TestQuest. Chi tiết và tối ưu tại [BeachBoatTestQuestCamp.md](BeachBoatTestQuestCamp.md). Các mô tả giữ nguyên kiến trúc và 50.364 cây bên dưới ghi lại phạm vi lần chuyển gameplay ban đầu.
 
 ## Chơi thử

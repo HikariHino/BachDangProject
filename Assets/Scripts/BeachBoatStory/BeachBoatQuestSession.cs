@@ -21,6 +21,9 @@ namespace BeachBoatStory
         bool tourAudioEnabled;
         AudioListener tourAudio;
         GameObject questCanvas;
+        NPCDialogue[] talkers;
+        NPCQuestGiver questGiver;
+        CampGateTransition[] gates;
         public static bool InputBlocked => InteractionBlocked || StoryDialogueUI.InputConsumedThisFrame;
         public static bool InteractionBlocked => OpeningEvent.IsOpeningActive ||
             (Instance != null && !Instance.storyMode) ||
@@ -29,6 +32,9 @@ namespace BeachBoatStory
 
         void Awake()
         {
+            talkers = GetComponentsInChildren<NPCDialogue>(true);
+            questGiver = GetComponentInChildren<NPCQuestGiver>(true);
+            gates = GetComponentsInChildren<CampGateTransition>(true);
             Instance = this;
             if (player == null || storyCamera == null || tourCamera == null || playerSpawn == null)
             { Debug.LogError("BeachBoat story bindings are incomplete.", this); enabled = false; return; }
@@ -45,6 +51,45 @@ namespace BeachBoatStory
             var fader = Child("BeachStoryFader"); fader.AddComponent<ScreenFader>();
             SetStoryMode(true);
             BuildIntro();
+        }
+
+        // One nearby NPC owns E. Mission dialogue takes priority in its three report stages.
+        public bool IsPreferredTalker(NPCDialogue candidate)
+        {
+            if (player == null || !player.activeInHierarchy) return false;
+            var position = player.transform.position;
+            var state = GetComponent<BachDangStoryManager>().currentState;
+            bool reporting = state == BachDangStoryManager.StoryState.Act1_ExploreCamp ||
+                state == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen ||
+                state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp;
+            if (reporting && questGiver != null && questGiver.isActiveAndEnabled &&
+                (questGiver.transform.position - position).sqrMagnitude <= questGiver.interactDistance * questGiver.interactDistance)
+                return false;
+            foreach (var gate in gates)
+            {
+                if (gate == null || !gate.isActiveAndEnabled || gate.destinationTarget == null) continue;
+                bool available = (gate.gateType == CampGateTransition.GateType.CampGate && state == BachDangStoryManager.StoryState.Act1_GoToCampGate) ||
+                    (gate.gateType == CampGateTransition.GateType.VillageGate && state == BachDangStoryManager.StoryState.Act2_ReturnToCampGate) ||
+                    (gate.gateType == CampGateTransition.GateType.CampRiverGate && state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver) ||
+                    (gate.gateType == CampGateTransition.GateType.RiverGate && state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp);
+                var offset = gate.transform.position - position; offset.y = 0;
+                if (available && offset.sqrMagnitude <= gate.interactDistance * gate.interactDistance) return false;
+            }
+            if (state == BachDangStoryManager.StoryState.Act2_CollectWoodInVillage)
+                foreach (var wood in woodItems)
+                    if (wood != null && wood.isActiveAndEnabled &&
+                        (wood.transform.position - position).sqrMagnitude <= wood.interactDistance * wood.interactDistance)
+                        return false;
+            NPCDialogue nearest = null;
+            float best = float.PositiveInfinity;
+            foreach (var npc in talkers)
+            {
+                if (npc == null || !npc.isActiveAndEnabled) continue;
+                float distance = (npc.transform.position - position).sqrMagnitude;
+                if (distance <= npc.interactDistance * npc.interactDistance && distance < best)
+                { best = distance; nearest = npc; }
+            }
+            return nearest == candidate;
         }
 
         public void SetStoryMode(bool value)

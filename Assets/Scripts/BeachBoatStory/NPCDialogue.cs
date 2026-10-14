@@ -28,7 +28,7 @@ public class NPCDialogue : MonoBehaviour
         if (player == null) return;
 
         // Ordinary NPCs are always conversational and never change the quest state.
-        bool canTalk = true;
+        bool canTalk = BeachBoatQuestSession.Instance != null && BeachBoatQuestSession.Instance.IsPreferredTalker(this);
         bool near = canTalk && player.gameObject.activeInHierarchy &&
                     Vector3.Distance(transform.position, player.position) <= interactDistance;
 
@@ -47,9 +47,18 @@ public class NPCDialogue : MonoBehaviour
         story.SetInteractPrompt(true, "[E] Trò chuyện với " + speakerName, this);
         if (Input.GetKeyDown(KeyCode.E) && StoryDialogueUI.TryConsumeInput())
         {
-            story.SetInteractPrompt(false, owner: this);
-            StoryDialogueUI.Instance.Show(speakerName, dialogueText);
+            TryTalk();
         }
+    }
+
+    public bool TryTalk()
+    {
+        var session = BeachBoatQuestSession.Instance;
+        if (!isActiveAndEnabled || BeachBoatQuestSession.InteractionBlocked || session == null ||
+            StoryDialogueUI.Instance == null || !session.IsPreferredTalker(this)) return false;
+        BachDangStoryManager.Instance.SetInteractPrompt(false, owner: this);
+        StoryDialogueUI.Instance.Show(speakerName, dialogueText);
+        return true;
     }
 
     private void OnDisable()
