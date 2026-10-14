@@ -68,12 +68,7 @@ namespace BeachBoatStory
             foreach (var gate in gates)
             {
                 if (gate == null || !gate.isActiveAndEnabled || gate.destinationTarget == null) continue;
-                bool available = (gate.gateType == CampGateTransition.GateType.CampGate && state == BachDangStoryManager.StoryState.Act1_GoToCampGate) ||
-                    (gate.gateType == CampGateTransition.GateType.VillageGate && state == BachDangStoryManager.StoryState.Act2_ReturnToCampGate) ||
-                    (gate.gateType == CampGateTransition.GateType.CampRiverGate && state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver) ||
-                    (gate.gateType == CampGateTransition.GateType.RiverGate && state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp);
-                var offset = gate.transform.position - position; offset.y = 0;
-                if (available && offset.sqrMagnitude <= gate.interactDistance * gate.interactDistance) return false;
+                if (gate.IsAvailable(state) && gate.IsInRange(player.transform)) return false;
             }
             if (state == BachDangStoryManager.StoryState.Act2_CollectWoodInVillage)
                 foreach (var wood in woodItems)
@@ -151,6 +146,13 @@ namespace BeachBoatStory
             story.interactPromptText.alignment = TextAlignmentOptions.Center; prompt.SetActive(false);
             var keys = Text("Controls",canvas.transform,new Vector2(.02f,.01f),new Vector2(.98f,.07f),17);
             keys.text = "WASD: di chuyển • Shift: chạy • Space: nhảy • E: tương tác • F9: sa bàn/chơi • Esc: thả chuột";
+            var guide = Panel("RouteGuide", canvas.transform, new Vector2(.32f,.85f), new Vector2(.67f,.97f), new Color(.04f,.035f,.025f,.84f));
+            var pointer = Text("Direction",guide.transform,new Vector2(.02f,.2f),new Vector2(.16f,.8f),34);
+            pointer.text = ">"; pointer.alignment = TextAlignmentOptions.Center;
+            pointer.color = new Color(1f,.83f,.38f);
+            var route = Text("Destination",guide.transform,new Vector2(.19f,.05f),new Vector2(.97f,.95f),20);
+            route.alignment = TextAlignmentOptions.MidlineLeft;
+            canvas.gameObject.AddComponent<StoryRouteGuide>().Initialize(this,guide,route,pointer);
         }
         void BuildIntro()
         {

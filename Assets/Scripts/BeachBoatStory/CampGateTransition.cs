@@ -28,7 +28,31 @@ public class CampGateTransition : MonoBehaviour
 
     private bool isPlayerInRange = false;
 
-    // beachBoat uses its existing physical gateways; no invisible wall is added.
+    public bool IsAvailable(BachDangStoryManager.StoryState state)
+    {
+        return (gateType == GateType.CampGate && state == BachDangStoryManager.StoryState.Act1_GoToCampGate) ||
+            (gateType == GateType.VillageGate && state == BachDangStoryManager.StoryState.Act2_ReturnToCampGate) ||
+            (gateType == GateType.CampRiverGate && state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver) ||
+            (gateType == GateType.RiverGate && state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp);
+    }
+
+    public bool IsInRange(Transform player)
+    {
+        if (player == null || !player.gameObject.activeInHierarchy) return false;
+        var offset = player.position - transform.position;
+        offset.y = 0;
+        return offset.sqrMagnitude <= interactDistance * interactDistance;
+    }
+
+    // The keyboard and tests use the same guarded entry point.
+    public bool TryInteract()
+    {
+        var story = BachDangStoryManager.Instance;
+        if (!isActiveAndEnabled || BeachBoatQuestSession.InteractionBlocked || destinationTarget == null ||
+            story == null || !IsAvailable(story.currentState) || !IsInRange(story.GetPlayerTransform())) return false;
+        TriggerTransition();
+        return true;
+    }
 
     private void Update()
     {
@@ -91,7 +115,7 @@ public class CampGateTransition : MonoBehaviour
             if (canInteract && !StoryDialogueUI.InputConsumedThisFrame &&
                 (StoryDialogueUI.Instance == null || !StoryDialogueUI.Instance.IsOpen) && Input.GetKeyDown(KeyCode.E))
             {
-                if (StoryDialogueUI.TryConsumeInput()) TriggerTransition();
+                if (StoryDialogueUI.TryConsumeInput()) TryInteract();
             }
         }
         else
@@ -108,7 +132,7 @@ public class CampGateTransition : MonoBehaviour
     {
         if (BeachBoatQuestSession.InteractionBlocked || destinationTarget == null) return;
         var story = BachDangStoryManager.Instance;
-        if (story == null) return;
+        if (story == null || !IsAvailable(story.currentState) || !IsInRange(story.GetPlayerTransform())) return;
 
         story.SetInteractPrompt(false, owner: this);
 

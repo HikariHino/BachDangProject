@@ -64,6 +64,7 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
         float sz = Mathf.Max(0.001f, Mathf.Abs(parentScale.z));
         labelTransform.localScale = new Vector3(1f / sx, 1f / sy, 1f / sz);
         float heightAboveTarget = target == Target.NgoQuyen ? 20f : target == Target.Wood ? 8f : 17f;
+        if (GetComponent<CampGateTransition>() != null) heightAboveTarget = 65f;
         labelTransform.localPosition = Vector3.up * (heightAboveTarget / sy);
     }
 

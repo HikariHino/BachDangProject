@@ -161,7 +161,7 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
 
             case StoryState.Act1_GoToCampGate:
-                desc = "- Đi đến cổng doanh trại.\n- Qua cổng sang làng ven sông.";
+                desc = "- Theo chỉ hướng tới cổng gỗ.\n- Bấm [E] ở cổng để sang làng ven sông.";
                 break;
 
             case StoryState.Act2_CollectWoodInVillage:
@@ -177,7 +177,7 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
 
             case StoryState.Act2_PlantStakesAtRiver:
-                desc = "- Ra mép nước sông Bạch Đằng.\n- Bấm [E] tại bãi cọc để đóng cọc xuống lòng sông.";
+                desc = "- Bấm [E] ở cổng trại để ra bờ sông.\n- Đến bãi cọc, bấm [E] để đóng cọc.";
                 break;
 
             case StoryState.Act2_CompleteReturnToCamp:

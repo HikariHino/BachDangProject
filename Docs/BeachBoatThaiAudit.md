@@ -2,6 +2,23 @@
 
 Nguồn: nhánh `origin/thai` tại `03aad75`, các commit gameplay `ac85205` và `aee7027`, cùng các thành phần đã có trong scene nguồn. Đã fetch lại nhánh khi bắt đầu đối chiếu.
 
+## Kiểm tra bổ sung cổng đi làng — 14/10/2026
+
+Đã fetch và kiểm tra lại `origin/thai` tại `99fde7f`, bao gồm commit `1c1607b` (cổng quay về doanh trại). Mở bản scene nguồn trong preview bằng Unity, đóng và xóa bản tạm sau khi đọc; không thay scene TestQuest trong dự án.
+
+- Scene nguồn có `GatePrompt` tại `InvisibleBarrier`, đi tới `VillageArrivalPoint`; `VillageGate_ToCamp` là `CampGateTransition` loại VillageGate, đích `SpawnPoint_ReturnToCamp`. BeachBoat đã có chức năng tương đương: `CampToVillage → VillageArrival` và `VillageToCamp → CampArrival`, fade và chuyển sang bước báo cáo Ngô Quyền.
+- Nguồn có 7 khúc gỗ `CayGo` và một `WoodPickup` gắn lên terrain. BeachBoat giữ 7 lựa chọn gỗ, yêu cầu 5; không chép component nhặt gỗ trên terrain hoặc chạy thêm bộ đếm song song. Các model làng/hàng rào trong nhánh merge không đưa sang thay bản đồ.
+- Điểm sang làng của beachBoat cách chỗ xuất hiện khoảng 1.160 đơn vị, trước đây không có model cổng. Thêm 3 khung cổng tại điểm đi làng, quay về từ làng và quay về từ bãi cọc; cổng đi làng/đi bãi cọc dùng chung vị trí nhưng mở theo bước nhiệm vụ.
+- Thêm HUD chỉ hướng theo camera và khoảng cách tới mục tiêu hiện tại. Khi dịch chuyển ra bờ sông, chỉ dẫn đổi từ cổng sang bãi cọc; lúc quay về đổi sang Ngô Quyền. Chỉ dẫn ẩn trong mở đầu, hội thoại, fade và chế độ sa bàn.
+- Cả phím E và kiểm tra tự động dùng `TryInteract`, kiểm tra cùng điều kiện nhiệm vụ, khoảng cách và khóa tương tác. Dời `Camp_Guard_Mid_Right` khỏi đường từ chỗ xuất hiện tới cổng.
+- Ba cổng dùng chung prefab `pf_build_gate_01` (mesh 2.534 đỉnh), material có sẵn, collider hộp và LOD cull; không thêm đèn hay bóng động. HUD cache tham chiếu và cập nhật nội dung 5 lần/giây, không quét toàn scene mỗi frame.
+
+Kiểm tra trước khi khởi động lại: 111 kiểm tra cổng/chỉ dẫn/đường đi đạt, 43 kiểm tra toàn luồng nhiệm vụ đạt. Đã xem ảnh Game có cổng, chỉ hướng và lời nhắc E. Sau khi bài kiểm tra hoàn tất, Editor có một crash native tại `ProcessCameraIndexListIsNodeVisibleStep1 / CullDynamicObjectsJob`; không có bằng chứng đủ để quy nguyên nhân cho RAM hoặc một script cụ thể.
+
+Lượt tiếp tục cùng ngày đã fetch lại tới `cc7d5dd`. Commit scene `d7fb36b` thay cổng về bằng `Gate_ReturnToCamp ` có `GatePrompt`, tầm 30, lời nhắc “Bấm E để quay lại doanh trại”, đích `SpawnPoint_ReturnToCamp`. Không có thay đổi script gameplay so với `99fde7f`; danh sách component nguồn đã đối chiếu lại bằng preview. Chức năng về trại và chuyển sang báo cáo đã có ở `VillageToCamp` của beachBoat. Giữ điều kiện đủ 5 gỗ trước khi về để tránh mắc kẹt giữa các bước; không thêm `GatePrompt`/bộ đếm gỗ thứ hai. Các asset mô hình thuyền, hàng rào, cổng và clip chèo thuyền mới chưa được nối thành tính năng gameplay trong scene nguồn, không tự đưa sang map.
+
+Sau khi mở mới Editor từ scene đã lưu: chạy lại 43 kiểm tra nhiệm vụ đạt; tiếp tục 40 mẫu đổi camera chơi/sa bàn và dịch chuyển qua 4 khu vực trong 78 giây, không tái hiện crash. Unity profiler báo allocated memory tối đa 1.868 MiB trong lượt thử; đo tiến trình sau lượt thử có working set 4.374 MiB và private memory 5.057 MiB. Số liệu Mono `Process.WorkingSet64` trong eval trả 0 nên không dùng; số liệu tiến trình được đo qua PowerShell. Đây là phép đo Editor trên máy hiện tại, không phải peak RAM toàn máy hoặc bảo đảm laptop 16 GB. Crash trước đó chưa xác định được nguyên nhân; lần chạy lại thành công không được coi là đã sửa dứt điểm.
+
 | Thành phần của Thái | Trạng thái ở beachBoat |
 | --- | --- |
 | Mở đầu, nhân vật scale 7, camera góc nhìn thứ ba | Đã có; giữ điều khiển và font tiếng Việt đã sửa |

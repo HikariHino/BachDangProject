@@ -52,7 +52,7 @@ public static class BeachBoatCampActors
             "Camp_Lookout_Soldier", "Camp_Sitting_Soldier", "Camp_Laying_Soldier" };
         // Four guards on the stage, two in its forecourt, a lookout and two resting soldiers.
         var positions = new[] { new Vector2(-5520,1115), new Vector2(-5495,1115), new Vector2(-5495,1130),
-            new Vector2(-5518,1135), new Vector2(-5470,1185), new Vector2(-5550,1185),
+            new Vector2(-5518,1135), new Vector2(-5470,1185), new Vector2(-5570,1190),
             new Vector2(-6382,485), new Vector2(-5570,1245), new Vector2(-5600,1245) };
         var stage = GameObject.Find("TestQuest_Camp").transform.Cast<Transform>()
             .Single(t => t.name.Contains("Rustic_Wooden_Stage"));
