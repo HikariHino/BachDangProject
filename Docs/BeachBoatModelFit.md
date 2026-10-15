@@ -1,5 +1,7 @@
 # beachBoat: tăng kích thước model, giữ nguyên map — 14/10/2026
 
+> Cập nhật 15/10: đã mở lại Editor có đồ họa và chạy Play thành công bằng Direct3D11; xem [kết quả kiểm tra và cách mở](BeachBoatGraphicsVerification.md). Chưa xác định nguyên nhân gốc của crash trước đó.
+
 Theo lựa chọn của người dùng, nhân vật và công trình tăng khoảng 2 lần, còn địa hình giữ kích thước 42.000 × 2.100 × 42.000 đơn vị Unity (6 × 6 km tham chiếu).
 
 ## Thay đổi
