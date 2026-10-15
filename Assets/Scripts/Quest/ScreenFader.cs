@@ -14,6 +14,7 @@ public class ScreenFader : MonoBehaviour
     private CanvasGroup canvasGroup;
     private TextMeshProUGUI subtitleText;
     private Image blackImage;
+    public bool IsTransitioning { get; private set; }
 
     private void Awake()
     {
@@ -101,11 +102,13 @@ public class ScreenFader : MonoBehaviour
     /// </summary>
     public void FadeTransition(string narrativeText, Action duringBlack, float fadeDuration = 0.8f, float holdDuration = 1.6f, Action onComplete = null)
     {
+        if (IsTransitioning) return;
         StartCoroutine(RoutineFadeTransition(narrativeText, duringBlack, fadeDuration, holdDuration, onComplete));
     }
 
     private IEnumerator RoutineFadeTransition(string narrativeText, Action duringBlack, float fadeDuration, float holdDuration, Action onComplete)
     {
+        IsTransitioning = true;
         EnsureUIExists();
 
         // 1. Fade to Black
@@ -146,5 +149,6 @@ public class ScreenFader : MonoBehaviour
         if (subtitleText != null) subtitleText.text = "";
 
         onComplete?.Invoke();
+        IsTransitioning = false;
     }
 }

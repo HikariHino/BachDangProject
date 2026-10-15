@@ -17,7 +17,8 @@ public class BachDangStoryManager : MonoBehaviour
         Act2_ReturnToCampGate = 3,    // Thu thập đủ 5 gỗ -> Ra Cổng Làng bấm E về Trại
         Act2_ReportToNgoQuyen = 4,    // Về Trại -> Báo cáo Ngô Quyền nhận lệnh cắm cọc
         Act2_PlantStakesAtRiver = 5,  // Ra bờ sông cắm cọc Bạch Đằng
-        Act2_CompleteReturnToCamp = 6 // Cắm cọc xong -> Hoàn thành Hồi 2, sẵn sàng Hồi 3
+        Act2_CompleteReturnToCamp = 6, // Cắm cọc xong -> báo cáo lần cuối
+        Act2_Completed = 7
     }
 
     [Header("Trạng thái hiện tại")]
@@ -42,6 +43,10 @@ public class BachDangStoryManager : MonoBehaviour
     public Transform riverStakePoint;
 
     private Transform playerTransform;
+    private bool promptVisible;
+    private string promptMessage = string.Empty;
+    private GUIStyle promptBoxStyle;
+    private GUIStyle promptTextStyle;
 
     private void Awake()
     {
@@ -72,14 +77,42 @@ public class BachDangStoryManager : MonoBehaviour
     /// </summary>
     public void SetInteractPrompt(bool show, string message = "")
     {
+        promptVisible = show;
+        promptMessage = message;
+        if (interactPromptText != null && show) interactPromptText.text = message;
         if (interactPromptPanel != null)
+            interactPromptPanel.SetActive(show && !OpeningEvent.IsOpeningActive);
+    }
+
+    private void OnGUI()
+    {
+        if (interactPromptPanel != null || !promptVisible || OpeningEvent.IsOpeningActive ||
+            (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen)) return;
+        if (promptBoxStyle == null)
         {
-            interactPromptPanel.SetActive(show);
-            if (show && interactPromptText != null)
+            promptBoxStyle = new GUIStyle(GUI.skin.box);
+            promptBoxStyle.normal.background = MakePromptTexture();
+            promptTextStyle = new GUIStyle(GUI.skin.label)
             {
-                interactPromptText.text = message;
-            }
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = Mathf.Clamp(Screen.height / 45, 16, 24),
+                fontStyle = FontStyle.Bold,
+                wordWrap = true,
+                normal = { textColor = Color.white }
+            };
         }
+        float width = Mathf.Min(520f, Screen.width * 0.46f);
+        var rect = new Rect(Screen.width - width - 24f, Screen.height - 76f, width, 52f);
+        GUI.Box(rect, GUIContent.none, promptBoxStyle);
+        GUI.Label(rect, promptMessage, promptTextStyle);
+    }
+
+    private static Texture2D MakePromptTexture()
+    {
+        var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        texture.SetPixel(0, 0, new Color(0.025f, 0.035f, 0.055f, 0.9f));
+        texture.Apply();
+        return texture;
     }
 
     /// <summary>
@@ -105,7 +138,7 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
 
             case StoryState.Act1_GoToCampGate:
-                desc = "- Di chuyển ra cổng doanh trại.\n- Bấm [E] để lên đường sang làng ven sông.";
+                desc = "- Đi đến cổng doanh trại.\n- Qua cổng sang làng ven sông.";
                 break;
 
             case StoryState.Act2_CollectWoodInVillage:
@@ -125,7 +158,12 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
 
             case StoryState.Act2_CompleteReturnToCamp:
-                desc = "★ Trận địa cọc ngầm đã sẵn sàng mai phục!\n- Quay về doanh trại nghe Chủ tướng phát lệnh xuất trận.";
+                desc = "- Trận địa cọc ngầm đã sẵn sàng mai phục.\n- Quay về gặp Ngô Quyền để báo tin hoàn thành.";
+                break;
+
+            case StoryState.Act2_Completed:
+                title = "Hồi 2 hoàn tất";
+                desc = "Trận địa cọc Bạch Đằng đã sẵn sàng. Quân ta chờ thời cơ đánh giặc.";
                 break;
         }
 
@@ -133,18 +171,6 @@ public class BachDangStoryManager : MonoBehaviour
         if (objectiveTitleText != null) objectiveTitleText.text = title;
         if (objectiveDescText != null) objectiveDescText.text = desc;
 
-        // Đồng bộ luôn với các Text Quest có sẵn trong Scene (nếu có)
-        var sceneQuestDesc = GameObject.Find("QuestDesc")?.GetComponent<TextMeshProUGUI>();
-        if (sceneQuestDesc != null) sceneQuestDesc.text = desc;
-
-        var sceneQuestTitle = GameObject.Find("QuestTitle")?.GetComponent<TextMeshProUGUI>();
-        if (sceneQuestTitle != null) sceneQuestTitle.text = title;
-
-        if (QuestManager.Instance != null)
-        {
-            if (QuestManager.Instance.questTitleText != null) QuestManager.Instance.questTitleText.text = title;
-            if (QuestManager.Instance.questDescriptionText != null) QuestManager.Instance.questDescriptionText.text = desc;
-        }
     }
 
     /// <summary>
@@ -200,5 +226,13 @@ public class BachDangStoryManager : MonoBehaviour
             UpdateUI();
             Debug.Log("[BachDangStory] Hoan thanh cam coc song Bach Dang!");
         }
+    }
+
+    public void OnReportStakesComplete()
+    {
+        if (currentState != StoryState.Act2_CompleteReturnToCamp) return;
+        currentState = StoryState.Act2_Completed;
+        UpdateUI();
+        Debug.Log("[BachDangStory] Hoan tat Hoi 2: tran dia coc Bach Dang da san sang!");
     }
 }
