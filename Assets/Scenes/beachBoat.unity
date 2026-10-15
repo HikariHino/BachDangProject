@@ -214980,7 +214980,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 0
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 1e0959a9ccb93874a90924ee4ebbbb2b, type: 2}
+  m_Mesh: {fileID: 4300000, guid: 8f1306ee3a865e949bdb49190ca9df7c, type: 2}
 --- !u!205 &588235273
 LODGroup:
   m_ObjectHideFlags: 0
@@ -482967,6 +482967,7 @@ Transform:
   - {fileID: 695347695}
   - {fileID: 1352561720}
   - {fileID: 1048733485}
+  - {fileID: 1366493763}
   m_Father: {fileID: 2088423294}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1316563011
@@ -503745,6 +503746,59 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1366412219}
   m_Mesh: {fileID: 4300000, guid: 8e1ce4464b0136d4a8723645ae977cc7, type: 2}
+--- !u!1 &1366493762
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1366493763}
+  - component: {fileID: 1366493764}
+  m_Layer: 0
+  m_Name: Stage_Stair_Walkway
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1366493763
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1366493762}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.15847911, y: 0.75742114, z: 0.19969319, w: 0.6010992}
+  m_LocalPosition: {x: -5558.905, y: 138.95102, z: 1137.5812}
+  m_LocalScale: {x: 1, y: 1.0000002, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1316235881}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &1366493764
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1366493762}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 22, y: 0.4, z: 68.454666}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1366787647
 GameObject:
   m_ObjectHideFlags: 0
@@ -559725,6 +559779,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967291
   collisionRadius: 2.4
+  enableShoulderAim: 0
   aimDistance: 28
   aimFieldOfView: 48
 --- !u!81 &1514702882

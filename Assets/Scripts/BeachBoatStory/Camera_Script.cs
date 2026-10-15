@@ -14,6 +14,8 @@ public class Camera_Script : MonoBehaviour
     public float positionSmoothTime = .06f;
     public LayerMask obstructionLayers = Physics.DefaultRaycastLayers;
     public float collisionRadius = 1.2f;
+    [Tooltip("Optional shoulder aim. Off matches Thai's player camera, where right mouse does not zoom.")]
+    public bool enableShoulderAim = false;
     public float aimDistance = 14f, aimFieldOfView = 48f;
     public float Yaw => yaw;
     public bool IsAiming { get; private set; }
@@ -55,7 +57,7 @@ public class Camera_Script : MonoBehaviour
         // Click to resume after unlocking; the opening itself never skips on mouse input.
         if (!BeachBoatQuestSession.InputBlocked && !InputCaptured && Input.GetMouseButtonDown(0) &&
             (UnityEngine.EventSystems.EventSystem.current == null || !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())) CaptureCursor(true);
-        IsAiming = InputCaptured && Input.GetMouseButton(1);
+        IsAiming = enableShoulderAim && InputCaptured && Input.GetMouseButton(1);
         IsFreeLooking = InputCaptured && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
         if (InputCaptured)
         {

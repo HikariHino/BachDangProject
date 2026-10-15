@@ -7,7 +7,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody), typeof(CapsuleCollider))]
 public class Character_Movement : MonoBehaviour
 {
-    [Header("Movement (world units, character scale 7)")]
+    [Header("Movement (world units; scene values match character scale)")]
     public float walkSpeed = 30f, runSpeed = 55f, rotationSpeed = 15f;
     public float acceleration = 120f, braking = 180f;
     public float jumpHeight = 5f, gravityMultiplier = 3f;
@@ -18,6 +18,8 @@ public class Character_Movement : MonoBehaviour
     Transform view;
     Vector2 input;
     bool sprint, aim, freeLook;
+    bool risingFromJump;
+    Vector3 groundNormal = Vector3.up;
     float jumpUntil = -1;
     readonly RaycastHit[] groundHits = new RaycastHit[24];
     readonly List<Animator> animators = new List<Animator>();
@@ -53,9 +55,9 @@ public class Character_Movement : MonoBehaviour
     {
         bool allowed = !BeachBoatQuestSession.InputBlocked && Cursor.lockState == CursorLockMode.Locked;
         input = allowed ? Vector2.ClampMagnitude(new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")), 1) : Vector2.zero;
-        aim = allowed && Input.GetMouseButton(1);
+        aim = allowed && orbit != null && orbit.enableShoulderAim && Input.GetMouseButton(1);
         freeLook = allowed && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
-        sprint = allowed && !aim && input.y > .1f && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
+        sprint = allowed && !aim && input.sqrMagnitude > .01f && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
         if (allowed && Input.GetKeyDown(KeyCode.Space)) jumpUntil = Time.time + .15f;
         if (!allowed) jumpUntil = -1;
         UpdateAnimation(input.sqrMagnitude > .01f, sprint);
@@ -77,13 +79,22 @@ public class Character_Movement : MonoBehaviour
         Vector3 direction = forward * input.y + right * input.x;
         Vector3 desired = direction * (sprint ? runSpeed : walkSpeed) * (aim ? .65f : 1f);
         Vector3 velocity = body.linearVelocity;
-        Vector3 horizontal = Vector3.MoveTowards(new Vector3(velocity.x, 0, velocity.z), desired,
-            (input.sqrMagnitude > .01f ? acceleration : braking) * Time.fixedDeltaTime);
-        velocity.x = horizontal.x; velocity.z = horizontal.z;
+        float change = (input.sqrMagnitude > .01f ? acceleration : braking) * Time.fixedDeltaTime;
+        if (IsGrounded)
+        {
+            // Drive along the support plane. Horizontal-only drive stalls against stair ramps.
+            Vector3 alongGround = Vector3.ProjectOnPlane(desired, groundNormal).normalized * desired.magnitude;
+            velocity = Vector3.MoveTowards(Vector3.ProjectOnPlane(velocity, groundNormal), alongGround, change);
+        }
+        else
+        {
+            Vector3 horizontal = Vector3.MoveTowards(new Vector3(velocity.x, 0, velocity.z), desired, change);
+            velocity.x = horizontal.x; velocity.z = horizontal.z;
+        }
         if (IsGrounded && jumpUntil >= Time.time)
         {
             velocity.y = Mathf.Sqrt(2 * Mathf.Abs(Physics.gravity.y) * Mathf.Max(1, gravityMultiplier) * Mathf.Max(.1f, jumpHeight));
-            jumpUntil = -1; IsGrounded = false;
+            jumpUntil = -1; IsGrounded = false; risingFromJump = true;
             foreach (var anim in jumping) if (anim != null && anim.isActiveAndEnabled) anim.SetTrigger(Jump);
         }
         body.linearVelocity = velocity;
@@ -96,19 +107,24 @@ public class Character_Movement : MonoBehaviour
     }
     bool ProbeGround(float scale)
     {
-        if (body.linearVelocity.y > .5f * scale) return false;
+        // Ascending a slope is still grounded; only an actual jump suppresses support checks.
+        if (risingFromJump && body.linearVelocity.y > 0) return false;
+        risingFromJump = false;
         var bounds = capsule.bounds;
         float radius = Mathf.Min(bounds.extents.x, bounds.extents.z) * .9f;
         float skin = .08f * scale;
         var center = new Vector3(bounds.center.x, bounds.min.y + radius + skin, bounds.center.z);
         int count = Physics.SphereCastNonAlloc(center, Mathf.Max(.01f, radius), Vector3.down, groundHits, skin + .12f * scale, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        float nearest = float.PositiveInfinity;
+        groundNormal = Vector3.up;
         for (int i = 0; i < count; i++)
         {
             var hit = groundHits[i];
             if (hit.collider == null || hit.transform == transform || hit.transform.IsChildOf(transform)) continue;
-            if (Vector3.Dot(hit.normal, Vector3.up) >= .65f) return true;
+            if (Vector3.Dot(hit.normal, Vector3.up) >= .65f && hit.distance < nearest)
+            { nearest = hit.distance; groundNormal = hit.normal; }
         }
-        return false;
+        return !float.IsPositiveInfinity(nearest);
     }
     void UpdateAnimation(bool moving, bool fast)
     {
@@ -121,7 +137,7 @@ public class Character_Movement : MonoBehaviour
     }
     void OnDisable()
     {
-        input = Vector2.zero; jumpUntil = -1;
+        input = Vector2.zero; jumpUntil = -1; risingFromJump = false;
         if (body != null && !body.isKinematic) body.linearVelocity = new Vector3(0, body.linearVelocity.y, 0);
         UpdateAnimation(false, false);
     }
