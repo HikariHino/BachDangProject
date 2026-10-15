@@ -8,7 +8,9 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
         NgoQuyen,
         CampGate,
         VillageGate,
-        RiverStakes
+        RiverStakes,
+        Dock,
+        CampRiverGate
     }
 
     public Target target;
@@ -86,6 +88,10 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
                 return state == BachDangStoryManager.StoryState.Act2_ReturnToCampGate;
             case Target.RiverStakes:
                 return state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver;
+            case Target.Dock:
+                return state == BachDangStoryManager.StoryState.Act2_AtDock;
+            case Target.CampRiverGate:
+                return state == BachDangStoryManager.StoryState.Act2_GoToDock;
             default:
                 return false;
         }

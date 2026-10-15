@@ -41,30 +41,4 @@ public class WoodQuestManager : MonoBehaviour
         CollectedWood++;
         Debug.Log($"Đã nhặt gỗ: {CollectedWood}/{totalWood}");
     }
-
-    private void OnGUI()
-    {
-        // Ẩn bảng gỗ cho đến khi nhận lệnh.
-        if (!QuestStarted) return;
-
-        GUIStyle style = new GUIStyle(GUI.skin.label);
-        style.fontSize = 24;
-        style.fontStyle = FontStyle.Bold;
-        style.normal.textColor = Color.white;
-
-        GUI.Label(
-            new Rect(20, 20, 420, 40),
-            $"Nhiệm vụ: Thu thập gỗ ({CollectedWood}/{totalWood})",
-            style
-        );
-
-        if (IsComplete)
-        {
-            GUI.Label(
-                new Rect(20, 60, 420, 40),
-                "Đã thu thập đủ gỗ!",
-                style
-            );
-        }
-    }
 }

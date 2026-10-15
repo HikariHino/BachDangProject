@@ -74,7 +74,10 @@ public class OpeningEvent : MonoBehaviour
                     var movement = t.GetComponent<Character_Movement>();
                     if (movement != null)
                     {
-                        int score = 100 + (t.gameObject.activeInHierarchy ? 10 : 0);
+                        // Prefer the explicitly tagged gameplay player over an
+                        // active duplicate/root that can remain at the spawn point.
+                        int score = 100 + (t.CompareTag("Player") ? 1000 : 0) +
+                                    (t.gameObject.activeInHierarchy ? 10 : 0);
                         if (t.name == "Player_Main_Animated") score += 5;
                         if (score > bestScore)
                         {
