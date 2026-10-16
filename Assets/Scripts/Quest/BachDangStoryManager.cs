@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Quản lý tiến trình cốt truyện chính Bạch Đằng 938:
@@ -17,8 +18,10 @@ public class BachDangStoryManager : MonoBehaviour
         Act2_ReturnToCampGate = 3,    // Thu thập đủ 5 gỗ -> Ra Cổng Làng bấm E về Trại
         Act2_ReportToNgoQuyen = 4,    // Về Trại -> Báo cáo Ngô Quyền nhận lệnh cắm cọc
         Act2_PlantStakesAtRiver = 5,  // Ra bờ sông cắm cọc Bạch Đằng
-        Act2_CompleteReturnToCamp = 6, // Cắm cọc xong -> báo cáo lần cuối
-        Act2_Completed = 7
+        Act2_CompleteReturnToCamp = 6,
+        Act2_Completed = 7,
+        Act2_GoToDock = 8,           // Ra cổng trại để đến bến thuyền
+        Act2_AtDock = 9               // Ở bến thuyền -> Bấm E lên thuyền ra bờ sông
     }
 
     [Header("Trạng thái hiện tại")]
@@ -57,6 +60,18 @@ public class BachDangStoryManager : MonoBehaviour
     private void Start()
     {
         FindPlayer();
+
+        // Runtime fallback for TestQuest: if the automatic scene bootstrap did
+        // not create its interaction proxy, create the story setup without
+        // moving the player from their current spawn position.
+        if (SceneManager.GetActiveScene().name == "TestQuest" &&
+            (GameObject.Find("CampGate_ToVillage") == null ||
+             GameObject.Find("CampGate_ToRiver") == null ||
+             GameObject.Find("RiverGate_ToCamp") == null))
+        {
+            BachDangStoryRuntimeBootstrap.SetupAllStoryElements(false);
+        }
+
         UpdateUI();
     }
 
@@ -81,7 +96,32 @@ public class BachDangStoryManager : MonoBehaviour
         promptMessage = message;
         if (interactPromptText != null && show) interactPromptText.text = message;
         if (interactPromptPanel != null)
-            interactPromptPanel.SetActive(show && !OpeningEvent.IsOpeningActive);
+        {
+            bool shouldShow = show && !OpeningEvent.IsOpeningActive;
+            if (shouldShow) EnsureUiHierarchyVisible(interactPromptPanel);
+            interactPromptPanel.SetActive(shouldShow);
+        }
+    }
+
+    private static void EnsureUiHierarchyVisible(GameObject panel)
+    {
+        if (panel == null) return;
+
+        Transform current = panel.transform;
+        while (current != null)
+        {
+            if (!current.gameObject.activeSelf)
+                current.gameObject.SetActive(true);
+
+            var canvas = current.GetComponent<Canvas>();
+            if (canvas != null)
+            {
+                if (!canvas.enabled) canvas.enabled = true;
+                return;
+            }
+
+            current = current.parent;
+        }
     }
 
     private void OnGUI()
@@ -153,6 +193,14 @@ public class BachDangStoryManager : MonoBehaviour
                 desc = "- Đến đài chỉ huy gặp lại Chủ tướng Ngô Quyền.\n- Báo cáo số cọc gỗ đã chuẩn bị.";
                 break;
 
+            case StoryState.Act2_GoToDock:
+                desc = "- Đi đến cổng thứ hai của doanh trại.\n- Tìm lối ra bến thuyền.";
+                break;
+
+            case StoryState.Act2_AtDock:
+                desc = "- Đã đến bến thuyền.\n- Bấm [E] để lên thuyền ra bãi cọc Bạch Đằng.";
+                break;
+
             case StoryState.Act2_PlantStakesAtRiver:
                 desc = "- Ra mép nước sông Bạch Đằng.\n- Bấm [E] tại bãi cọc để đóng cọc xuống lòng sông.";
                 break;
@@ -167,7 +215,11 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
         }
 
-        if (objectiveUIPanel != null) objectiveUIPanel.SetActive(true);
+        if (objectiveUIPanel != null)
+        {
+            EnsureUiHierarchyVisible(objectiveUIPanel);
+            objectiveUIPanel.SetActive(true);
+        }
         if (objectiveTitleText != null) objectiveTitleText.text = title;
         if (objectiveDescText != null) objectiveDescText.text = desc;
 
@@ -209,7 +261,7 @@ public class BachDangStoryManager : MonoBehaviour
     {
         if (currentState == StoryState.Act2_ReportToNgoQuyen)
         {
-            currentState = StoryState.Act2_PlantStakesAtRiver;
+            currentState = StoryState.Act2_GoToDock;
             UpdateUI();
             Debug.Log("[BachDangStory] Ngo Quyen giao lenh cam coc song Bach Dang!");
         }

@@ -149,6 +149,10 @@ public sealed class StoryDialogueUI : MonoBehaviour
     {
         if (panel == null) BuildUI();
 
+        // Hide any active [E] interaction prompt before showing the dialogue hint.
+        // This prevents both messages from occupying the same bottom-center area.
+        BachDangStoryManager.Instance?.SetInteractPrompt(false);
+
         lastInputFrame = Time.frameCount;
         speakerText.text = speaker;
         bodyText.text = line;

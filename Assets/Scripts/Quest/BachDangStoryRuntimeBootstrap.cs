@@ -215,11 +215,17 @@ public static class BachDangStoryRuntimeBootstrap
         GameObject campRiverGate = GameObject.Find("CampGate_ToRiver");
         if (campRiverGate == null) campRiverGate = new GameObject("CampGate_ToRiver");
         // Đầu đường ván ra bến thuyền là cổng thứ hai ở cuối doanh trại.
-        campRiverGate.transform.position = GroundPosition(new Vector3(-595f, 0f, 250f), 0.1f);
+        campRiverGate.transform.position = new Vector3(-632.13f, 31.13f, 428.28f);
         campRiverGate.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
         var riverOut = campRiverGate.GetComponent<CampGateTransition>() ?? campRiverGate.AddComponent<CampGateTransition>();
         riverOut.gateType = CampGateTransition.GateType.CampRiverGate;
-        riverOut.interactDistance = 4f;
+        riverOut.interactDistance = 15f;
+        riverOut.enabled = true;
+        riverOut.RefreshBarrier();
+        EnsureLandmark(
+        campRiverGate,
+        StoryLandmarkMarker.Target.CampRiverGate,
+        "CỔNG RA BẾN\n[E] ĐI RA BẾN");
 
         GameObject riverGate = GameObject.Find("RiverGate_ToCamp");
         if (riverGate == null) riverGate = new GameObject("RiverGate_ToCamp");
@@ -228,6 +234,7 @@ public static class BachDangStoryRuntimeBootstrap
         var riverReturn = riverGate.GetComponent<CampGateTransition>() ?? riverGate.AddComponent<CampGateTransition>();
         riverReturn.gateType = CampGateTransition.GateType.RiverGate;
         riverReturn.interactDistance = 8f;
+        EnsureLandmark(riverGate, StoryLandmarkMarker.Target.Dock, "BẾN THUYỀN\n[E] LÊN THUYỀN");
         riverOut.destinationTarget = riverGate.transform;
         riverReturn.destinationTarget = campGate.transform;
 
@@ -542,7 +549,10 @@ public static class BachDangStoryRuntimeBootstrap
             }
             if (!hasBoatBounds) bounds = renderers[0].bounds;
             Vector3 scale = boatRoot.lossyScale;
-            var box = boatRoot.GetComponent<BoxCollider>() ?? boatRoot.gameObject.AddComponent<BoxCollider>();
+            var box = boatRoot.GetComponent<BoxCollider>();
+            // Unity destroyed components compare equal to null through Unity's
+            // operator, but ?? only checks CLR null and can return a stale wrapper.
+            if (box == null) box = boatRoot.gameObject.AddComponent<BoxCollider>();
             box.isTrigger = false;
             box.center = boatRoot.InverseTransformPoint(bounds.center);
             box.size = new Vector3(bounds.size.x / Mathf.Max(0.001f, Mathf.Abs(scale.x)),
