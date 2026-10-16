@@ -38,6 +38,7 @@ public class CampGateTransition : MonoBehaviour
 
     public bool IsInRange(Transform player)
     {
+        if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard) return false;
         if (player == null || !player.gameObject.activeInHierarchy) return false;
         var offset = player.position - transform.position;
         offset.y = 0;
@@ -57,6 +58,7 @@ public class CampGateTransition : MonoBehaviour
     private void Update()
     {
         if (BeachBoatQuestSession.InputBlocked) return;
+        if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard) return;
         var story = BachDangStoryManager.Instance;
         if (story == null) return;
 
@@ -85,7 +87,7 @@ public class CampGateTransition : MonoBehaviour
         else if (gateType == GateType.CampRiverGate && story.currentState == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver)
         {
             canInteract = true;
-            promptMessage = "[E] Ra bờ sông đóng cọc";
+            promptMessage = "[E] Ra bến thuyền đóng cọc";
         }
         else if (gateType == GateType.RiverGate && story.currentState == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)
         {
@@ -167,7 +169,7 @@ public class CampGateTransition : MonoBehaviour
         else if (gateType == GateType.CampRiverGate || gateType == GateType.RiverGate)
         {
             string narrative = gateType == GateType.CampRiverGate
-                ? "Mang cọc ra bờ sông Bạch Đằng để dựng trận địa."
+                ? "Mang cọc ra bến. Lên thuyền, chèo tới các điểm đánh dấu trong trận địa cọc dưới sông."
                 : "Trận địa cọc đã hoàn thành. Trở về doanh trại báo tin cho Chủ tướng.";
             System.Action move = () =>
             {

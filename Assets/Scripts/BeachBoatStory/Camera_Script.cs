@@ -89,6 +89,8 @@ public class Camera_Script : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             if (hits[i].collider == null || hits[i].transform == target || hits[i].transform.IsChildOf(target)) continue;
+            if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard &&
+                hits[i].transform.IsChildOf(QuestRowboat.Instance.transform)) continue;
             allowed = Mathf.Min(allowed, Mathf.Max(.1f, hits[i].distance - .2f));
         }
         return anchor + offset / length * allowed;

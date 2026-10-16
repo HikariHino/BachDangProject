@@ -35,6 +35,17 @@ namespace BeachBoatStory
             var state = story.currentState;
             if (state == BachDangStoryManager.StoryState.Act2_Completed) return null;
             Transform best = null; float distance = float.PositiveInfinity;
+            var boat = QuestRowboat.Instance;
+            if (boat != null && boat.IsAboard)
+            {
+                if (state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)
+                { title = "Chèo về bến • dừng thuyền, bấm E lên bờ"; return boat.dockPoint; }
+                int point = stakes != null ? stakes.NearestUnplanted(boat.transform.position) : -1;
+                if (point >= 0)
+                { title = $"Chèo tới điểm {point + 1} • {stakes.PlantedCount}/{stakes.RequiredCount}"; return stakes.placements[point].approach; }
+            }
+            if (boat != null && !boat.IsAboard && state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver)
+                Consider(boat.boardingPoint, "Bến thuyền • E lên thuyền", ref best, ref distance, ref title);
             foreach (var gate in gates)
                 if (gate != null && gate.isActiveAndEnabled && gate.destinationTarget != null && gate.IsAvailable(state))
                     Consider(gate.transform, gate.gateType == CampGateTransition.GateType.CampGate ? "Cổng sang làng ven sông" :
@@ -44,7 +55,7 @@ namespace BeachBoatStory
                 state == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen ||
                 state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)
                 if (commander != null) Consider(commander.transform, "Chủ tướng Ngô Quyền", ref best, ref distance, ref title);
-            if (state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver && stakes != null)
+            if (boat == null && state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver && stakes != null)
             {
                 int index = stakes.NearestUnplanted(session.player.transform.position);
                 if (index >= 0) Consider(stakes.placements[index].approach,

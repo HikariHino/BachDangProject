@@ -40,20 +40,21 @@ public class TideSystem : MonoBehaviour
 
     void Awake()
     {
-        // Preserve the legacy low-tide correction in the scene's world units.
-        // Serialized tide levels are already converted by the editor.
-        worldScale = BachDangWorldScale.ForScene(gameObject.scene);
-        if (lowTideY > 10.1f * worldScale)
-        {
-            lowTideY = 10.0f * worldScale;
-        }
-
         currentTargetY = transform.position.y;
         CurrentWaterHeight = transform.position.y;
     }
 
     void Start()
     {
+        // Preserve the legacy low-tide correction in the scene's world units.
+        // The scene must be fully loaded: ForScene can return 1 during Awake,
+        // which incorrectly lowered beachBoat's serialized low tide from 70 to 10.
+        worldScale = BachDangWorldScale.ForScene(gameObject.scene);
+        if (lowTideY > 10.1f * worldScale)
+        {
+            lowTideY = 10.0f * worldScale;
+        }
+
         // XÓA NGAY Collider trên mặt nước (nếu có)! 
         // Nước là chất lỏng, tuyệt đối không được dùng MeshCollider cứng gây hất văng hay quay mòng mòng thuyền!
         Collider col = GetComponent<Collider>();

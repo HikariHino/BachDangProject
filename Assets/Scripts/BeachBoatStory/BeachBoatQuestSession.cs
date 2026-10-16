@@ -21,6 +21,7 @@ namespace BeachBoatStory
         bool tourAudioEnabled;
         AudioListener tourAudio;
         GameObject questCanvas;
+        TMP_Text controlsText;
         NPCDialogue[] talkers;
         NPCQuestGiver questGiver;
         CampGateTransition[] gates;
@@ -97,10 +98,11 @@ namespace BeachBoatStory
             if (tourAudio != null) tourAudio.enabled = !value;
             var audio = storyCamera.GetComponent<AudioListener>(); if (audio != null) audio.enabled = value;
             for (int i = 0; i < tourControls.Length; i++) if (tourControls[i] != null) tourControls[i].enabled = !value && savedControls[i];
-            player.GetComponent<Character_Movement>().enabled = value;
+            bool aboard = QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard;
+            player.GetComponent<Character_Movement>().enabled = value && !aboard;
             var body = player.GetComponent<Rigidbody>();
             if (!body.isKinematic) body.linearVelocity = Vector3.zero;
-            body.isKinematic = !value;
+            body.isKinematic = !value || aboard;
             var orbit = storyCamera.GetComponent<Camera_Script>(); orbit.enabled = value;
             if (value) orbit.SnapToTarget();
             orbit.CaptureCursor(value);
@@ -108,6 +110,10 @@ namespace BeachBoatStory
         }
         void Update()
         {
+            if (controlsText != null)
+                controlsText.text = QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard
+                    ? "W/S: chèo tới/lùi • A/D: lái thuyền • E: đóng cọc / lên bến • F9: sa bàn/chơi • Esc: thả chuột"
+                    : "WASD: di chuyển • Shift: chạy • Space: nhảy • E: tương tác • F9: sa bàn/chơi • Esc: thả chuột";
             if (Input.GetKeyDown(KeyCode.F9) && !OpeningEvent.IsOpeningActive &&
                 !(StoryDialogueUI.Instance?.IsOpen ?? false) && !(ScreenFader.Instance?.IsTransitioning ?? false)) SetStoryMode(!storyMode);
         }
@@ -146,6 +152,7 @@ namespace BeachBoatStory
             story.interactPromptText = Text("Prompt",prompt.transform,new Vector2(.02f,.06f),new Vector2(.98f,.94f),23);
             story.interactPromptText.alignment = TextAlignmentOptions.Center; prompt.SetActive(false);
             var keys = Text("Controls",canvas.transform,new Vector2(.02f,.01f),new Vector2(.98f,.07f),17);
+            controlsText = keys;
             keys.text = "WASD: di chuyển • Shift: chạy • Space: nhảy • E: tương tác • F9: sa bàn/chơi • Esc: thả chuột";
             var guide = Panel("RouteGuide", canvas.transform, new Vector2(.32f,.85f), new Vector2(.67f,.97f), new Color(.04f,.035f,.025f,.84f));
             var pointer = Text("Direction",guide.transform,new Vector2(.02f,.2f),new Vector2(.16f,.8f),34);

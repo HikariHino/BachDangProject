@@ -181,7 +181,7 @@ public class BachDangStoryManager : MonoBehaviour
                 title = "Nhiệm vụ 2: Đóng cọc";
                 desc = zone != null && zone.IsPlanting
                     ? $"Đang đóng cọc...\nĐã hoàn thành: {zone.PlantedCount}/{zone.RequiredCount} vị trí"
-                    : $"- Qua cổng trại ra bãi cọc.\n- Đến từng vòng đánh dấu, bấm [E] để đóng cọc.\n- Tiến độ: {zone?.PlantedCount ?? 0}/{zone?.RequiredCount ?? totalWoodRequired}";
+                    : $"- Qua cổng ra bến, bấm [E] lên thuyền.\n- Chèo tới điểm đánh dấu dưới sông, dừng và bấm [E].\n- Tiến độ: {zone?.PlantedCount ?? 0}/{zone?.RequiredCount ?? totalWoodRequired}";
                 break;
 
             case StoryState.Act2_CompleteReturnToCamp:
