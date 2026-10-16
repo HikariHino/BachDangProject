@@ -26,6 +26,7 @@ namespace BeachBoatStory
         CampGateTransition[] gates;
         public static bool InputBlocked => InteractionBlocked || StoryDialogueUI.InputConsumedThisFrame;
         public static bool InteractionBlocked => OpeningEvent.IsOpeningActive ||
+            (RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsPlanting) ||
             (Instance != null && !Instance.storyMode) ||
             (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen) ||
             (ScreenFader.Instance != null && ScreenFader.Instance.IsTransitioning);

@@ -104,7 +104,7 @@ public class NPCQuestGiver : MonoBehaviour
                 }
                 else if (story.currentState == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen)
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Tốt lắm. Hãy đưa số cọc này ra mép sông, cho quân đóng thành trận địa. Việc này quyết định thắng bại.", story.OnReportToNgoQuyenAct2);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Tốt lắm. Mang năm cọc này qua cổng ra bãi sông. Ta đã đánh dấu năm vị trí: đến từng vòng đánh số và bấm E để đóng một cọc. Xong cả năm, hãy về báo cáo. Việc này quyết định thắng bại.", story.OnReportToNgoQuyenAct2);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }

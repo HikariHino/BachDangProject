@@ -45,7 +45,11 @@ namespace BeachBoatStory
                 state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)
                 if (commander != null) Consider(commander.transform, "Chủ tướng Ngô Quyền", ref best, ref distance, ref title);
             if (state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver && stakes != null)
-                Consider(stakes.transform, "Bãi cọc Bạch Đằng", ref best, ref distance, ref title);
+            {
+                int index = stakes.NearestUnplanted(session.player.transform.position);
+                if (index >= 0) Consider(stakes.placements[index].approach,
+                    $"Vị trí đóng cọc {index + 1} • {stakes.PlantedCount}/{stakes.RequiredCount}", ref best, ref distance, ref title);
+            }
             if (state == BachDangStoryManager.StoryState.Act2_CollectWoodInVillage)
                 foreach (var wood in session.woodItems)
                     if (wood != null && wood.isActiveAndEnabled)

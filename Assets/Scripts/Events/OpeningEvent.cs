@@ -242,6 +242,15 @@ public class OpeningEvent : MonoBehaviour
 
     private Canvas _openingCanvas;
 
+    // Bootstrap can create quest UI after this component's Start has run.
+    public void RefreshHiddenUI()
+    {
+        if (!IsOpeningActive || isOpeningEnded) return;
+        if (_openingCanvas == null && openingPanel != null)
+            _openingCanvas = openingPanel.GetComponentInParent<Canvas>();
+        SuppressQuestUI();
+    }
+
     private void SuppressQuestUI()
     {
         // Tìm opening canvas nếu chưa có

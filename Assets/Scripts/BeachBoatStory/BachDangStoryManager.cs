@@ -177,7 +177,11 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
 
             case StoryState.Act2_PlantStakesAtRiver:
-                desc = "- Bấm [E] ở cổng trại để ra bờ sông.\n- Đến bãi cọc, bấm [E] để đóng cọc.";
+                var zone = RiverStakeZone.Instance;
+                title = "Nhiệm vụ 2: Đóng cọc";
+                desc = zone != null && zone.IsPlanting
+                    ? $"Đang đóng cọc...\nĐã hoàn thành: {zone.PlantedCount}/{zone.RequiredCount} vị trí"
+                    : $"- Qua cổng trại ra bãi cọc.\n- Đến từng vòng đánh dấu, bấm [E] để đóng cọc.\n- Tiến độ: {zone?.PlantedCount ?? 0}/{zone?.RequiredCount ?? totalWoodRequired}";
                 break;
 
             case StoryState.Act2_CompleteReturnToCamp:
@@ -243,7 +247,7 @@ public class BachDangStoryManager : MonoBehaviour
     /// </summary>
     public void OnPlantStakesComplete()
     {
-        if (currentState == StoryState.Act2_PlantStakesAtRiver)
+        if (currentState == StoryState.Act2_PlantStakesAtRiver && RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsComplete)
         {
             currentState = StoryState.Act2_CompleteReturnToCamp;
             UpdateUI();
