@@ -63,6 +63,18 @@ public class NPCQuestGiver : MonoBehaviour
             canTalk = true;
             prompt = "[E] Báo cáo đã hoàn thành trận địa cọc";
         }
+        else if ((EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsConfigured) &&
+                 (story.currentState == BachDangStoryManager.StoryState.Act2_Completed ||
+                  story.currentState == BachDangStoryManager.StoryState.Act3_PrepareForBattle))
+        {
+            canTalk = true;
+            prompt = "[E] Nhận lệnh TỔNG TIẾN CÔNG";
+        }
+        else if (story.currentState == BachDangStoryManager.StoryState.Act3_Victory)
+        {
+            canTalk = true;
+            prompt = "[E] Báo cáo Đại thắng Bạch Đằng 938";
+        }
 
         if (dist <= interactDistance && canTalk)
         {
@@ -104,13 +116,27 @@ public class NPCQuestGiver : MonoBehaviour
                 }
                 else if (story.currentState == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen)
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Tốt lắm. Mang năm cọc này qua cổng ra bến, rồi lên thuyền. Chèo tới năm điểm đánh dấu trong trận địa cọc dưới sông. Dừng thuyền, bấm E để đóng cọc. Xong cả năm, chèo về bến rồi về báo cáo. Việc này quyết định thắng bại.", story.OnReportToNgoQuyenAct2);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Tốt lắm. Mang năm cọc này qua cổng ra bến, rồi lên thuyền. Chèo tới năm điểm đánh dấu ngoài sông. Ở mỗi điểm, dừng thuyền và bấm E để cùng quân sĩ dựng một cụm cọc. Làm đủ cả năm cụm rồi chèo về bến báo cáo. Triều rút sẽ lộ cọc, triều lên sẽ giấu kín trận địa. Việc này quyết định thắng bại.", story.OnReportToNgoQuyenAct2);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }
                 else if (story.currentState == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)
                 {
                     StoryDialogueUI.Instance?.Show("Ngô Quyền", "Trận địa cọc đã hoàn thành. Toàn quân hãy giữ kín kế hoạch, chờ thủy triều và thời cơ đánh giặc!", story.OnReportStakesComplete);
+                    story.SetInteractPrompt(false, owner: this);
+                    if (interactPromptUI != null) interactPromptUI.SetActive(false);
+                }
+                else if ((EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsConfigured) &&
+                         (story.currentState == BachDangStoryManager.StoryState.Act2_Completed ||
+                          story.currentState == BachDangStoryManager.StoryState.Act3_PrepareForBattle))
+                {
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Quân Nam Hán đã kéo thuyền đến xâm phạm. Trận địa cọc đã sẵn sàng. Hãy lên thuyền chỉ huy, chờ thủy triều rút - bãi cọc sẽ lộ ra đâm thủng thuyền giặc. Ta sẽ đại thắng ngay trên sông Bạch Đằng hôm nay!", story.OnTalkToNgoQuyenAct3);
+                    story.SetInteractPrompt(false, owner: this);
+                    if (interactPromptUI != null) interactPromptUI.SetActive(false);
+                }
+                else if (story.currentState == BachDangStoryManager.StoryState.Act3_Victory)
+                {
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Đại thắng! Quân Nam Hán bị đánh tan trên sông Bạch Đằng. Từ nay, nước Việt ta bước vào thời kỳ độc lập, tự chủ. Toàn quân trở về đại bản doanh báo công!", story.OnVictoryReported);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }

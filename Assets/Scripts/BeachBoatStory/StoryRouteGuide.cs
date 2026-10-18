@@ -11,6 +11,7 @@ namespace BeachBoatStory
         NPCQuestGiver commander;
         RiverStakeZone stakes;
         CampGateTransition[] gates;
+        BeachBoatMinigameStation[] activities;
         GameObject panel;
         TMP_Text caption, arrow;
         Transform target;
@@ -22,6 +23,7 @@ namespace BeachBoatStory
             commander = owner.GetComponentInChildren<NPCQuestGiver>(true);
             stakes = owner.GetComponentInChildren<RiverStakeZone>(true);
             gates = owner.GetComponentsInChildren<CampGateTransition>(true);
+            activities = FindObjectsByType<BeachBoatMinigameStation>(FindObjectsInactive.Exclude);
             panel = box; caption = text; arrow = pointer;
         }
 
@@ -33,16 +35,42 @@ namespace BeachBoatStory
             title = null;
             if (story == null || session.player == null) return null;
             var state = story.currentState;
-            if (state == BachDangStoryManager.StoryState.Act2_Completed) return null;
+            if (state == BachDangStoryManager.StoryState.Act2_Completed &&
+                (EnemyFleetDirector.Instance == null || !EnemyFleetDirector.Instance.IsConfigured)) return null;
             Transform best = null; float distance = float.PositiveInfinity;
             var boat = QuestRowboat.Instance;
+            if (state == BachDangStoryManager.StoryState.Act1_Training ||
+                state == BachDangStoryManager.StoryState.Act2_SupplyPreparation)
+            {
+                var required = state == BachDangStoryManager.StoryState.Act1_Training
+                    ? BeachBoatMinigameStation.ActivityKind.WarDrum
+                    : BeachBoatMinigameStation.ActivityKind.SupplyRelay;
+                foreach (var activity in activities)
+                    if (activity != null && activity.kind == required)
+                        Consider(activity.transform, required == BeachBoatMinigameStation.ActivityKind.WarDrum
+                            ? "Trống trận • học hiệu lệnh" : "Điểm tập kết cọc và vật tư",
+                            ref best, ref distance, ref title);
+                return best;
+            }
+            if (state == BachDangStoryManager.StoryState.Act3_BattleInProgress)
+            {
+                var fleet = EnemyFleetDirector.Instance;
+                if (fleet != null)
+                    foreach (var enemy in fleet.enemyShips)
+                        if (enemy != null && enemy.gameObject.activeInHierarchy)
+                            Consider(enemy.transform, enemy.isDestroyed ? "Thuyền địch đang chìm" : "Thuyền địch đang vào bãi cọc",
+                                ref best, ref distance, ref title);
+                return best;
+            }
             if (boat != null && boat.IsAboard)
             {
-                if (state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)
+                if (state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver && stakes != null && stakes.RecoveryRequired && stakes.RecoveryTarget != null)
+                { title = "Bó cọc bị trôi • dừng thuyền, bấm E để vớt"; return stakes.RecoveryTarget; }
+                if (state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp || state == BachDangStoryManager.StoryState.Act3_Victory)
                 { title = "Chèo về bến • dừng thuyền, bấm E lên bờ"; return boat.dockPoint; }
                 int point = stakes != null ? stakes.NearestUnplanted(boat.transform.position) : -1;
                 if (point >= 0)
-                { title = $"Chèo tới điểm {point + 1} • {stakes.PlantedCount}/{stakes.RequiredCount}"; return stakes.placements[point].approach; }
+                { title = $"Cụm cọc {point + 1} • Đã xong {stakes.CompletedClusterCount}/{stakes.ClusterCount} cụm"; return stakes.placements[point].approach; }
             }
             if (boat != null && !boat.IsAboard && state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver)
                 Consider(boat.boardingPoint, "Bến thuyền • E lên thuyền", ref best, ref distance, ref title);
@@ -65,6 +93,11 @@ namespace BeachBoatStory
                 foreach (var wood in session.woodItems)
                     if (wood != null && wood.isActiveAndEnabled)
                         Consider(wood.transform, "Cọc gỗ trong làng", ref best, ref distance, ref title);
+            if (state == BachDangStoryManager.StoryState.Act2_Completed || state == BachDangStoryManager.StoryState.Act3_PrepareForBattle ||
+                state == BachDangStoryManager.StoryState.Act3_Victory)
+                if (commander != null) Consider(commander.transform, "Chủ tướng Ngô Quyền", ref best, ref distance, ref title);
+            if (state == BachDangStoryManager.StoryState.Act3_WaitForLowTide && boat != null)
+                Consider(boat.boardingPoint, "Bến thuyền • E lên thuyền chiến đấu", ref best, ref distance, ref title);
             return best;
         }
 

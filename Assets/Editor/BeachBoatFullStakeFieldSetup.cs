@@ -1,0 +1,96 @@
+using System;
+using System.Linq;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using BeachBoatStory;
+
+public static class BeachBoatFullStakeFieldSetup
+{
+    [MenuItem("Bach Dang/Configure Complete Quest Stake Field")]
+    public static void Configure()
+    {
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if (Application.isPlaying || scene.path != "Assets/Scenes/beachBoat.unity" || scene.isDirty)
+            throw new InvalidOperationException("Open and save beachBoat in Edit Mode first.");
+        var zone = UnityEngine.Object.FindAnyObjectByType<BeachBoatStory.RiverStakeZone>();
+        var tide = UnityEngine.Object.FindAnyObjectByType<TideSystem>();
+        var terrain = Terrain.activeTerrain;
+        var stakes = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            .Where(t => t.gameObject.scene == scene && t.name.StartsWith("CocGo_Hang"))
+            .OrderBy(t => t.name, StringComparer.Ordinal).ToArray();
+        if (zone == null || tide == null || terrain == null || stakes.Length != 48 || zone.placements.Length != 5)
+            throw new InvalidOperationException("Expected the existing 48-stake river field.");
+        System.IO.Directory.CreateDirectory(".utmp/FullStakeField");
+        string backup = ".utmp/FullStakeField/beachBoat-before-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".unity";
+        if (!EditorSceneManager.SaveScene(scene, backup, true)) throw new InvalidOperationException("Backup failed.");
+        for (int i = 0; i < stakes.Length; i++)
+        {
+            var stake = stakes[i];
+            Undo.RecordObject(stake, "Fit stake below high tide");
+            Undo.RecordObject(stake.gameObject, "Reserve whole field for quest");
+            stake.gameObject.SetActive(true);
+            foreach (var child in stake.GetComponentsInChildren<Transform>(true))
+            { Undo.RecordObject(child.gameObject, "Enable planting animation"); GameObjectUtility.SetStaticEditorFlags(child.gameObject, 0); }
+            // World-space mesh corners remain accurate for inactive objects and rotated stakes.
+            var bounds = BoundsOf(stake);
+            float bottom = terrain.SampleHeight(stake.position) + terrain.transform.position.y - 8;
+            float top = Mathf.Lerp(tide.lowTideY, tide.highTideY, .48f + (i % 7) * .025f);
+            if (top <= bottom || bounds.size.y < .01f) throw new InvalidOperationException("Invalid stake bounds.");
+            stake.localScale *= (top - bottom) / bounds.size.y;
+            bounds = BoundsOf(stake);
+            stake.position += Vector3.up * (bottom - bounds.min.y);
+            bounds = BoundsOf(stake);
+            if (bounds.max.y <= tide.lowTideY + 10 || bounds.max.y >= tide.highTideY - 10)
+                throw new InvalidOperationException("Stake must emerge at low tide and stay well below high tide.");
+            stake.gameObject.SetActive(false);
+        }
+        Undo.RecordObject(zone, "Bind complete quest field");
+        zone.fieldStakes = stakes; zone.plantingDuration = 3;
+        // Five contiguous strips along the river, balanced at 10/10/10/9/9 stakes.
+        var ordered = Enumerable.Range(0, stakes.Length).OrderBy(i => BoundsOf(stakes[i]).center.z)
+            .ThenBy(i => BoundsOf(stakes[i]).center.x).ToArray();
+        // Authored approach positions verified reachable from the dock with all 48 stakes built at low tide.
+        // The west bank becomes too shallow beside the middle of the field.
+        var approaches = new[] { new Vector2(-1830, 1370), new Vector2(-1850, 1710),
+            new Vector2(-1810, 2070), new Vector2(-1910, 2410), new Vector2(-1830, 2710) };
+        int offset = 0;
+        for (int n = 0; n < zone.placements.Length; n++)
+        {
+            var point = zone.placements[n];
+            int size = stakes.Length / zone.placements.Length + (n < stakes.Length % zone.placements.Length ? 1 : 0);
+            point.stakeIndices = ordered.Skip(offset).Take(size).ToArray(); offset += size;
+            point.stake = point.stakeIndices.Select(i => stakes[i]).OrderBy(t => BoundsOf(t).center.x).First();
+            Undo.RecordObject(point.approach, "Keep boat clear of the new field");
+            point.approach.position = new Vector3(approaches[n].x, tide.transform.position.y + 1, approaches[n].y);
+            Undo.RecordObject(point.marker, "Hide completed work markers");
+            point.marker.SetActive(false);
+            var text = point.marker.GetComponentInChildren<TMPro.TMP_Text>(true);
+            Undo.RecordObject(text, "Explain cluster interaction");
+            text.text = $"CỤM {n + 1} • {size} CỌC • E";
+        }
+        EditorUtility.SetDirty(zone);
+        RenderSettings.skybox = UnityEngine.Object.FindAnyObjectByType<DayNightCycle>().skyboxMaterial;
+        EditorSceneManager.MarkSceneDirty(scene);
+        if (!EditorSceneManager.SaveScene(scene)) throw new InvalidOperationException("Scene save failed.");
+    }
+
+    static Bounds BoundsOf(Transform root)
+    {
+        var filters = root.GetComponentsInChildren<MeshFilter>(true);
+        bool found = false; Bounds result = default;
+        foreach (var filter in filters)
+        {
+            if (filter.sharedMesh == null) continue;
+            var b = filter.sharedMesh.bounds;
+            for (int n = 0; n < 8; n++)
+            {
+                var p = filter.transform.TransformPoint(b.center + Vector3.Scale(b.extents,
+                    new Vector3((n & 1) == 0 ? -1 : 1, (n & 2) == 0 ? -1 : 1, (n & 4) == 0 ? -1 : 1)));
+                if (!found) { result = new Bounds(p, Vector3.zero); found = true; } else result.Encapsulate(p);
+            }
+        }
+        if (!found) throw new InvalidOperationException("Stake mesh missing.");
+        return result;
+    }
+}

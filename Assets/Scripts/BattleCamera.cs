@@ -47,7 +47,9 @@ public class BattleCamera : MonoBehaviour
         Camera cam = GetComponent<Camera>();
         if (cam != null)
         {
-            cam.farClipPlane = Mathf.Clamp(cam.farClipPlane, 1500f, 3500f);
+            // The terrain is six kilometres wide. Distant terrain is cheap; trees, props and NPCs
+            // are independently limited by the laptop profile and zone streamer.
+            cam.farClipPlane = Mathf.Max(cam.farClipPlane, 9500f);
         }
 
         FindTargetIfNull();

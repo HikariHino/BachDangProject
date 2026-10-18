@@ -11,6 +11,7 @@ namespace BeachBoatStory
         public RuntimeAnimatorController rowingController;
         public Transform paddle;
         public Terrain terrain;
+        public TideSystem tide;
         public float maxSpeed = 95, acceleration = 38, turnSpeed = 48;
         public float boardingRange = 35, dockingRange = 90, minimumDepth = 12;
         public bool IsAboard { get; private set; }
@@ -23,6 +24,9 @@ namespace BeachBoatStory
         CapsuleCollider playerCollider;
         Animator animator;
         Transform leftHand, rightHand;
+        Transform leftUpperArm, leftForearm, rightUpperArm, rightForearm;
+        float strokePhase;
+        public Vector3 BladeCenter { get; private set; }
         RuntimeAnimatorController originalController;
         Camera_Script orbit;
         Vector3 cameraSettings;
@@ -30,6 +34,9 @@ namespace BeachBoatStory
         Transform paddleParent;
         Vector3 paddlePosition, paddleScale;
         Quaternion paddleRotation;
+        RigidbodyInterpolation originalInterpolation;
+        AnimatorUpdateMode originalUpdateMode;
+        AnimatorCullingMode originalCullingMode;
         readonly Collider[] overlaps = new Collider[32];
 
         public static float FlatDistance(Vector3 a, Vector3 b)
@@ -46,8 +53,13 @@ namespace BeachBoatStory
             playerCollider = session.player.GetComponent<CapsuleCollider>();
             animator = session.player.GetComponentInChildren<Animator>();
             if (animator != null && animator.isHuman)
-            { leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand); rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand); }
+            {
+                leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand); rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand);
+                leftUpperArm = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm); leftForearm = animator.GetBoneTransform(HumanBodyBones.LeftLowerArm);
+                rightUpperArm = animator.GetBoneTransform(HumanBodyBones.RightUpperArm); rightForearm = animator.GetBoneTransform(HumanBodyBones.RightLowerArm);
+            }
             orbit = session.storyCamera.GetComponent<Camera_Script>();
+            if (tide == null) tide = FindAnyObjectByType<TideSystem>();
             if (paddle != null)
             {
                 paddleParent = paddle.parent; paddlePosition = paddle.localPosition;
@@ -59,20 +71,25 @@ namespace BeachBoatStory
         {
             var story = BachDangStoryManager.Instance;
             if (!isActiveAndEnabled || session == null || IsAboard || BeachBoatQuestSession.InteractionBlocked ||
-                story == null || story.currentState != BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver ||
+                story == null || !CanBoardForState(story.currentState) ||
                 story.collectedWood < story.totalWoodRequired || !AtDock || animator == null ||
                 FlatDistance(session.player.transform.position, boardingPoint.position) > boardingRange) return false;
             motorEnabled = motor.enabled; bodyKinematic = playerBody.isKinematic; colliderEnabled = playerCollider.enabled;
             originalController = animator.runtimeAnimatorController; originalRootMotion = animator.applyRootMotion;
+            originalInterpolation = playerBody.interpolation;
+            originalUpdateMode = animator.updateMode; originalCullingMode = animator.cullingMode;
             cameraSettings = new Vector3(orbit.distance, orbit.heightOffset, orbit.rightOffset);
             motor.enabled = false;
             if (!playerBody.isKinematic) { playerBody.linearVelocity = Vector3.zero; playerBody.angularVelocity = Vector3.zero; }
             playerBody.isKinematic = true; playerCollider.enabled = false;
+            playerBody.interpolation = RigidbodyInterpolation.None;
+            animator.updateMode = AnimatorUpdateMode.Normal; animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             animator.applyRootMotion = false; animator.runtimeAnimatorController = rowingController;
             animator.Rebind(); animator.Update(0); animator.speed = 0;
-            IsAboard = true; Speed = 0;
+            IsAboard = true; Speed = 0; strokePhase = 0;
             orbit.distance = 115; orbit.heightOffset = 42; orbit.rightOffset = 0;
             AttachPlayer(); orbit.SnapToTarget();
+            if (story.currentState == BachDangStoryManager.StoryState.Act3_WaitForLowTide) story.OnReadyForBattle();
             story.SetInteractPrompt(false, owner: this); story.UpdateUI();
             return true;
         }
@@ -87,12 +104,50 @@ namespace BeachBoatStory
             BachDangStoryManager.Instance?.UpdateUI(); return true;
         }
 
+        /// <summary>Bring the camera down behind the rowing soldier while keeping full mouse look.</summary>
+        public void UseSoldierBattleCamera()
+        {
+            if (!IsAboard || orbit == null) return;
+            var fleet = EnemyFleetDirector.Instance;
+            if (fleet != null && fleet.enemyShips != null)
+            {
+                Vector3 center = Vector3.zero; int count = 0;
+                foreach (var ship in fleet.enemyShips)
+                {
+                    if (ship == null) continue;
+                    center += ship.targetPoint != null ? ship.targetPoint.position : ship.spawnPoint;
+                    count++;
+                }
+                if (count > 0)
+                {
+                    Vector3 direction = center / count - transform.position; direction.y = 0;
+                    if (direction.sqrMagnitude > 1) transform.rotation = Quaternion.LookRotation(direction);
+                    AttachPlayer();
+                }
+            }
+            orbit.distance = 48f;
+            orbit.heightOffset = 20f;
+            orbit.rightOffset = 7f;
+            orbit.enableShoulderAim = false;
+            orbit.enabled = true;
+            orbit.CaptureCursor(true);
+            orbit.SnapToTarget();
+        }
+
+        bool CanBoardForState(BachDangStoryManager.StoryState state) =>
+            state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver ||
+            (state == BachDangStoryManager.StoryState.Act3_WaitForLowTide &&
+             EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsConfigured &&
+             RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsComplete) ||
+            state == BachDangStoryManager.StoryState.Act3_BattleInProgress || state == BachDangStoryManager.StoryState.Act3_Victory;
+
         void RestorePlayer()
         {
             IsAboard = false; Speed = 0;
             if (animator != null) { animator.runtimeAnimatorController = originalController; animator.applyRootMotion = originalRootMotion; animator.speed = 1; animator.Rebind(); }
+            if (animator != null) { animator.updateMode = originalUpdateMode; animator.cullingMode = originalCullingMode; }
             if (motor != null) motor.enabled = motorEnabled && session.storyMode;
-            if (playerBody != null) playerBody.isKinematic = bodyKinematic || !session.storyMode;
+            if (playerBody != null) { playerBody.isKinematic = bodyKinematic || !session.storyMode; playerBody.interpolation = originalInterpolation; }
             if (playerCollider != null) playerCollider.enabled = colliderEnabled;
             if (orbit != null) { orbit.distance = cameraSettings.x; orbit.heightOffset = cameraSettings.y; orbit.rightOffset = cameraSettings.z; }
             if (paddle != null) { paddle.SetParent(paddleParent, false); paddle.localPosition = paddlePosition; paddle.localRotation = paddleRotation; paddle.localScale = paddleScale; }
@@ -101,20 +156,24 @@ namespace BeachBoatStory
         void Update()
         {
             var story = BachDangStoryManager.Instance;
+            if (tide != null)
+            {
+                bool building = story != null && (story.currentState == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver ||
+                    story.currentState == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp);
+                if (building) tide.HoldLowTide(this); else tide.ReleaseLowTide(this);
+            }
+            // Kinematic navigation and the seated player advance once per rendered frame,
+            // before Animator evaluation and the orbit camera, instead of stepping at 50 Hz.
+            bool input = IsAboard && !BeachBoatQuestSession.InputBlocked && Cursor.lockState == CursorLockMode.Locked;
+            Step(input ? Input.GetAxisRaw("Vertical") : 0, input ? Input.GetAxisRaw("Horizontal") : 0, Time.deltaTime);
             if (story == null || session == null || BeachBoatQuestSession.InteractionBlocked) return;
             bool prompt = IsAboard ? AtDock && Mathf.Abs(Speed) <= 5 :
-                story.currentState == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver && AtDock &&
+                CanBoardForState(story.currentState) && AtDock &&
                 FlatDistance(session.player.transform.position, boardingPoint.position) <= boardingRange;
             if (!prompt) return;
             story.SetInteractPrompt(true, IsAboard ? "[E] Rời thuyền lên bến" : "[E] Lên thuyền ra bãi cọc", this);
             if (Input.GetKeyDown(KeyCode.E) && StoryDialogueUI.TryConsumeInput())
             { if (IsAboard) TryDisembark(); else TryBoard(); }
-        }
-
-        void FixedUpdate()
-        {
-            bool input = IsAboard && !BeachBoatQuestSession.InputBlocked && Cursor.lockState == CursorLockMode.Locked;
-            Step(input ? Input.GetAxisRaw("Vertical") : 0, input ? Input.GetAxisRaw("Horizontal") : 0, Time.fixedDeltaTime);
         }
 
         // Shared by live controls and editor validation; no allocation or scene scans per tick.
@@ -124,7 +183,7 @@ namespace BeachBoatStory
             var position = transform.position; position.y = TideSystem.CurrentWaterHeight;
             transform.position = position;
             if (!IsAboard || BeachBoatQuestSession.InteractionBlocked)
-            { Speed = 0; if (IsAboard) animator.speed = 0; return; }
+            { Speed = 0; if (IsAboard) { animator.speed = 0; AttachPlayer(); } return; }
             dt = Mathf.Min(dt, .05f);
             float speed = Mathf.MoveTowards(Speed, Mathf.Clamp(throttle, -1, 1) * maxSpeed, acceleration * dt);
             var rotation = transform.rotation * Quaternion.Euler(0, Mathf.Clamp(steering, -1, 1) * turnSpeed * dt, 0);
@@ -134,7 +193,8 @@ namespace BeachBoatStory
             // Turning the stationary boat still uses the paddle; blocked translation never plays a full-speed stroke.
             float travelRate = Mathf.Abs(Speed) / Mathf.Max(1, maxSpeed);
             float turningRate = Quaternion.Angle(transform.rotation, rotation) < .01f ? Mathf.Abs(steering) * .35f : 0;
-            animator.speed = Mathf.Max(travelRate, turningRate);
+            animator.speed = Mathf.MoveTowards(animator.speed, Mathf.Max(travelRate, turningRate), dt * 3);
+            strokePhase = Mathf.Repeat(strokePhase + animator.speed * dt / 1.8f, 1);
             AttachPlayer();
         }
 
@@ -170,16 +230,43 @@ namespace BeachBoatStory
         }
         void LateUpdate()
         {
-            AttachPlayer();
             if (IsAboard && paddle != null && leftHand != null && rightHand != null)
             {
-                // Match both grips in the imported rowing pose instead of guessing the hand's local axes.
-                var axis = (rightHand.position - leftHand.position).normalized;
-                if (axis.sqrMagnitude > .5f)
-                    paddle.SetPositionAndRotation(rightHand.position - axis * 14, Quaternion.FromToRotation(Vector3.up, axis));
+                ApplyRowingPose(strokePhase);
             }
         }
-        void OnDisable() { if (IsAboard) RestorePlayer(); }
+        // The blade follows a smooth catch / underwater pull / lifted recovery cycle.
+        // Arms follow two grips on that shaft; imported hand axes can never flip it overhead.
+        public void ApplyRowingPose(float phase)
+        {
+            if (!IsAboard || paddle == null || leftUpperArm == null || rightUpperArm == null) return;
+            float angle = Mathf.Repeat(phase, 1) * Mathf.PI * 2;
+            float sweep = Mathf.Cos(angle), lift = Mathf.Sin(angle);
+            var grip = seat.position - transform.right * .5f + Vector3.up * 11.5f + transform.forward * (.8f * sweep);
+            BladeCenter = seat.position + transform.right * 19 + transform.forward * (2 + 7 * sweep);
+            BladeCenter = new Vector3(BladeCenter.x, TideSystem.CurrentWaterHeight - 1.5f - (lift >= 0 ? 1.5f : 5.5f) * lift, BladeCenter.z);
+            var direction = (BladeCenter - grip).normalized;
+            var forward = Vector3.ProjectOnPlane(transform.forward, direction).normalized;
+            paddle.SetPositionAndRotation(grip, Quaternion.LookRotation(forward, -direction));
+            paddle.localScale = new Vector3(1, Vector3.Distance(grip, BladeCenter) / 24, 1);
+            SolveArm(leftUpperArm, leftForearm, leftHand, grip,
+                leftUpperArm.position - transform.right * 5 - transform.forward * 2 - Vector3.up * 2);
+            SolveArm(rightUpperArm, rightForearm, rightHand, grip + direction * 4f,
+                rightUpperArm.position + transform.right * 5 - transform.forward * 2 - Vector3.up * 2);
+        }
+
+        static void SolveArm(Transform upper, Transform forearm, Transform hand, Vector3 target, Vector3 hint)
+        {
+            float a = Vector3.Distance(upper.position, forearm.position), b = Vector3.Distance(forearm.position, hand.position);
+            var offset = target - upper.position; float d = Mathf.Clamp(offset.magnitude, Mathf.Abs(a - b) + .001f, a + b - .001f);
+            if (a < .001f || b < .001f || offset.sqrMagnitude < .0001f) return;
+            var axis = offset.normalized; var bend = Vector3.ProjectOnPlane(hint - upper.position, axis).normalized;
+            float along = (a * a - b * b + d * d) / (2 * d);
+            var elbow = upper.position + axis * along + bend * Mathf.Sqrt(Mathf.Max(0, a * a - along * along));
+            upper.rotation = Quaternion.FromToRotation(forearm.position - upper.position, elbow - upper.position) * upper.rotation;
+            forearm.rotation = Quaternion.FromToRotation(hand.position - forearm.position, target - forearm.position) * forearm.rotation;
+        }
+        void OnDisable() { if (IsAboard) RestorePlayer(); if (tide != null) tide.ReleaseLowTide(this); }
         void OnDestroy() { if (Instance == this) Instance = null; }
     }
 }

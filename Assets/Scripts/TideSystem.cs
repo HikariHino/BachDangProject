@@ -11,6 +11,8 @@ public class TideSystem : MonoBehaviour
     // Biến toàn cục để các script khác (như BoatCrash) đọc được mực nước hiện tại
     public static float CurrentWaterHeight = 14.0f;
 
+    public static TideSystem Instance { get; private set; }
+
     [Header("Cài đặt Mực Nước Thủy Triều (mét)")]
     [Tooltip("Mực nước khi Thủy triều rút cạn (lộ bãi cọc & bãi cát)")]
     public float lowTideY = 10.0f; // Rút sâu xuống 10 mét theo yêu cầu của sếp
@@ -37,11 +39,62 @@ public class TideSystem : MonoBehaviour
 
     public float TargetWaterHeight => currentTargetY;
     public bool IsRising => isRising;
+    private Object tideOwner;
+    private bool heldHigh;
+    public bool IsLowTideLocked => tideOwner != null && !heldHigh;
+    public bool IsTideLocked => tideOwner != null;
+
+    // A mission can reserve low water without changing other scenes' normal tide cycle.
+    public void HoldLowTide(Object owner)
+    {
+        HoldTide(owner, false);
+    }
+
+    public void HoldHighTide(Object owner, bool immediate = false)
+    {
+        HoldTide(owner, true, immediate);
+    }
+
+    /// <summary>Locks the water to a story controlled state until the same owner releases it.</summary>
+    public void HoldTide(Object owner, bool high, bool immediate = false)
+    {
+        if (owner == null || (tideOwner != null && tideOwner != owner)) return;
+        tideOwner = owner;
+        heldHigh = high;
+        autoCycle = false;
+        isRising = high;
+        currentTargetY = high ? highTideY : lowTideY;
+        if (immediate)
+        {
+            var position = transform.position;
+            position.y = currentTargetY;
+            transform.position = position;
+            CurrentWaterHeight = position.y;
+        }
+    }
+
+    public void ReleaseLowTide(Object owner)
+    {
+        ReleaseTide(owner);
+    }
+
+    public void ReleaseTide(Object owner)
+    {
+        if (tideOwner != owner) return;
+        tideOwner = null;
+        timer = 0;
+    }
 
     void Awake()
     {
+        if (Instance == null) Instance = this;
         currentTargetY = transform.position.y;
         CurrentWaterHeight = transform.position.y;
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
     }
 
     void Start()
@@ -72,6 +125,7 @@ public class TideSystem : MonoBehaviour
     /// <summary>Shared command for keyboard, HUD and the scene director.</summary>
     public void SetTide(bool high, bool immediate = false)
     {
+        if (IsTideLocked) return;
         autoCycle = false;
         isRising = high;
         currentTargetY = high ? highTideY : lowTideY;
@@ -91,13 +145,18 @@ public class TideSystem : MonoBehaviour
     void Update()
     {
         // 1. Phím tắt T để chuyển đổi nhanh Thủy Triều
-        if (Input.GetKeyDown(toggleTideKey))
+        if (!IsTideLocked && Input.GetKeyDown(toggleTideKey))
         {
             ToggleTide();
         }
 
         // 2. Chế độ Thủy Triều tự động lên xuống nhịp nhàng
-        if (autoCycle)
+        if (IsTideLocked)
+        {
+            currentTargetY = heldHigh ? highTideY : lowTideY;
+            isRising = heldHigh;
+        }
+        else if (autoCycle)
         {
             timer += Time.deltaTime;
             float phase = (timer / Mathf.Max(0.1f, cycleDuration)) * Mathf.PI * 2f - Mathf.PI / 2f;

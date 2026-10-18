@@ -91,6 +91,7 @@ namespace BeachBoatStory
 
         public void SetStoryMode(bool value)
         {
+            if (!value && EnemyFleetDirector.Instance != null) EnemyFleetDirector.Instance.EndBattleView();
             storyMode = value;
             tourCamera.tag = value ? "Untagged" : "MainCamera";
             storyCamera.tag = value ? "MainCamera" : "Untagged";
@@ -111,9 +112,25 @@ namespace BeachBoatStory
         void Update()
         {
             if (controlsText != null)
-                controlsText.text = QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard
-                    ? "W/S: chèo tới/lùi • A/D: lái thuyền • E: đóng cọc / lên bến • F9: sa bàn/chơi • Esc: thả chuột"
-                    : "WASD: di chuyển • Shift: chạy • Space: nhảy • E: tương tác • F9: sa bàn/chơi • Esc: thả chuột";
+            {
+                var story = GetComponent<BachDangStoryManager>();
+                if (EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsShowingBattle)
+                {
+                    controlsText.text = EnemyFleetDirector.Instance.BattleCaption + "\nChuột: tự nhìn chiến trường • SPACE: phất cờ khi thuyền vào tầm • M: bản đồ • F9: sa bàn";
+                }
+                else if (story != null && story.currentState == BachDangStoryManager.StoryState.Act3_BattleInProgress)
+                {
+                    controlsText.text = "TRẬN CHIẾN BẠCH ĐẰNG • W/S: chèo • A/D: lái • M: bản đồ • F9: sa bàn/chơi • Esc: thả chuột";
+                }
+                else if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard)
+                {
+                    controlsText.text = "W/S: chèo tới/lùi • A/D: lái thuyền • E: đóng cọc / lên bến • M: bản đồ • F9: sa bàn/chơi • Esc: thả chuột";
+                }
+                else
+                {
+                    controlsText.text = "WASD: di chuyển • Shift: chạy • Space: nhảy • E: tương tác • M: bản đồ • F9: sa bàn/chơi • Esc: thả chuột";
+                }
+            }
             if (Input.GetKeyDown(KeyCode.F9) && !OpeningEvent.IsOpeningActive &&
                 !(StoryDialogueUI.Instance?.IsOpen ?? false) && !(ScreenFader.Instance?.IsTransitioning ?? false)) SetStoryMode(!storyMode);
         }
@@ -143,7 +160,7 @@ namespace BeachBoatStory
         void BuildQuestUI()
         {
             var canvas = Canvas("BeachStoryHUD"); canvas.sortingOrder = 100; questCanvas = canvas.gameObject;
-            var panel = Panel("Objective", canvas.transform, new Vector2(.69f,.72f), new Vector2(.985f,.97f), new Color(.04f,.035f,.025f,.84f));
+            var panel = Panel("Objective", canvas.transform, new Vector2(.55f,.72f), new Vector2(.775f,.97f), new Color(.04f,.035f,.025f,.84f));
             var story = GetComponent<BachDangStoryManager>(); story.objectiveUIPanel = panel;
             story.objectiveTitleText = Text("Title",panel.transform,new Vector2(.05f,.73f),new Vector2(.95f,.95f),25);
             story.objectiveDescText = Text("Body",panel.transform,new Vector2(.05f,.05f),new Vector2(.95f,.73f),21);
@@ -153,14 +170,15 @@ namespace BeachBoatStory
             story.interactPromptText.alignment = TextAlignmentOptions.Center; prompt.SetActive(false);
             var keys = Text("Controls",canvas.transform,new Vector2(.02f,.01f),new Vector2(.98f,.07f),17);
             controlsText = keys;
-            keys.text = "WASD: di chuyển • Shift: chạy • Space: nhảy • E: tương tác • F9: sa bàn/chơi • Esc: thả chuột";
-            var guide = Panel("RouteGuide", canvas.transform, new Vector2(.32f,.85f), new Vector2(.67f,.97f), new Color(.04f,.035f,.025f,.84f));
+            keys.text = "WASD: di chuyển • Shift: chạy • Space: nhảy • E: tương tác • M: bản đồ • F9: sa bàn/chơi • Esc: thả chuột";
+            var guide = Panel("RouteGuide", canvas.transform, new Vector2(.33f,.85f), new Vector2(.545f,.97f), new Color(.04f,.035f,.025f,.84f));
             var pointer = Text("Direction",guide.transform,new Vector2(.02f,.2f),new Vector2(.16f,.8f),34);
             pointer.text = ">"; pointer.alignment = TextAlignmentOptions.Center;
             pointer.color = new Color(1f,.83f,.38f);
             var route = Text("Destination",guide.transform,new Vector2(.19f,.05f),new Vector2(.97f,.95f),20);
             route.alignment = TextAlignmentOptions.MidlineLeft;
             canvas.gameObject.AddComponent<StoryRouteGuide>().Initialize(this,guide,route,pointer);
+            canvas.gameObject.AddComponent<BeachBoatMinimap>().Initialize(player.transform);
         }
         void BuildIntro()
         {

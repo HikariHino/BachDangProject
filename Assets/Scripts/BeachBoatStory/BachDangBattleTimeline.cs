@@ -1,0 +1,157 @@
+using UnityEngine;
+
+namespace BeachBoatStory
+{
+    /// <summary>
+    /// Event-driven reconstruction clock. Historical sources describe the order of events,
+    /// but not an exact clock time, so the HUD labels every hour as a reconstructed milestone.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class BachDangBattleTimeline : MonoBehaviour
+    {
+        public enum BattleMoment { Preparation, LureAtHighTide, FleetInsideStakeField, TideFalling, Ambush, Victory }
+
+        public static BachDangBattleTimeline Instance { get; private set; }
+        public BattleMoment CurrentMoment { get; private set; }
+        public float DisplayHour { get; private set; } = 5.75f;
+        public string EventLabel { get; private set; } = "Bình minh — chuẩn bị kháng chiến";
+        public string TideLabel { get; private set; } = "Triều theo nhiệm vụ";
+
+        DayNightCycle cycle;
+        float targetHour = 5.75f;
+        GUIStyle boxStyle, headingStyle, bodyStyle;
+        Texture2D panelTexture;
+
+        void Awake()
+        {
+            if (Instance != null && Instance != this) { Destroy(this); return; }
+            Instance = this;
+        }
+
+        void Start()
+        {
+            cycle = FindAnyObjectByType<DayNightCycle>();
+            if (cycle != null) cycle.autoAdvance = false;
+            var story = GetComponent<BachDangStoryManager>();
+            ApplyStoryState(story != null ? story.currentState : BachDangStoryManager.StoryState.Act1_ExploreCamp, true);
+        }
+
+        void Update()
+        {
+            DisplayHour = Mathf.MoveTowards(DisplayHour, targetHour, Time.deltaTime * .45f);
+            if (cycle != null)
+            {
+                cycle.autoAdvance = false;
+                cycle.SetTimeOfDay(DisplayHour);
+            }
+        }
+
+        public void ApplyStoryState(BachDangStoryManager.StoryState state, bool immediate = false)
+        {
+            switch (state)
+            {
+                case BachDangStoryManager.StoryState.Act1_ExploreCamp:
+                case BachDangStoryManager.StoryState.Act1_GoToCampGate:
+                case BachDangStoryManager.StoryState.Act1_Training:
+                    SetMoment(BattleMoment.Preparation, 5.75f, "Bình minh — Ngô Quyền chuẩn bị trận địa", "Triều đang rút", immediate);
+                    SetFreeTide(false, immediate); break;
+                case BachDangStoryManager.StoryState.Act2_CollectWoodInVillage:
+                case BachDangStoryManager.StoryState.Act2_ReturnToCampGate:
+                case BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen:
+                case BachDangStoryManager.StoryState.Act2_SupplyPreparation:
+                    SetMoment(BattleMoment.Preparation, 7.25f, "Dân binh chuẩn bị cọc gỗ", "Triều thấp", immediate);
+                    SetFreeTide(false, immediate); break;
+                case BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver:
+                case BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp:
+                    SetMoment(BattleMoment.Preparation, 8f, "Đóng cọc ngầm ở lòng sông", "Triều rút — bãi sông lộ", immediate);
+                    break;
+                case BachDangStoryManager.StoryState.Act2_Completed:
+                case BachDangStoryManager.StoryState.Act3_PrepareForBattle:
+                    SetMoment(BattleMoment.Preparation, 8.5f, "Quân mai phục vào vị trí hai bờ", "Triều bắt đầu dâng", immediate);
+                    SetFreeTide(true, immediate); break;
+                case BachDangStoryManager.StoryState.Act3_WaitForLowTide:
+                    BeginLure(immediate); break;
+                case BachDangStoryManager.StoryState.Act3_Victory:
+                case BachDangStoryManager.StoryState.Act3_Celebration:
+                    MarkVictory(); break;
+            }
+        }
+
+        public void BeginLure(bool immediate = false)
+        {
+            SetMoment(BattleMoment.LureAtHighTide, 9f, "Thuyền nhẹ ra cửa sông nhử địch", "TRIỀU CAO — cọc chìm dưới nước", immediate);
+            TideSystem.Instance?.HoldHighTide(this, immediate);
+        }
+
+        public void MarkFleetInside()
+        {
+            SetMoment(BattleMoment.FleetInsideStakeField, 9.5f, "Hạm đội Nam Hán lọt vào bãi cọc", "Triều đứng — chuẩn bị đổi dòng");
+        }
+
+        public void BeginEbb()
+        {
+            SetMoment(BattleMoment.TideFalling, 10f, "Khóa đường lui — phát hiệu lệnh phản công", "TRIỀU RÚT — cọc dần lộ");
+            TideSystem.Instance?.HoldLowTide(this);
+        }
+
+        public void BeginAmbush()
+        {
+            SetMoment(BattleMoment.Ambush, 10.67f, "Quân mai phục hai bờ đồng loạt xông ra", "TRIỀU THẤP — chiến thuyền mắc cọc");
+        }
+
+        public void MarkVictory()
+        {
+            SetMoment(BattleMoment.Victory, 11.5f, "Đại thắng Bạch Đằng", "Bãi cọc đã phá tan hạm đội địch");
+            TideSystem.Instance?.ReleaseTide(this);
+        }
+
+        void SetMoment(BattleMoment moment, float hour, string eventLabel, string tideLabel, bool immediate = false)
+        {
+            CurrentMoment = moment;
+            targetHour = hour;
+            if (immediate) DisplayHour = hour;
+            EventLabel = eventLabel;
+            TideLabel = tideLabel;
+        }
+
+        void SetFreeTide(bool high, bool immediate)
+        {
+            var tide = TideSystem.Instance;
+            if (tide != null && !tide.IsTideLocked) tide.SetTide(high, immediate);
+        }
+
+        void OnGUI()
+        {
+            if (OpeningEvent.IsOpeningActive || (BeachBoatQuestSession.Instance != null && !BeachBoatQuestSession.Instance.storyMode)) return;
+            EnsureStyles();
+            float scale = Mathf.Clamp(Screen.height / 720f, .8f, 1.35f);
+            var rect = new Rect(18f, 18f, 390f * scale, 112f * scale);
+            GUI.Box(rect, GUIContent.none, boxStyle);
+            var inner = new Rect(rect.x + 14f * scale, rect.y + 9f * scale, rect.width - 28f * scale, rect.height - 16f * scale);
+            int minutes = Mathf.RoundToInt(DisplayHour * 60f) % (24 * 60);
+            GUI.Label(new Rect(inner.x, inner.y, inner.width, 29f * scale),
+                $"CUỐI NĂM MẬU TUẤT 938  •  {minutes / 60:00}:{minutes % 60:00}", headingStyle);
+            GUI.Label(new Rect(inner.x, inner.y + 32f * scale, inner.width, 24f * scale), "MỐC GIỜ TÁI HIỆN", bodyStyle);
+            GUI.Label(new Rect(inner.x, inner.y + 56f * scale, inner.width, 38f * scale), EventLabel + "\n" + TideLabel, bodyStyle);
+        }
+
+        void EnsureStyles()
+        {
+            if (boxStyle != null) return;
+            panelTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+            panelTexture.SetPixel(0, 0, new Color(.025f, .035f, .045f, .9f)); panelTexture.Apply();
+            boxStyle = new GUIStyle(GUI.skin.box); boxStyle.normal.background = panelTexture;
+            headingStyle = new GUIStyle(GUI.skin.label) { font = StoryFont.LegacyFont, fontSize = 20, fontStyle = FontStyle.Bold };
+            headingStyle.normal.textColor = new Color(1f, .82f, .34f);
+            bodyStyle = new GUIStyle(GUI.skin.label) { font = StoryFont.LegacyFont, fontSize = 16, wordWrap = true };
+            bodyStyle.normal.textColor = Color.white;
+        }
+
+        void OnDestroy()
+        {
+            TideSystem.Instance?.ReleaseTide(this);
+            if (panelTexture != null) Destroy(panelTexture);
+            if (Instance == this) Instance = null;
+        }
+    }
+}

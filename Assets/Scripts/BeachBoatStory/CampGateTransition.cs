@@ -32,8 +32,8 @@ public class CampGateTransition : MonoBehaviour
     {
         return (gateType == GateType.CampGate && state == BachDangStoryManager.StoryState.Act1_GoToCampGate) ||
             (gateType == GateType.VillageGate && state == BachDangStoryManager.StoryState.Act2_ReturnToCampGate) ||
-            (gateType == GateType.CampRiverGate && state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver) ||
-            (gateType == GateType.RiverGate && state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp);
+            (gateType == GateType.CampRiverGate && (state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver || state == BachDangStoryManager.StoryState.Act3_WaitForLowTide)) ||
+            (gateType == GateType.RiverGate && (state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp || state == BachDangStoryManager.StoryState.Act3_Victory));
     }
 
     public bool IsInRange(Transform player)
@@ -84,12 +84,12 @@ public class CampGateTransition : MonoBehaviour
                 canInteract = false;
             }
         }
-        else if (gateType == GateType.CampRiverGate && story.currentState == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver)
+        else if (gateType == GateType.CampRiverGate && IsAvailable(story.currentState))
         {
             canInteract = true;
-            promptMessage = "[E] Ra bến thuyền đóng cọc";
+            promptMessage = "[E] Ra bến thuyền";
         }
-        else if (gateType == GateType.RiverGate && story.currentState == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)
+        else if (gateType == GateType.RiverGate && IsAvailable(story.currentState))
         {
             canInteract = true;
             promptMessage = "[E] Quay về doanh trại báo tin";
@@ -146,8 +146,7 @@ public class CampGateTransition : MonoBehaviour
                 Transform player = story.GetPlayerTransform();
                 Vector3 targetPos = destinationTarget != null ? destinationTarget.position : new Vector3(225f, 17.6f, -1235f);
                 TeleportPlayer(player, targetPos, destinationTarget != null ? destinationTarget.rotation : Quaternion.identity);
-                story.currentState = BachDangStoryManager.StoryState.Act2_CollectWoodInVillage;
-                story.UpdateUI();
+                story.TransitionTo(BachDangStoryManager.StoryState.Act2_CollectWoodInVillage);
             };
             if (ScreenFader.Instance != null) ScreenFader.Instance.FadeTransition(narrative, move);
             else move();
@@ -160,8 +159,7 @@ public class CampGateTransition : MonoBehaviour
                 Transform player = story.GetPlayerTransform();
                 Vector3 targetPos = destinationTarget != null ? destinationTarget.position : new Vector3(-765f, 32.85f, 195f);
                 TeleportPlayer(player, targetPos, destinationTarget != null ? destinationTarget.rotation : Quaternion.identity);
-                story.currentState = BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen;
-                story.UpdateUI();
+                story.TransitionTo(BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen);
             };
             if (ScreenFader.Instance != null) ScreenFader.Instance.FadeTransition(narrative, move);
             else move();
@@ -177,7 +175,6 @@ public class CampGateTransition : MonoBehaviour
                 Quaternion targetRot = destinationTarget != null ? destinationTarget.rotation : Quaternion.identity;
                 Vector3 targetPos = destinationTarget != null ? destinationTarget.position : Vector3.zero;
                 TeleportPlayer(player, targetPos, targetRot);
-                if (gateType == GateType.RiverGate) story.currentState = BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp;
                 story.UpdateUI();
             };
             if (ScreenFader.Instance != null) ScreenFader.Instance.FadeTransition(narrative, move);
