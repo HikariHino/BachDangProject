@@ -16,7 +16,7 @@ namespace BeachBoatStory
         Terrain terrain;
         RectTransform panel, mapRect, playerMarker, campMarker;
         Texture2D mapTexture;
-        bool visible = true;
+        bool visible;
 
         public void Initialize(Transform playerTransform)
         {
@@ -33,6 +33,7 @@ namespace BeachBoatStory
             BuildUI();
             BuildTerrainTexture();
             UpdateMarkers();
+            panel.gameObject.SetActive(false);
         }
 
         void Update()

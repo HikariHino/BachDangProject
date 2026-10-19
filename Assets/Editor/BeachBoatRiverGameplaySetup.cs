@@ -109,6 +109,7 @@ public static class BeachBoatRiverGameplaySetup
     {
         string[] names = { "Thuyen_Nhu_Giac_1_TienPhong", "Thuyen_Nhu_Giac_2_HuuDuc", "Thuyen_Mai_Phuc_Rach_Bac", "Thuyen_Mai_Phuc_Rach_Nam" };
         var rowing = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Animation/NPC_Rowing_Fix.controller");
+        var safeSeated = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/NPC_Sitting.controller");
         for (int i = 0; i < names.Length; i++)
         {
             var boat = GameObject.Find(names[i]); if (boat == null) throw new InvalidOperationException("Missing ambient boat " + names[i]);
@@ -123,7 +124,7 @@ public static class BeachBoatRiverGameplaySetup
             var patrol = Undo.AddComponent<AmbientRiverBoat>(boat); patrol.tide = tide; patrol.route = route; patrol.cruiseSpeed = 11 + i; patrol.turnSpeed = 20; patrol.pauseAtPoint = 1.5f;
             patrol.visualForwardYaw = HullRunsAlongLocalX(boat.transform) ? 90f : 0f;
             var crew = boat.GetComponentsInChildren<Animator>(true).Where(a => a.isHuman).Take(2).ToArray(); patrol.rowers = crew.Take(1).ToArray();
-            if (crew.Length > 0) { Undo.RecordObject(crew[0], "Use rowing animation"); if (rowing != null) crew[0].runtimeAnimatorController = rowing; crew[0].applyRootMotion = false; crew[0].cullingMode = AnimatorCullingMode.CullUpdateTransforms; }
+            if (crew.Length > 0) { Undo.RecordObject(crew[0], "Use rowing animation"); var repaired = boat.transform.Find("DaiVietPatrolVisual_Rebuilt") != null; var controller = repaired ? safeSeated : rowing; if (controller != null) crew[0].runtimeAnimatorController = controller; crew[0].applyRootMotion = false; crew[0].cullingMode = AnimatorCullingMode.CullUpdateTransforms; }
             if (crew.Length > 1) { var lookout = crew[1].GetComponent<BoatCrewLookout>(); if (lookout == null) lookout = Undo.AddComponent<BoatCrewLookout>(crew[1].gameObject); crew[1].cullingMode = AnimatorCullingMode.CullUpdateTransforms; }
             EditorUtility.SetDirty(patrol);
         }

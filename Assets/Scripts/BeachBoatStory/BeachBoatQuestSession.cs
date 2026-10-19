@@ -21,11 +21,14 @@ namespace BeachBoatStory
         bool tourAudioEnabled;
         AudioListener tourAudio;
         GameObject questCanvas;
+        GameObject controlsPanel;
         TMP_Text controlsText;
         NPCDialogue[] talkers;
         NPCQuestGiver questGiver;
         CampGateTransition[] gates;
-        public static bool InputBlocked => InteractionBlocked || StoryDialogueUI.InputConsumedThisFrame;
+        public static bool InputBlocked => InteractionBlocked ||
+            (BeachBoatMinigameStation.Active != null && BeachBoatMinigameStation.Active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum) ||
+            StoryDialogueUI.InputConsumedThisFrame;
         public static bool InteractionBlocked => OpeningEvent.IsOpeningActive ||
             (RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsPlanting) ||
             (Instance != null && !Instance.storyMode) ||
@@ -111,24 +114,29 @@ namespace BeachBoatStory
         }
         void Update()
         {
+            var story = GetComponent<BachDangStoryManager>();
+            bool focusedOverlay = BeachBoatMinigameStation.Active != null ||
+                (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen);
+            if (story != null && story.objectiveUIPanel != null)
+                story.objectiveUIPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
+            if (controlsPanel != null) controlsPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
             if (controlsText != null)
             {
-                var story = GetComponent<BachDangStoryManager>();
                 if (EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsShowingBattle)
                 {
-                    controlsText.text = EnemyFleetDirector.Instance.BattleCaption + "\nChuột: tự nhìn chiến trường • SPACE: phất cờ khi thuyền vào tầm • M: bản đồ • F9: sa bàn";
+                    controlsText.text = "Chuột: quan sát  •  SPACE: phất cờ  •  M: bản đồ";
                 }
                 else if (story != null && story.currentState == BachDangStoryManager.StoryState.Act3_BattleInProgress)
                 {
-                    controlsText.text = "TRẬN CHIẾN BẠCH ĐẰNG • W/S: chèo • A/D: lái • M: bản đồ • F9: sa bàn/chơi • Esc: thả chuột";
+                    controlsText.text = "W/S: chèo  •  A/D: lái  •  M: bản đồ";
                 }
                 else if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard)
                 {
-                    controlsText.text = "W/S: chèo tới/lùi • A/D: lái thuyền • E: đóng cọc / lên bến • M: bản đồ • F9: sa bàn/chơi • Esc: thả chuột";
+                    controlsText.text = "W/S: chèo  •  A/D: lái  •  E: hành động  •  M: bản đồ";
                 }
                 else
                 {
-                    controlsText.text = "WASD: di chuyển • Shift: chạy • Space: nhảy • E: tương tác • M: bản đồ • F9: sa bàn/chơi • Esc: thả chuột";
+                    controlsText.text = "WASD: di chuyển  •  Shift: chạy  •  E: tương tác  •  M: bản đồ";
                 }
             }
             if (Input.GetKeyDown(KeyCode.F9) && !OpeningEvent.IsOpeningActive &&
@@ -160,25 +168,32 @@ namespace BeachBoatStory
         void BuildQuestUI()
         {
             var canvas = Canvas("BeachStoryHUD"); canvas.sortingOrder = 100; questCanvas = canvas.gameObject;
-            var panel = Panel("Objective", canvas.transform, new Vector2(.55f,.72f), new Vector2(.775f,.97f), new Color(.04f,.035f,.025f,.84f));
+            var panel = Panel("Objective", canvas.transform, new Vector2(.715f,.765f), new Vector2(.985f,.97f), new Color(.04f,.035f,.025f,.88f));
             var story = GetComponent<BachDangStoryManager>(); story.objectiveUIPanel = panel;
-            story.objectiveTitleText = Text("Title",panel.transform,new Vector2(.05f,.73f),new Vector2(.95f,.95f),25);
-            story.objectiveDescText = Text("Body",panel.transform,new Vector2(.05f,.05f),new Vector2(.95f,.73f),21);
-            var prompt = Panel("Interaction",canvas.transform,new Vector2(.23f,.10f),new Vector2(.77f,.18f),new Color(.02f,.025f,.03f,.87f));
+            story.objectiveTitleText = Text("Title",panel.transform,new Vector2(.06f,.72f),new Vector2(.94f,.94f),21);
+            story.objectiveTitleText.color = new Color(1f,.83f,.38f);
+            story.objectiveDescText = Text("Body",panel.transform,new Vector2(.06f,.08f),new Vector2(.94f,.70f),16);
+            story.objectiveDescText.enableAutoSizing = true;
+            story.objectiveDescText.fontSizeMin = 12;
+            story.objectiveDescText.fontSizeMax = 16;
+            var prompt = Panel("Interaction",canvas.transform,new Vector2(.30f,.095f),new Vector2(.70f,.16f),new Color(.02f,.025f,.03f,.9f));
             story.interactPromptPanel = prompt;
-            story.interactPromptText = Text("Prompt",prompt.transform,new Vector2(.02f,.06f),new Vector2(.98f,.94f),23);
+            story.interactPromptText = Text("Prompt",prompt.transform,new Vector2(.03f,.08f),new Vector2(.97f,.92f),19);
             story.interactPromptText.alignment = TextAlignmentOptions.Center; prompt.SetActive(false);
-            var keys = Text("Controls",canvas.transform,new Vector2(.02f,.01f),new Vector2(.98f,.07f),17);
+            var controls = Panel("ControlsBar",canvas.transform,new Vector2(.015f,.012f),new Vector2(.47f,.065f),new Color(.02f,.025f,.03f,.68f));
+            controlsPanel = controls;
+            var keys = Text("Controls",controls.transform,new Vector2(.025f,.05f),new Vector2(.975f,.95f),14);
             controlsText = keys;
-            keys.text = "WASD: di chuyển • Shift: chạy • Space: nhảy • E: tương tác • M: bản đồ • F9: sa bàn/chơi • Esc: thả chuột";
-            var guide = Panel("RouteGuide", canvas.transform, new Vector2(.33f,.85f), new Vector2(.545f,.97f), new Color(.04f,.035f,.025f,.84f));
+            keys.text = "WASD: di chuyển  •  Shift: chạy  •  E: tương tác  •  M: bản đồ";
+            var guide = Panel("RouteGuide", canvas.transform, new Vector2(.35f,.875f), new Vector2(.65f,.97f), new Color(.04f,.035f,.025f,.82f));
             var pointer = Text("Direction",guide.transform,new Vector2(.02f,.2f),new Vector2(.16f,.8f),34);
             pointer.text = ">"; pointer.alignment = TextAlignmentOptions.Center;
             pointer.color = new Color(1f,.83f,.38f);
-            var route = Text("Destination",guide.transform,new Vector2(.19f,.05f),new Vector2(.97f,.95f),20);
+            var route = Text("Destination",guide.transform,new Vector2(.19f,.08f),new Vector2(.97f,.92f),16);
             route.alignment = TextAlignmentOptions.MidlineLeft;
             canvas.gameObject.AddComponent<StoryRouteGuide>().Initialize(this,guide,route,pointer);
             canvas.gameObject.AddComponent<BeachBoatMinimap>().Initialize(player.transform);
+            canvas.gameObject.AddComponent<BeachBoatMinigameUI>().Initialize();
         }
         void BuildIntro()
         {

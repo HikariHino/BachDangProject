@@ -111,7 +111,8 @@ namespace BeachBoatStory
         void LateUpdate()
         {
             if (panel == null) return;
-            if (BeachBoatQuestSession.InteractionBlocked) { panel.SetActive(false); nextRefresh = 0; return; }
+            if (BeachBoatQuestSession.InteractionBlocked || BeachBoatMinigameStation.Active != null)
+            { panel.SetActive(false); nextRefresh = 0; return; }
             if (Time.unscaledTime >= nextRefresh)
             {
                 nextRefresh = Time.unscaledTime + .2f;

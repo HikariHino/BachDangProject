@@ -15,7 +15,7 @@ public static class BeachBoatPatrolBoatUpgrade
     const string BoatPrefab = "Assets/Prefabs/Buildings/pf_build_boat_02.prefab";
     const string CrewModel = "Assets/Model_NPC/OldSoldier/Meshy_AI_Dũng_the_Veteran_biped/Meshy_AI_Dũng_the_Veteran_biped_Character_output.fbx";
 
-    [MenuItem("BeachBoat/Upgrade Patrol Boat And Crew")]
+    [MenuItem("BeachBoat/Legacy/Upgrade One Old Patrol Boat")]
     public static void Apply()
     {
         var scene = BeachBoatToolSafety.Begin("PatrolBoatUpgrade");

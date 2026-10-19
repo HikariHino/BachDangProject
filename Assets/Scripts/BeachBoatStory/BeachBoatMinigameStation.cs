@@ -17,6 +17,16 @@ namespace BeachBoatStory
         public bool HasCompleted { get; private set; }
         public int Progress => progress;
         public int Mistakes => mistakes;
+        public int Round => round;
+        public int RhythmLength => rhythm.Length;
+        public int ExpectedBeat => progress < rhythm.Length ? rhythm[progress] : 0;
+        public float Elapsed => elapsed;
+        public int FeedbackVersion { get; private set; }
+        public bool LastInputCorrect { get; private set; }
+        public float CurrentTargetDistance => kind == ActivityKind.SupplyRelay && player != null && checkpoints != null &&
+            progress >= 0 && progress < checkpoints.Length && checkpoints[progress] != null
+                ? QuestRowboat.FlatDistance(player.position, checkpoints[progress].position)
+                : 0f;
 
         readonly int[] rhythm = { 1, 2, 3, 2, 1, 3, 1, 2, 3, 1, 2, 1 };
         BachDangStoryManager story;
@@ -24,6 +34,12 @@ namespace BeachBoatStory
         int progress, mistakes, round;
         float elapsed;
         bool showingPrompt;
+        bool restoreCursorLock;
+
+        public int GetRhythmBeat(int index)
+        {
+            return index >= 0 && index < rhythm.Length ? rhythm[index] : 0;
+        }
 
         void Start()
         {
@@ -67,8 +83,15 @@ namespace BeachBoatStory
         {
             if (Active != null || !CanOffer() || QuestRowboat.FlatDistance(player.position, transform.position) > interactDistance) return;
             Active = this; progress = mistakes = round = 0; elapsed = 0;
+            FeedbackVersion = 0;
             HidePrompt();
             SetMarkers(kind == ActivityKind.SupplyRelay ? 0 : -1);
+            restoreCursorLock = Cursor.lockState == CursorLockMode.Locked;
+            if (kind == ActivityKind.WarDrum)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
         }
 
         void RunActivity()
@@ -81,8 +104,9 @@ namespace BeachBoatStory
         void RunDrum()
         {
             int expected = rhythm[progress];
-            story.SetInteractPrompt(true,
-                $"TRỐNG TRẬN  Lượt {round + 1}/2 • Nhịp {progress}/{rhythm.Length}\nBấm [{expected}] theo hiệu lệnh • Sai {mistakes} • Esc thoát", this);
+            if (BeachBoatMinigameUI.Instance == null)
+                story.SetInteractPrompt(true,
+                    $"TRỐNG TRẬN  Lượt {round + 1}/2 • Nhịp {progress}/{rhythm.Length}\nBấm [{expected}] theo hiệu lệnh • Sai {mistakes} • Esc thoát", this);
             int pressed = Input.GetKeyDown(KeyCode.Alpha1) ? 1 : Input.GetKeyDown(KeyCode.Alpha2) ? 2 : Input.GetKeyDown(KeyCode.Alpha3) ? 3 : 0;
             if (pressed != 0) SubmitRhythm(pressed);
         }
@@ -92,6 +116,8 @@ namespace BeachBoatStory
             if (Active != this || kind != ActivityKind.WarDrum || progress >= rhythm.Length || pressed < 1 || pressed > 3) return false;
             bool correct = pressed == rhythm[progress];
             if (correct) progress++; else { mistakes++; progress = Mathf.Max(0, progress - 1); }
+            LastInputCorrect = correct;
+            FeedbackVersion++;
             if (progress >= rhythm.Length)
             {
                 round++;
@@ -105,8 +131,9 @@ namespace BeachBoatStory
             if (checkpoints == null || checkpoints.Length == 0) { Finish(false); return; }
             var target = checkpoints[progress];
             float distance = QuestRowboat.FlatDistance(player.position, target.position);
-            story.SetInteractPrompt(true,
-                $"TIẾP TẾ DOANH TRẠI  {progress}/{checkpoints.Length}\nTới điểm sáng: {Mathf.RoundToInt(distance)} m • Đến gần bấm [E] • Esc thoát", this);
+            if (BeachBoatMinigameUI.Instance == null)
+                story.SetInteractPrompt(true,
+                    $"TIẾP TẾ DOANH TRẠI  {progress}/{checkpoints.Length}\nTới điểm sáng: {Mathf.RoundToInt(distance)} m • Đến gần bấm [E] • Esc thoát", this);
             if (distance > interactDistance || !Input.GetKeyDown(KeyCode.E) || !StoryDialogueUI.TryConsumeInput()) return;
             TryDeliver();
         }
@@ -123,6 +150,7 @@ namespace BeachBoatStory
         void Finish(bool completed)
         {
             HidePrompt(); SetMarkers(-1); Active = null;
+            RestoreCursor();
             if (!completed) return;
             HasCompleted = true;
             if (BestTime <= 0 || elapsed < BestTime) BestTime = elapsed;
@@ -132,7 +160,8 @@ namespace BeachBoatStory
                 : $"Chuyển đủ {checkpoints.Length} chuyến tiếp tế trong {elapsed:0.0} giây.";
             System.Action advance = null;
             if (story != null) advance = kind == ActivityKind.WarDrum
-                ? story.OnTrainingComplete : story.OnSupplyPreparationComplete;
+                ? (System.Action)story.OnTrainingComplete
+                : story.OnSupplyPreparationComplete;
             if (StoryDialogueUI.Instance != null) StoryDialogueUI.Instance.Show("Luyện quân", result, advance);
             else advance?.Invoke();
         }
@@ -146,8 +175,16 @@ namespace BeachBoatStory
 
         void OnDisable()
         {
-            if (Active == this) { HidePrompt(); Active = null; }
+            if (Active == this) { HidePrompt(); Active = null; RestoreCursor(); }
             SetMarkers(-1);
+        }
+
+        void RestoreCursor()
+        {
+            if (kind != ActivityKind.WarDrum || !restoreCursorLock) return;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            restoreCursorLock = false;
         }
 
         void HidePrompt()

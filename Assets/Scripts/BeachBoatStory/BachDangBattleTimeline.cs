@@ -122,7 +122,9 @@ namespace BeachBoatStory
 
         void OnGUI()
         {
-            if (OpeningEvent.IsOpeningActive || (BeachBoatQuestSession.Instance != null && !BeachBoatQuestSession.Instance.storyMode)) return;
+            if (OpeningEvent.IsOpeningActive || BeachBoatMinigameStation.Active != null ||
+                (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen) ||
+                (BeachBoatQuestSession.Instance != null && !BeachBoatQuestSession.Instance.storyMode)) return;
             EnsureStyles();
             float scale = Mathf.Clamp(Screen.height / 720f, .8f, 1.35f);
             var rect = new Rect(18f, 18f, 390f * scale, 112f * scale);

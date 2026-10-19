@@ -9,6 +9,8 @@ namespace BeachBoatStory
         public float wanderRadius = 30, walkSpeed = 8, minIdleTime = 3, maxIdleTime = 10;
         [Header("Natural movement")]
         public float acceleration = 5.5f, deceleration = 8f, turnSpeed = 150f, arrivalSlowDistance = 5f;
+        [Range(15,75)] public float avoidanceAngle = 38f;
+        [Min(.2f)] public float obstacleProbeDistance = 2.2f;
         [Range(.75f,1.2f)] public float minimumPace = .88f;
         [Range(.8f,1.35f)] public float maximumPace = 1.12f;
         [Range(0,100)] public float sitLayChance = 30;
@@ -56,6 +58,7 @@ namespace BeachBoatStory
             personalPace = UnityEngine.Random.Range(Mathf.Min(minimumPace,maximumPace),Mathf.Max(minimumPace,maximumPace));
             // Stagger the first action so a group never starts walking in lockstep.
             CacheParameters(); idleRemaining = UnityEngine.Random.Range(0f,Mathf.Max(1f,maxIdleTime*.65f));
+            animator.speed=baseAnimatorSpeed*UnityEngine.Random.Range(.92f,1.04f);
             idleFacing = transform.rotation;
             if(idleRemaining<=.1f)PickTarget();else Pose(false,false);
         }
@@ -161,24 +164,46 @@ namespace BeachBoatStory
             if(remaining<.75f){Idle();return;}
             float desiredSpeed=Mathf.Max(0,walkSpeed)*personalPace*Mathf.Clamp01(remaining/Mathf.Max(1,arrivalSlowDistance));
             currentSpeed=Mathf.MoveTowards(currentSpeed,desiredSpeed,(desiredSpeed>currentSpeed?acceleration:deceleration)*dt);
-            var heading=direction/remaining;
+            var heading=FindClearHeading(direction/remaining,currentSpeed*dt);
+            if(heading.sqrMagnitude<.5f)
+            {
+                currentSpeed=0;idleRemaining=UnityEngine.Random.Range(.5f,1.4f);Pose(false,false);
+                CurrentActivity="Đang tránh vật cản";PickIdleFacing();return;
+            }
             var next=transform.position+heading*currentSpeed*dt;
             if(!ValidGround(next)){Idle();return;}
             if(terrain!=null){next.y=Ground(next)+groundOffset;if(Mathf.Abs(next.y-transform.position.y)>scale){Idle();return;}}
+            transform.position=next;
+            transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(heading),turnSpeed*personalPace*dt);
+            animator.speed=baseAnimatorSpeed*Mathf.Lerp(.88f,1.08f,Mathf.InverseLerp(0,Mathf.Max(.01f,walkSpeed),currentSpeed));
+            Pose(currentSpeed>.12f,false);
+        }
+        Vector3 FindClearHeading(Vector3 desired,float step)
+        {
+            float probe=Mathf.Max(step+.3f*scale,obstacleProbeDistance*scale);
+            if(!Blocked(desired,probe))return desired;
+            float[] turns={avoidanceAngle,-avoidanceAngle,avoidanceAngle*1.8f,-avoidanceAngle*1.8f};
+            foreach(float turn in turns)
+            {
+                var candidate=Quaternion.Euler(0,turn,0)*desired;
+                var test=transform.position+candidate*Mathf.Max(step,.35f*scale);
+                if(ValidGround(test)&&!Blocked(candidate,probe))return candidate;
+            }
+            return Vector3.zero;
+        }
+        bool Blocked(Vector3 heading,float distance)
+        {
             int count=Physics.SphereCastNonAlloc(transform.position+Vector3.up*scale,.25f*scale,heading,hits,
-                Vector3.Distance(next,transform.position)+.3f*scale,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+                distance,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
             for(int i=0;i<count;i++)
             {
                 var hit=hits[i];if(hit.collider==null||hit.collider is TerrainCollider)continue;
                 // Animator often lives below the character's capsule. Ignore both descendants and
                 // ancestors of this NPC; otherwise it detects its own parent collider every frame.
                 if(hit.transform.IsChildOf(transform)||transform.IsChildOf(hit.transform))continue;
-                Idle();return;
+                return true;
             }
-            transform.position=next;
-            transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(heading),turnSpeed*personalPace*dt);
-            animator.speed=baseAnimatorSpeed*Mathf.Lerp(.88f,1.08f,Mathf.InverseLerp(0,Mathf.Max(.01f,walkSpeed),currentSpeed));
-            Pose(currentSpeed>.12f,false);
+            return false;
         }
         void OnDisable(){currentSpeed=0;if(animator!=null){animator.speed=baseAnimatorSpeed;Pose(false,false);}}
         void OnDrawGizmosSelected(){Gizmos.color=Color.green;Gizmos.DrawWireSphere(Application.isPlaying?home:transform.position,wanderRadius);}

@@ -149,11 +149,11 @@ public class NPCCampPose : MonoBehaviour
         CacheComponents();
         if (anim == null) return;
 
-        anim.SetInteger("Pose", (int)pose);
-        anim.SetBool("isSitting", pose == PoseType.Sitting);
-        anim.SetBool("isLaying", pose == PoseType.Laying);
-        anim.SetBool("isWalking", false);
-        anim.SetBool("isRunning", false);
+        SetIntegerIfPresent("Pose", (int)pose);
+        SetBoolIfPresent("isSitting", pose == PoseType.Sitting);
+        SetBoolIfPresent("isLaying", pose == PoseType.Laying);
+        SetBoolIfPresent("isWalking", false);
+        SetBoolIfPresent("isRunning", false);
 
         string targetState = pose switch
         {
@@ -162,9 +162,13 @@ public class NPCCampPose : MonoBehaviour
             _ => "Standing"
         };
 
+        // Offset the playback phase and speed so a group of resting soldiers does not move in
+        // perfect lockstep. The values are deterministic for each placed NPC.
+        float seed = Mathf.Abs(Mathf.Sin(transform.position.x * .173f + transform.position.z * .117f));
+        anim.speed = Mathf.Lerp(.9f, 1.04f, seed);
         if (anim.HasState(0, Animator.StringToHash(targetState)))
         {
-            anim.Play(targetState, 0, 0f);
+            anim.Play(targetState, 0, seed);
         }
         else if (pose == PoseType.Standing)
         {
@@ -173,5 +177,22 @@ public class NPCCampPose : MonoBehaviour
             else if (anim.HasState(0, Animator.StringToHash("sword_idle")))
                 anim.Play("sword_idle", 0, 0f);
         }
+    }
+
+    private bool HasParameter(string parameter, AnimatorControllerParameterType type)
+    {
+        foreach (var item in anim.parameters)
+            if (item.type == type && item.name == parameter) return true;
+        return false;
+    }
+
+    private void SetBoolIfPresent(string parameter, bool value)
+    {
+        if (HasParameter(parameter, AnimatorControllerParameterType.Bool)) anim.SetBool(parameter, value);
+    }
+
+    private void SetIntegerIfPresent(string parameter, int value)
+    {
+        if (HasParameter(parameter, AnimatorControllerParameterType.Int)) anim.SetInteger(parameter, value);
     }
 }
