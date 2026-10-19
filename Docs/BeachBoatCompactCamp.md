@@ -1,0 +1,9 @@
+# Compact living camp in `beachBoat`
+
+The island remains the same size. The playable military camp is now a 530 × 540 world-unit enclosure around Ngô Quyền's stage. It has 12 scaled canvas shelters, 8 wooden barracks, one supply store, shared timber/food props, and a combined dirt-path mesh. The existing village and river quest gates were moved to the west opening of the reused palisade; their destination references and quest rules were preserved.
+
+The previous island-wide camp dressing and perimeter were removed from the scene. This reduced the camp from 3,048 renderers / 527 colliders to 242 renderers / 132 colliders before the path mesh. Twelve added soldiers follow short work routes with staggered pauses and dialogue. They reuse the imported character mesh and animation controller. The imported low LOD meshes for the stage and shelters were malformed, so those thirteen objects now use their original mesh until culled. The stage, shelters, and gate use existing shared earth-tone materials. Four hundred sixty existing terrain-tree instances were scattered outside the enclosure; no new tree meshes or textures were imported.
+
+Unity Play Mode ran for 22 seconds: all 12 added workers travelled over 3 units, and walking animation states were observed. A graphics-enabled Play Mode capture is in `Logs/CampPolishPlay.png` (ignored by Git). At that sampling point Unity reported 1,735 MiB allocated, 3,370 MiB reserved, and 3,858 scene renderers. The previous DX11 Play Mode report recorded 1,888 MiB allocated, 3,886 MiB reserved, and 6,217 renderers. These are different runs and do not prove that the loading peak fits every 16 GB laptop.
+
+`BeachBoat/Polish Compact Living Camp` is a one-time editor command and refuses to rerun on an already polished scene. Do not rerun the older island relocation, camp density, or map builders over this scene; those tools contain the former island-wide layout.
