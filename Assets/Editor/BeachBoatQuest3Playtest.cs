@@ -21,6 +21,10 @@ public static class BeachBoatQuest3Playtest
     static bool wasHeld;
     static bool rangeBlocked;
     static float initialShipZ;
+    static float healthWidthBefore, staminaWidthBefore;
+    static float healthWidthAfter, staminaWidthAfter, healthAnchorAfter, staminaAnchorAfter;
+    static bool vitalsBarsUpdated, minimapLowerRight, rowingControllerApplied;
+    static bool hudChecked;
     static string failure;
 
     public static void RunAndExit()
@@ -28,6 +32,9 @@ public static class BeachBoatQuest3Playtest
         EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity", OpenSceneMode.Single);
         SessionState.SetBool(Flag,true);
         started=0;phase=0;wasHeld=false;rangeBlocked=false;failure=null;
+        healthWidthBefore=staminaWidthBefore=healthWidthAfter=staminaWidthAfter=0;
+        healthAnchorAfter=staminaAnchorAfter=0;
+        vitalsBarsUpdated=minimapLowerRight=rowingControllerApplied=hudChecked=false;
         EditorApplication.isPlaying=true;
     }
 
@@ -46,7 +53,10 @@ public static class BeachBoatQuest3Playtest
         Time.timeScale=1;
         Directory.CreateDirectory("Logs");
         File.WriteAllText("Logs/BeachBoatQuest3Playtest.json",JsonConvert.SerializeObject(new {
-            success,failure,heldForPlayer=wasHeld,rangeBlockedAtDock=rangeBlocked,orders=director?.CommandScore,
+            success,failure,heldForPlayer=wasHeld,rangeBlockedAtDock=rangeBlocked,
+            vitalsBarsUpdated,minimapLowerRight,rowingControllerApplied,
+            healthWidthBefore,healthWidthAfter,staminaWidthBefore,staminaWidthAfter,
+            healthAnchorAfter,staminaAnchorAfter,orders=director?.CommandScore,
             requiredOrders=director?.CommandOpportunityCount,shipsDestroyed=story?.destroyedEnemyShips,
             totalShips=story?.totalEnemyShips,storyState=story?.currentState.ToString(),
             ships=director?.enemyShips.Select(s=>new {s.name,s.isDestroyed,active=s.gameObject.activeSelf,
@@ -102,12 +112,37 @@ public static class BeachBoatQuest3Playtest
                     $"fader={StoryFader.Instance?.IsTransitioning}, planting={zone.IsPlanting}";
                 Finish(false,director,story);return;
             }
+            var animator=session.player.GetComponentInChildren<Animator>();
+            rowingControllerApplied=animator!=null&&animator.runtimeAnimatorController==boat.rowingController;
+            var healthFill=GameObject.Find("HealthFill")?.GetComponent<RectTransform>();
+            var staminaFill=GameObject.Find("StaminaFill")?.GetComponent<RectTransform>();
+            healthWidthBefore=healthFill!=null?healthFill.rect.width:0;
+            staminaWidthBefore=staminaFill!=null?staminaFill.rect.width:0;
+            var vitals=session.player.GetComponent<PlayerVitals>();
+            vitals.TakeImpact(40,"HUD test");
+            vitals.TryExert(60,1);
+            var minimap=session.GetComponentInChildren<BeachBoatMinimap>(true)?.transform.Find("Minimap") as RectTransform;
+            minimapLowerRight=minimap!=null&&minimap.anchorMin.x>.7f&&minimap.anchorMax.y<.5f;
             initialShipZ=director.enemyShips[0].spawnPoint.z;
             if(!director.BattleStarted){failure="Battle did not start after boarding";Finish(false,director,story);return;}
-            Time.timeScale=12f;
             phase=2;
         }
         if(phase!=2)return;
+        if(!hudChecked&&elapsed>4)
+        {
+            hudChecked=true;
+            var healthFill=GameObject.Find("HealthFill")?.GetComponent<RectTransform>();
+            var staminaFill=GameObject.Find("StaminaFill")?.GetComponent<RectTransform>();
+            healthWidthAfter=healthFill!=null?healthFill.rect.width:0;
+            staminaWidthAfter=staminaFill!=null?staminaFill.rect.width:0;
+            healthAnchorAfter=healthFill!=null?healthFill.anchorMax.x:0;
+            staminaAnchorAfter=staminaFill!=null?staminaFill.anchorMax.x:0;
+            vitalsBarsUpdated=healthFill!=null&&staminaFill!=null&&
+                healthWidthBefore>0&&staminaWidthBefore>0&&
+                healthWidthAfter<healthWidthBefore*.7f&&
+                staminaWidthAfter<staminaWidthBefore*.5f;
+            Time.timeScale=12f;
+        }
         if(director.enemyShips.Any(s=>s!=null&&s.SignalReady))wasHeld=true;
         // Orders are deliberately withheld for a moment so the test proves ships wait
         // for the player's signal instead of automatically crossing the stake line.
@@ -125,9 +160,11 @@ public static class BeachBoatQuest3Playtest
         }
         if(story.currentState==Story.StoryState.Act3_Victory)
         {
-            bool success=wasHeld&&rangeBlocked&&director.CommandScore==5&&story.destroyedEnemyShips==10&&
+            bool success=wasHeld&&rangeBlocked&&vitalsBarsUpdated&&minimapLowerRight&&rowingControllerApplied&&
+                director.CommandScore==5&&story.destroyedEnemyShips==10&&
                 director.enemyShips[0].transform.position.z<initialShipZ-600;
-            if(!success)failure="Victory occurred without five commands, ten wrecks, or upstream travel";
+            if(!success)failure=$"Battle/HUD check failed: bars={vitalsBarsUpdated}, minimap={minimapLowerRight}, " +
+                $"rowing={rowingControllerApplied}, orders={director.CommandScore}, wrecks={story.destroyedEnemyShips}";
             Finish(success,director,story);
         }
     }

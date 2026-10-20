@@ -98,8 +98,12 @@ namespace BeachBoatStory
             playerBody.isKinematic = true; playerCollider.enabled = false;
             playerBody.interpolation = RigidbodyInterpolation.None;
             animator.updateMode = AnimatorUpdateMode.Normal; animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            animator.applyRootMotion = false; animator.runtimeAnimatorController = rowingController;
-            animator.Rebind(); animator.Update(0); animator.speed = 0;
+            animator.applyRootMotion = false;
+            // Changing the controller is enough here: the character hierarchy did not change.
+            // Forcing Rebind plus a synchronous Animator.Update during the boarding input frame
+            // unnecessarily rebuilds native animation bindings just as the battle starts.
+            animator.runtimeAnimatorController = rowingController;
+            animator.speed = .1f;
             IsAboard = true; Speed = 0; strokePhase = 0;
             orbit.distance = 115; orbit.heightOffset = 42; orbit.rightOffset = 0;
             AttachPlayer(); orbit.SnapToTarget();
@@ -144,7 +148,7 @@ namespace BeachBoatStory
         void RestorePlayer()
         {
             IsAboard = false; Speed = 0; IsBoosting = false;
-            if (animator != null) { animator.runtimeAnimatorController = originalController; animator.applyRootMotion = originalRootMotion; animator.speed = 1; animator.Rebind(); }
+            if (animator != null) { animator.runtimeAnimatorController = originalController; animator.applyRootMotion = originalRootMotion; animator.speed = 1; }
             if (animator != null) { animator.updateMode = originalUpdateMode; animator.cullingMode = originalCullingMode; }
             if (motor != null) motor.enabled = motorEnabled && session.storyMode;
             if (playerBody != null) { playerBody.isKinematic = bodyKinematic || !session.storyMode; playerBody.interpolation = originalInterpolation; }

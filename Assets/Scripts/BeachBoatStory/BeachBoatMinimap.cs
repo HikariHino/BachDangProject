@@ -51,8 +51,8 @@ namespace BeachBoatStory
             var shell = new GameObject("Minimap", typeof(RectTransform), typeof(Image));
             shell.transform.SetParent(transform, false);
             panel = (RectTransform)shell.transform;
-            panel.anchorMin = new Vector2(.79f, .625f);
-            panel.anchorMax = new Vector2(.985f, .97f);
+            panel.anchorMin = new Vector2(.79f, .085f);
+            panel.anchorMax = new Vector2(.985f, .43f);
             panel.offsetMin = panel.offsetMax = Vector2.zero;
             shell.GetComponent<Image>().color = new Color(.025f, .035f, .032f, .92f);
 

@@ -149,8 +149,10 @@ namespace BeachBoatStory
             }
             if (vitals != null && healthFill != null)
             {
-                healthFill.fillAmount = vitals.HealthFraction;
-                staminaFill.fillAmount = vitals.StaminaFraction;
+                // These Images use Unity's plain white texture (no Sprite). Image.Type.Filled
+                // ignores fillAmount in that case, so resize the colored rectangles instead.
+                healthFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(vitals.HealthFraction), 1f);
+                staminaFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(vitals.StaminaFraction), 1f);
                 int hp = Mathf.CeilToInt(vitals.Health), sp = Mathf.CeilToInt(vitals.Stamina);
                 if (hp != shownHealth) { healthText.text = $"Máu  {hp:0}/{vitals.maxHealth:0}"; shownHealth = hp; }
                 if (sp != shownStamina) { staminaText.text = $"Thể lực  {sp:0}/{vitals.maxStamina:0}"; shownStamina = sp; }
@@ -213,12 +215,12 @@ namespace BeachBoatStory
                 new Vector2(.96f,.78f), new Color(.20f,.12f,.12f,.9f));
             healthFill = Panel("HealthFill", healthBack.transform, Vector2.zero,Vector2.one,
                 new Color(.82f,.18f,.16f,1f)).GetComponent<Image>();
-            healthFill.type = Image.Type.Filled; healthFill.fillMethod = Image.FillMethod.Horizontal;
+            healthFill.type = Image.Type.Simple;
             var staminaBack = Panel("StaminaTrack", vitalsPanel.transform, new Vector2(.45f,.12f),
                 new Vector2(.96f,.30f), new Color(.10f,.20f,.19f,.9f));
             staminaFill = Panel("StaminaFill", staminaBack.transform, Vector2.zero,Vector2.one,
                 new Color(.26f,.76f,.54f,1f)).GetComponent<Image>();
-            staminaFill.type = Image.Type.Filled; staminaFill.fillMethod = Image.FillMethod.Horizontal;
+            staminaFill.type = Image.Type.Simple;
             impactText = Text("ImpactNotice",canvas.transform,new Vector2(.018f,.192f),new Vector2(.38f,.23f),15);
             impactText.color = new Color(1f,.67f,.53f); impactText.text = "";
             var guide = Panel("RouteGuide", canvas.transform, new Vector2(.35f,.875f), new Vector2(.65f,.97f), new Color(.04f,.035f,.025f,.82f));
