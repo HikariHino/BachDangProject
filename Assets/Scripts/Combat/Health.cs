@@ -26,6 +26,10 @@ public class Health : MonoBehaviour
         }
     }
 
+    [Header("Death Settings")]
+    [Tooltip("Bật để tự động ngã gục xuống sàn bằng code (dùng khi FBX chưa có animation ngã thật sự)")]
+    public bool forcePhysicsDeath = true;
+
     IEnumerator DieRoutine()
     {
         Debug.Log($"{gameObject.name} đã bị tiêu diệt.");
@@ -35,12 +39,8 @@ public class Health : MonoBehaviour
         {
             animator = GetComponentInChildren<Animator>();
         }
-        if (animator != null)
-        {
-            animator.enabled = false;
-        }
 
-        // Tắt CharacterController nếu có (không dùng ?.enabled trên MonoBehaviour cho class này).
+        // Tắt CharacterController nếu có
         CharacterController characterController = GetComponent<CharacterController>();
         if (characterController == null)
         {
@@ -51,7 +51,7 @@ public class Health : MonoBehaviour
             characterController.enabled = false;
         }
 
-        // Tắt các script điều khiển/tấn công nếu có: KHÔNG tắt collider để thân không xuyên plane.
+        // Tắt các script điều khiển/tấn công
         MonoBehaviour[] scripts = GetComponentsInChildren<MonoBehaviour>(true);
         foreach (MonoBehaviour script in scripts)
         {
@@ -60,13 +60,21 @@ public class Health : MonoBehaviour
                 continue;
             }
             string typeName = script.GetType().Name;
-            if (typeName == "Character_Movement" || typeName == "MeleeAttack" || typeName == "EnemyAttack")
+            if (typeName == "Character_Movement" || typeName == "MeleeAttack" || typeName == "EnemyAttack" || typeName == "EnemyAI" || typeName == "UnityEngine.AI.NavMeshAgent")
             {
                 script.enabled = false;
             }
         }
 
-        // Rigidbody: set kinematic, không cho rơi tự do.
+        // Tắt NavMeshAgent
+        var navAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (navAgent == null) navAgent = GetComponentInChildren<UnityEngine.AI.NavMeshAgent>();
+        if (navAgent != null)
+        {
+            navAgent.enabled = false;
+        }
+
+        // Rigidbody: set kinematic, không cho rơi tự do
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb == null)
         {
@@ -79,76 +87,93 @@ public class Health : MonoBehaviour
             rb.useGravity = false;
         }
 
-        // Nếu có trigger "Die" trong Animator, dùng animation chết có sẵn thay vì xoay bằng code.
-        bool useDieTrigger = false;
-        if (animator != null)
+        // Phát âm thanh chết (nếu có HitEffect component)
+        var hitEffect = GetComponent<HitEffect>();
+        if (hitEffect == null) hitEffect = GetComponentInChildren<HitEffect>();
+        if (hitEffect != null)
+        {
+            hitEffect.PlayDeath();
+        }
+
+        // Kiểm tra xem có dùng trigger "Die" từ Animator không
+        bool hasDieTrigger = false;
+        if (!forcePhysicsDeath && animator != null && animator.runtimeAnimatorController != null)
         {
             foreach (AnimatorControllerParameter param in animator.parameters)
             {
                 if (param.type == AnimatorControllerParameterType.Trigger && param.name == "Die")
                 {
-                    useDieTrigger = true;
+                    hasDieTrigger = true;
                     break;
                 }
             }
         }
 
-        if (useDieTrigger)
+        if (hasDieTrigger)
         {
+            // Dành cho khi người dùng đã import animation ngã thật (Death FBX từ Mixamo)
             animator.enabled = true;
+            animator.ResetTrigger("Die");
             animator.SetTrigger("Die");
-            // Chờ animation chết chạy xong rồi chìm/destroy
-            yield return new WaitForSeconds(2f);
+
+            // Chờ animation chết chạy xong
+            yield return new WaitForSeconds(2.5f);
         }
         else
         {
-            // Xoay bằng code (fallback): dùng ease-in-out để mượt hơn
-            float duration = 0.8f;
+            // NGÃ GỤC VẬT LÝ BẰNG CODE (Không bị lún đất, ngã nằm phẳng trên mặt sàn Plane)
+            if (animator != null)
+            {
+                animator.enabled = false;
+            }
+
+            // Đo độ cao mặt đất chính xác bằng Raycast
+            float groundY = transform.position.y;
+            if (Physics.Raycast(transform.position + Vector3.up * 1f, Vector3.down, out RaycastHit hit, 5f))
+            {
+                groundY = hit.point.y;
+            }
+
+            float duration = 0.5f;
             float elapsed = 0f;
-            Quaternion startRotation = transform.localRotation;
-            Quaternion targetRotation = startRotation * Quaternion.Euler(0f, 0f, 90f);
+            Quaternion startRot = transform.rotation;
+            // Ngã ngửa ra phía sau (-85 độ trục X)
+            Quaternion targetRot = startRot * Quaternion.Euler(-85f, 0f, 0f);
+
+            Vector3 startPos = transform.position;
+            // Lưng nằm sát mặt đất (cao hơn groundY khoảng 0.18m để không lún vào sàn)
+            Vector3 targetPos = new Vector3(startPos.x, groundY + 0.18f, startPos.z) - transform.forward * 0.45f;
+
             while (elapsed < duration)
             {
-                if (this == null || gameObject == null)
-                {
-                    yield break;
-                }
+                if (this == null || gameObject == null) yield break;
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
-                // EaseInOutQuad
-                float eased = t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f;
-                transform.localRotation = Quaternion.Slerp(startRotation, targetRotation, eased);
+                float eased = t * t * (3f - 2f * t); // Smoothstep
+
+                transform.rotation = Quaternion.Slerp(startRot, targetRot, eased);
+                transform.position = Vector3.Lerp(startPos, targetPos, eased);
                 yield return null;
             }
 
-            // Chờ 1.5s rồi chìm xuống.
-            float waitTime = 1.5f;
-            float waited = 0f;
-            while (waited < waitTime)
-            {
-                if (this == null || gameObject == null)
-                {
-                    yield break;
-                }
-                waited += Time.deltaTime;
-                yield return null;
-            }
+            // Xác nằm yên trên mặt đất 2 giây
+            yield return new WaitForSeconds(2.0f);
         }
 
-        float sinkDuration = 1f;
-        float sinkElapsed = 0f;
-        while (sinkElapsed < sinkDuration)
+        // Hiệu ứng biến mất: thu nhỏ dần rồi hủy (KHÔNG dìm tọa độ xuyên sàn)
+        float shrinkDuration = 0.6f;
+        float shrinkElapsed = 0f;
+        Vector3 initialScale = transform.localScale;
+        while (shrinkElapsed < shrinkDuration)
         {
-            if (this == null || gameObject == null)
-            {
-                yield break;
-            }
-            sinkElapsed += Time.deltaTime;
-            transform.position -= Vector3.up * 0.5f * Time.deltaTime;
+            if (this == null || gameObject == null) yield break;
+            shrinkElapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(shrinkElapsed / shrinkDuration);
+            transform.localScale = Vector3.Lerp(initialScale, Vector3.zero, t);
             yield return null;
         }
 
-        Debug.Log($"{gameObject.name} gục ngã và biến mất.");
+        Debug.Log($"{gameObject.name} đã tan biến.");
 
         if (this != null && gameObject != null)
         {

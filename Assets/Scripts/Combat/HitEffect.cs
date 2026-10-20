@@ -7,6 +7,9 @@ public class HitEffect : MonoBehaviour
     public AudioClip hitSound;
     public AudioClip swingSound; // Để dành cho đòn vung, có thể để null.
 
+    [Header("Death Effect")]
+    public AudioClip deathSound; // Âm thanh khi chết (ngã, rơi, tiếng giáp xác...)
+
     [Header("Camera Shake")]
     [Tooltip("Magnitude of camera shake when hit")]
     public float shakeMagnitude = 0.05f;
@@ -44,6 +47,25 @@ public class HitEffect : MonoBehaviour
                 {
                     AudioSource.PlayClipAtPoint(swingSound, transform.position);
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Play death sound
+    /// </summary>
+    public void PlayDeath()
+    {
+        if (deathSound != null)
+        {
+            AudioSource source = GetComponent<AudioSource>();
+            if (source != null && source.isActiveAndEnabled)
+            {
+                source.PlayOneShot(deathSound);
+            }
+            else
+            {
+                AudioSource.PlayClipAtPoint(deathSound, transform.position);
             }
         }
     }

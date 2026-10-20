@@ -109,11 +109,17 @@ public static class SetupEnemyAI
         Debug.Log($"   - 'Attack' (Trigger)");
         Debug.Log($"   - 'IsMoving' (Bool)");
         Debug.Log($"   - 'MoveSpeed' (Float)");
-        Debug.Log($"   - 'Die' (Trigger) - optional");
+        Debug.Log($"   - 'Die' (Trigger) - REQUIRED for death animation");
         Debug.Log($"4. ANIMATION EVENTS on Attack clip:");
         Debug.Log($"   - Hit frame (~0.7) → OnEnemyAttackHitFrame()");
         Debug.Log($"   - End frame (~0.95) → OnEnemyAttackEnd()");
-        Debug.Log($"5. ASSIGN AUDIO: Select enemy → HitEffect → Set Swing Sound & Hit Sound");
+        Debug.Log($"5. DEATH ANIMATION SETUP:");
+        Debug.Log($"   - Run: Tools/BachDang/Setup Enemy Death Animation");
+        Debug.Log($"   - Mở Animator Controller → Add 'Die' Trigger");
+        Debug.Log($"   - Tạo State 'Death' → assign clip 'Death' từ FBX");
+        Debug.Log($"   - Any State → Death (condition: Die trigger)");
+        Debug.Log($"   - Death state: Loop Time = false, Write Defaults = false");
+        Debug.Log($"6. ASSIGN AUDIO: Select enemy → HitEffect → Set Swing Sound, Hit Sound & Death Sound");
 
         // Select the enemy so user can see it
         Selection.activeGameObject = enemy;

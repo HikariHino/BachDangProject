@@ -48,6 +48,15 @@ public class HealthBarUI : MonoBehaviour
                     fillImage.color = lowColor;
                 }
             }
+            if (target.currentHP <= 0 && displayRatio <= 0.05f)
+            {
+                gameObject.SetActive(false);
+            }
+        }
+        else
+        {
+            // Target đã bị tiêu diệt -> hủy thanh máu theo target
+            Destroy(gameObject);
         }
 
         if (!overlayMode && faceCamera && Camera.main != null)

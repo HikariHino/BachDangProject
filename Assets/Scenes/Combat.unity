@@ -420,6 +420,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Health
   maxHP: 50
   currentHP: 80
+  forcePhysicsDeath: 1
 --- !u!4 &242438465 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: c7e59ee545220674fa581ef3b372722f, type: 3}
@@ -562,6 +563,7 @@ MonoBehaviour:
   hitPrefab: {fileID: 5669246471909640947, guid: bfd016bff164dfc4aac33a0563922772, type: 3}
   hitSound: {fileID: 8300000, guid: 0b734076dae84a249ac5868613c1cab1, type: 3}
   swingSound: {fileID: 8300000, guid: 52bdab2c847d1e04698cccf883a67cac, type: 3}
+  deathSound: {fileID: 8300000, guid: aa45dab3059213949bfb7b0cf6369d12, type: 3}
   shakeMagnitude: 0.05
   shakeTime: 0.1
 --- !u!195 &242438477
@@ -918,6 +920,7 @@ MonoBehaviour:
   hitPrefab: {fileID: 5669246471909640947, guid: bfd016bff164dfc4aac33a0563922772, type: 3}
   hitSound: {fileID: 8300000, guid: 0b734076dae84a249ac5868613c1cab1, type: 3}
   swingSound: {fileID: 8300000, guid: 52bdab2c847d1e04698cccf883a67cac, type: 3}
+  deathSound: {fileID: 0}
   shakeMagnitude: 1.8
   shakeTime: 0.1
 --- !u!114 &532620025
@@ -932,8 +935,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1775f95c058211a498b23778cc34b117, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeleeAttack
-  attackRange: 0.3
-  minDamage: 10
+  attackRange: 0.4
+  minDamage: 20
   maxDamage: 30
   maxChargeTime: 1.5
   attackCooldown: 0.5
@@ -958,6 +961,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Health
   maxHP: 100
   currentHP: 100
+  forcePhysicsDeath: 1
 --- !u!114 &532620032
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1696,6 +1700,63 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1001 &1107201713
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.64289
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.68452
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.70002
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
+      propertyPath: m_Name
+      value: idle_combat
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 7fb10a6c1bcc0e1408f67ca9b6739cb2, type: 3}
 --- !u!1 &1191153070
 GameObject:
   m_ObjectHideFlags: 0
@@ -1954,7 +2015,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8651749064700664650, guid: f3f0c2218f77636428205c052254eef2, type: 3}
       propertyPath: attackRange
-      value: 0.3
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 8651749064700664650, guid: f3f0c2218f77636428205c052254eef2, type: 3}
       propertyPath: slashVFXPrefab
@@ -3021,6 +3082,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Health
   maxHP: 50
   currentHP: 0
+  forcePhysicsDeath: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -3032,3 +3094,4 @@ SceneRoots:
   - {fileID: 711670710}
   - {fileID: 1550181051}
   - {fileID: 1548892682}
+  - {fileID: 1107201713}
