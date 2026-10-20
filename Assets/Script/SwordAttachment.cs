@@ -2,110 +2,239 @@ using UnityEngine;
 
 public class SwordAttachment : MonoBehaviour
 {
-    [Header("Tham chiếu")]
-    public GameObject sword;           // Kéo object kiếm vào đây
-    public Animator animator;          // Animator của nhân vật
+    [Header("Settings")]
+    [Tooltip("Kéo kiếm hoặc Sword_Socket vào đây (nếu để trống script sẽ tự tìm kiếm con hoặc dùng GameObject này)")]
+    public Transform swordTransform;
 
-    [Header("Cài đặt vị trí kiếm trên tay")]
-    public Vector3 localPosition = new Vector3(0f, 0f, 0f);
-    public Vector3 localRotation = new Vector3(0f, 0f, 0f);
-    public Vector3 localScale    = new Vector3(1f, 1f, 1f);
+    [Tooltip("Nếu bạn đã có sẵn 1 Socket làm điểm gắn thì kéo vào đây")]
+    public Transform customSocket;
 
-    // Dùng tên bone khi không lấy được xương từ Avatar Humanoid.
-    [Header("Tên bone tay phải dự phòng")]
-    public string rightHandBoneName = "RightHand";
+    [Header("Preserve Transform")]
+    [Tooltip("Tích chọn để GIỮ NGUYÊN góc xoay và vị trí bạn đã chỉnh sẵn trên Scene. Nếu bỏ tích sẽ dùng offset bên dưới.")]
+    public bool keepWorldTransformWhenAttaching = true;
 
-    private Transform rightHandBone;
+    [Header("Manual Offset (Chỉ dùng nếu không dùng Socket hoặc keepWorldTransform = false)")]
+    public Vector3 localPositionOffset = Vector3.zero;
+    public Vector3 localRotationOffset = Vector3.zero;
+
+    // Tương thích với prefab/scene cũ
+    [HideInInspector] public GameObject sword;
+    [HideInInspector] public Animator animator;
+    [HideInInspector] public Vector3 localPosition;
+    [HideInInspector] public Vector3 localRotation;
+    [HideInInspector] public Vector3 localScale = Vector3.one;
+    [HideInInspector] public string rightHandBoneName;
+
+    void Awake()
+    {
+        ResolveReferences();
+        CleanStrayComponents();
+    }
 
     void Start()
     {
-        if (sword == null)
+        Attach();
+    }
+
+    void ResolveReferences()
+    {
+        if (swordTransform == null && sword != null)
         {
-            Debug.LogError("Chưa gán Sword. Kéo object kiếm trong Hierarchy vào Sword Attachment.", this);
+            swordTransform = sword.transform;
+        }
+
+        if (swordTransform == null)
+        {
+            // Nếu script gắn trên nhân vật, tìm kiếm con
+            Transform foundSword = FindChildRecursive(transform, "Sword");
+            if (foundSword == null)
+                foundSword = FindChildRecursive(transform, "Weapon");
+
+            if (foundSword != null)
+            {
+                swordTransform = foundSword;
+            }
+            else
+            {
+                swordTransform = this.transform;
+            }
+        }
+    }
+
+    [ContextMenu("Attach Sword Now")]
+    public void Attach()
+    {
+        ResolveReferences();
+
+        if (swordTransform == null)
+        {
+            Debug.LogError("[SwordAttachment] Không tìm thấy swordTransform!", this);
             return;
         }
 
-        if (animator == null)
-            animator = GetComponentInChildren<Animator>();
-
-        // Avatar ánh xạ xương tay phải, không phụ thuộc tên bone trong model.
-        if (animator != null && animator.avatar != null &&
-            animator.avatar.isValid && animator.avatar.isHuman)
+        // 1. Nếu có customSocket thì gắn vào Socket
+        if (customSocket != null)
         {
-            rightHandBone = animator.GetBoneTransform(HumanBodyBones.RightHand);
-        }
-
-        Transform searchRoot = animator != null ? animator.transform : transform;
-        if (rightHandBone == null)
-            rightHandBone = FindBoneRecursive(searchRoot, rightHandBoneName);
-
-        // Hỗ trợ scene cũ vẫn lưu tên mixamorig:RightHand trong Inspector.
-        if (rightHandBone == null)
-            rightHandBone = FindBoneRecursive(searchRoot, "RightHand");
-
-        if (rightHandBone == null)
-        {
-            Debug.LogError($"Không tìm thấy xương tay phải qua Animator hoặc tên '{rightHandBoneName}' / 'RightHand'. " +
-                           "Kiểm tra Animator và tên bone trong Hierarchy của nhân vật!", this);
+            AttachToTarget(customSocket);
             return;
         }
 
-        AttachSword();
-    }
+        // 2. Tìm xương tay phải thông qua Animator hoặc duyệt Hierarchy
+        Transform handBone = FindRightHandBone();
 
-    void AttachSword()
-    {
-        if (sword == null || rightHandBone == null) return;
-
-        // Gắn kiếm vào bone tay phải
-        sword.transform.SetParent(rightHandBone);
-
-        // Đặt vị trí local (tương đối với bone)
-        sword.transform.localPosition = localPosition;
-        sword.transform.localEulerAngles = localRotation;
-        sword.transform.localScale = localScale;
-
-        Debug.Log("Đã gắn kiếm vào tay phải thành công!");
-    }
-
-    // Sau khi căn Transform của kiếm lúc Pause, lấy độ lệch so với tay.
-    // Copy component này rồi Paste Component Values sau khi thoát Play để lưu.
-    [ContextMenu("Capture Current Sword Pose")]
-    public void CaptureCurrentSwordPose()
-    {
-        if (!Application.isPlaying || sword == null || rightHandBone == null ||
-            sword.transform.parent != rightHandBone)
+        if (handBone != null)
         {
-            Debug.LogWarning("Hãy chạy game và gắn kiếm vào tay trước khi lấy tư thế kiếm.", this);
+            // Kiểm tra xem bên trong handBone có sẵn Socket nào không
+            Transform existingSocket = FindChildRecursive(handBone, "Socket");
+            Transform targetAttachPoint = existingSocket != null ? existingSocket : handBone;
+
+            AttachToTarget(targetAttachPoint);
+            Debug.Log($"[SwordAttachment] Đã gắn kiếm thành công vào: {targetAttachPoint.name}", this);
+        }
+        else
+        {
+            Debug.LogWarning("[SwordAttachment] Không tìm thấy xương tay phải! Hãy kiểm tra lại tên bone hoặc kéo trực tiếp Socket vào Inspector.", this);
+        }
+    }
+
+    void AttachToTarget(Transform target)
+    {
+        if (swordTransform == null || target == null)
+            return;
+
+        // Nếu kiếm ĐÃ là con của target (hoặc đang nằm trong hierarchy của target)
+        // -> KIẾM ĐÃ Ở ĐÚNG VỊ TRÍ VÀ GÓC XOAY ĐÃ CHỈNH TRÊN SCENE, KHÔNG ĐƯỢC RESET!
+        if (swordTransform.parent == target || swordTransform.IsChildOf(target))
+        {
+            CleanStrayComponents();
             return;
         }
 
-        localPosition = sword.transform.localPosition;
-        localRotation = sword.transform.localEulerAngles;
-        localScale = sword.transform.localScale;
+        // Nếu kiếm chưa được gán vào target, SetParent và giữ nguyên World Transform
+        swordTransform.SetParent(target, true);
 
-        Debug.Log("Đã lấy tư thế kiếm. Copy Component của Sword Attachment, thoát Play, " +
-                  "rồi Paste Component Values vào cùng component và lưu scene.", this);
+        // Chỉ khi người dùng chủ động tắt keepWorldTransformWhenAttaching VÀ có offset thì mới can thiệp
+        if (!keepWorldTransformWhenAttaching && (localPositionOffset != Vector3.zero || localRotationOffset != Vector3.zero))
+        {
+            swordTransform.localPosition = localPositionOffset;
+            swordTransform.localRotation = Quaternion.Euler(localRotationOffset);
+        }
+
+        CleanStrayComponents();
     }
 
-    // Hàm tìm bone theo tên trong toàn bộ hierarchy
-    Transform FindBoneRecursive(Transform parent, string boneName)
+    public void CleanStrayComponents()
     {
-        if (parent.name == boneName) return parent;
+        if (swordTransform == null) return;
+        GameObject go = swordTransform.gameObject;
 
-        foreach (Transform child in parent)
+        // Tránh tình trạng kiếm bị gắn nhầm EnemyAttack khiến kiếm tự bay lơ lửng đuổi theo player
+        EnemyAttack ea = go.GetComponent<EnemyAttack>();
+        if (ea != null)
         {
-            Transform found = FindBoneRecursive(child, boneName);
+            ea.enabled = false;
+            if (Application.isPlaying) Destroy(ea); else DestroyImmediate(ea);
+        }
+
+        Health h = go.GetComponent<Health>();
+        if (h != null)
+        {
+            if (Application.isPlaying) Destroy(h); else DestroyImmediate(h);
+        }
+
+        // Xóa thanh máu gắn nhầm trên kiếm
+        for (int i = go.transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = go.transform.GetChild(i);
+            if (child != null && (child.name == "EnemyHealthBar" || child.name == "PlayerHealthBarCanvas"))
+            {
+                if (Application.isPlaying) Destroy(child.gameObject); else DestroyImmediate(child.gameObject);
+            }
+        }
+    }
+
+    Transform FindRightHandBone()
+    {
+        // 1. Thử lấy qua Animator nếu là Humanoid
+        Animator anim = animator != null ? animator : GetComponentInParent<Animator>();
+        if (anim == null) anim = GetComponentInChildren<Animator>();
+
+        if (anim != null && anim.isHuman)
+        {
+            Transform bone = anim.GetBoneTransform(HumanBodyBones.RightHand);
+            if (bone != null) return bone;
+        }
+
+        // 2. Tìm kiếm trong cha/con có Animator
+        if (anim != null)
+        {
+            Transform boneInAnim = FindHandRecursive(anim.transform);
+            if (boneInAnim != null) return boneInAnim;
+        }
+
+        // 3. Tìm kiếm đệ quy theo tên từ root
+        Transform root = transform.root;
+        Transform boneInRoot = FindHandRecursive(root);
+        if (boneInRoot != null) return boneInRoot;
+
+        // 4. Tìm kiếm từ toàn scene nếu kiếm đứng độc lập ở root
+        GameObject enemyObj = GameObject.Find("Meshy_AI_Black_Armored_General_biped_Character_output");
+        if (enemyObj != null)
+        {
+            Transform enemyHand = FindHandRecursive(enemyObj.transform);
+            if (enemyHand != null) return enemyHand;
+        }
+
+        GameObject playerObj = GameObject.Find("Main_Character");
+        if (playerObj != null)
+        {
+            Transform playerHand = FindHandRecursive(playerObj.transform);
+            if (playerHand != null) return playerHand;
+        }
+
+        return null;
+    }
+
+    Transform FindHandRecursive(Transform current)
+    {
+        if (current == null) return null;
+        string lowerName = current.name.ToLower();
+
+        // Khớp 'righthand' hoặc 'right_hand' nhưng loại trừ các xương ngón tay
+        if (lowerName.Contains("righthand") || lowerName.Contains("right_hand"))
+        {
+            if (!lowerName.Contains("thumb") &&
+                !lowerName.Contains("index") &&
+                !lowerName.Contains("middle") &&
+                !lowerName.Contains("ring") &&
+                !lowerName.Contains("pinky"))
+            {
+                return current;
+            }
+        }
+
+        for (int i = 0; i < current.childCount; i++)
+        {
+            Transform found = FindHandRecursive(current.GetChild(i));
             if (found != null) return found;
         }
 
         return null;
     }
 
-    // Gọi hàm này để tháo kiếm (ví dụ khi nhân vật bị chết)
-    public void DetachSword()
+    Transform FindChildRecursive(Transform parent, string keyword)
     {
-        if (sword == null) return;
-        sword.transform.SetParent(null);
+        if (parent == null) return null;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name.ToLower().Contains(keyword.ToLower()))
+                return child;
+
+            Transform subChild = FindChildRecursive(child, keyword);
+            if (subChild != null) return subChild;
+        }
+        return null;
     }
 }
+

@@ -1,138 +1,294 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
 public class Character_Movement : MonoBehaviour
 {
-    [Header("Movement Speed (Scale 7x)")]
-    public float walkSpeed = 30f; // Tốc độ lớn cho nhân vật to
-    public float runSpeed  = 55f;
-    public float rotationSpeed = 15f;
-    public float acceleration = 90f;
-    public float braking = 120f;
+    public Rigidbody rb;
+    public Animator animator;
 
-    private Rigidbody rb;
-    private Animator[] animators; // Lưu TẤT CẢ animator để không sót
-    private Vector3 moveDir;
-    private bool isRunning;
+    [Header("Movement Speed")]
+    [SerializeField, Min(0f)] private float walkSpeed = 3f;
+    [SerializeField, Min(0f)] private float runSpeed = 6f;
+
+    [Header("Attack")]
+    [Tooltip("Tỉ lệ tốc độ di chuyển khi tấn công: 0.2 = còn 20% tốc độ, giảm 80%.")]
+    [SerializeField, Range(0f, 1f)] private float attackMoveSpeedMultiplier = 0.2f;
+    [Tooltip("Đường dẫn state chém kiếm trên layer 0 của Animator.")]
+    [SerializeField] private string attackStateName = "Base Layer.Attack";
+    [Tooltip("Đường dẫn state đòn chuột phải trên layer 0 của Animator.")]
+    [SerializeField] private string attack2StateName = "Base Layer.Attack2";
+
+    [Header("Shield Block")]
+    [Tooltip("Đường dẫn state đỡ khiên trên layer 0 của Animator.")]
+    [SerializeField] private string blockStateName = "Base Layer.Block";
+
+    [Header("Combat Damage")]
+    public int attackDamage = 20;
+    public float attackRange = 1f;
+    public LayerMask enemyLayer;
+    private bool hasAppliedDamage;
+    private HitEffect hitEffect;
+
+    [Header("VFX")]
+    [Tooltip("Hiệu ứng chém (Slash VFX) hiển thị khi ra đòn")]
+    [SerializeField] private GameObject slashVFXPrefab;
+    [Tooltip("Vị trí hiển thị slash VFX (thường là nhân vật hoặc vị trí vung kiếm)")]
+    [SerializeField] private Transform slashSpawnPoint;
+
+    private static readonly int BlockParameter = Animator.StringToHash("isBlocking");
+    private int blockStateHash;
+    private bool hasBlockParameter;
+    private bool canBlock;
+    private bool isBlocking;
+
+    private static readonly int AttackTrigger = Animator.StringToHash("attack");
+    private static readonly int Attack2Trigger = Animator.StringToHash("attack2");
+    private int attackStateHash;
+    private int attack2StateHash;
+    private int pendingAttackTrigger;
+    private bool isAttacking;
+    private bool waitingForAttack;
+    private float attackStartDeadline;
+
+    private bool isRunning = false;
+
+    // Chỉ lưu hướng ngang (X, Z) — KHÔNG có Y
+    private float moveX;
+    private float moveZ;
 
     void Start()
     {
-        // Tự động sửa lỗi nếu Inspector bị kẹt số quá nhỏ
-        if (walkSpeed < 10f) 
+        if (rb == null) rb = GetComponent<Rigidbody>();
+        rb.freezeRotation = true;
+
+        if (animator == null) animator = GetComponentInChildren<Animator>();
+
+        // Rigidbody điều khiển di chuyển;
+        // không áp dụng chuyển động gốc từ animation.
+        if (animator != null) animator.applyRootMotion = false;
+        attackStateHash = Animator.StringToHash(attackStateName);
+        attack2StateHash = Animator.StringToHash(attack2StateName);
+        blockStateHash = Animator.StringToHash(blockStateName);
+        hasBlockParameter = HasAnimatorParameter(BlockParameter, AnimatorControllerParameterType.Bool);
+        canBlock = hasBlockParameter && animator.HasState(0, blockStateHash);
+        hitEffect = GetComponent<HitEffect>();
+        hasAppliedDamage = false;
+    }
+
+    // Đọc input và cập nhật trạng thái animation.
+    void Update()
+    {
+        UpdateAttackState();
+        UpdateBlockState();
+
+        if (!isAttacking && !isBlocking)
         {
-            walkSpeed = 30f;
-            runSpeed = 55f;
-            Debug.Log("[Movement] Đã tự động sửa tốc độ di chuyển thành 30/55 cho nhân vật Scale 7x.");
+            // Nếu nhấn đồng thời hai nút, ưu tiên đòn chuột trái.
+            if (Input.GetMouseButtonDown(0))
+            {
+                TryStartAttack(attackStateHash, attackStateName, AttackTrigger, "attack");
+            }
+            else if (Input.GetMouseButtonDown(1))
+            {
+                TryStartAttack(attack2StateHash, attack2StateName, Attack2Trigger, "attack2");
+            }
         }
 
-        rb = GetComponent<Rigidbody>();
-        // Character control needs a dynamic body with X/Z tilt locked, while Y
-        // rotation and horizontal position remain free for movement.
-        rb.isKinematic = false;
-        rb.useGravity = true;
-        rb.constraints = RigidbodyConstraints.FreezeRotationX |
-                         RigidbodyConstraints.FreezeRotationY |
-                         RigidbodyConstraints.FreezeRotationZ;
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
-        // Player runs at high world-space speeds; continuous collision detection
-        // prevents tunnelling through thin hull and prop colliders between physics steps.
-        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        
-        // === SỬA T-POSE TRIỆT ĐỂ ===
-        // Quét tất cả con cháu, tìm mọi Animator có thể có
-        animators = GetComponentsInChildren<Animator>(true);
-        var ctrl = Resources.Load<RuntimeAnimatorController>("Player_Neutral");
-        
-        foreach (var anim in animators)
+        if (isBlocking)
         {
-            anim.enabled = true;
-            anim.applyRootMotion = false;
-            if (ctrl != null)
+            moveX = 0f;
+            moveZ = 0f;
+            isRunning = false;
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isRunning", false);
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            return;
+        }
+
+        float ipHorizontal = Input.GetAxis("Horizontal");
+        float ipVertical   = Input.GetAxis("Vertical");
+
+        // Lấy hướng camera chiếu xuống mặt phẳng ngang và normalize
+        Vector3 camForward = Camera.main.transform.forward;
+        camForward.y = 0f;
+        camForward.Normalize(); // <-- quan trọng, tránh Y drift
+
+        Vector3 camRight = Camera.main.transform.right;
+        camRight.y = 0f;
+        camRight.Normalize();
+
+        // Tính hướng di chuyển hoàn toàn nằm ngang
+        Vector3 moveDir = (camForward * ipVertical + camRight * ipHorizontal);
+        if (moveDir.magnitude > 1f) moveDir.Normalize();
+
+        // Chỉ lưu X và Z, không bao giờ lưu Y
+        moveX = moveDir.x;
+        moveZ = moveDir.z;
+
+        bool isMoving = (moveX != 0f || moveZ != 0f);
+        isRunning = isMoving && Input.GetKey(KeyCode.LeftShift);
+
+        animator.SetBool("isWalking", isMoving);
+        animator.SetBool("isRunning", isRunning);
+
+        HandleRotation(moveDir);
+    }
+
+    void TryStartAttack(int stateHash, string stateName, int triggerHash, string triggerName)
+    {
+        if (!animator.HasState(0, stateHash))
+        {
+            Debug.LogWarning($"Chưa tìm thấy state '{stateName}' trên layer 0 của Animator.", this);
+            return;
+        }
+
+        if (!HasAnimatorParameter(triggerHash, AnimatorControllerParameterType.Trigger))
+        {
+            Debug.LogWarning($"Hãy thêm parameter kiểu Trigger tên '{triggerName}' vào Animator.", this);
+            return;
+        }
+
+        isAttacking = true;
+        waitingForAttack = true;
+        hasAppliedDamage = false;
+        pendingAttackTrigger = triggerHash;
+        // Chỉ giới hạn thời gian chờ vào state; không giới hạn độ dài animation chém.
+        attackStartDeadline = Time.time + 1f;
+        animator.SetTrigger(triggerHash);
+
+        // Hiển thị hiệu ứng chém ngay khi bắt đầu ra đòn
+        if (slashVFXPrefab != null)
+        {
+            Vector3 spawnPos = slashSpawnPoint != null ? slashSpawnPoint.position : (transform.position + Vector3.up * 1.2f);
+            Quaternion spawnRot = slashSpawnPoint != null ? slashSpawnPoint.rotation : transform.rotation;
+            
+            // Khởi tạo VFX
+            GameObject slash = Instantiate(slashVFXPrefab, spawnPos, spawnRot);
+            
+            // Nếu có điểm spawn (ví dụ gắn ở kiếm/tay), cho VFX làm con của điểm đó để nó di chuyển theo tay
+            if (slashSpawnPoint != null)
             {
-                anim.runtimeAnimatorController = ctrl;
+                slash.transform.SetParent(slashSpawnPoint);
             }
-            anim.SetBool("isWalking", false);
-            anim.SetBool("isRunning", false);
+            
+            Destroy(slash, 1.5f);
         }
     }
 
-    void Update()
+    void UpdateAttackState()
     {
-        if (rb == null) return;
+        bool attackIsActive = IsAnimationStateActive(attackStateHash) || IsAnimationStateActive(attack2StateHash);
 
-        if (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen)
+        if (attackIsActive)
         {
-            moveDir = Vector3.zero;
-            isRunning = false;
-            return;
+            waitingForAttack = false;
         }
-        if (ScreenFader.Instance != null && ScreenFader.Instance.IsTransitioning)
+        else if (waitingForAttack && Time.time >= attackStartDeadline)
         {
-            moveDir = Vector3.zero;
-            isRunning = false;
-            return;
+            // Không giữ trạng thái tấn công mãi nếu thiếu transition vào đòn đã chọn.
+            waitingForAttack = false;
+            animator.ResetTrigger(pendingAttackTrigger);
+            Debug.LogWarning("Animator chưa vào state tấn công. Kiểm tra transition Any State -> Attack hoặc Attack2.", this);
         }
 
-        // Đọc input WASD
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-        if (Mathf.Abs(h) < 0.01f)
-            h = (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow) ? 1f : 0f) -
-                (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow) ? 1f : 0f);
-        if (Mathf.Abs(v) < 0.01f)
-            v = (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow) ? 1f : 0f) -
-                (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) ? 1f : 0f);
-
-        // WASD luôn bám theo mặt phẳng ngang của camera kiểu third-person.
-        Camera cam = Camera.main;
-        Vector3 forward = cam != null ? cam.transform.forward : transform.forward;
-        forward.y = 0f;
-        forward = forward.sqrMagnitude > 0.001f ? forward.normalized : transform.forward;
-        Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
-        Vector2 input = Vector2.ClampMagnitude(new Vector2(h, v), 1f);
-        moveDir = (forward * input.y + right * input.x).normalized;
-        
-        // Giữ Shift để chạy
-        isRunning = moveDir.magnitude > 0.1f && Input.GetKey(KeyCode.LeftShift);
-
-        // Báo animation cho TẤT CẢ animator
-        bool isWalking = moveDir.magnitude > 0.1f;
-        if (animators != null)
+        // Khi đang ở state chém và chưa áp damage thì áp damage một lần.
+        if (attackIsActive && !hasAppliedDamage)
         {
-            foreach (var anim in animators)
+            hasAppliedDamage = true;
+            Collider[] hits = Physics.OverlapSphere(transform.position + transform.forward * 1f, attackRange, enemyLayer);
+            foreach (Collider hit in hits)
             {
-                if (anim.gameObject.activeInHierarchy && anim.runtimeAnimatorController != null)
+                var h = hit.GetComponentInParent<Health>();
+                if (h != null)
                 {
-                    anim.SetBool("isWalking", isWalking);
-                    anim.SetBool("isRunning", isRunning);
+                    h.TakeDamage(attackDamage);
+                    hitEffect?.PlayHit(hit.transform.position + Vector3.up);
+                    Debug.Log($"Chém trúng {h.name}, trừ {attackDamage} HP");
                 }
             }
         }
+
+        // Giữ tốc độ di chuyển giảm cả khi đang blend vào hoặc ra khỏi Attack/Attack2.
+        isAttacking = waitingForAttack || attackIsActive;
     }
 
+    void UpdateBlockState()
+    {
+        if (Input.GetKeyDown(KeyCode.Space) && !canBlock)
+        {
+            Debug.LogWarning($"Đỡ khiên cần parameter Bool 'isBlocking' và state '{blockStateName}' trên layer 0. " +
+                             "Cấu hình Animator rồi chạy lại Play Mode.", this);
+        }
+
+        // Giữ Space để đỡ; đợi chém xong nếu đang tấn công.
+        bool wantsToBlock = canBlock && Input.GetKey(KeyCode.Space) && !isAttacking;
+        if (hasBlockParameter)
+        {
+            animator.SetBool(BlockParameter, wantsToBlock);
+        }
+
+        // Thả Space yêu cầu thoát Block; giữ khóa đến khi blend ra hoàn tất.
+        isBlocking = wantsToBlock || (canBlock && IsAnimationStateActive(blockStateHash));
+    }
+
+    bool IsAnimationStateActive(int stateHash)
+    {
+        return animator.GetCurrentAnimatorStateInfo(0).fullPathHash == stateHash ||
+            (animator.IsInTransition(0) &&
+             animator.GetNextAnimatorStateInfo(0).fullPathHash == stateHash);
+    }
+
+    bool HasAnimatorParameter(int parameterHash, AnimatorControllerParameterType parameterType)
+    {
+        foreach (AnimatorControllerParameter parameter in animator.parameters)
+        {
+            if (parameter.nameHash == parameterHash && parameter.type == parameterType)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void OnDisable()
+    {
+        if (animator != null && hasBlockParameter)
+        {
+            animator.SetBool(BlockParameter, false);
+        }
+
+        isBlocking = false;
+    }
+
+    // FixedUpdate: xử lý physics
     void FixedUpdate()
     {
-        if (rb == null) return;
-
-        // Contacts with props can add yaw torque. Keep the character steady when
-        // there is no movement input; deliberate heading changes come from WASD.
-        bool hasMoveInput = moveDir.sqrMagnitude > 0.001f;
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ |
-                         (hasMoveInput ? RigidbodyConstraints.None : RigidbodyConstraints.FreezeRotationY);
-        rb.angularVelocity = Vector3.zero;
-
-        float speed = isRunning ? runSpeed : walkSpeed;
-        Vector3 currentPlanarVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        Vector3 targetPlanarVelocity = moveDir * speed;
-        float rate = moveDir.sqrMagnitude > 0.001f ? acceleration : braking;
-        Vector3 planarVelocity = Vector3.MoveTowards(
-            currentPlanarVelocity, targetPlanarVelocity, rate * Time.fixedDeltaTime);
-        rb.linearVelocity = new Vector3(planarVelocity.x, rb.linearVelocity.y, planarVelocity.z);
-
-        if (hasMoveInput)
+        float moveSpeed = isRunning ? runSpeed : walkSpeed;
+        if (isBlocking)
         {
-            Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
-            rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRot, rotationSpeed * Time.fixedDeltaTime));
+            moveSpeed = 0f;
+        }
+        else if (isAttacking)
+        {
+            moveSpeed *= attackMoveSpeedMultiplier;
+        }
+
+        // Lấy velocity hiện tại, CHỈ thay X và Z, GIỮ NGUYÊN Y (gravity)
+        // Chặn velocity hướng lên (Y > 0) để tránh bị nảy/hất văng lên trời khi va chạm collider khác
+        float currentY = rb.linearVelocity.y;
+        if (currentY > 0.1f)
+        {
+            currentY = 0f;
+        }
+        rb.linearVelocity = new Vector3(moveX * moveSpeed, currentY, moveZ * moveSpeed);
+    }
+
+    void HandleRotation(Vector3 moveDir)
+    {
+        if (moveDir.sqrMagnitude > 0.01f)
+        {
+            moveDir.y = 0f;
+            transform.rotation = Quaternion.LookRotation(moveDir);
         }
     }
 }
