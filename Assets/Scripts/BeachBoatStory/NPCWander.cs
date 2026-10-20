@@ -125,11 +125,15 @@ namespace BeachBoatStory
         void Idle()
         {
             idleRemaining=UnityEngine.Random.Range(Mathf.Max(.1f,minIdleTime),Mathf.Max(minIdleTime,maxIdleTime));
-            bool sleeping=targetIndex>=0&&activityLabels!=null&&targetIndex<activityLabels.Length&&
-                !string.IsNullOrEmpty(activityLabels[targetIndex])&&activityLabels[targetIndex].Contains("ngủ");
+            string activity=targetIndex>=0&&activityLabels!=null&&targetIndex<activityLabels.Length
+                ?activityLabels[targetIndex]:null;
+            bool sleeping=!string.IsNullOrEmpty(activity)&&activity.Contains("ngủ");
+            bool seated=!string.IsNullOrEmpty(activity)&&activity.Contains("ngồi");
             if(sleeping) idleRemaining=Mathf.Max(idleRemaining,UnityEngine.Random.Range(12f,24f));
-            restPose=sleeping&&hasLay?2:hasPose&&hasLay?UnityEngine.Random.Range(1,3):1;
-            Pose(false,sleeping?hasLay:hasSit&&UnityEngine.Random.value*100<sitLayChance);
+            // Retargeted rest clips need an authored mat or seat. Playing them at a
+            // random patrol stop makes armored NPCs float or fold into the ground.
+            restPose=sleeping&&hasLay?2:1;
+            Pose(false,sleeping?hasLay:seated&&hasSit);
             currentSpeed=0;
             PickIdleFacing();
             CurrentActivity=targetIndex>=0&&activityLabels!=null&&targetIndex<activityLabels.Length&&!string.IsNullOrWhiteSpace(activityLabels[targetIndex])

@@ -75,11 +75,13 @@ public static class BeachBoatCampActors
             animator.runtimeAnimatorController = controller; animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             var pose = actor.GetComponent<NPCCampPose>();
-            string state = i == 7 ? "Sitting" : i == 8 ? "Laying" : "Idle";
-            if (pose != null) pose.previewInEditMode = false;
+            // Imported seated/prone clips lift the large armored mesh off the floor.
+            // Keep these two sentries upright until a correctly retargeted rest clip exists.
+            string state = "Idle";
+            if (pose != null) { pose.previewInEditMode = false; pose.pose = NPCCampPose.PoseType.Standing; }
             actor.transform.SetPositionAndRotation(new Vector3(positions[i].x, 0, positions[i].y),
                 Quaternion.Euler(0, i < 4 ? 0 : i == 6 ? 180 : 90, 0));
-            animator.Rebind(); animator.Play(state, 0, i == 8 ? 1 : 0); animator.Update(.05f);
+            animator.Rebind(); animator.Play(state, 0, 0); animator.Update(.05f);
             var renderers = actor.GetComponentsInChildren<SkinnedMeshRenderer>();
             Bounds bounds = default; bool first = true;
             foreach (var renderer in renderers)
@@ -97,10 +99,14 @@ public static class BeachBoatCampActors
                 renderer.updateWhenOffscreen = false; renderer.shadowCastingMode = ShadowCastingMode.Off;
             }
             float floor = floors[i];
-            actor.transform.position += Vector3.up * (floor + .1f - bounds.min.y);
+            if (i >= 7)
+                actor.transform.position = new Vector3(actor.transform.position.x,
+                    floor + actor.transform.lossyScale.y * .22f + .1f, actor.transform.position.z);
+            else
+                actor.transform.position += Vector3.up * (floor + .1f - bounds.min.y);
             foreach (var old in actor.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(old);
             var collider = actor.AddComponent<BoxCollider>();
-            collider.size = i == 8 ? new Vector3(.75f,.6f,1.8f) : i == 7 ? new Vector3(.8f,1f,.9f) : new Vector3(.7f,1.85f,.65f);
+            collider.size = new Vector3(.7f,1.85f,.65f);
             collider.center = Vector3.up * collider.size.y * .5f;
             var lod = actor.GetComponent<LODGroup>();
             if (lod == null) lod = actor.AddComponent<LODGroup>();

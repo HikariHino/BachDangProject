@@ -168,7 +168,7 @@ public static class BeachBoatSupplyCampUpgrade
             throw new InvalidOperationException("Expected four existing supply checkpoints.");
         if (camp.Find("Living_Dormitories") != null) throw new InvalidOperationException("Upgrade already exists; refusing to duplicate it.");
         var tents = camp.Find("Barracks_Rows");
-        if (tents == null || tents.Find("Barracks_Tent_05") == null || tents.Find("Barracks_Tent_06") == null)
+        if (tents == null || tents.Find("Barracks_Tent_05") == null || tents.Find("Barracks_Tent_13") == null)
             throw new InvalidOperationException("The two replaceable camp tents are missing.");
         var hull = boat.transform.Find("Thuyen_Go_Song");
         if (hull == null) throw new InvalidOperationException("The polished rowing hull is missing.");
@@ -292,7 +292,7 @@ public static class BeachBoatSupplyCampUpgrade
         if (source == null || source.GetComponent<NPCWander>() == null) throw new InvalidOperationException("Camp soldier source missing.");
         foreach (int side in new[] { -1, 1 })
         {
-            var tent = tents.Find(side < 0 ? "Barracks_Tent_05" : "Barracks_Tent_06");
+            var tent = tents.Find(side < 0 ? "Barracks_Tent_05" : "Barracks_Tent_13");
             var center = tent.position;
             center.y = terrain.SampleHeight(center) + terrain.transform.position.y;
             var house = new GameObject(side < 0 ? "Nha_Nghi_Linh_Tay" : "Nha_Nghi_Linh_Dong").transform;
