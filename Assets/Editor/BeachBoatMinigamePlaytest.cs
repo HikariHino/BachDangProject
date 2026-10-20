@@ -17,7 +17,8 @@ public static class BeachBoatMinigamePlaytest
     static double started;
     static int phase;
     static string failure;
-    static bool timedOut, supplyTimedOut, beatChanged, wrongCargoRejected, allDeliveries;
+    static string signFailure;
+    static bool timedOut, supplyTimedOut, beatChanged, wrongCargoRejected, allDeliveries, signsLabelled;
 
     [MenuItem("BeachBoat/QA/Run Minigame Smoke Test")]
     public static void RunAndExit()
@@ -25,7 +26,9 @@ public static class BeachBoatMinigamePlaytest
         EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity", OpenSceneMode.Single);
         SessionState.SetBool(Flag, true);
         started = 0; phase = 0; failure = null;
+        signFailure = null;
         timedOut = supplyTimedOut = beatChanged = wrongCargoRejected = allDeliveries = false;
+        signsLabelled = true;
         EditorApplication.isPlaying = true;
     }
 
@@ -44,7 +47,7 @@ public static class BeachBoatMinigamePlaytest
     {
         Directory.CreateDirectory("Logs");
         File.WriteAllText("Logs/BeachBoatMinigamePlaytest.json", JsonConvert.SerializeObject(new {
-            success, failure, timedOut, supplyTimedOut, beatChanged, wrongCargoRejected, allDeliveries,
+            success, failure, signFailure, timedOut, supplyTimedOut, beatChanged, wrongCargoRejected, allDeliveries, signsLabelled,
             drumCompleted = drum != null && drum.HasCompleted,
             supplyCompleted = supply != null && supply.HasCompleted,
             supplyTrips = supply?.Progress
@@ -56,7 +59,7 @@ public static class BeachBoatMinigamePlaytest
     static void Tick()
     {
         if (!SessionState.GetBool(Flag, false) || !EditorApplication.isPlaying) return;
-        if (started == 0) started = EditorApplication.timeSinceStartup;
+        if (started == 0) { started = EditorApplication.timeSinceStartup; signsLabelled = true; }
         double elapsed = EditorApplication.timeSinceStartup - started;
         var stations = UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsSortMode.None);
         var drum = stations.FirstOrDefault(s => s.kind == BeachBoatMinigameStation.ActivityKind.WarDrum);
@@ -135,6 +138,13 @@ public static class BeachBoatMinigamePlaytest
         else if (phase == 5)
         {
             if (!supply.ChooseCargo(supply.RequestedCargo)) { failure = "Correct cargo rejected"; Finish(false, drum, supply); return; }
+            var marker = supply.checkpointMarkers[supply.Progress];
+            var sign = marker == null ? null : marker.GetComponent<SupplyDestinationSign>();
+            bool labelled = marker != null && marker.activeSelf && sign != null && sign.label != null &&
+                sign.label.text.Contains(BeachBoatMinigameStation.CargoName(supply.SelectedCargo));
+            if (!labelled) signFailure = $"Trip {supply.Progress}: marker={marker?.name}, active={marker?.activeSelf}, " +
+                $"component={sign != null}, label={sign?.label?.text}, cargo={BeachBoatMinigameStation.CargoName(supply.SelectedCargo)}";
+            signsLabelled &= labelled;
             phase = 6;
         }
         else if (phase == 6)
@@ -142,7 +152,7 @@ public static class BeachBoatMinigamePlaytest
             int index = supply.Progress;
             Move(session.player, supply.checkpoints[index].position + Vector3.right * 4);
             if (!supply.TryDeliver()) { failure = "Delivery rejected at checkpoint " + index; Finish(false, drum, supply); return; }
-            if (supply.HasCompleted) { allDeliveries = supply.Progress == supply.checkpoints.Length; Finish(timedOut && supplyTimedOut && wrongCargoRejected && allDeliveries, drum, supply); return; }
+            if (supply.HasCompleted) { allDeliveries = supply.Progress == supply.checkpoints.Length; Finish(timedOut && supplyTimedOut && wrongCargoRejected && allDeliveries && signsLabelled, drum, supply); return; }
             Move(session.player, supply.transform.position + Vector3.right * 15);
             phase = 7;
         }

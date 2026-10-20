@@ -257,7 +257,12 @@ namespace BeachBoatStory
         {
             if (checkpointMarkers == null) return;
             for (int i = 0; i < checkpointMarkers.Length; i++)
-                if (checkpointMarkers[i] != null) checkpointMarkers[i].SetActive(i == active);
+                if (checkpointMarkers[i] != null)
+                {
+                    var sign = checkpointMarkers[i].GetComponent<SupplyDestinationSign>();
+                    if (sign != null && i == active) sign.SetCargo(CargoName(selectedCargo), i + 1);
+                    checkpointMarkers[i].SetActive(i == active);
+                }
         }
 
         void SetCursorFree(bool free)

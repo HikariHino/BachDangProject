@@ -26,7 +26,7 @@ namespace BeachBoatStory
         float idleRemaining, groundOffset, scale, currentSpeed, personalPace = 1, baseAnimatorSpeed = 1;
         float idleLookRemaining;
         Quaternion idleFacing;
-        int walkHash, sitHash, layHash, poseHash, restPose = 1, targetIndex = -1;
+        int walkHash, sitHash, layHash, poseHash, restPose = 1, appliedRestPose, targetIndex = -1;
         bool hasWalk, hasSit, hasLay, hasPose, walking, sitting;
         RuntimeAnimatorController controller;
         readonly RaycastHit[] hits = new RaycastHit[12];
@@ -77,7 +77,7 @@ namespace BeachBoatStory
                 if (string.Equals(p.name,"isLaying",StringComparison.OrdinalIgnoreCase))
                 { hasLay = true; layHash = p.nameHash; }
             }
-            walking = sitting = false;
+            walking = sitting = false; appliedRestPose = 0;
             if (hasWalk) animator.SetBool(walkHash,false);
             if (hasSit) animator.SetBool(sitHash,false);
             if (hasLay) animator.SetBool(layHash,false);
@@ -86,11 +86,15 @@ namespace BeachBoatStory
         void Pose(bool walk, bool sit)
         {
             if (hasWalk && walking != walk) animator.SetBool(walkHash,walk);
-            if (sitting != sit)
+            // A soldier can sit at one stop and lie down at the next. Keep the pose
+            // in sync without sending animator parameters on every idle frame.
+            int nextPose = sit ? restPose : 0;
+            if (sitting != sit || appliedRestPose != nextPose)
             {
                 if (hasSit) animator.SetBool(sitHash,sit && restPose == 1);
                 if (hasLay) animator.SetBool(layHash,sit && restPose == 2);
-                if (hasPose) animator.SetInteger(poseHash,sit ? restPose : 0);
+                if (hasPose) animator.SetInteger(poseHash,nextPose);
+                appliedRestPose = nextPose;
             }
             walking = walk; sitting = sit;
         }
@@ -121,8 +125,11 @@ namespace BeachBoatStory
         void Idle()
         {
             idleRemaining=UnityEngine.Random.Range(Mathf.Max(.1f,minIdleTime),Mathf.Max(minIdleTime,maxIdleTime));
-            restPose=hasPose && hasLay ? UnityEngine.Random.Range(1,3) : 1;
-            Pose(false,hasSit&&UnityEngine.Random.value*100<sitLayChance);
+            bool sleeping=targetIndex>=0&&activityLabels!=null&&targetIndex<activityLabels.Length&&
+                !string.IsNullOrEmpty(activityLabels[targetIndex])&&activityLabels[targetIndex].Contains("ngủ");
+            if(sleeping) idleRemaining=Mathf.Max(idleRemaining,UnityEngine.Random.Range(12f,24f));
+            restPose=sleeping&&hasLay?2:hasPose&&hasLay?UnityEngine.Random.Range(1,3):1;
+            Pose(false,sleeping?hasLay:hasSit&&UnityEngine.Random.value*100<sitLayChance);
             currentSpeed=0;
             PickIdleFacing();
             CurrentActivity=targetIndex>=0&&activityLabels!=null&&targetIndex<activityLabels.Length&&!string.IsNullOrWhiteSpace(activityLabels[targetIndex])

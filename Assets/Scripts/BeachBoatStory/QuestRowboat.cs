@@ -17,6 +17,8 @@ namespace BeachBoatStory
         public float sprintMultiplier = 1.55f;
         public float sprintStaminaPerSecond = 12f;
         public float boardingRange = 35, dockingRange = 90, minimumDepth = 12;
+        [Header("Hull clearance")]
+        public float hullProbeSpacing = 26, hullProbeRadius = 11;
         public bool IsAboard { get; private set; }
         public float Speed { get; private set; }
         public bool IsBoosting { get; private set; }
@@ -221,7 +223,7 @@ namespace BeachBoatStory
             obstacle = BoatObstacleKind.None;
             for (int i = -1; i <= 1; i++)
             {
-                var sample = position + rotation * Vector3.forward * (i * 26f);
+                var sample = position + rotation * Vector3.forward * (i * hullProbeSpacing);
                 if (nearbyFriendlyBoats != null)
                     foreach (var other in nearbyFriendlyBoats)
                         if (other != null && other.gameObject.activeInHierarchy &&
@@ -232,7 +234,7 @@ namespace BeachBoatStory
                         if (other != null && other.gameObject.activeInHierarchy && !other.isDestroyed &&
                             FlatDistance(sample, other.transform.position) < 53f)
                         { obstacle = BoatObstacleKind.Ship; return false; }
-                int count = Physics.OverlapSphereNonAlloc(sample + Vector3.up * 2, 11, overlaps, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                int count = Physics.OverlapSphereNonAlloc(sample + Vector3.up * 2, hullProbeRadius, overlaps, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
                 if (count == overlaps.Length) { obstacle = BoatObstacleKind.Structure; return false; }
                 for (int n = 0; n < count; n++)
                 {

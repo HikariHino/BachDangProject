@@ -18,6 +18,8 @@ namespace BeachBoatStory
         BeachBoatMinigameStation shown;
         GameObject objectivePanel;
         int lastFeedback = -1;
+        int lastRelayFeedback = -1;
+        float relayErrorUntil;
 
         static readonly Color Ink = new Color(.025f, .032f, .038f, .97f);
         static readonly Color Paper = new Color(.12f, .105f, .075f, .97f);
@@ -44,6 +46,8 @@ namespace BeachBoatStory
             {
                 shown = active;
                 lastFeedback = -1;
+                lastRelayFeedback = -1;
+                relayErrorUntil = 0;
                 if (objectivePanel != null) objectivePanel.SetActive(active == null);
                 drumRoot.SetActive(active != null && active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum);
                 relayRoot.SetActive(active != null && active.kind == BeachBoatMinigameStation.ActivityKind.SupplyRelay);
@@ -92,6 +96,11 @@ namespace BeachBoatStory
 
         void RefreshRelay(BeachBoatMinigameStation game)
         {
+            if (lastRelayFeedback != game.FeedbackVersion)
+            {
+                lastRelayFeedback = game.FeedbackVersion;
+                if (lastRelayFeedback > 0 && !game.LastInputCorrect) relayErrorUntil = Time.unscaledTime + 2.5f;
+            }
             int total = game.checkpoints != null ? game.checkpoints.Length : 0;
             relayTitle.text = $"VẬT TƯ RA TRẬN ĐỊA   {game.Progress}/{total}";
             relayTime.text = $"CÒN {game.TimeRemaining:0}s  •  Chọn sai {game.Mistakes}";
@@ -104,10 +113,13 @@ namespace BeachBoatStory
             relayHint.text = game.ReturningToWarehouse
                 ? $"Về kho lấy vật tư • {Mathf.RoundToInt(game.CurrentTargetDistance)} m"
                 : game.IsSelectingCargo
-                ? "Chọn đúng vật tư ở kho. Chọn sai mất 8 giây."
+                ? "Đọc phiếu, chọn vật tư cùng tên ở kho (phím 1–3 hoặc bấm ô). Chọn sai mất 8 giây."
                 : game.CurrentTargetDistance <= game.interactDistance
-                    ? "Đã tới điểm tập kết — bấm E để giao vật tư"
-                    : $"Đưa tới cột sáng phía trước • {Mathf.RoundToInt(game.CurrentTargetDistance)} m";
+                    ? $"Đã tới biển GIAO {BeachBoatMinigameStation.CargoName(game.SelectedCargo)} — bấm E để giao"
+                    : $"Theo biển GIAO {BeachBoatMinigameStation.CargoName(game.SelectedCargo)} • {Mathf.RoundToInt(game.CurrentTargetDistance)} m";
+            if (Time.unscaledTime < relayErrorUntil)
+                relayHint.text = "SAI VẬT TƯ: xem tên trên phiếu và thùng hàng. Bị trừ 8 giây.";
+            relayHint.color = Time.unscaledTime < relayErrorUntil ? Red : Color.white;
             choicesRoot.SetActive(game.IsSelectingCargo);
             SetProgress(relayProgress, total > 0 ? game.Progress / (float)total : 0f);
         }
