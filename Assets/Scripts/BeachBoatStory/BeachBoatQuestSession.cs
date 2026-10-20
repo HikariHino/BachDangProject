@@ -23,11 +23,17 @@ namespace BeachBoatStory
         GameObject questCanvas;
         GameObject controlsPanel;
         TMP_Text controlsText;
+        PlayerVitals vitals;
+        Image healthFill, staminaFill;
+        TMP_Text healthText, staminaText, impactText;
+        int shownHealth = -1, shownStamina = -1;
         NPCDialogue[] talkers;
         NPCQuestGiver questGiver;
         CampGateTransition[] gates;
         public static bool InputBlocked => InteractionBlocked ||
-            (BeachBoatMinigameStation.Active != null && BeachBoatMinigameStation.Active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum) ||
+            (BeachBoatMinigameStation.Active != null &&
+             (BeachBoatMinigameStation.Active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum ||
+              BeachBoatMinigameStation.Active.IsSelectingCargo || BeachBoatMinigameStation.Active.Failed)) ||
             StoryDialogueUI.InputConsumedThisFrame;
         public static bool InteractionBlocked => OpeningEvent.IsOpeningActive ||
             (RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsPlanting) ||
@@ -43,6 +49,8 @@ namespace BeachBoatStory
             Instance = this;
             if (player == null || storyCamera == null || tourCamera == null || playerSpawn == null)
             { Debug.LogError("BeachBoat story bindings are incomplete.", this); enabled = false; return; }
+            vitals = player.GetComponent<PlayerVitals>();
+            if (vitals == null) vitals = player.AddComponent<PlayerVitals>();
             savedControls = new bool[tourControls.Length];
             for (int i = 0; i < tourControls.Length; i++) savedControls[i] = tourControls[i] != null && tourControls[i].enabled;
             tourTag = tourCamera.tag; tourCameraEnabled = tourCamera.enabled;
@@ -124,20 +132,31 @@ namespace BeachBoatStory
             {
                 if (EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsShowingBattle)
                 {
-                    controlsText.text = "Chuột: quan sát  •  SPACE: phất cờ  •  M: bản đồ";
+                    controlsText.text = "W/S chèo  •  A/D lái  •  Shift nhanh  •  Space phất cờ  •  M bản đồ";
                 }
                 else if (story != null && story.currentState == BachDangStoryManager.StoryState.Act3_BattleInProgress)
                 {
-                    controlsText.text = "W/S: chèo  •  A/D: lái  •  M: bản đồ";
+                    controlsText.text = "W/S: chèo  •  A/D: lái  •  Shift: nhanh  •  M: bản đồ";
                 }
                 else if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard)
                 {
-                    controlsText.text = "W/S: chèo  •  A/D: lái  •  E: hành động  •  M: bản đồ";
+                    controlsText.text = "W/S: chèo  •  A/D: lái  •  Shift: nhanh  •  E: hành động  •  M: bản đồ";
                 }
                 else
                 {
                     controlsText.text = "WASD: di chuyển  •  Shift: chạy  •  E: tương tác  •  M: bản đồ";
                 }
+            }
+            if (vitals != null && healthFill != null)
+            {
+                healthFill.fillAmount = vitals.HealthFraction;
+                staminaFill.fillAmount = vitals.StaminaFraction;
+                int hp = Mathf.CeilToInt(vitals.Health), sp = Mathf.CeilToInt(vitals.Stamina);
+                if (hp != shownHealth) { healthText.text = $"Máu  {hp:0}/{vitals.maxHealth:0}"; shownHealth = hp; }
+                if (sp != shownStamina) { staminaText.text = $"Thể lực  {sp:0}/{vitals.maxStamina:0}"; shownStamina = sp; }
+                impactText.text = Time.unscaledTime < vitals.LastImpactUntil
+                    ? vitals.LastImpact + (vitals.LastImpactDamage > 0 ? $"  -{vitals.LastImpactDamage:0} máu" : "")
+                    : "";
             }
             if (Input.GetKeyDown(KeyCode.F9) && !OpeningEvent.IsOpeningActive &&
                 !(StoryDialogueUI.Instance?.IsOpen ?? false) && !(ScreenFader.Instance?.IsTransitioning ?? false)) SetStoryMode(!storyMode);
@@ -180,11 +199,28 @@ namespace BeachBoatStory
             story.interactPromptPanel = prompt;
             story.interactPromptText = Text("Prompt",prompt.transform,new Vector2(.03f,.08f),new Vector2(.97f,.92f),19);
             story.interactPromptText.alignment = TextAlignmentOptions.Center; prompt.SetActive(false);
-            var controls = Panel("ControlsBar",canvas.transform,new Vector2(.015f,.012f),new Vector2(.47f,.065f),new Color(.02f,.025f,.03f,.68f));
+            var controls = Panel("ControlsBar",canvas.transform,new Vector2(.015f,.012f),new Vector2(.63f,.065f),new Color(.02f,.025f,.03f,.68f));
             controlsPanel = controls;
             var keys = Text("Controls",controls.transform,new Vector2(.025f,.05f),new Vector2(.975f,.95f),14);
             controlsText = keys;
+            keys.enableAutoSizing = true; keys.fontSizeMin = 10; keys.fontSizeMax = 14;
             keys.text = "WASD: di chuyển  •  Shift: chạy  •  E: tương tác  •  M: bản đồ";
+            var vitalsPanel = Panel("Vitals", canvas.transform, new Vector2(.015f,.077f),
+                new Vector2(.257f,.190f), new Color(.02f,.025f,.03f,.80f));
+            healthText = Text("HealthLabel", vitalsPanel.transform, new Vector2(.04f,.56f),new Vector2(.44f,.96f),14);
+            staminaText = Text("StaminaLabel", vitalsPanel.transform, new Vector2(.04f,.07f),new Vector2(.44f,.47f),14);
+            var healthBack = Panel("HealthTrack", vitalsPanel.transform, new Vector2(.45f,.60f),
+                new Vector2(.96f,.78f), new Color(.20f,.12f,.12f,.9f));
+            healthFill = Panel("HealthFill", healthBack.transform, Vector2.zero,Vector2.one,
+                new Color(.82f,.18f,.16f,1f)).GetComponent<Image>();
+            healthFill.type = Image.Type.Filled; healthFill.fillMethod = Image.FillMethod.Horizontal;
+            var staminaBack = Panel("StaminaTrack", vitalsPanel.transform, new Vector2(.45f,.12f),
+                new Vector2(.96f,.30f), new Color(.10f,.20f,.19f,.9f));
+            staminaFill = Panel("StaminaFill", staminaBack.transform, Vector2.zero,Vector2.one,
+                new Color(.26f,.76f,.54f,1f)).GetComponent<Image>();
+            staminaFill.type = Image.Type.Filled; staminaFill.fillMethod = Image.FillMethod.Horizontal;
+            impactText = Text("ImpactNotice",canvas.transform,new Vector2(.018f,.192f),new Vector2(.38f,.23f),15);
+            impactText.color = new Color(1f,.67f,.53f); impactText.text = "";
             var guide = Panel("RouteGuide", canvas.transform, new Vector2(.35f,.875f), new Vector2(.65f,.97f), new Color(.04f,.035f,.025f,.82f));
             var pointer = Text("Direction",guide.transform,new Vector2(.02f,.2f),new Vector2(.16f,.8f),34);
             pointer.text = ">"; pointer.alignment = TextAlignmentOptions.Center;

@@ -34,7 +34,7 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
         ApplyWorldSizedPlacement(labelObject.transform);
         labelMesh = labelObject.AddComponent<TextMeshPro>();
         StoryFont.Apply(labelMesh);
-        labelMesh.text = label;
+        labelMesh.text = CleanLabel(label);
         labelMesh.alignment = TextAlignmentOptions.Center;
         labelMesh.rectTransform.sizeDelta = new Vector2(180, 16) * worldDisplayScale;
         labelMesh.textWrappingMode = TextWrappingModes.NoWrap;
@@ -52,9 +52,14 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
         label = markerLabel;
         if (labelMesh != null)
         {
-            labelMesh.text = label;
+            labelMesh.text = CleanLabel(label);
             ApplyWorldSizedPlacement(labelMesh.transform);
         }
+    }
+
+    private static string CleanLabel(string value)
+    {
+        return string.IsNullOrEmpty(value) ? string.Empty : value.Replace(" • E", "").Replace("• E", "");
     }
 
     private void ApplyWorldSizedPlacement(Transform labelTransform)

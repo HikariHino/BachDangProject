@@ -15,6 +15,7 @@ public class Character_Movement : MonoBehaviour
     Rigidbody body;
     CapsuleCollider capsule;
     Camera_Script orbit;
+    PlayerVitals vitals;
     Transform view;
     Vector2 input;
     bool sprint, aim, freeLook;
@@ -29,6 +30,7 @@ public class Character_Movement : MonoBehaviour
     void Awake()
     {
         body = GetComponent<Rigidbody>(); capsule = GetComponent<CapsuleCollider>();
+        vitals = GetComponent<PlayerVitals>();
         body.constraints |= RigidbodyConstraints.FreezeRotation;
         body.interpolation = RigidbodyInterpolation.Interpolate;
         if (!body.isKinematic) body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
@@ -57,7 +59,9 @@ public class Character_Movement : MonoBehaviour
         input = allowed ? Vector2.ClampMagnitude(new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")), 1) : Vector2.zero;
         aim = allowed && orbit != null && orbit.enableShoulderAim && Input.GetMouseButton(1);
         freeLook = allowed && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
-        sprint = allowed && !aim && input.sqrMagnitude > .01f && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
+        bool wantsSprint = allowed && !aim && input.sqrMagnitude > .01f &&
+            (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
+        sprint = wantsSprint && (vitals == null || vitals.TryExert(13f, Time.deltaTime));
         if (allowed && Input.GetKeyDown(KeyCode.Space)) jumpUntil = Time.time + .15f;
         if (!allowed) jumpUntil = -1;
         UpdateAnimation(input.sqrMagnitude > .01f, sprint);

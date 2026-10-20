@@ -183,12 +183,12 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
 
             case StoryState.Act1_GoToCampGate:
-                desc = "- Theo chỉ hướng tới cổng gỗ.\n- Bấm [E] ở cổng để sang làng ven sông.";
+                desc = "- Theo chỉ hướng tới cổng gỗ.\n- Qua cổng để sang làng ven sông.";
                 break;
 
             case StoryState.Act1_Training:
                 title = "Huấn luyện trước khi xuất quân";
-                desc = "- Tới trống trận trong doanh trại.\n- Bấm [E], sau đó đánh đúng nhịp phím 1–2–3.";
+                desc = "- Tới trống trận trong doanh trại.\n- Đánh đúng nhịp số 1–2–3 trước khi hết giờ.";
                 break;
 
             case StoryState.Act2_CollectWoodInVillage:
@@ -196,12 +196,12 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
 
             case StoryState.Act2_ReturnToCampGate:
-                desc = "- Đã gom đủ 5 cọc gỗ!\n- Ra cổng làng bấm [E] để quay về doanh trại.";
+                desc = "- Đã gom đủ 5 cọc gỗ!\n- Qua cổng làng để quay về doanh trại.";
                 break;
 
             case StoryState.Act2_SupplyPreparation:
                 title = "Chuẩn bị vật tư đóng cọc";
-                desc = "- Chuyển cọc, dây buộc và dụng cụ qua các điểm sáng.\n- Hoàn thành tiếp tế rồi quay về doanh trại.";
+                desc = "- Ở kho, chọn đúng vật tư theo đơn.\n- Giao đến điểm tập kết, rồi quay lại kho nhận đơn tiếp theo.";
                 break;
 
             case StoryState.Act2_ReportToNgoQuyen:
@@ -212,10 +212,10 @@ public class BachDangStoryManager : MonoBehaviour
                 var zone = RiverStakeZone.Instance;
                 title = "Nhiệm vụ 2: Đóng cọc";
                 desc = zone != null && zone.RecoveryRequired
-                    ? "SỰ CỐ: Một bó cọc bị trôi!\n- Chèo tới bó cọc, dừng thuyền và bấm [E] để vớt lại."
+                    ? "SỰ CỐ: Một bó cọc bị trôi!\n- Chèo tới bó cọc, dừng thuyền và vớt lại."
                     : zone != null && zone.IsPlanting
                     ? $"Đang đóng cụm cọc...\nCụm đã xong: {zone.CompletedClusterCount}/{zone.ClusterCount} • Cọc: {zone.PlantedCount}/{zone.RequiredCount}"
-                    : $"- Qua cổng ra bến, bấm [E] lên thuyền.\n- Tới đủ 5 điểm, bấm [E] dựng từng cụm.\n- Cụm: {zone?.CompletedClusterCount ?? 0}/{zone?.ClusterCount ?? 5} • Cọc: {zone?.PlantedCount ?? 0}/{zone?.RequiredCount ?? 48}";
+                    : $"- Qua cổng ra bến và lên thuyền.\n- Tới đủ 5 điểm để dựng từng cụm.\n- Cụm: {zone?.CompletedClusterCount ?? 0}/{zone?.ClusterCount ?? 5} • Cọc: {zone?.PlantedCount ?? 0}/{zone?.RequiredCount ?? 48}";
                 break;
 
             case StoryState.Act2_CompleteReturnToCamp:
@@ -225,7 +225,7 @@ public class BachDangStoryManager : MonoBehaviour
             case StoryState.Act2_Completed:
                 title = "Hồi 2 hoàn tất";
                 desc = EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsConfigured
-                    ? "Trận địa cọc đã sẵn sàng.\n- Bấm [E] nói chuyện với Ngô Quyền lần nữa để nhận nhiệm vụ 3."
+                    ? "Trận địa cọc đã sẵn sàng.\n- Nói chuyện với Ngô Quyền lần nữa để nhận nhiệm vụ 3."
                     : "Trận địa cọc Bạch Đằng đã sẵn sàng. Quân ta chờ thời cơ đánh giặc.";
                 break;
 
@@ -236,26 +236,29 @@ public class BachDangStoryManager : MonoBehaviour
 
             case StoryState.Act3_WaitForLowTide:
                 title = "Nhiệm vụ 3: Nhử địch vào trận địa";
-                desc = "- Triều cao đang che kín bãi cọc.\n- Qua cổng ra bến, bấm [E] lên thuyền nhẹ.\n- Nhử hạm đội Nam Hán tiến sâu vào cửa sông.";
+                desc = "- Triều cao đang che kín bãi cọc.\n- Qua cổng ra bến và lên thuyền nhẹ.\n- Nhử hạm đội Nam Hán tiến sâu vào cửa sông.";
                 break;
 
             case StoryState.Act3_BattleInProgress:
                 title = "Hồi 3: Đánh Giặc";
+                var fleetDirector = EnemyFleetDirector.Instance;
+                int issuedOrders = fleetDirector != null ? fleetDirector.CommandScore : 0;
+                int neededOrders = fleetDirector != null ? fleetDirector.CommandOpportunityCount : 5;
                 var moment = BachDangBattleTimeline.Instance != null
                     ? BachDangBattleTimeline.Instance.CurrentMoment
                     : BachDangBattleTimeline.BattleMoment.LureAtHighTide;
                 desc = moment < BachDangBattleTimeline.BattleMoment.TideFalling
-                    ? $"Đội thuyền nhẹ đang nhử địch qua bãi cọc chìm.\nHạm đội Nam Hán: {destroyedEnemyShips}/{totalEnemyShips} bị đánh chìm."
+                    ? $"Thuyền địch từ nhánh sông phía bắc đang tiến xuống.\nChèo quan sát, chờ nước rút • Hiệu lệnh: {issuedOrders}/{neededOrders}."
                     : moment == BachDangBattleTimeline.BattleMoment.TideFalling
-                        ? "Thủy triều đang rút — giữ kín trận địa!\nChuẩn bị phất cờ khi cọc nhô lên khỏi mặt nước."
-                        : $"Quân mai phục từ hai bờ đồng loạt phản công!\nĐã đánh chìm: {destroyedEnemyShips}/{totalEnemyShips} thuyền địch.";
+                        ? $"Thủy triều đang rút — giữ kín trận địa!\nChờ địch đến gần cọc rồi phất cờ [SPACE] • {issuedOrders}/{neededOrders}."
+                        : $"Chèo theo chỉ hướng, tới gần thuyền mắc bẫy rồi [SPACE] phất cờ.\nHiệu lệnh: {issuedOrders}/{neededOrders} • Địch chìm: {destroyedEnemyShips}/{totalEnemyShips}.";
                 break;
 
             case StoryState.Act3_Victory:
                 title = "CHIẾN THẮNG BẠCH ĐẰNG 938";
                 int commands = EnemyFleetDirector.Instance != null ? EnemyFleetDirector.Instance.CommandScore : 0;
                 int opportunities = EnemyFleetDirector.Instance != null ? EnemyFleetDirector.Instance.CommandOpportunityCount : 0;
-                desc = $"- Thuyền Nam Hán đã mắc cọc và chìm.\n- Hiệu lệnh đúng lúc: {commands}/{opportunities} đợt.\n- Chèo về bến, bấm [E] lên bờ rồi về doanh trại báo tin.";
+                desc = $"- Thuyền Nam Hán đã mắc cọc và chìm.\n- Hiệu lệnh đúng lúc: {commands}/{opportunities} đợt.\n- Chèo về bến, lên bờ rồi về doanh trại báo tin.";
                 break;
 
             case StoryState.Act3_Celebration:

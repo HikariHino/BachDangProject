@@ -79,7 +79,7 @@ public static class BeachBoatQuestInstaller
             float pivotLift=player.transform.position.y-spawn.position.y; spawn.position+=Vector3.up*pivotLift;
             var ngo=Clone("NPC_NgoQuyen (1)","NgoQuyen_QuestGiver",Ground(-7118,-2780),192);
             ngo.AddComponent<Story.NPCQuestGiver>().interactDistance=28;
-            Marker(ngo,Story.StoryLandmarkMarker.Target.NgoQuyen,"NGÔ QUYỀN • E");
+            Marker(ngo,Story.StoryLandmarkMarker.Target.NgoQuyen,"NGÔ QUYỀN");
             var village=Anchor("VillageArrival",-6720,-4700,180); village.position+=Vector3.up*pivotLift;
             string[] lines={"Bà con đã gom gỗ dọc đường làng. Xin mang về cho quân ta dựng trận địa cọc!","Nước sông lên xuống theo con triều. Mong quân ta chọn đúng thời cơ đánh giặc.","Củi gỗ của làng đều xin góp cho đại quân. Hãy tìm đủ năm khúc rồi trở về báo tin."};
             Vector2[] npcPos={new Vector2(-6750,-4770),new Vector2(-6650,-5040),new Vector2(-6610,-5390)};
@@ -103,19 +103,19 @@ public static class BeachBoatQuestInstaller
                 wood.transform.localScale*=9f/longest; b=Bounds(wood);
                 wood.transform.position+=Vector3.up*(Ground(woodPos[i].x,woodPos[i].y).y-b.min.y);
                 session.woodItems[i]=wood.AddComponent<Story.WoodCollectible>(); session.woodItems[i].interactDistance=17;
-                Marker(wood,Story.StoryLandmarkMarker.Target.Wood,"GỖ LÀM CỌC • E");
+                Marker(wood,Story.StoryLandmarkMarker.Target.Wood,"GỖ LÀM CỌC");
             }
             var river=Anchor("RiverArrival",-3920,2100,90); river.position+=Vector3.up*pivotLift;
             var campGate=Gate("CampToVillage",-7211,-3205,Story.CampGateTransition.GateType.CampGate,village);
-            Marker(campGate.gameObject,Story.StoryLandmarkMarker.Target.CampGate,"ĐẾN LÀNG VEN SÔNG • E");
+            Marker(campGate.gameObject,Story.StoryLandmarkMarker.Target.CampGate,"ĐẾN LÀNG VEN SÔNG");
             var villageGate=Gate("VillageToCamp",-6720,-4640,Story.CampGateTransition.GateType.VillageGate,spawn);
-            Marker(villageGate.gameObject,Story.StoryLandmarkMarker.Target.VillageGate,"VỀ DOANH TRẠI • E");
+            Marker(villageGate.gameObject,Story.StoryLandmarkMarker.Target.VillageGate,"VỀ DOANH TRẠI");
             var riverGate=Gate("CampToRiver",-7211,-3205,Story.CampGateTransition.GateType.CampRiverGate,river);
-            Marker(riverGate.gameObject,Story.StoryLandmarkMarker.Target.RiverStakes,"RA BỜ SÔNG • E");
+            Marker(riverGate.gameObject,Story.StoryLandmarkMarker.Target.RiverStakes,"RA BỜ SÔNG");
             var returnGate=Gate("RiverToCamp",-3960,2100,Story.CampGateTransition.GateType.RiverGate,spawn);
-            Marker(returnGate.gameObject,Story.StoryLandmarkMarker.Target.ReturnFromRiver,"VỀ BÁO TIN • E");
+            Marker(returnGate.gameObject,Story.StoryLandmarkMarker.Target.ReturnFromRiver,"VỀ BÁO TIN");
             var zone=Anchor("RiverStakeWork",-3860,2100); zone.gameObject.AddComponent<Story.RiverStakeZone>().interactDistance=30;
-            Marker(zone.gameObject,Story.StoryLandmarkMarker.Target.RiverStakes,"BÃI CỌC BẠCH ĐẰNG • E");
+            Marker(zone.gameObject,Story.StoryLandmarkMarker.Target.RiverStakes,"BÃI CỌC BẠCH ĐẰNG");
             story.campSpawnPoint=spawn; story.campGatePoint=campGate.transform; story.villageSpawnPoint=village;
             story.villageGatePoint=villageGate.transform; story.riverStakePoint=zone;
             var camGo=new GameObject("Camera_Thai_ThirdPerson"); camGo.transform.SetParent(root,false);

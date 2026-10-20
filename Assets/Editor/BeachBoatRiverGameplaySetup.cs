@@ -75,7 +75,7 @@ public static class BeachBoatRiverGameplaySetup
             Undo.RecordObject(placement.approach, "Move stake work approach"); placement.approach.position = approach;
             Undo.RecordObject(placement.marker, "Reset stake marker"); placement.marker.SetActive(false);
             var label = placement.marker.GetComponentInChildren<TMPro.TMP_Text>(true);
-            if (label != null) { Undo.RecordObject(label, "Label stake barrier"); label.text = $"DẢI CỌC {g + 1} • {count} CỌC • E"; }
+            if (label != null) { Undo.RecordObject(label, "Label stake barrier"); label.text = $"DẢI CỌC {g + 1} • {count} CỌC"; }
         }
         Undo.RecordObject(zone, "Shape historical stake barriers"); zone.fieldStakes = stakes; zone.interactDistance = 42; zone.plantingDuration = 3;
         EditorUtility.SetDirty(zone);

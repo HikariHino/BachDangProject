@@ -50,7 +50,7 @@ public static class BeachBoatStakeQuestInstaller
             visual.transform.position += Vector3.up * (root.transform.position.y + .2f - visual.GetComponent<Renderer>().bounds.min.y);
             var pickup = root.AddComponent<Story.WoodCollectible>(); pickup.interactDistance = old.interactDistance;
             var marker = root.AddComponent<Story.StoryLandmarkMarker>();
-            marker.target = Story.StoryLandmarkMarker.Target.Wood; marker.label = "CỌC GỖ • E"; marker.worldDisplayScale = 2;
+            marker.target = Story.StoryLandmarkMarker.Target.Wood; marker.label = "CỌC GỖ"; marker.worldDisplayScale = 2;
             session.woodItems[i] = pickup;
             Undo.DestroyObjectImmediate(old.gameObject);
         }
@@ -77,7 +77,7 @@ public static class BeachBoatStakeQuestInstaller
             }
             var label=new GameObject("NhanViTri").AddComponent<TextMeshPro>();label.transform.SetParent(marker.transform,false);
             label.transform.localPosition=Vector3.up*30;label.rectTransform.sizeDelta=new Vector2(120,20);
-            Story.StoryFont.Apply(label);label.text="ĐÓNG CỌC "+(i+1)+" • E";label.fontSize=34;
+            Story.StoryFont.Apply(label);label.text="ĐÓNG CỌC "+(i+1);label.fontSize=34;
             label.alignment=TextAlignmentOptions.Center;label.textWrappingMode=TextWrappingModes.NoWrap;
             label.GetComponent<MeshRenderer>().shadowCastingMode=ShadowCastingMode.Off;
             var visual=Visual(anchor.transform,mesh,material,Quaternion.FromToRotation(Vector3.right,new Vector3(.12f,1,0)),32);

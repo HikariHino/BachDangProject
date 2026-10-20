@@ -3,6 +3,7 @@ using UnityEngine;
 using BeachBoatStory;
 using System.Linq;
 using System.Collections.Generic;
+using System.IO;
 namespace BeachBoatStoryEditor
 {
     public static class BeachBoatBattleSetup
@@ -19,38 +20,17 @@ namespace BeachBoatStoryEditor
             if(director!=null)Object.DestroyImmediate(director.gameObject);
             var terrain=boat.terrain;var tide=boat.tide;
             const int shipCount=10;
-            var spawns=new Vector3[shipCount];var targets=new Transform[shipCount];
-            // Check every route before touching the scene. All points must remain wet at low tide.
-            for(int i=0;i<shipCount;i++)
-            {
-                int cluster=i/2;
-                var indices=zone.placements[cluster].stakeIndices;
-                int stakeIndex=indices[Mathf.Min((i%2)*Mathf.Max(1,indices.Length/2),indices.Length-1)];
-                var stake=zone.fieldStakes[stakeIndex];targets[i]=stake;
-                var target=stake.GetComponentInChildren<Renderer>(true).bounds.center;target.y=tide.lowTideY;
-                bool found=false;
-                for(int a=0;a<24&&!found;a++)
-                {
-                    var dir=Quaternion.Euler(0,a*15+(i%2==0?-6:6),0)*Vector3.right;bool wet=true;
-                    for(int j=1;j<=16;j++)
-                    {
-                        var p=target+dir*j*10;var local=p-terrain.transform.position;var size=terrain.terrainData.size;
-                        if(local.x<0||local.z<0||local.x>size.x||local.z>size.z||terrain.SampleHeight(p)+terrain.transform.position.y+8>tide.lowTideY){wet=false;break;}
-                    }
-                    if(wet){spawns[i]=target+dir*160;found=true;}
-                }
-                if(!found)throw new System.InvalidOperationException("No water route for enemy ship "+i);
-            }
+            if(terrain==null||tide==null)throw new System.InvalidOperationException("Battle terrain or tide missing.");
             var root=new GameObject("EnemyFleetDirector_RedSailJunk");director=root.AddComponent<EnemyFleetDirector>();
             var combat=root.AddComponent<RiverBattleChoreography>();
             combat.friendlyBoats=Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Exclude,FindObjectsSortMode.None);
             combat.projectilePoolSize=32;combat.volleyInterval=.72f;
             director.enemyShips=new EnemyShip[shipCount];director.spawnPoints=new Transform[shipCount];
-            director.shipsPerWave=2;director.waveDelay=2;
+            director.shipsPerWave=2;director.waveDelay=8;
             for(int i=0;i<shipCount;i++)
             {
                 var go=new GameObject("EnemyWarship_NamHan_"+(i+1));go.transform.SetParent(root.transform);
-                go.transform.position=spawns[i];
+                go.transform.position=UpstreamSpawn(i,tide.lowTideY);
                 var visual=(GameObject)PrefabUtility.InstantiatePrefab(warship,go.transform);
                 visual.name="RedSailJunkVisual";visual.transform.localPosition=Vector3.zero;
                 // The imported junk is authored lengthwise on local X, while EnemyShip advances on local Z.
@@ -71,15 +51,79 @@ namespace BeachBoatStoryEditor
                 for(int r=1;r<visualRenderers.Length;r++)boatBounds.Encapsulate(visualRenderers[r].bounds);
                 // Sink the lower hull a little below the low-tide surface rather than floating above it.
                 visual.transform.position+=Vector3.up*((tide.lowTideY-4f)-boatBounds.min.y);
-                var ship=go.AddComponent<EnemyShip>();ship.spawnPoint=spawns[i];ship.targetPoint=targets[i];ship.moveSpeed=30;ship.stakeHitDistance=28;
+                var ship=go.AddComponent<EnemyShip>();ship.spawnPoint=go.transform.position;ship.moveSpeed=26;ship.stakeHitDistance=28;
                 director.enemyShips[i]=ship;go.SetActive(false);
-                var spawn=new GameObject("Spawn_"+(i+1));spawn.transform.SetParent(root.transform);spawn.transform.position=spawns[i];director.spawnPoints[i]=spawn.transform;
+                var spawn=new GameObject("Spawn_"+(i+1));spawn.transform.SetParent(root.transform);spawn.transform.position=go.transform.position;director.spawnPoints[i]=spawn.transform;
             }
+            ConfigureHistoricalRoute(director,zone,terrain,tide);
             var trigger=new GameObject("BattleTrigger");trigger.transform.SetParent(root.transform);trigger.transform.position=boat.boardingPoint.position;
             trigger.AddComponent<BattleTrigger>().boat=boat;
             Undo.RegisterCreatedObjectUndo(root,"Set up quest battle");
             BeachBoatToolSafety.Save(scene);Selection.activeGameObject=root;
-            Debug.Log("Quest 3 upgraded: 10 shared-mesh red-sail war junks in five two-ship waves.",root);
+            Debug.Log("Quest 3: ten red-sail junks enter from the northern river branch in five player-signaled waves.",root);
+        }
+
+        static Vector3 UpstreamSpawn(int index,float water)
+        {
+            bool right=index%2==1;
+            return new Vector3(right?-1355f:-1480f,water,right?4080f:3970f);
+        }
+
+        static Transform Point(Transform parent,string name,Vector3 position)
+        {
+            var existing=parent.Find(name);
+            var point=existing!=null?existing:new GameObject(name).transform;
+            point.SetParent(parent);point.position=position;
+            return point;
+        }
+
+        static void CheckWetRoute(Terrain terrain,float lowWater,Vector3 from,Vector3 to,int ship)
+        {
+            int steps=Mathf.CeilToInt(Vector3.Distance(from,to)/35f);
+            var size=terrain.terrainData.size;
+            for(int step=0;step<=steps;step++)
+            {
+                var p=Vector3.Lerp(from,to,step/(float)Mathf.Max(1,steps));
+                var local=p-terrain.transform.position;
+                if(local.x<0||local.z<0||local.x>size.x||local.z>size.z||
+                   terrain.SampleHeight(p)+terrain.transform.position.y+8f>lowWater)
+                    throw new System.InvalidOperationException($"Warship {ship+1} route crosses land near {p}");
+            }
+        }
+
+        /// <summary>North-to-south approach based on the user's Bạch Đằng battle diagram.</summary>
+        public static void ConfigureHistoricalRoute(EnemyFleetDirector director,BeachBoatStory.RiverStakeZone zone,Terrain terrain,TideSystem tide)
+        {
+            if(director==null||zone==null||terrain==null||tide==null||zone.ClusterCount!=5||director.ShipCount!=10)
+                throw new System.InvalidOperationException("Quest 3 fleet/river configuration is incomplete.");
+            director.shipsPerWave=2;director.waveDelay=8;
+            for(int i=0;i<10;i++)
+            {
+                var ship=director.enemyShips[i];
+                int cluster=4-i/2; // northern cluster first, then downstream
+                var indices=zone.placements[cluster].stakeIndices;
+                int stakeIndex=indices[Mathf.Min((i%2)*Mathf.Max(1,indices.Length/2),indices.Length-1)];
+                var target=zone.fieldStakes[stakeIndex];
+                if(ship==null||target==null)throw new System.InvalidOperationException("Ship or target missing: "+i);
+                var targetPos=target.GetComponentInChildren<Renderer>(true).bounds.center;
+                bool right=i%2==1;
+                Vector3 spawn=UpstreamSpawn(i,tide.lowTideY);
+                Vector3 entry=new Vector3(right?-1460f:-1570f,tide.lowTideY,3510f);
+                Vector3 turn=new Vector3(right?-1510f:-1620f,tide.lowTideY,targetPos.z+330f);
+                Vector3 approach=new Vector3(targetPos.x+(right?50f:70f),tide.lowTideY,targetPos.z+150f);
+                var route=new[]{spawn,entry,turn,approach,new Vector3(targetPos.x,tide.lowTideY,targetPos.z)};
+                for(int j=1;j<route.Length;j++)CheckWetRoute(terrain,tide.lowTideY,route[j-1],route[j],i);
+                if(director.spawnPoints==null||director.spawnPoints.Length!=10)
+                    director.spawnPoints=new Transform[10];
+                director.spawnPoints[i]=Point(director.transform,"Spawn_"+(i+1),spawn);
+                ship.spawnPoint=spawn;ship.transform.position=spawn;ship.targetPoint=target;
+                ship.routeWaypoints=new[]{
+                    Point(director.transform,"Route_"+(i+1)+"_Entry",entry),
+                    Point(director.transform,"Route_"+(i+1)+"_Channel",turn),
+                    Point(director.transform,"Route_"+(i+1)+"_Approach",approach)
+                };
+                ship.moveSpeed=26f;ship.stakeHitDistance=28f;
+            }
         }
 
         // Entry point used by the CLI after scripts finish compiling.
@@ -88,6 +132,23 @@ namespace BeachBoatStoryEditor
             if(EditorApplication.isPlaying)EditorApplication.isPlaying=false;
             UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity",UnityEditor.SceneManagement.OpenSceneMode.Single);
             SetupBattle();
+            EditorApplication.Exit(0);
+        }
+
+        public static void UpgradeExistingRouteAndExit()
+        {
+            var scene=UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity",UnityEditor.SceneManagement.OpenSceneMode.Single);
+            var director=Object.FindAnyObjectByType<EnemyFleetDirector>();
+            var zone=Object.FindAnyObjectByType<BeachBoatStory.RiverStakeZone>();
+            var tide=Object.FindAnyObjectByType<TideSystem>();
+            var terrain=Terrain.activeTerrain;
+            if(director==null||zone==null||tide==null||terrain==null)
+                throw new System.InvalidOperationException("Existing beachBoat quest 3 objects are missing.");
+            Directory.CreateDirectory(".utmp/BeachBoatQuest3Route");
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene,".utmp/BeachBoatQuest3Route/before.unity",true);
+            ConfigureHistoricalRoute(director,zone,terrain,tide);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
             EditorApplication.Exit(0);
         }
 

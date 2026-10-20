@@ -27,9 +27,14 @@ namespace BeachBoatStoryEditor
             var root = new GameObject("BeachBoatMinigames");
             Undo.RegisterCreatedObjectUndo(root, "Add beachBoat minigames");
 
-            var drumPosition = Ground(terrain, commander.transform.position + new Vector3(125, 0, 70), 7);
+            // Keep the drum in the open training yard, away from the barracks row.
+            var drumPosition = Ground(terrain, commander.transform.position + new Vector3(65, 0, 115), 8);
             var drum = Primitive("Minigame_TrongTran", PrimitiveType.Cylinder, root.transform, drumPosition,
-                new Vector3(13, 8, 13), skin, true);
+                new Vector3(8, 6, 8), skin, true);
+            drum.transform.rotation = Quaternion.Euler(0, 18, 90);
+            var drumRenderer = drum.GetComponent<Renderer>();
+            drum.transform.position += Vector3.up *
+                (terrain.SampleHeight(drumPosition) + terrain.transform.position.y + .15f - drumRenderer.bounds.min.y);
             var rim = Primitive("WoodenRim", PrimitiveType.Cylinder, drum.transform, Vector3.zero,
                 new Vector3(1.12f, .7f, 1.12f), wood, false, true);
             rim.transform.localPosition = Vector3.zero;

@@ -10,8 +10,8 @@ namespace BeachBoatStory
     {
         public static BeachBoatMinigameUI Instance { get; private set; }
 
-        GameObject drumRoot, relayRoot;
-        TMP_Text drumRound, expectedBeat, feedback, timer, relayTitle, relayHint;
+        GameObject drumRoot, relayRoot, failureRoot, choicesRoot;
+        TMP_Text drumRound, expectedBeat, feedback, timer, relayTitle, relayHint, relayOrder, relayTime, failureTitle;
         RectTransform drumProgress, relayProgress;
         Image[] beatCards;
         TMP_Text[] beatLabels;
@@ -33,6 +33,7 @@ namespace BeachBoatStory
             objectivePanel = objective != null ? objective.gameObject : null;
             BuildDrumUI();
             BuildRelayUI();
+            BuildFailureUI();
             HideAll();
         }
 
@@ -47,7 +48,15 @@ namespace BeachBoatStory
                 drumRoot.SetActive(active != null && active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum);
                 relayRoot.SetActive(active != null && active.kind == BeachBoatMinigameStation.ActivityKind.SupplyRelay);
             }
+            failureRoot.SetActive(active != null && active.Failed);
             if (active == null) return;
+            if (active.Failed)
+            {
+                failureTitle.text = active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum
+                    ? "HẾT GIỜ — HIỆU LỆNH CHƯA HOÀN THÀNH"
+                    : "HẾT GIỜ — VẬT TƯ CHƯA TẬP KẾT ĐỦ";
+                return;
+            }
             if (active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum) RefreshDrum(active);
             else RefreshRelay(active);
         }
@@ -56,12 +65,13 @@ namespace BeachBoatStory
         {
             drumRound.text = $"LƯỢT {game.Round + 1}/2";
             expectedBeat.text = game.ExpectedBeat.ToString();
-            timer.text = $"{game.Elapsed:0.0}s   •   Sai {game.Mistakes}";
+            timer.text = $"CÒN {game.TimeRemaining:0}s   •   Sai {game.Mistakes}";
+            timer.color = game.TimeRemaining < 10f ? Red : Color.white;
             SetProgress(drumProgress, (game.Round * game.RhythmLength + game.Progress) / (game.RhythmLength * 2f));
 
             for (int i = 0; i < beatCards.Length; i++)
             {
-                beatLabels[i].text = game.GetRhythmBeat(i).ToString();
+                beatLabels[i].text = i < game.Progress ? "✓" : i == game.Progress ? game.GetRhythmBeat(i).ToString() : "·";
                 beatCards[i].color = i < game.Progress ? Green : i == game.Progress ? Gold : new Color(.24f, .23f, .2f, 1f);
                 beatLabels[i].color = i == game.Progress ? Color.black : Color.white;
             }
@@ -70,7 +80,7 @@ namespace BeachBoatStory
             lastFeedback = game.FeedbackVersion;
             if (lastFeedback == 0)
             {
-                feedback.text = "Nhìn nhịp sáng và chọn đúng tiếng trống";
+                feedback.text = "Đọc hiệu lệnh rồi đánh trống trước khi hết giờ";
                 feedback.color = new Color(.83f, .84f, .8f);
             }
             else
@@ -83,10 +93,22 @@ namespace BeachBoatStory
         void RefreshRelay(BeachBoatMinigameStation game)
         {
             int total = game.checkpoints != null ? game.checkpoints.Length : 0;
-            relayTitle.text = $"TIẾP TẾ DOANH TRẠI   {game.Progress}/{total}";
-            relayHint.text = game.CurrentTargetDistance <= game.interactDistance
-                ? "Đã tới điểm tập kết — bấm E để giao vật tư"
-                : $"Theo cột sáng phía trước   •   Còn {Mathf.RoundToInt(game.CurrentTargetDistance)} m";
+            relayTitle.text = $"VẬT TƯ RA TRẬN ĐỊA   {game.Progress}/{total}";
+            relayTime.text = $"CÒN {game.TimeRemaining:0}s  •  Chọn sai {game.Mistakes}";
+            relayTime.color = game.TimeRemaining < 20f ? Red : Color.white;
+            relayOrder.text = game.ReturningToWarehouse
+                ? "QUAY LẠI KHO NHẬN ĐƠN TIẾP"
+                : game.IsSelectingCargo
+                ? $"ĐƠN HÀNG {game.Progress + 1}: {BeachBoatMinigameStation.CargoName(game.RequestedCargo)}"
+                : $"ĐANG CHỞ: {BeachBoatMinigameStation.CargoName(game.SelectedCargo)}";
+            relayHint.text = game.ReturningToWarehouse
+                ? $"Về kho lấy vật tư • {Mathf.RoundToInt(game.CurrentTargetDistance)} m"
+                : game.IsSelectingCargo
+                ? "Chọn đúng vật tư ở kho. Chọn sai mất 8 giây."
+                : game.CurrentTargetDistance <= game.interactDistance
+                    ? "Đã tới điểm tập kết — bấm E để giao vật tư"
+                    : $"Đưa tới cột sáng phía trước • {Mathf.RoundToInt(game.CurrentTargetDistance)} m";
+            choicesRoot.SetActive(game.IsSelectingCargo);
             SetProgress(relayProgress, total > 0 ? game.Progress / (float)total : 0f);
         }
 
@@ -101,7 +123,7 @@ namespace BeachBoatStory
             drumRound = Text("Round", card.transform, new Vector2(.72f, .87f), new Vector2(.95f, .95f), 20, FontStyles.Bold);
             drumRound.alignment = TextAlignmentOptions.Right;
             var rule = Text("Rule", card.transform, new Vector2(.05f, .76f), new Vector2(.95f, .85f), 18);
-            rule.text = "Đánh theo dãy hiệu lệnh. Sai nhịp sẽ lùi một bước.";
+            rule.text = "Đánh số đang sáng. Mỗi lượt có nhịp mới; sai nhịp mất 2 giây.";
             rule.color = new Color(.82f, .82f, .77f);
 
             var cue = Text("Cue", card.transform, new Vector2(.35f, .54f), new Vector2(.65f, .76f), 72, FontStyles.Bold);
@@ -138,13 +160,44 @@ namespace BeachBoatStory
 
         void BuildRelayUI()
         {
-            relayRoot = Panel("RelayMinigame", transform, new Vector2(.32f,.70f), new Vector2(.68f,.84f), Ink);
+            relayRoot = Panel("RelayMinigame", transform, new Vector2(.23f,.53f), new Vector2(.77f,.94f), Ink);
             Outline(relayRoot, new Color(.72f,.49f,.17f,.75f), 1.5f);
-            relayTitle = Text("Title",relayRoot.transform,new Vector2(.05f,.60f),new Vector2(.95f,.92f),20,FontStyles.Bold);
+            relayTitle = Text("Title",relayRoot.transform,new Vector2(.05f,.83f),new Vector2(.95f,.97f),23,FontStyles.Bold);
             relayTitle.color = Gold;
-            relayHint = Text("Hint",relayRoot.transform,new Vector2(.05f,.26f),new Vector2(.95f,.60f),16);
-            var track = Panel("ProgressTrack",relayRoot.transform,new Vector2(.05f,.10f),new Vector2(.95f,.20f),new Color(.20f,.20f,.18f));
+            relayTime = Text("Time",relayRoot.transform,new Vector2(.05f,.72f),new Vector2(.95f,.82f),19,FontStyles.Bold);
+            relayOrder = Text("Order",relayRoot.transform,new Vector2(.05f,.57f),new Vector2(.95f,.72f),24,FontStyles.Bold);
+            relayOrder.color = Gold;
+            relayHint = Text("Hint",relayRoot.transform,new Vector2(.05f,.44f),new Vector2(.95f,.57f),16);
+            choicesRoot = Panel("Choices",relayRoot.transform,new Vector2(.04f,.15f),new Vector2(.96f,.43f),Color.clear);
+            choicesRoot.GetComponent<Image>().raycastTarget = false;
+            for (int key = 1; key <= 3; key++)
+            {
+                int cargo = key;
+                float left = .02f + (key-1) * .33f;
+                var button = Button("Cargo" + key, choicesRoot.transform, new Vector2(left,.05f),new Vector2(left+.30f,.95f));
+                var label = Text("Label",button.transform,Vector2.zero,Vector2.one,19,FontStyles.Bold);
+                label.text = key + "  " + BeachBoatMinigameStation.CargoName(key);
+                label.alignment = TextAlignmentOptions.Center;
+                button.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => BeachBoatMinigameStation.Active?.ChooseCargo(cargo));
+            }
+            var track = Panel("ProgressTrack",relayRoot.transform,new Vector2(.05f,.07f),new Vector2(.95f,.12f),new Color(.20f,.20f,.18f));
             relayProgress = Panel("Fill",track.transform,Vector2.zero,new Vector2(0,1),Green).GetComponent<RectTransform>();
+        }
+
+        void BuildFailureUI()
+        {
+            failureRoot = Panel("MinigameFailed", transform, new Vector2(.24f,.33f), new Vector2(.76f,.68f), Ink);
+            Outline(failureRoot, Red, 2f);
+            failureTitle = Text("Title",failureRoot.transform,new Vector2(.06f,.66f),new Vector2(.94f,.90f),24,FontStyles.Bold);
+            failureTitle.color = Red;
+            failureTitle.alignment = TextAlignmentOptions.Center;
+            var reason = Text("Reason",failureRoot.transform,new Vector2(.08f,.43f),new Vector2(.92f,.65f),18);
+            reason.text = "Nhiệm vụ chưa hoàn thành. Hãy thử lại với hiệu lệnh mới.";
+            reason.alignment = TextAlignmentOptions.Center;
+            var retry = Button("Retry",failureRoot.transform,new Vector2(.23f,.13f),new Vector2(.77f,.38f));
+            var label = Text("Label",retry.transform,Vector2.zero,Vector2.one,22,FontStyles.Bold);
+            label.text = "CHƠI LẠI  [R]"; label.alignment = TextAlignmentOptions.Center;
+            retry.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => BeachBoatMinigameStation.Active?.RetryActivity());
         }
 
         static GameObject Panel(string name, Transform parent, Vector2 min, Vector2 max, Color color)
@@ -184,7 +237,7 @@ namespace BeachBoatStory
 
         void HideAll()
         {
-            drumRoot.SetActive(false); relayRoot.SetActive(false);
+            drumRoot.SetActive(false); relayRoot.SetActive(false); failureRoot.SetActive(false);
         }
 
         void OnDestroy()

@@ -56,10 +56,17 @@ namespace BeachBoatStory
             {
                 var fleet = EnemyFleetDirector.Instance;
                 if (fleet != null)
+                {
+                    bool hasReady = false;
                     foreach (var enemy in fleet.enemyShips)
-                        if (enemy != null && enemy.gameObject.activeInHierarchy)
-                            Consider(enemy.transform, enemy.isDestroyed ? "Thuyền địch đang chìm" : "Thuyền địch đang vào bãi cọc",
+                        if (enemy != null && enemy.gameObject.activeInHierarchy && enemy.SignalReady)
+                        { hasReady = true; break; }
+                    foreach (var enemy in fleet.enemyShips)
+                        if (enemy != null && enemy.gameObject.activeInHierarchy && !enemy.isDestroyed &&
+                            (!hasReady || enemy.SignalReady))
+                            Consider(enemy.transform, hasReady ? "Chèo lại gần để phất cờ" : "Theo thuyền địch xuống sông",
                                 ref best, ref distance, ref title);
+                }
                 return best;
             }
             if (boat != null && boat.IsAboard)
@@ -73,7 +80,7 @@ namespace BeachBoatStory
                 { title = $"Cụm cọc {point + 1} • Đã xong {stakes.CompletedClusterCount}/{stakes.ClusterCount} cụm"; return stakes.placements[point].approach; }
             }
             if (boat != null && !boat.IsAboard && state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver)
-                Consider(boat.boardingPoint, "Bến thuyền • E lên thuyền", ref best, ref distance, ref title);
+                Consider(boat.boardingPoint, "Bến thuyền", ref best, ref distance, ref title);
             foreach (var gate in gates)
                 if (gate != null && gate.isActiveAndEnabled && gate.destinationTarget != null && gate.IsAvailable(state))
                     Consider(gate.transform, gate.gateType == CampGateTransition.GateType.CampGate ? "Cổng sang làng ven sông" :
@@ -97,7 +104,7 @@ namespace BeachBoatStory
                 state == BachDangStoryManager.StoryState.Act3_Victory)
                 if (commander != null) Consider(commander.transform, "Chủ tướng Ngô Quyền", ref best, ref distance, ref title);
             if (state == BachDangStoryManager.StoryState.Act3_WaitForLowTide && boat != null)
-                Consider(boat.boardingPoint, "Bến thuyền • E lên thuyền chiến đấu", ref best, ref distance, ref title);
+                Consider(boat.boardingPoint, "Bến thuyền chiến đấu", ref best, ref distance, ref title);
             return best;
         }
 

@@ -6,6 +6,7 @@ namespace BeachBoatStory
     [DefaultExecutionOrder(-100)]
     public sealed class QuestRowboat : MonoBehaviour
     {
+        public enum BoatObstacleKind { None, Shore, Tree, Rock, Ship, Structure }
         public static QuestRowboat Instance { get; private set; }
         public Transform boardingPoint, dockPoint, seat;
         public RuntimeAnimatorController rowingController;
@@ -13,13 +14,22 @@ namespace BeachBoatStory
         public Terrain terrain;
         public TideSystem tide;
         public float maxSpeed = 95, acceleration = 38, turnSpeed = 48;
+        public float sprintMultiplier = 1.55f;
+        public float sprintStaminaPerSecond = 12f;
         public float boardingRange = 35, dockingRange = 90, minimumDepth = 12;
         public bool IsAboard { get; private set; }
         public float Speed { get; private set; }
+        public bool IsBoosting { get; private set; }
         public float RowingRate => animator != null && IsAboard ? animator.speed : 0;
         public bool AtDock => dockPoint != null && FlatDistance(transform.position, dockPoint.position) <= dockingRange;
         BeachBoatQuestSession session;
         Character_Movement motor;
+        PlayerVitals vitals;
+        AmbientRiverBoat[] nearbyFriendlyBoats;
+        EnemyShip[] enemyShips;
+        Vector3 homePosition;
+        Quaternion homeRotation;
+        float nextImpactTime;
         Rigidbody playerBody;
         CapsuleCollider playerCollider;
         Animator animator;
@@ -49,6 +59,10 @@ namespace BeachBoatStory
             if (session == null || boardingPoint == null || dockPoint == null || seat == null || rowingController == null)
             { Debug.LogError("Quest rowboat bindings incomplete.", this); enabled = false; return; }
             motor = session.player.GetComponent<Character_Movement>();
+            vitals = session.player.GetComponent<PlayerVitals>();
+            nearbyFriendlyBoats = FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            enemyShips = EnemyFleetDirector.Instance != null ? EnemyFleetDirector.Instance.enemyShips : System.Array.Empty<EnemyShip>();
+            homePosition = transform.position; homeRotation = transform.rotation;
             playerBody = session.player.GetComponent<Rigidbody>();
             playerCollider = session.player.GetComponent<CapsuleCollider>();
             animator = session.player.GetComponentInChildren<Animator>();
@@ -108,23 +122,9 @@ namespace BeachBoatStory
         public void UseSoldierBattleCamera()
         {
             if (!IsAboard || orbit == null) return;
-            var fleet = EnemyFleetDirector.Instance;
-            if (fleet != null && fleet.enemyShips != null)
-            {
-                Vector3 center = Vector3.zero; int count = 0;
-                foreach (var ship in fleet.enemyShips)
-                {
-                    if (ship == null) continue;
-                    center += ship.targetPoint != null ? ship.targetPoint.position : ship.spawnPoint;
-                    count++;
-                }
-                if (count > 0)
-                {
-                    Vector3 direction = center / count - transform.position; direction.y = 0;
-                    if (direction.sqrMagnitude > 1) transform.rotation = Quaternion.LookRotation(direction);
-                    AttachPlayer();
-                }
-            }
+            // Keep the boat's docked heading. Rotating an 80 m hull instantly toward
+            // the fleet while it still overlaps the pier swings it through the quay.
+            // The player can steer out normally with A/D and look around with the mouse.
             orbit.distance = 48f;
             orbit.heightOffset = 20f;
             orbit.rightOffset = 7f;
@@ -143,7 +143,7 @@ namespace BeachBoatStory
 
         void RestorePlayer()
         {
-            IsAboard = false; Speed = 0;
+            IsAboard = false; Speed = 0; IsBoosting = false;
             if (animator != null) { animator.runtimeAnimatorController = originalController; animator.applyRootMotion = originalRootMotion; animator.speed = 1; animator.Rebind(); }
             if (animator != null) { animator.updateMode = originalUpdateMode; animator.cullingMode = originalCullingMode; }
             if (motor != null) motor.enabled = motorEnabled && session.storyMode;
@@ -164,8 +164,11 @@ namespace BeachBoatStory
             }
             // Kinematic navigation and the seated player advance once per rendered frame,
             // before Animator evaluation and the orbit camera, instead of stepping at 50 Hz.
-            bool input = IsAboard && !BeachBoatQuestSession.InputBlocked && Cursor.lockState == CursorLockMode.Locked;
-            Step(input ? Input.GetAxisRaw("Vertical") : 0, input ? Input.GetAxisRaw("Horizontal") : 0, Time.deltaTime);
+            // Cursor lock only controls mouse look. Losing it (Esc, a UI overlay, or
+            // Editor focus) must not strand the player aboard during the battle.
+            bool input = IsAboard && !BeachBoatQuestSession.InputBlocked;
+            bool boost = input && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
+            Step(input ? Input.GetAxisRaw("Vertical") : 0, input ? Input.GetAxisRaw("Horizontal") : 0, Time.deltaTime, boost);
             if (story == null || session == null || BeachBoatQuestSession.InteractionBlocked) return;
             bool prompt = IsAboard ? AtDock && Mathf.Abs(Speed) <= 5 :
                 CanBoardForState(story.currentState) && AtDock &&
@@ -177,19 +180,28 @@ namespace BeachBoatStory
         }
 
         // Shared by live controls and editor validation; no allocation or scene scans per tick.
-        public void Step(float throttle, float steering, float dt)
+        public void Step(float throttle, float steering, float dt, bool boostWanted = false)
         {
             if (dt <= 0 || !isActiveAndEnabled) return;
             var position = transform.position; position.y = TideSystem.CurrentWaterHeight;
             transform.position = position;
             if (!IsAboard || BeachBoatQuestSession.InteractionBlocked)
-            { Speed = 0; if (IsAboard) { animator.speed = 0; AttachPlayer(); } return; }
+            { Speed = 0; IsBoosting = false; if (IsAboard) { animator.speed = 0; AttachPlayer(); } return; }
             dt = Mathf.Min(dt, .05f);
-            float speed = Mathf.MoveTowards(Speed, Mathf.Clamp(throttle, -1, 1) * maxSpeed, acceleration * dt);
+            IsBoosting = boostWanted && Mathf.Abs(throttle) > .1f &&
+                (vitals == null || vitals.TryExert(sprintStaminaPerSecond, dt));
+            float topSpeed = maxSpeed * (IsBoosting ? sprintMultiplier : 1f);
+            float speed = Mathf.MoveTowards(Speed, Mathf.Clamp(throttle, -1, 1) * topSpeed,
+                acceleration * (IsBoosting ? 1.55f : 1f) * dt);
             var rotation = transform.rotation * Quaternion.Euler(0, Mathf.Clamp(steering, -1, 1) * turnSpeed * dt, 0);
             var next = position + rotation * Vector3.forward * (speed * dt);
-            if (CanOccupy(next, rotation)) { transform.SetPositionAndRotation(next, rotation); Speed = speed; }
-            else Speed = 0;
+            if (TryCanOccupy(next, rotation, out var obstacle)) { transform.SetPositionAndRotation(next, rotation); Speed = speed; }
+            else
+            {
+                bool knockedOut = HandleImpact(obstacle, Mathf.Max(Mathf.Abs(Speed), Mathf.Abs(speed)));
+                Speed = 0; IsBoosting = false;
+                if (knockedOut) return;
+            }
             // Turning the stationary boat still uses the paddle; blocked translation never plays a full-speed stroke.
             float travelRate = Mathf.Abs(Speed) / Mathf.Max(1, maxSpeed);
             float turningRate = Quaternion.Angle(transform.rotation, rotation) < .01f ? Mathf.Abs(steering) * .35f : 0;
@@ -198,27 +210,95 @@ namespace BeachBoatStory
             AttachPlayer();
         }
 
-        public bool CanOccupy(Vector3 position, Quaternion rotation)
+        public bool CanOccupy(Vector3 position, Quaternion rotation) => TryCanOccupy(position, rotation, out _);
+
+        bool TryCanOccupy(Vector3 position, Quaternion rotation, out BoatObstacleKind obstacle)
         {
+            obstacle = BoatObstacleKind.None;
             for (int i = -1; i <= 1; i++)
             {
                 var sample = position + rotation * Vector3.forward * (i * 26f);
-                if (terrain != null)
-                {
-                    var local = sample - terrain.transform.position; var size = terrain.terrainData.size;
-                    if (local.x < 0 || local.z < 0 || local.x > size.x || local.z > size.z ||
-                        terrain.SampleHeight(sample) + terrain.transform.position.y + minimumDepth > TideSystem.CurrentWaterHeight) return false;
-                }
+                if (nearbyFriendlyBoats != null)
+                    foreach (var other in nearbyFriendlyBoats)
+                        if (other != null && other.gameObject.activeInHierarchy &&
+                            FlatDistance(sample, other.transform.position) < 48f)
+                        { obstacle = BoatObstacleKind.Ship; return false; }
+                if (enemyShips != null)
+                    foreach (var other in enemyShips)
+                        if (other != null && other.gameObject.activeInHierarchy && !other.isDestroyed &&
+                            FlatDistance(sample, other.transform.position) < 53f)
+                        { obstacle = BoatObstacleKind.Ship; return false; }
                 int count = Physics.OverlapSphereNonAlloc(sample + Vector3.up * 2, 11, overlaps, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-                if (count == overlaps.Length) return false;
+                if (count == overlaps.Length) { obstacle = BoatObstacleKind.Structure; return false; }
                 for (int n = 0; n < count; n++)
                 {
                     var hit = overlaps[n];
                     if (hit == null || hit is TerrainCollider || hit.transform.IsChildOf(transform) ||
                         (session != null && hit.transform.IsChildOf(session.player.transform))) continue;
+                    obstacle = ClassifyObstacle(hit);
                     return false;
                 }
+                if (terrain != null)
+                {
+                    var local = sample - terrain.transform.position; var size = terrain.terrainData.size;
+                    if (local.x < 0 || local.z < 0 || local.x > size.x || local.z > size.z ||
+                        terrain.SampleHeight(sample) + terrain.transform.position.y + minimumDepth > TideSystem.CurrentWaterHeight)
+                    { obstacle = BoatObstacleKind.Shore; return false; }
+                }
             }
+            return true;
+        }
+
+        static BoatObstacleKind ClassifyObstacle(Collider hit)
+        {
+            if (hit.GetComponentInParent<AmbientRiverBoat>() != null || hit.GetComponentInParent<EnemyShip>() != null)
+                return BoatObstacleKind.Ship;
+            string name = hit.name.ToLowerInvariant();
+            if (name.Contains("rock") || name.Contains("stone") || name.Contains("boulder") || name.Contains("đá"))
+                return BoatObstacleKind.Rock;
+            if (name.Contains("tree") || name.Contains("pine") || name.Contains("mangrove") || name.Contains("cây") || name.Contains("cay"))
+                return BoatObstacleKind.Tree;
+            return BoatObstacleKind.Structure;
+        }
+
+        public static float ImpactDamage(BoatObstacleKind obstacle, float impactSpeed, float rowingSpeed)
+        {
+            if (impactSpeed < 12f) return 0;
+            float baseDamage = obstacle switch
+            {
+                BoatObstacleKind.Ship => 26f,
+                BoatObstacleKind.Rock => 21f,
+                BoatObstacleKind.Tree => 15f,
+                BoatObstacleKind.Shore => 12f,
+                BoatObstacleKind.Structure => 17f,
+                _ => 0f
+            };
+            return Mathf.Round(baseDamage * Mathf.Clamp(impactSpeed / Mathf.Max(1, rowingSpeed), .25f, 1.4f));
+        }
+
+        bool HandleImpact(BoatObstacleKind obstacle, float impactSpeed)
+        {
+            if (vitals == null || Time.unscaledTime < nextImpactTime) return false;
+            float damage = ImpactDamage(obstacle, impactSpeed, maxSpeed);
+            if (damage <= 0) return false;
+            nextImpactTime = Time.unscaledTime + 1.2f;
+            string label = obstacle switch
+            {
+                BoatObstacleKind.Ship => "Va vào thuyền khác",
+                BoatObstacleKind.Rock => "Va vào đá",
+                BoatObstacleKind.Tree => "Va vào cây",
+                BoatObstacleKind.Shore => "Mắc cạn ở bờ sông",
+                _ => "Va vào vật cản"
+            };
+            vitals.TakeImpact(damage, label);
+            if (vitals.Health > 0) return false;
+            RestorePlayer();
+            transform.SetPositionAndRotation(new Vector3(homePosition.x, TideSystem.CurrentWaterHeight, homePosition.z), homeRotation);
+            session.player.transform.SetPositionAndRotation(boardingPoint.position, boardingPoint.rotation);
+            playerBody.position = boardingPoint.position; playerBody.rotation = boardingPoint.rotation;
+            Physics.SyncTransforms(); orbit.SnapToTarget();
+            vitals.RecoverAtDock();
+            BachDangStoryManager.Instance?.UpdateUI();
             return true;
         }
 

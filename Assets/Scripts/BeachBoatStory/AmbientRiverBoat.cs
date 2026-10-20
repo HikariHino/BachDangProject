@@ -27,6 +27,20 @@ namespace BeachBoatStory
         {
             if (tide == null) tide = FindAnyObjectByType<TideSystem>();
             if (tide == null || route == null || route.Length < 2) { enabled = false; return; }
+            // The authored patrol roots can sit below the tide plane. Calibrate from the
+            // visible hull once, then keep that depth as the tide moves. Using the root's
+            // original Y made only the sails visible on the water.
+            var hull = transform.Find("DaiVietPatrolVisual_Rebuilt");
+            if (hull != null)
+            {
+                var renderers = hull.GetComponentsInChildren<Renderer>(true);
+                if (renderers.Length > 0)
+                {
+                    var bounds = renderers[0].bounds;
+                    for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+                    transform.position += Vector3.up * (tide.transform.position.y - 3.2f - bounds.min.y);
+                }
+            }
             waterlineOffset = transform.position.y - tide.transform.position.y;
             phase = Mathf.Repeat(transform.position.x * .013f + transform.position.z * .009f, Mathf.PI * 2f);
             target = NearestNextPoint(); ready = true;

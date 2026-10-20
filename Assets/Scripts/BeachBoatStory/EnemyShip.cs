@@ -5,10 +5,15 @@ namespace BeachBoatStory
     {
         public float moveSpeed=18,stakeHitDistance=12;
         public Transform targetPoint;
+        public Transform[] routeWaypoints=new Transform[0];
         public Vector3 spawnPoint;
         [HideInInspector] public float ambushDelay;
         public bool isDestroyed;
+        public bool SignalReady {get;private set;}
+        public bool IsReleasedForAmbush=>attackReleased;
         bool battleStarted;
+        bool attackReleased;
+        int routeIndex;
         float ambushStartedAt=-1;
         float destroyedTime;
         Vector3 sinkStart;Quaternion sinkRotation;
@@ -17,10 +22,25 @@ namespace BeachBoatStory
         public void Activate()
         {
             isDestroyed=false;destroyedTime=0;battleStarted=true;ambushStartedAt=-1;
-            var direction=targetPoint!=null?targetPoint.position-transform.position:Vector3.forward;direction.y=0;
+            attackReleased=false;SignalReady=false;routeIndex=0;
+            var first=routeWaypoints!=null&&routeWaypoints.Length>0?routeWaypoints[0]:targetPoint;
+            var direction=first!=null?first.position-transform.position:Vector3.forward;direction.y=0;
             transform.rotation=direction.sqrMagnitude>.001f?Quaternion.LookRotation(direction):Quaternion.identity;
-            EnsureDebrisPool();
             gameObject.SetActive(true);
+            // The imported junk was originally seated against the low-tide surface.
+            // Re-seat its visible hull at the actual water level for every battle wave.
+            var visual = transform.Find("RedSailJunkVisual");
+            if (visual != null)
+            {
+                var renderers = visual.GetComponentsInChildren<Renderer>(true);
+                if (renderers.Length > 0)
+                {
+                    var bounds = renderers[0].bounds;
+                    for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+                    visual.position += Vector3.up * (TideSystem.CurrentWaterHeight - 4f - bounds.min.y);
+                }
+            }
+            EnsureDebrisPool();
         }
         void Update()=>Step(Time.deltaTime);
         public void Step(float dt)
@@ -44,20 +64,44 @@ namespace BeachBoatStory
             }
             var pos=transform.position;pos.y=TideSystem.CurrentWaterHeight;transform.position=pos;
             if(targetPoint==null)return;
-            var end=targetPoint.position;end.y=pos.y;
-            var next=Vector3.MoveTowards(pos,end,Mathf.Max(0,moveSpeed)*dt);
+            Transform destination=targetPoint;
+            if(routeWaypoints!=null)
+                while(routeIndex<routeWaypoints.Length)
+                {
+                    var waypoint=routeWaypoints[routeIndex];
+                    if(waypoint==null){routeIndex++;continue;}
+                    if(QuestRowboat.FlatDistance(pos,waypoint.position)<=9){routeIndex++;continue;}
+                    destination=waypoint;break;
+                }
+            bool finalLeg=destination==targetPoint;
+            var end=destination.position;end.y=pos.y;
+            float distance=Vector3.Distance(pos,end);
+            // The player must give the counterattack order when the hull reaches the trap.
+            // Holding at a readable distance also prevents a ship from passing its stake
+            // while the tide is still high or the soldier is rowing into position.
+            if(finalLeg&&!attackReleased&&distance<=85.5f)
+            {SignalReady=true;return;}
+            float step=Mathf.Max(0,moveSpeed)*dt;
+            if(finalLeg&&!attackReleased)step=Mathf.Min(step,Mathf.Max(0,distance-85f));
+            var next=Vector3.MoveTowards(pos,end,step);
+            if(finalLeg&&!attackReleased&&Vector3.Distance(next,end)<=85.5f)SignalReady=true;
             var direction=end-pos;
             if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-2*dt));
             transform.position=next;
             var timeline=BachDangBattleTimeline.Instance;
             bool ambushActive=timeline==null||timeline.CurrentMoment>=BachDangBattleTimeline.BattleMoment.Ambush;
-            if(ambushActive)
+            if(ambushActive&&attackReleased)
             {
                 if(ambushStartedAt<0)ambushStartedAt=Time.time;
                 // Let the exchange of fire and the converging Vietnamese boats remain visible
                 // before each successive enemy group reaches the stakes.
                 if(Time.time-ambushStartedAt>=1.5f+ambushDelay)CheckStakeHit(pos,next);
             }
+        }
+        public void ReleaseForAmbush()
+        {
+            if(!battleStarted||isDestroyed)return;
+            attackReleased=true;SignalReady=false;ambushStartedAt=Time.time;
         }
         void CheckStakeHit(Vector3 from,Vector3 to)
         {

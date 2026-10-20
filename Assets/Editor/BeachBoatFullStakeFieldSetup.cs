@@ -67,7 +67,7 @@ public static class BeachBoatFullStakeFieldSetup
             point.marker.SetActive(false);
             var text = point.marker.GetComponentInChildren<TMPro.TMP_Text>(true);
             Undo.RecordObject(text, "Explain cluster interaction");
-            text.text = $"CỤM {n + 1} • {size} CỌC • E";
+            text.text = $"CỤM {n + 1} • {size} CỌC";
         }
         EditorUtility.SetDirty(zone);
         RenderSettings.skybox = UnityEngine.Object.FindAnyObjectByType<DayNightCycle>().skyboxMaterial;

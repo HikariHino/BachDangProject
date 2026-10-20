@@ -13,12 +13,10 @@ namespace BeachBoatStoryEditor
             // Skybox, fog and sunlight are already driven by DayNightCycle.
             // Do not layer opaque primitive clouds over that authored sky.
             var fireMat=BeachBoatToolSafety.Material("CampFlame",new Color(1,.4f,.05f),false,true);
-            var woodMat=BeachBoatToolSafety.Material("RiverWood",new Color(.3f,.18f,.09f));
             var birdMat=BeachBoatToolSafety.Material("Bird",new Color(.15f,.16f,.12f));
             var terrain=Terrain.activeTerrain;
             var camp=Object.FindAnyObjectByType<BeachBoatStory.NPCQuestGiver>();
-            var boat=Object.FindAnyObjectByType<QuestRowboat>();
-            if(camp==null||boat==null||terrain==null)throw new System.InvalidOperationException("Missing camp, boat or terrain.");
+            if(camp==null||terrain==null)throw new System.InvalidOperationException("Missing camp or terrain.");
             var fires=Root("CampFires");
             for(int i=0;i<4;i++)
             {
@@ -44,15 +42,10 @@ namespace BeachBoatStoryEditor
             // Repair old tool-created clouds if present; the sky itself needs no extra cloud meshes.
             var cloudRoot=GameObject.Find("CloudLayer");
             if(cloudRoot!=null){Undo.RecordObject(cloudRoot,"Remove duplicate sky layer");cloudRoot.SetActive(false);}
-            var debris=Root("RiverDebris");
-            for(int i=0;i<12;i++)
-            {
-                var p=boat.transform.position+new Vector3(80+(i%4)*30,0,(i/4)*60-60);
-                if(terrain.SampleHeight(p)+terrain.transform.position.y+12>=boat.tide.lowTideY)continue;
-                p.y=TideSystem.CurrentWaterHeight+.3f;
-                var piece=Primitive(debris,"Debris_"+i,PrimitiveType.Cube,p,new Vector3(2,.4f,4),woodMat);
-                if(piece.GetComponent<FloatDebris>()==null)Undo.AddComponent<FloatDebris>(piece);
-            }
+            // Old scenery placed twelve identical floating cubes in a grid beside the
+            // quest boat. They looked like gameplay markers and served no mission.
+            var oldDebris=GameObject.Find("RiverDebris");
+            if(oldDebris!=null)Undo.DestroyObjectImmediate(oldDebris);
             BeachBoatToolSafety.Save(scene);
         }
         static GameObject Root(string name)

@@ -102,6 +102,14 @@ public static class BeachBoatAllPatrolRepair
         foreach (var body in actor.GetComponentsInChildren<Rigidbody>(true)) Object.DestroyImmediate(body);
         var animator = actor.GetComponentInChildren<Animator>(true);
         if (animator == null || !animator.isHuman) throw new InvalidOperationException("Veteran patrol crew is not Humanoid.");
+        // The FBX's embedded BakedMaterial has no albedo map and renders pure white.
+        // Bind the already-imported external material with the matching soldier texture.
+        var textured = AssetDatabase.LoadAssetAtPath<Material>(
+            "Assets/Model_NPC/OldSoldier/Meshy_AI_Dũng_the_Veteran_biped/Materials/Meshy_AI_Dũng_the_Veteran_biped_texture_0.mat");
+        if (textured == null || textured.GetTexture("_BaseMap") == null)
+            throw new InvalidOperationException("Patrol soldier texture material missing.");
+        foreach (var skin in actor.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            skin.sharedMaterials = Enumerable.Repeat(textured, skin.sharedMaterials.Length).ToArray();
         ScaleToHeight(actor, 12.5f);
         // Scaling changes renderer bounds around the import pivot; restore feet/deck position.
         var actorBounds = BoundsOf(actor);
