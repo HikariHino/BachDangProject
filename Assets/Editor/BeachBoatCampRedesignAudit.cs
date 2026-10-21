@@ -96,6 +96,13 @@ public static class BeachBoatCampRedesignAudit
             cameraGo.transform.LookAt(actor.transform.position+Vector3.up*13);
             camera.Render();RenderTexture.active=rt;pixels.ReadPixels(new Rect(0,0,700,900),0,0);pixels.Apply();
             File.WriteAllBytes("Logs/NPCPoseCandidate_"+index+".png",pixels.EncodeToPNG());
+            if(index>=5)
+            for(int frame=0;frame<4;frame++)
+            {
+                playable.SetTime(clip.length*frame/4f);graph.Evaluate(0);actor.GetComponent<NPCUprightPosture>()?.Balance();
+                camera.Render();RenderTexture.active=rt;pixels.ReadPixels(new Rect(0,0,700,900),0,0);pixels.Apply();
+                File.WriteAllBytes("Logs/NPC_Arm_"+(index==5?"Idle":"Walk")+"_"+frame+".png",pixels.EncodeToPNG());
+            }
             var curves=AnimationUtility.GetCurveBindings(clip).Where(b=>b.type==typeof(Animator))
                 .Select(b=>new{b.propertyName,min=AnimationUtility.GetEditorCurve(clip,b).keys.Min(k=>k.value),
                     max=AnimationUtility.GetEditorCurve(clip,b).keys.Max(k=>k.value)}).ToArray();

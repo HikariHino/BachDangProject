@@ -22,6 +22,8 @@ public static class BeachBoatBarracksPlaytest
     static readonly HashSet<string> TentEntered = new HashSet<string>(), TentSlept = new HashSet<string>(), TentLeft = new HashSet<string>();
     const string PendingExit="BarracksPlaytestExit";
     static bool checkedDoors, captured;
+    static int armSamples;
+    static float largestArmAngle;
     static string failure;
 
     public static void RunAndExit()
@@ -86,6 +88,17 @@ public static class BeachBoatBarracksPlaytest
             .Cast<Transform>().Where(t => t.name.StartsWith("Wooden_Barracks_")).OrderBy(t => t.name).ToArray();
         try
         {
+            foreach(var posture in UnityEngine.Object.FindObjectsByType<NPCUprightPosture>(FindObjectsSortMode.None))
+            {
+                var a=posture.GetComponent<Animator>();var w=posture.GetComponent<NPCWander>();var state=a.GetCurrentAnimatorStateInfo(0);
+                if((w!=null&&w.IsSleeping)||state.IsName("Laying")||state.IsName("Sitting")||a.IsInTransition(0))continue;
+                foreach(var pair in new[]{(HumanBodyBones.LeftUpperArm,HumanBodyBones.LeftLowerArm),(HumanBodyBones.RightUpperArm,HumanBodyBones.RightLowerArm)})
+                {
+                    var axis=a.GetBoneTransform(pair.Item2).position-a.GetBoneTransform(pair.Item1).position;
+                    float angle=Vector3.Angle(axis,-a.transform.up);largestArmAngle=Mathf.Max(largestArmAngle,angle);armSamples++;
+                    if(angle>32)throw new InvalidOperationException("Arm folded out of its relaxed range: "+a.name+" angle="+angle);
+                }
+            }
             if (!checkedDoors)
             {
                 if (houses.Length != 8 || houses.Any(h => h.Find("SleepingPlace") == null))
@@ -179,7 +192,7 @@ public static class BeachBoatBarracksPlaytest
         File.WriteAllText("Logs/BeachBoatBarracksPlaytest.json", JsonConvert.SerializeObject(new
         { success = failure == null, failure, checkedDoors, entered = Entered.Count, slept = Slept.Count, leftAfterSleep = Left.Count,
             dormEntered = DormEntered.Count, dormSlept = DormSlept.Count, dormLeft = DormLeft.Count,
-            tentEntered=TentEntered.Count,tentSlept=TentSlept.Count,tentLeft=TentLeft.Count,actors, dormActors }, Formatting.Indented));
+            tentEntered=TentEntered.Count,tentSlept=TentSlept.Count,tentLeft=TentLeft.Count,armSamples,largestArmAngle,actors, dormActors }, Formatting.Indented));
         SessionState.SetBool(Flag, false);SessionState.SetInt(PendingExit,failure==null?0:1);EditorApplication.isPlaying=false;
     }
 }

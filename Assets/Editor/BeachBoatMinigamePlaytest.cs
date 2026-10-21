@@ -19,6 +19,7 @@ public static class BeachBoatMinigamePlaytest
     static string failure;
     static string signFailure;
     static bool timedOut, supplyTimedOut, beatChanged, wrongCargoRejected, allDeliveries, signsLabelled;
+    static bool selectionVisible, travelCompact, returnCompact, closedAfterFinish, capturedTravel, capturedReturn;
 
     [MenuItem("BeachBoat/QA/Run Minigame Smoke Test")]
     public static void RunAndExit()
@@ -29,6 +30,7 @@ public static class BeachBoatMinigamePlaytest
         signFailure = null;
         timedOut = supplyTimedOut = beatChanged = wrongCargoRejected = allDeliveries = false;
         signsLabelled = true;
+        selectionVisible=travelCompact=returnCompact=closedAfterFinish=capturedTravel=capturedReturn=false;
         EditorApplication.isPlaying = true;
     }
 
@@ -50,7 +52,7 @@ public static class BeachBoatMinigamePlaytest
             success, failure, signFailure, timedOut, supplyTimedOut, beatChanged, wrongCargoRejected, allDeliveries, signsLabelled,
             drumCompleted = drum != null && drum.HasCompleted,
             supplyCompleted = supply != null && supply.HasCompleted,
-            supplyTrips = supply?.Progress
+            supplyTrips = supply?.Progress, selectionVisible, travelCompact, returnCompact, closedAfterFinish
         }, Formatting.Indented));
         SessionState.SetBool(Flag, false);
         BeachBoatQAExit.AfterPlayMode(success ? 0 : 1);
@@ -137,6 +139,9 @@ public static class BeachBoatMinigamePlaytest
         }
         else if (phase == 5)
         {
+            var ui=BeachBoatMinigameUI.Instance;
+            selectionVisible=ui!=null&&ui.CargoSelectionVisible&&!ui.TravelStatusVisible;
+            if(!selectionVisible){failure="Warehouse selection panel missing";Finish(false,drum,supply);return;}
             if (!supply.ChooseCargo(supply.RequestedCargo)) { failure = "Correct cargo rejected"; Finish(false, drum, supply); return; }
             var marker = supply.checkpointMarkers[supply.Progress];
             var sign = marker == null ? null : marker.GetComponent<SupplyDestinationSign>();
@@ -149,13 +154,43 @@ public static class BeachBoatMinigamePlaytest
         }
         else if (phase == 6)
         {
+            var ui=BeachBoatMinigameUI.Instance;
+            travelCompact=ui!=null&&!ui.CargoSelectionVisible&&ui.TravelStatusVisible;
+            if(!travelCompact){failure="Large cargo panel remained visible after choosing cargo";Finish(false,drum,supply);return;}
+            if(!capturedTravel){CaptureUI(session,"RelayUI_Delivering");capturedTravel=true;}
             int index = supply.Progress;
             Move(session.player, supply.checkpoints[index].position + Vector3.right * 4);
             if (!supply.TryDeliver()) { failure = "Delivery rejected at checkpoint " + index; Finish(false, drum, supply); return; }
-            if (supply.HasCompleted) { allDeliveries = supply.Progress == supply.checkpoints.Length; Finish(timedOut && supplyTimedOut && wrongCargoRejected && allDeliveries && signsLabelled, drum, supply); return; }
-            Move(session.player, supply.transform.position + Vector3.right * 15);
-            phase = 7;
+            if (supply.HasCompleted) { allDeliveries = supply.Progress == supply.checkpoints.Length;phase=11;return; }
+            phase=10;
+        }
+        else if(phase==10)
+        {
+            var ui=BeachBoatMinigameUI.Instance;
+            returnCompact=ui!=null&&!ui.CargoSelectionVisible&&ui.TravelStatusVisible;
+            if(!returnCompact){failure="Return trip reopened the large cargo panel";Finish(false,drum,supply);return;}
+            if(!capturedReturn){CaptureUI(session,"RelayUI_Returning");capturedReturn=true;}
+            Move(session.player,supply.transform.position+Vector3.right*15);phase=7;
+        }
+        else if(phase==11)
+        {
+            var ui=BeachBoatMinigameUI.Instance;closedAfterFinish=ui!=null&&!ui.CargoSelectionVisible&&!ui.TravelStatusVisible;
+            if(!closedAfterFinish)failure="Cargo interface remained after completion";
+            Finish(timedOut&&supplyTimedOut&&wrongCargoRejected&&allDeliveries&&signsLabelled&&closedAfterFinish,drum,supply);
         }
         else if (phase == 7 && supply.IsSelectingCargo) phase = 5;
+    }
+    static void CaptureUI(BeachBoatQuestSession session,string name)
+    {
+        var go=new GameObject("RelayQA_Camera");var camera=go.AddComponent<Camera>();camera.CopyFrom(session.storyCamera);
+        camera.transform.SetPositionAndRotation(session.storyCamera.transform.position,session.storyCamera.transform.rotation);camera.enabled=false;
+        var canvases=UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None).Where(c=>c.isRootCanvas&&c.renderMode==RenderMode.ScreenSpaceOverlay).ToArray();
+        var rt=new RenderTexture(1280,720,24);var pixels=new Texture2D(1280,720,TextureFormat.RGB24,false);camera.targetTexture=rt;
+        foreach(var c in canvases){c.renderMode=RenderMode.ScreenSpaceCamera;c.worldCamera=camera;c.planeDistance=2;}
+        Canvas.ForceUpdateCanvases();camera.Render();RenderTexture.active=rt;
+        pixels.ReadPixels(new Rect(0,0,1280,720),0,0);pixels.Apply();Directory.CreateDirectory("Logs");File.WriteAllBytes("Logs/"+name+".png",pixels.EncodeToPNG());
+        foreach(var c in canvases){c.renderMode=RenderMode.ScreenSpaceOverlay;c.worldCamera=null;}
+        RenderTexture.active=null;camera.targetTexture=null;UnityEngine.Object.DestroyImmediate(rt);UnityEngine.Object.DestroyImmediate(pixels);UnityEngine.Object.DestroyImmediate(go);
+        Canvas.ForceUpdateCanvases();
     }
 }

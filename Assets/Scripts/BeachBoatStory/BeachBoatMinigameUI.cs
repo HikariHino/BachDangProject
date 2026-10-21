@@ -10,8 +10,9 @@ namespace BeachBoatStory
     {
         public static BeachBoatMinigameUI Instance { get; private set; }
 
-        GameObject drumRoot, relayRoot, failureRoot, choicesRoot;
+        GameObject drumRoot, relayRoot, relayTravelRoot, failureRoot, choicesRoot;
         TMP_Text drumRound, expectedBeat, feedback, timer, relayTitle, relayHint, relayOrder, relayTime, failureTitle;
+        TMP_Text relayTravelTitle, relayTravelHint, relayTravelTime;
         RectTransform drumProgress, relayProgress;
         Image[] beatCards;
         TMP_Text[] beatLabels;
@@ -20,6 +21,8 @@ namespace BeachBoatStory
         int lastFeedback = -1;
         int lastRelayFeedback = -1;
         float relayErrorUntil;
+        public bool CargoSelectionVisible => relayRoot != null && relayRoot.activeSelf;
+        public bool TravelStatusVisible => relayTravelRoot != null && relayTravelRoot.activeSelf;
 
         static readonly Color Ink = new Color(.025f, .032f, .038f, .97f);
         static readonly Color Paper = new Color(.12f, .105f, .075f, .97f);
@@ -51,16 +54,19 @@ namespace BeachBoatStory
                 if (objectivePanel != null) objectivePanel.SetActive(active == null);
                 drumRoot.SetActive(active != null && active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum);
                 relayRoot.SetActive(active != null && active.kind == BeachBoatMinigameStation.ActivityKind.SupplyRelay);
+                relayTravelRoot.SetActive(false);
             }
             failureRoot.SetActive(active != null && active.Failed);
             if (active == null) return;
             if (active.Failed)
             {
+                drumRoot.SetActive(false); relayRoot.SetActive(false); relayTravelRoot.SetActive(false);
                 failureTitle.text = active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum
                     ? "HẾT GIỜ — HIỆU LỆNH CHƯA HOÀN THÀNH"
                     : "HẾT GIỜ — VẬT TƯ CHƯA TẬP KẾT ĐỦ";
                 return;
             }
+            drumRoot.SetActive(active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum);
             if (active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum) RefreshDrum(active);
             else RefreshRelay(active);
         }
@@ -96,6 +102,9 @@ namespace BeachBoatStory
 
         void RefreshRelay(BeachBoatMinigameStation game)
         {
+            bool selecting = game.IsSelectingCargo;
+            relayRoot.SetActive(selecting);
+            relayTravelRoot.SetActive(!selecting);
             if (lastRelayFeedback != game.FeedbackVersion)
             {
                 lastRelayFeedback = game.FeedbackVersion;
@@ -122,6 +131,16 @@ namespace BeachBoatStory
             relayHint.color = Time.unscaledTime < relayErrorUntil ? Red : Color.white;
             choicesRoot.SetActive(game.IsSelectingCargo);
             SetProgress(relayProgress, total > 0 ? game.Progress / (float)total : 0f);
+            relayTravelTitle.text = game.ReturningToWarehouse
+                ? $"VỀ KHO NHẬN VẬT TƯ   •   {game.Progress}/{total}"
+                : $"GIAO {BeachBoatMinigameStation.CargoName(game.SelectedCargo)}   •   {game.Progress}/{total}";
+            relayTravelHint.text = game.ReturningToWarehouse
+                ? $"Về kho • {Mathf.RoundToInt(game.CurrentTargetDistance)} m"
+                : game.CurrentTargetDistance <= game.interactDistance
+                    ? "Đã tới điểm giao • Bấm E để giao vật tư"
+                    : $"Theo biển giao hàng • {Mathf.RoundToInt(game.CurrentTargetDistance)} m";
+            relayTravelTime.text = $"CÒN {game.TimeRemaining:0}s";
+            relayTravelTime.color = game.TimeRemaining < 20f ? Red : Color.white;
         }
 
         void BuildDrumUI()
@@ -194,6 +213,16 @@ namespace BeachBoatStory
             }
             var track = Panel("ProgressTrack",relayRoot.transform,new Vector2(.05f,.07f),new Vector2(.95f,.12f),new Color(.20f,.20f,.18f));
             relayProgress = Panel("Fill",track.transform,Vector2.zero,new Vector2(0,1),Green).GetComponent<RectTransform>();
+            // While walking, leave the center of the view clear. Only the warehouse
+            // selection uses the large panel; the return trip uses this same compact HUD.
+            relayTravelRoot = Panel("RelayTravelStatus",transform,new Vector2(0,1),new Vector2(0,1),Ink);
+            var travelRect=relayTravelRoot.GetComponent<RectTransform>();
+            travelRect.pivot=new Vector2(0,1);travelRect.anchoredPosition=new Vector2(24,-155);travelRect.sizeDelta=new Vector2(350,90);
+            relayTravelRoot.GetComponent<Image>().raycastTarget=false;
+            relayTravelTitle=Text("Title",relayTravelRoot.transform,new Vector2(.045f,.61f),new Vector2(.95f,.94f),18,FontStyles.Bold);
+            relayTravelTitle.color=Gold;
+            relayTravelHint=Text("Hint",relayTravelRoot.transform,new Vector2(.045f,.30f),new Vector2(.95f,.60f),16);
+            relayTravelTime=Text("Time",relayTravelRoot.transform,new Vector2(.045f,.02f),new Vector2(.95f,.31f),16,FontStyles.Bold);
         }
 
         void BuildFailureUI()
@@ -249,7 +278,7 @@ namespace BeachBoatStory
 
         void HideAll()
         {
-            drumRoot.SetActive(false); relayRoot.SetActive(false); failureRoot.SetActive(false);
+            drumRoot.SetActive(false); relayRoot.SetActive(false); relayTravelRoot.SetActive(false); failureRoot.SetActive(false);
         }
 
         void OnDestroy()

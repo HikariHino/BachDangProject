@@ -65,4 +65,25 @@ public static class BeachBoatNPCMotionRepair
         EditorUtility.SetDirty(controller);AssetDatabase.SaveAssets();
     }
     public static void ApplyAndExit(){Apply();EditorApplication.Exit(0);}
+    public static void ConfigureArmReferencesAndExit()
+    {
+        var scene=UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");
+        Apply();
+        const string model="Assets/Model_NPC/OldSoldier/Meshy_AI_Dũng_the_Veteran_biped/Meshy_AI_Dũng_the_Veteran_biped_Character_output.fbx";
+        var source=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(model));
+        var animator=source.GetComponent<Animator>();
+        if(animator==null||!animator.isHuman)throw new InvalidOperationException("Veteran reference avatar missing");
+        var left=animator.GetBoneTransform(HumanBodyBones.LeftHand).localRotation;
+        var right=animator.GetBoneTransform(HumanBodyBones.RightHand).localRotation;
+        int count=0;
+        foreach(var posture in UnityEngine.Object.FindObjectsByType<BeachBoatStory.NPCUprightPosture>(FindObjectsSortMode.None))
+        {
+            if(posture.GetComponent<Animator>()?.avatar!=animator.avatar)continue;
+            posture.SetHandReference(left,right);EditorUtility.SetDirty(posture);count++;
+        }
+        UnityEngine.Object.DestroyImmediate(source);
+        if(count==0)throw new InvalidOperationException("No matching veteran NPCs found");
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+        Debug.Log("Configured neutral wrists and arm axis correction on "+count+" camp NPCs");EditorApplication.Exit(0);
+    }
 }

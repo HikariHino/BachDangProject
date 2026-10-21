@@ -31654,6 +31654,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &155313964
 GameObject:
   m_ObjectHideFlags: 0
@@ -49857,6 +49860,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &255061916
 GameObject:
   m_ObjectHideFlags: 0
@@ -77843,6 +77849,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1001 &418153188
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -90414,6 +90423,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &475859126
 GameObject:
   m_ObjectHideFlags: 0
@@ -95091,6 +95103,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &494757449
 GameObject:
   m_ObjectHideFlags: 0
@@ -157838,6 +157853,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &823612382
 GameObject:
   m_ObjectHideFlags: 0
@@ -162755,6 +162773,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &847671995
 GameObject:
   m_ObjectHideFlags: 0
@@ -179515,6 +179536,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1001 &930056697
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -224453,6 +224477,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1001 &1142464745
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -231334,6 +231361,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &1176780257
 GameObject:
   m_ObjectHideFlags: 0
@@ -239978,6 +240008,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &1222187228
 GameObject:
   m_ObjectHideFlags: 0
@@ -244948,6 +244981,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &1250774214
 GameObject:
   m_ObjectHideFlags: 0
@@ -262012,6 +262048,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1001 &1330001098
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -272785,6 +272824,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &1379156813
 GameObject:
   m_ObjectHideFlags: 0
@@ -279214,6 +279256,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1001 &1415512941
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -285057,6 +285102,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1001 &1446457024
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -310616,6 +310664,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1001 &1564297244
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -319388,6 +319439,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &1601885016 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2085449277718671952, guid: 6629880e46886724fa0107d3035304e6, type: 3}
@@ -356586,6 +356640,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1001 &1803663351
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -357110,6 +357167,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &1804535529
 GameObject:
   m_ObjectHideFlags: 0
@@ -358858,6 +358918,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &1811016211
 GameObject:
   m_ObjectHideFlags: 0
@@ -366412,6 +366475,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &1844286108 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6011036630121576164, guid: 0ec1c69bd47ad864f96cc2b516f6cd4b, type: 3}
@@ -377227,6 +377293,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!114 &1906356052
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -389317,6 +389386,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!114 &1972275173
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -394957,6 +395029,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c172cf17122ab1428f78b49d80604b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCUprightPosture
+  hasHandReference: 1
+  leftHandReference: {x: -0.00000013160239, y: -0.028401261, z: 0.000000042858126, w: 0.9995966}
+  rightHandReference: {x: 0.0000000065218893, y: 0.028401261, z: 0.000000115530604, w: 0.9995966}
 --- !u!1 &1999781411
 GameObject:
   m_ObjectHideFlags: 0
