@@ -15,18 +15,23 @@ namespace BeachBoatStory
         [Range(.8f,1.35f)] public float maximumPace = 1.12f;
         [Range(0,100)] public float sitLayChance = 30;
         public Transform[] waypoints;
+        public bool followWaypointsInOrder;
+        public float[] waypointWaitSeconds = new float[0];
         [Tooltip("Short activity names matching the waypoint array, shown when inspecting NPC life.")]
         public string[] activityLabels = new string[0];
         public bool autoGenerateWaypoints = true;
         public Animator animator;
         public string walkParam = "isWalking";
         public string CurrentActivity { get; private set; } = "Đang nghỉ";
+        public bool IsSleeping { get; private set; }
+        public int WaypointIndex => targetIndex;
         Vector3 home, target;
         Terrain terrain;
         float idleRemaining, groundOffset, scale, currentSpeed, personalPace = 1, baseAnimatorSpeed = 1;
         float idleLookRemaining;
         Quaternion idleFacing;
         int walkHash, sitHash, layHash, poseHash, restPose = 1, appliedRestPose, targetIndex = -1;
+        int routeDirection = 1;
         bool hasWalk, hasSit, hasLay, hasPose, walking, sitting;
         RuntimeAnimatorController controller;
         readonly RaycastHit[] hits = new RaycastHit[12];
@@ -107,13 +112,24 @@ namespace BeachBoatStory
         }
         void PickTarget()
         {
-            Pose(false,false); target = home;
+            IsSleeping=false;Pose(false,false); target = home;
             for(int attempt=0;attempt<8;attempt++)
             {
                 Vector3 candidate;
                 if (!autoGenerateWaypoints && waypoints != null && waypoints.Length > 0)
                 {
-                    targetIndex=UnityEngine.Random.Range(0,waypoints.Length);var wp=waypoints[targetIndex];
+                    if (followWaypointsInOrder)
+                    {
+                        if (targetIndex < 0) targetIndex = 0;
+                        else
+                        {
+                            if (targetIndex >= waypoints.Length - 1) routeDirection = -1;
+                            if (targetIndex <= 0) routeDirection = 1;
+                            targetIndex = Mathf.Clamp(targetIndex + routeDirection, 0, waypoints.Length - 1);
+                        }
+                    }
+                    else targetIndex=UnityEngine.Random.Range(0,waypoints.Length);
+                    var wp=waypoints[targetIndex];
                     if(wp==null)continue;candidate=wp.position;
                 }
                 else {var offset=UnityEngine.Random.insideUnitCircle*Mathf.Max(0,wanderRadius);candidate=home+new Vector3(offset.x,0,offset.y);}
@@ -130,18 +146,23 @@ namespace BeachBoatStory
             bool sleeping=!string.IsNullOrEmpty(activity)&&activity.Contains("ngủ");
             bool seated=!string.IsNullOrEmpty(activity)&&activity.Contains("ngồi");
             if(sleeping) idleRemaining=Mathf.Max(idleRemaining,UnityEngine.Random.Range(12f,24f));
+            if(targetIndex>=0&&waypointWaitSeconds!=null&&targetIndex<waypointWaitSeconds.Length)
+                idleRemaining=Mathf.Max(.1f,waypointWaitSeconds[targetIndex]);
+            IsSleeping=sleeping&&hasLay;
             // Retargeted rest clips need an authored mat or seat. Playing them at a
             // random patrol stop makes armored NPCs float or fold into the ground.
             restPose=sleeping&&hasLay?2:1;
             Pose(false,sleeping?hasLay:seated&&hasSit);
             currentSpeed=0;
             PickIdleFacing();
+            if(IsSleeping&&waypoints[targetIndex]!=null)
+                transform.rotation=idleFacing=waypoints[targetIndex].rotation;
             CurrentActivity=targetIndex>=0&&activityLabels!=null&&targetIndex<activityLabels.Length&&!string.IsNullOrWhiteSpace(activityLabels[targetIndex])
                 ?activityLabels[targetIndex]:"Đang nghỉ chân";
         }
         public void PauseForConversation(Transform visitor)
         {
-            target=transform.position;idleRemaining=Mathf.Max(idleRemaining,5);currentSpeed=0;Pose(false,false);CurrentActivity="Đang trò chuyện";
+            IsSleeping=false;target=transform.position;idleRemaining=Mathf.Max(idleRemaining,5);currentSpeed=0;Pose(false,false);CurrentActivity="Đang trò chuyện";
             if(visitor!=null){var direction=visitor.position-transform.position;direction.y=0;if(direction.sqrMagnitude>.1f)idleFacing=Quaternion.LookRotation(direction);}
         }
         void PickIdleFacing()
@@ -169,7 +190,7 @@ namespace BeachBoatStory
             // Ambient villagers and guards keep living in the background while a story panel is
             // open. Only the NPC being spoken to is paused by PauseForConversation; globally
             // freezing everyone made the settlement look staged and mechanical.
-            if (idleRemaining > 0) { idleRemaining-=dt;UpdateIdleLook();if(idleRemaining<=0)PickTarget();return; }
+            if (idleRemaining > 0) { idleRemaining-=dt;if(!IsSleeping)UpdateIdleLook();if(idleRemaining<=0)PickTarget();return; }
             var direction=target-transform.position;direction.y=0;
             float remaining=direction.magnitude;
             if(remaining<.75f){Idle();return;}

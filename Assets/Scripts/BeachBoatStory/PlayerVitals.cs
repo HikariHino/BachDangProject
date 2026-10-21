@@ -16,6 +16,7 @@ namespace BeachBoatStory
         public float HealthFraction => maxHealth > 0 ? Health / maxHealth : 0;
         public float StaminaFraction => maxStamina > 0 ? Stamina / maxStamina : 0;
         public bool IsExhausted { get; private set; }
+        public int ArmorCharges { get; private set; }
         public string LastImpact { get; private set; }
         public float LastImpactDamage { get; private set; }
         public float LastImpactUntil { get; private set; }
@@ -46,10 +47,42 @@ namespace BeachBoatStory
         public void TakeImpact(float damage, string obstacle)
         {
             if (damage <= 0) return;
+            if (ArmorCharges > 0)
+            {
+                damage *= .7f;
+                ArmorCharges--;
+            }
             Health = Mathf.Max(0, Health - damage);
             LastImpact = obstacle;
             LastImpactDamage = damage;
             LastImpactUntil = Time.unscaledTime + 2.4f;
+        }
+
+        public void RestAtBarracks()
+        {
+            Health = Mathf.Min(maxHealth, Health + 35f);
+            Stamina = maxStamina;
+            IsExhausted = false;
+            lastEffortTime = float.NegativeInfinity;
+        }
+
+        public void ReinforceArmor()
+        {
+            ArmorCharges = 3;
+        }
+
+        public void TrainAtArmory()
+        {
+            maxStamina = Mathf.Max(maxStamina, 120f);
+            Stamina = maxStamina;
+            IsExhausted = false;
+        }
+
+        public void TakeProvisions()
+        {
+            Health = Mathf.Min(maxHealth, Health + 25f);
+            Stamina = Mathf.Min(maxStamina, Stamina + 35f);
+            if (Stamina >= exhaustedRecoveryThreshold) IsExhausted = false;
         }
 
         public void RecoverAtDock()
