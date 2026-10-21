@@ -242,6 +242,7 @@ namespace BeachBoatStory
         // Shared by live controls and editor validation; no allocation or scene scans per tick.
         public void Step(float throttle, float steering, float dt, bool boostWanted = false)
         {
+            if(RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming){throttle=0;steering=0;boostWanted=false;}
             if (dt <= 0 || !isActiveAndEnabled) return;
             var position = transform.position; position.y = TideSystem.CurrentWaterHeight;
             transform.position = position;
@@ -375,8 +376,10 @@ namespace BeachBoatStory
         void AttachPlayer()
         {
             if (!IsAboard || session == null) return;
-            session.player.transform.SetPositionAndRotation(seat.position, seat.rotation);
-            playerBody.position = seat.position; playerBody.rotation = seat.rotation;
+            bool aiming=RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming;
+            var position=aiming?transform.position+Vector3.up*10-transform.forward*6:seat.position;
+            session.player.transform.SetPositionAndRotation(position, seat.rotation);
+            playerBody.position = position; playerBody.rotation = seat.rotation;
         }
         public void LeaveForCheckpoint()
         {
@@ -386,6 +389,9 @@ namespace BeachBoatStory
         }
         void LateUpdate()
         {
+            bool aiming=IsAboard&&RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming;
+            if(paddle!=null)paddle.gameObject.SetActive(!aiming);
+            if(aiming)return;
             if (IsAboard && paddle != null && leftHand != null && rightHand != null)
             {
                 ApplyRowingPose(strokePhase);
@@ -411,7 +417,7 @@ namespace BeachBoatStory
                 rightUpperArm.position + transform.right * 5 - transform.forward * 2 - Vector3.up * 2);
         }
 
-        static void SolveArm(Transform upper, Transform forearm, Transform hand, Vector3 target, Vector3 hint)
+        internal static void SolveArm(Transform upper, Transform forearm, Transform hand, Vector3 target, Vector3 hint)
         {
             float a = Vector3.Distance(upper.position, forearm.position), b = Vector3.Distance(forearm.position, hand.position);
             var offset = target - upper.position; float d = Mathf.Clamp(offset.magnitude, Mathf.Abs(a - b) + .001f, a + b - .001f);
@@ -421,6 +427,12 @@ namespace BeachBoatStory
             var elbow = upper.position + axis * along + bend * Mathf.Sqrt(Mathf.Max(0, a * a - along * along));
             upper.rotation = Quaternion.FromToRotation(forearm.position - upper.position, elbow - upper.position) * upper.rotation;
             forearm.rotation = Quaternion.FromToRotation(hand.position - forearm.position, target - forearm.position) * forearm.rotation;
+        }
+        public void ApplyBowArmPose(Vector3 grip,Vector3 draw,Vector3 forward)
+        {
+            if(leftUpperArm==null||rightUpperArm==null)return;
+            SolveArm(leftUpperArm,leftForearm,leftHand,grip,leftUpperArm.position-transform.right*4-Vector3.up*3);
+            SolveArm(rightUpperArm,rightForearm,rightHand,draw,rightUpperArm.position+transform.right*5-forward*4);
         }
         void OnDisable() { if (IsAboard) RestorePlayer(); if (tide != null) tide.ReleaseLowTide(this); }
         void OnDestroy() { if (Instance == this) Instance = null; }

@@ -154,11 +154,13 @@ namespace BeachBoatStory
         }
         void Score(string message)
         {
+            BeachBoatSoundscape.Instance?.PlayResult(true);
             Progress++;Feedback=message;LastCorrect=true;FeedbackVersion++;
             if(Progress>=Goal){Phase=WorkPhase.Won;return;}NewTask();
         }
         void Fault(string message)
         {
+            BeachBoatSoundscape.Instance?.PlayResult(false);
             Mistakes++;Elapsed+=2;Feedback=message;LastCorrect=false;FeedbackVersion++;
             if(Mistakes>=MistakeLimit)Lose("Sai quá số lần cho phép. Chơi lại để làm chắc tay hơn.");
             else if(Elapsed>=TimeLimit)Lose("Hết giờ sau lần thao tác sai.");

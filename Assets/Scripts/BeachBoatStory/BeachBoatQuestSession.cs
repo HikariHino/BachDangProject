@@ -138,7 +138,7 @@ namespace BeachBoatStory
             {
                 if (EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsShowingBattle)
                 {
-                    controlsText.text = "W/S chèo  •  A/D lái  •  Shift nhanh  •  Space phất cờ  •  M bản đồ";
+                    controlsText.text = "W/S chèo • A/D lái • Shift né tên • Chuột phải ngắm • Chuột trái bắn • R nạp • Space phất cờ";
                 }
                 else if (story != null && story.currentState == BachDangStoryManager.StoryState.Act3_BattleInProgress)
                 {

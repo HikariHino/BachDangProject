@@ -4,6 +4,7 @@ namespace BeachBoatStory
     public sealed class EnemyShip : MonoBehaviour
     {
         public float moveSpeed=18,stakeHitDistance=12;
+        [Min(1)] public float hullHalfLength=42f;
         public Transform targetPoint;
         public Transform[] routeWaypoints=new Transform[0];
         public Vector3 spawnPoint;
@@ -11,6 +12,8 @@ namespace BeachBoatStory
         public bool isDestroyed;
         public bool SignalReady {get;private set;}
         public bool IsReleasedForAmbush=>attackReleased;
+        public bool IsHullInsideStakeField=>RiverStakeZone.Instance!=null&&RiverStakeZone.Instance.TryHullContact(
+            transform.position,transform.position,transform.forward,hullHalfLength,stakeHitDistance,false,out _);
         bool battleStarted;
         bool attackReleased;
         int routeIndex;
@@ -79,12 +82,13 @@ namespace BeachBoatStory
             // The player must give the counterattack order when the hull reaches the trap.
             // Holding at a readable distance also prevents a ship from passing its stake
             // while the tide is still high or the soldier is rowing into position.
-            if(finalLeg&&!attackReleased&&distance<=85.5f)
+            float holdDistance=hullHalfLength+stakeHitDistance*.5f;
+            if(finalLeg&&!attackReleased&&distance<=holdDistance+.5f)
             {SignalReady=true;return;}
             float step=Mathf.Max(0,moveSpeed)*dt;
-            if(finalLeg&&!attackReleased)step=Mathf.Min(step,Mathf.Max(0,distance-85f));
+            if(finalLeg&&!attackReleased)step=Mathf.Min(step,Mathf.Max(0,distance-holdDistance));
             var next=Vector3.MoveTowards(pos,end,step);
-            if(finalLeg&&!attackReleased&&Vector3.Distance(next,end)<=85.5f)SignalReady=true;
+            if(finalLeg&&!attackReleased&&Vector3.Distance(next,end)<=holdDistance+.5f)SignalReady=true;
             var direction=end-pos;
             if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-2*dt));
             transform.position=next;
@@ -92,10 +96,8 @@ namespace BeachBoatStory
             bool ambushActive=timeline==null||timeline.CurrentMoment>=BachDangBattleTimeline.BattleMoment.Ambush;
             if(ambushActive&&attackReleased)
             {
-                if(ambushStartedAt<0)ambushStartedAt=Time.time;
-                // Let the exchange of fire and the converging Vietnamese boats remain visible
-                // before each successive enemy group reaches the stakes.
-                if(Time.time-ambushStartedAt>=1.5f+ambushDelay)CheckStakeHit(pos,next);
+                // A visible stake touching the hull is the impact; no extra wave timer delays it.
+                CheckStakeHit(pos,next);
             }
         }
         public void ReleaseForAmbush()
@@ -106,21 +108,7 @@ namespace BeachBoatStory
         void CheckStakeHit(Vector3 from,Vector3 to)
         {
             var zone=RiverStakeZone.Instance;if(zone==null)return;
-            foreach(var point in zone.placements)
-            {
-                if(point==null||!point.planted)continue;
-                foreach(int index in point.stakeIndices)
-                {
-                    if(index<0||index>=zone.fieldStakes.Length)continue;
-                    var stake=zone.fieldStakes[index];if(stake==null||!stake.gameObject.activeInHierarchy)continue;
-                    var renderer=stake.GetComponentInChildren<Renderer>();
-                    if(renderer==null||renderer.bounds.max.y<=TideSystem.CurrentWaterHeight)continue;
-                    var p=renderer.bounds.center;p.y=from.y;
-                    var delta=to-from;
-                    float t=delta.sqrMagnitude>.001f?Mathf.Clamp01(Vector3.Dot(p-from,delta)/delta.sqrMagnitude):0;
-                    if(Vector3.Distance(from+delta*t,p)<=stakeHitDistance){TakeDamage(p);return;}
-                }
-            }
+            if(zone.TryHullContact(from,to,transform.forward,hullHalfLength,stakeHitDistance,true,out var point))TakeDamage(point);
         }
         public void TakeDamage()
         { TakeDamage(transform.position+transform.forward*35); }
@@ -129,6 +117,7 @@ namespace BeachBoatStory
             if(!battleStarted||isDestroyed)return;
             isDestroyed=true;destroyedTime=0;sinkStart=transform.position;sinkRotation=transform.rotation;
             LaunchDebris(impactPoint);
+            BeachBoatSoundscape.Instance?.PlayCrash();
             FindAnyObjectByType<RiverBattleChoreography>()?.PlayShipImpact();
         }
 

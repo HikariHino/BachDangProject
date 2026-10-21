@@ -16,11 +16,30 @@ public static class BeachBoatVillageWorkSetup
     static Material wood,rope,food;
     static float highWater;
     static readonly List<Vector3> Used=new List<Vector3>();
+    static Bounds[] householdBounds=Array.Empty<Bounds>();
+    static Bounds[] rockBounds=Array.Empty<Bounds>();
+    static Vector3[] villageTrees=Array.Empty<Vector3>();
+    public static void AuditLayoutAndExit()
+    {
+        EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");
+        var report=new {
+            village=UnityEngine.Object.FindFirstObjectByType<BeachBoatStory.BachDangStoryManager>().villageSpawnPoint.position,
+            districts=GameObject.Find("BeachBoat_Busy_Settlements").transform.Cast<Transform>().Select(t=>new {t.name,position=t.position}),
+            stalls=UnityEngine.Object.FindObjectsByType<VillageWorkStall>(FindObjectsSortMode.None).Select(s=>new{s.name,position=s.transform.position}),
+            ships=UnityEngine.Object.FindObjectsByType<EnemyShip>(FindObjectsInactive.Include,FindObjectsSortMode.None).Select(s=>new{s.name,s.spawnPoint,target=s.targetPoint.position,bounds=BoundsOf(s.transform),route=s.routeWaypoints.Select(t=>t.position)}),
+            stakes=UnityEngine.Object.FindFirstObjectByType<BeachBoatStory.RiverStakeZone>().fieldStakes.Select(t=>BoundsOf(t))
+        };
+        System.IO.Directory.CreateDirectory("Logs");System.IO.File.WriteAllText("Logs/VillageBattleLayoutAudit.json",Newtonsoft.Json.JsonConvert.SerializeObject(report,Newtonsoft.Json.Formatting.Indented,new Newtonsoft.Json.JsonSerializerSettings{ReferenceLoopHandling=Newtonsoft.Json.ReferenceLoopHandling.Ignore}));
+        EditorApplication.Exit(0);
+    }
     static float Ground(Vector3 p)=>terrain.SampleHeight(p)+terrain.transform.position.y;
     static Bounds BoundsOf(Transform t)=>BeachBoatWorldAudit.BoundsOf(t);
     static bool Clear(Vector3 p)
     {
         float ground=Ground(p);if(ground<highWater+3)return false;
+        if(householdBounds.Any(b=>p.x>b.min.x-34&&p.x<b.max.x+34&&p.z>b.min.z-34&&p.z<b.max.z+34))return false;
+        if(rockBounds.Any(b=>p.x>b.min.x-38&&p.x<b.max.x+38&&p.z>b.min.z-38&&p.z<b.max.z+38))return false;
+        if(villageTrees.Any(t=>QuestRowboat.FlatDistance(t,p)<55))return false;
         foreach(var offset in new[]{new Vector3(25,0,25),new Vector3(-25,0,25),new Vector3(25,0,-25),new Vector3(-25,0,-25)})
             if(Mathf.Abs(Ground(p+offset)-ground)>2.5f)return false;
         foreach(var hit in Physics.OverlapBox(new Vector3(p.x,ground+23,p.z),new Vector3(32,22,32),Quaternion.identity,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore))
@@ -30,16 +49,66 @@ public static class BeachBoatVillageWorkSetup
         foreach(var worker in UnityEngine.Object.FindObjectsByType<NPCWander>(FindObjectsSortMode.None))
         {
             if(worker.waypoints==null)continue;
-            for(int i=1;i<worker.waypoints.Length;i++)
+            for(int i=0;i<worker.waypoints.Length;i++)
             {
-                if(worker.waypoints[i]==null||worker.waypoints[i-1]==null)continue;
-                var a=worker.waypoints[i-1].position;var b=worker.waypoints[i].position;
+                int next=(i+1)%worker.waypoints.Length;
+                if(worker.waypoints[i]==null||worker.waypoints[next]==null)continue;
+                var a=worker.waypoints[i].position;var b=worker.waypoints[next].position;
                 var delta=b-a;delta.y=0;var offset=p-a;offset.y=0;
                 float along=delta.sqrMagnitude>.1f?Mathf.Clamp01(Vector3.Dot(offset,delta)/delta.sqrMagnitude):0;
                 if(QuestRowboat.FlatDistance(p,a+delta*along)<42)return false;
             }
         }
         return Used.All(old=>QuestRowboat.FlatDistance(old,p)>85);
+    }
+    public static void ScatterStallsAndExit()
+    {
+        var scene=EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");
+        terrain=Terrain.activeTerrain;highWater=UnityEngine.Object.FindFirstObjectByType<TideSystem>().highTideY;
+        var village=GameObject.Find("01_Lang_Cho_Ben_Song").transform;
+        var houses=village.Cast<Transform>().Where(t=>t.name.StartsWith("Nha_Dan_")).ToArray();
+        var stalls=UnityEngine.Object.FindObjectsByType<VillageWorkStall>(FindObjectsSortMode.None).OrderBy(s=>s.kind).ToArray();
+        if(houses.Length<8||stalls.Length!=4)throw new InvalidOperationException("Expected four stalls and the populated riverside village");
+        Directory.CreateDirectory(".utmp/VillageWork");EditorSceneManager.SaveScene(scene,".utmp/VillageWork/before-scatter.unity",true);
+        householdBounds=houses.Select(BoundsOf).ToArray();Used.Clear();
+        foreach(var s in stalls)s.gameObject.SetActive(false);Physics.SyncTransforms();
+        var center=houses.Aggregate(Vector3.zero,(sum,t)=>sum+t.position)/houses.Length;
+        villageTrees=terrain.terrainData.treeInstances.Select(t=>terrain.transform.position+Vector3.Scale(t.position,terrain.terrainData.size)).Where(p=>QuestRowboat.FlatDistance(p,center)<2200).ToArray();
+        rockBounds=UnityEngine.Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None)
+            .Where(r=>r.GetComponentsInParent<Transform>().Any(t=>System.Text.RegularExpressions.Regex.IsMatch(t.name,"rock|stone|boulder|đá",System.Text.RegularExpressions.RegexOptions.IgnoreCase)))
+            .Select(r=>r.bounds).Where(b=>QuestRowboat.FlatDistance(b.center,center)<2400).ToArray();
+        var random=new System.Random(938210);
+        var report=new List<object>();
+        for(int sector=0;sector<4;sector++)
+        {
+            var choices=houses.Where(h=>(h.position.x<center.x?0:1)+(h.position.z<center.z?0:2)==sector).ToArray();
+            if(choices.Length==0)throw new InvalidOperationException("No homes in village sector "+sector);
+            bool placed=false;var stall=stalls[sector];
+            for(int attempt=0;attempt<1800&&!placed;attempt++)
+            {
+                var house=choices[random.Next(choices.Length)];var bounds=BoundsOf(house);
+                float angle=(float)random.NextDouble()*Mathf.PI*2;
+                float radius=Mathf.Max(bounds.extents.x,bounds.extents.z)+45+(float)random.NextDouble()*95;
+                var p=house.position+new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle))*radius;p.y=Ground(p);
+                if(!Clear(p)||Used.Any(old=>QuestRowboat.FlatDistance(old,p)<180))continue;
+                var rotation=Quaternion.LookRotation(new Vector3(house.position.x-p.x,0,house.position.z-p.z));
+                bool exitClear=true;
+                for(float distance=29;distance<=80;distance+=7)
+                {
+                    var front=p+rotation*Vector3.back*distance;front.y=Ground(front);
+                    if(front.y<highWater+3||Mathf.Abs(front.y-p.y)>3||Physics.OverlapCapsule(front+Vector3.up*6,front+Vector3.up*22,4,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore).Any(c=>!(c is TerrainCollider)&&c.GetComponentInParent<Animator>()==null))
+                    {exitClear=false;break;}
+                }
+                if(!exitClear)continue;
+                stall.transform.SetPositionAndRotation(p,rotation);stall.gameObject.SetActive(true);
+                var interaction=stall.interactionPoint.position;interaction.y=Ground(interaction)+3.2f;stall.interactionPoint.position=interaction;
+                Used.Add(p);Physics.SyncTransforms();placed=true;
+                report.Add(new{stall.stallName,house=house.name,sector,position=new[]{p.x,p.y,p.z}});
+            }
+            if(!placed)throw new InvalidOperationException("No clear household stall site in sector "+sector);
+        }
+        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/VillageStallDistribution.json",Newtonsoft.Json.JsonConvert.SerializeObject(report,Newtonsoft.Json.Formatting.Indented));
+        EditorSceneManager.MarkSceneDirty(scene);EditorSceneManager.SaveScene(scene);AssetDatabase.SaveAssets();EditorApplication.Exit(0);
     }
     static Vector3 FindPlace(Vector3 desired)
     {

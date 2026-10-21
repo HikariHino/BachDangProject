@@ -17,6 +17,7 @@ public static class BeachBoatVillageWorkPlaytest
     static int phase,index;
     static bool timeoutChecked,wrongChecked,retryChecked,difficultyChecked,drumChecked;
     static int randomizedAttempts;
+    static bool layoutSpread,interactionClear,treesClear;
     static string failure;
     static readonly List<object> Results=new List<object>();
     public static void RunAndExit(){EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
@@ -25,7 +26,7 @@ public static class BeachBoatVillageWorkPlaytest
     {var player=BeachBoatQuestSession.Instance.player;player.transform.position=p;var body=player.GetComponent<Rigidbody>();body.position=p;body.linearVelocity=Vector3.zero;Physics.SyncTransforms();}
     static void Finish()
     {
-        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/VillageWorkPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,timeoutChecked,wrongChecked,retryChecked,difficultyChecked,drumChecked,randomizedAttempts,results=Results,story=Story.Instance?.currentState.ToString()},Formatting.Indented));
+        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/VillageWorkPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,timeoutChecked,wrongChecked,retryChecked,difficultyChecked,drumChecked,randomizedAttempts,layoutSpread,interactionClear,treesClear,results=Results,story=Story.Instance?.currentState.ToString()},Formatting.Indented));
         SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(failure==null?0:1);
     }
     static void Tick()
@@ -39,6 +40,13 @@ public static class BeachBoatVillageWorkPlaytest
             var quest=VillagePreparationQuest.Instance;if(quest==null||quest.stalls.Length!=4)throw new Exception("Four scene-owned market stalls missing");
             if(phase==0)
             {
+                var sites=quest.stalls.Select(s=>s.transform.position).ToArray();
+                layoutSpread=sites.Max(p=>p.x)-sites.Min(p=>p.x)>500&&sites.Max(p=>p.z)-sites.Min(p=>p.z)>500;
+                for(int a=0;a<sites.Length;a++)for(int b=a+1;b<sites.Length;b++)layoutSpread&=QuestRowboat.FlatDistance(sites[a],sites[b])>=180;
+                interactionClear=quest.stalls.All(s=>!Physics.OverlapCapsule(s.InteractionPosition+Vector3.up*3,s.InteractionPosition+Vector3.up*19,4,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore).Any(c=>!(c is TerrainCollider)&&c.GetComponentInParent<Animator>()==null));
+                var terrain=Terrain.activeTerrain;
+                treesClear=terrain.terrainData.treeInstances.All(t=>sites.All(p=>QuestRowboat.FlatDistance(p,terrain.transform.position+Vector3.Scale(t.position,terrain.terrainData.size))>=55));
+                if(!layoutSpread||!interactionClear||!treesClear)throw new Exception("Stalls are clustered, an interaction is blocked, or a terrain tree crosses a stall");
                 foreach(var intro in UnityEngine.Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))intro.SkipOpening();
                 BeachBoatStory.StoryDialogueUI.Instance?.Close();
                 var drum=UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsSortMode.None).First(s=>s.kind==BeachBoatMinigameStation.ActivityKind.WarDrum);

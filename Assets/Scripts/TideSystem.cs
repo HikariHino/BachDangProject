@@ -41,6 +41,9 @@ public class TideSystem : MonoBehaviour
     public bool IsRising => isRising;
     private Object tideOwner;
     private bool heldHigh;
+    private bool controlledEbb;
+    private float ebbElapsed, ebbDuration, ebbStartY;
+    public bool IsControlledEbb => controlledEbb;
     public bool IsLowTideLocked => tideOwner != null && !heldHigh;
     public bool IsTideLocked => tideOwner != null;
 
@@ -60,6 +63,7 @@ public class TideSystem : MonoBehaviour
     {
         if (owner == null || (tideOwner != null && tideOwner != owner)) return;
         tideOwner = owner;
+        controlledEbb = false;
         heldHigh = high;
         autoCycle = false;
         isRising = high;
@@ -82,7 +86,18 @@ public class TideSystem : MonoBehaviour
     {
         if (tideOwner != owner) return;
         tideOwner = null;
+        controlledEbb = false;
         timer = 0;
+    }
+
+    /// <summary>Mission-owned ebb with a visible duration, independent of the normal tide smoothing.</summary>
+    public bool BeginEbb(Object owner, float duration)
+    {
+        if (owner == null || (tideOwner != null && tideOwner != owner)) return false;
+        HoldTide(owner, false);
+        ebbStartY = transform.position.y;
+        ebbDuration = Mathf.Max(1f, duration); ebbElapsed = 0; controlledEbb = true;
+        return true;
     }
 
     void Awake()
@@ -126,6 +141,7 @@ public class TideSystem : MonoBehaviour
     public void SetTide(bool high, bool immediate = false)
     {
         if (IsTideLocked) return;
+        controlledEbb = false;
         autoCycle = false;
         isRising = high;
         currentTargetY = high ? highTideY : lowTideY;
@@ -167,7 +183,13 @@ public class TideSystem : MonoBehaviour
 
         // 3. Nâng hạ mặt nước êm dịu (Lerp)
         Vector3 pos = transform.position;
-        pos.y = Mathf.Lerp(pos.y, currentTargetY, Time.deltaTime * 1.5f);
+        if (controlledEbb)
+        {
+            ebbElapsed = Mathf.Min(ebbDuration, ebbElapsed + Time.deltaTime);
+            pos.y = Mathf.Lerp(ebbStartY, lowTideY, Mathf.SmoothStep(0, 1, ebbElapsed / ebbDuration));
+            if (ebbElapsed >= ebbDuration) controlledEbb = false;
+        }
+        else pos.y = Mathf.Lerp(pos.y, currentTargetY, Time.deltaTime * 1.5f);
         transform.position = pos;
 
         // Cập nhật biến toàn cục

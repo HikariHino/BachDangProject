@@ -25,6 +25,12 @@ public static class BeachBoatQuest3Playtest
     static float healthWidthAfter, staminaWidthAfter, healthAnchorAfter, staminaAnchorAfter;
     static bool vitalsBarsUpdated, minimapLowerRight, rowingControllerApplied;
     static bool hudChecked;
+    static bool delayedFleetHeldHigh,hiddenUntilEntry=true,ebbAtField,gradualEbb,sankDuringEbb,ambushBeforeLow;
+    static float[] shipSpeeds;
+    static float holdUntil,ebbAt=-1,lastWater=float.PositiveInfinity;
+    static bool midShot,impactShot;
+    static float firstImpactAt=-1;
+    static EnemyShip impactShip;
     static string failure;
 
     public static void RunAndExit()
@@ -54,10 +60,12 @@ public static class BeachBoatQuest3Playtest
         Directory.CreateDirectory("Logs");
         File.WriteAllText("Logs/BeachBoatQuest3Playtest.json",JsonConvert.SerializeObject(new {
             success,failure,heldForPlayer=wasHeld,rangeBlockedAtDock=rangeBlocked,
+            delayedFleetHeldHigh,hiddenUntilEntry,ebbAtField,gradualEbb,sankDuringEbb,ambushBeforeLow,
             vitalsBarsUpdated,minimapLowerRight,rowingControllerApplied,
             healthWidthBefore,healthWidthAfter,staminaWidthBefore,staminaWidthAfter,
             healthAnchorAfter,staminaAnchorAfter,orders=director?.CommandScore,
             requiredOrders=director?.CommandOpportunityCount,shipsDestroyed=story?.destroyedEnemyShips,
+            playerKills=RiverPlayerCombat.Instance?.Kills,playerHits=RiverPlayerCombat.Instance?.Hits,
             totalShips=story?.totalEnemyShips,storyState=story?.currentState.ToString(),
             ships=director?.enemyShips.Select(s=>new {s.name,s.isDestroyed,active=s.gameObject.activeSelf,
                 z=s.transform.position.z}).ToArray()
@@ -125,6 +133,10 @@ public static class BeachBoatQuest3Playtest
             minimapLowerRight=minimap!=null&&minimap.anchorMin.x>.7f&&minimap.anchorMax.y<.5f;
             initialShipZ=director.enemyShips[0].spawnPoint.z;
             if(!director.BattleStarted){failure="Battle did not start after boarding";Finish(false,director,story);return;}
+            if(RiverPlayerCombat.Instance!=null)RiverPlayerCombat.Instance.ReturnFireEnabled=false;
+            shipSpeeds=director.enemyShips.Select(s=>s.moveSpeed).ToArray();
+            foreach(var ship in director.enemyShips)ship.moveSpeed=0;
+            holdUntil=Time.time+80f;
             phase=2;
         }
         if(phase!=2)return;
@@ -144,9 +156,39 @@ public static class BeachBoatQuest3Playtest
             Time.timeScale=12f;
         }
         if(director.enemyShips.Any(s=>s!=null&&s.SignalReady))wasHeld=true;
+        var tide=TideSystem.Instance;
+        if(!director.EbbStarted)
+        {
+            hiddenUntilEntry&=zone.ExposedStakeCount==0&&Mathf.Abs(tide.TargetWaterHeight-tide.highTideY)<.01f&&director.enemyShips.All(s=>!s.isDestroyed);
+            if(!hiddenUntilEntry){failure="Water fell or stakes appeared before hull entry";Finish(false,director,story);return;}
+        }
+        else
+        {
+            if(ebbAt<0)
+            {
+                ebbAt=Time.time;
+                ebbAtField=director.EbbTriggerShip!=null&&director.EbbTriggerShip.IsHullInsideStakeField&&TideSystem.CurrentWaterHeight>tide.lowTideY+20;
+                CaptureBattle("High",director.EbbTriggerShip);
+            }
+            if(TideSystem.CurrentWaterHeight>lastWater+.1f){failure="Water rose during the controlled ebb";Finish(false,director,story);return;}
+            lastWater=TideSystem.CurrentWaterHeight;
+            gradualEbb|=Time.time-ebbAt>3&&TideSystem.CurrentWaterHeight<tide.highTideY-1&&TideSystem.CurrentWaterHeight>tide.lowTideY+1;
+            if(director.enemyShips.Any(s=>s.isDestroyed))sankDuringEbb|=tide.IsControlledEbb&&TideSystem.CurrentWaterHeight>tide.lowTideY+.5f;
+            ambushBeforeLow|=BachDangBattleTimeline.Instance.CurrentMoment==BachDangBattleTimeline.BattleMoment.Ambush&&TideSystem.CurrentWaterHeight>tide.lowTideY+1;
+            if(!midShot&&zone.ExposedStakeCount>0){midShot=true;CaptureBattle("Emerging",director.EbbTriggerShip);}
+            if(firstImpactAt<0&&director.enemyShips.Any(s=>s.isDestroyed)){firstImpactAt=Time.time;impactShip=director.enemyShips.First(s=>s.isDestroyed);}
+            if(!impactShot&&firstImpactAt>=0&&Time.time-firstImpactAt>.65f){impactShot=true;CaptureBattle("Impact",impactShip);}
+        }
+        if(!delayedFleetHeldHigh&&Time.time>=holdUntil)
+        {
+            if(director.EbbStarted){failure="A timer triggered the ebb while the fleet was held upstream";Finish(false,director,story);return;}
+            delayedFleetHeldHigh=true;
+        }
+        if(delayedFleetHeldHigh)for(int i=0;i<shipSpeeds.Length;i++)
+            if(Time.time>=holdUntil+(i/Mathf.Max(1,director.shipsPerWave))*director.waveDelay)director.enemyShips[i].moveSpeed=shipSpeeds[i];
         // Orders are deliberately withheld for a moment so the test proves ships wait
         // for the player's signal instead of automatically crossing the stake line.
-        if(wasHeld&&elapsed>7&&director.IsShowingBattle)
+        if(wasHeld&&elapsed>7&&director.IsShowingBattle&&BachDangBattleTimeline.Instance.CurrentMoment>=BachDangBattleTimeline.BattleMoment.Ambush)
         {
             var ready=director.enemyShips.FirstOrDefault(s=>s!=null&&s.SignalReady);
             if(ready!=null)
@@ -155,17 +197,42 @@ public static class BeachBoatQuest3Playtest
                 var near=ready.transform.position+Vector3.left*320f;
                 near.y=TideSystem.CurrentWaterHeight;
                 boat.transform.position=near;
+                var combat=RiverPlayerCombat.Instance;
+                int wave=Array.IndexOf(director.enemyShips,ready)/Mathf.Max(1,director.shipsPerWave);
+                if(combat!=null&&!combat.HasSuppressedWave(wave))
+                {
+                    var guard=combat.guards.First(g=>g.waveIndex==wave&&g.IsAlive);
+                    var origin=guard.AimPoint+Vector3.left*200;origin.y=TideSystem.CurrentWaterHeight+14;
+                    boat.transform.position=new Vector3(origin.x,TideSystem.CurrentWaterHeight,origin.z);
+                    boat.Step(0,0,.001f);Physics.SyncTransforms();combat.SetAim(true);
+                    combat.TryFire(new Ray(origin,(guard.AimPoint-origin).normalized),1);
+                    combat.StepArrows(1);combat.SetAim(false);
+                }
                 director.TrySignalAttack();
             }
         }
         if(story.currentState==Story.StoryState.Act3_Victory)
         {
             bool success=wasHeld&&rangeBlocked&&vitalsBarsUpdated&&minimapLowerRight&&rowingControllerApplied&&
+                delayedFleetHeldHigh&&hiddenUntilEntry&&ebbAtField&&gradualEbb&&sankDuringEbb&&ambushBeforeLow&&
                 director.CommandScore==5&&story.destroyedEnemyShips==10&&
                 director.enemyShips[0].transform.position.z<initialShipZ-600;
             if(!success)failure=$"Battle/HUD check failed: bars={vitalsBarsUpdated}, minimap={minimapLowerRight}, " +
-                $"rowing={rowingControllerApplied}, orders={director.CommandScore}, wrecks={story.destroyedEnemyShips}";
+                    $"rowing={rowingControllerApplied}, orders={director.CommandScore}, wrecks={story.destroyedEnemyShips}, " +
+                    $"entry={ebbAtField}, gradual={gradualEbb}, sunkDuringEbb={sankDuringEbb}, hiddenUntilEntry={hiddenUntilEntry}";
             Finish(success,director,story);
         }
+    }
+    static void CaptureBattle(string name,EnemyShip ship)
+    {
+        if(ship==null)return;
+        var go=new GameObject("EbbQACamera");var camera=go.AddComponent<Camera>();camera.CopyFrom(BeachBoatQuestSession.Instance.storyCamera);
+        camera.enabled=false;camera.fieldOfView=55;camera.farClipPlane=1800;
+        var focus=ship.transform.position;focus.y=TideSystem.CurrentWaterHeight+13;
+        camera.transform.position=focus+new Vector3(155,110,-150);camera.transform.LookAt(focus);
+        var rt=new RenderTexture(1280,720,24);var pixels=new Texture2D(1280,720,TextureFormat.RGB24,false);camera.targetTexture=rt;
+        camera.Render();RenderTexture.active=rt;pixels.ReadPixels(new Rect(0,0,1280,720),0,0);pixels.Apply();
+        Directory.CreateDirectory("Logs");File.WriteAllBytes("Logs/Ebb_"+name+".png",pixels.EncodeToPNG());
+        RenderTexture.active=null;camera.targetTexture=null;UnityEngine.Object.DestroyImmediate(rt);UnityEngine.Object.DestroyImmediate(pixels);UnityEngine.Object.DestroyImmediate(go);
     }
 }

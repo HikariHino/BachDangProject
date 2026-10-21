@@ -14,7 +14,7 @@ public static class BeachBoatCheckpointPlaytest
     const string Flag="CheckpointPlaytest";
     static double started,waitUntil;
     static int phase;
-    static bool woodRestored,supplyPreserved,stakesRestored,battleReset,secondBattle,sawDefeat,collisionDefeat,staminaNotDeath;
+    static bool woodRestored,supplyPreserved,stakesRestored,battleReset,secondBattle,sawDefeat,collisionDefeat,staminaNotDeath,ebbReset;
     static string failure;
     public static void RunAndExit(){EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;}
@@ -39,7 +39,7 @@ public static class BeachBoatCheckpointPlaytest
     }
     static void Finish()
     {
-        Time.timeScale=1;Directory.CreateDirectory("Logs");File.WriteAllText("Logs/CheckpointPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,woodRestored,supplyPreserved,stakesRestored,battleReset,secondBattle,sawDefeat,collisionDefeat,staminaNotDeath},Formatting.Indented));
+        Time.timeScale=1;Directory.CreateDirectory("Logs");File.WriteAllText("Logs/CheckpointPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,woodRestored,supplyPreserved,stakesRestored,battleReset,secondBattle,sawDefeat,collisionDefeat,staminaNotDeath,ebbReset},Formatting.Indented));
         SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(failure==null?0:1);
     }
     static void Tick()
@@ -94,7 +94,14 @@ public static class BeachBoatCheckpointPlaytest
                 collisionDefeat=checkpoint.IsDefeated&&vitals.Health==0&&!boat.IsAboard;
                 if(!collisionDefeat)throw new Exception("Fatal collision did not enter defeat state");
                 UnityEngine.Object.DestroyImmediate(rock);Physics.SyncTransforms();Retry();
-                if(story.currentState!=Story.StoryState.Act3_WaitForLowTide||!zone.IsComplete||!staminaNotDeath)throw new Exception("Final mission/stamina check failed");Finish();
+                if(story.currentState!=Story.StoryState.Act3_WaitForLowTide||!zone.IsComplete||!staminaNotDeath)throw new Exception("Final mission/stamina check failed");
+                BachDangBattleTimeline.Instance.BeginEbb();phase=4;waitUntil=EditorApplication.timeSinceStartup+2;return;
+            }
+            if(phase==4)
+            {
+                if(!TideSystem.Instance.IsControlledEbb)throw new Exception("Controlled ebb did not start");
+                Kill();Retry();ebbReset=!TideSystem.Instance.IsControlledEbb&&Mathf.Abs(TideSystem.Instance.TargetWaterHeight-TideSystem.Instance.highTideY)<.1f&&zone.IsComplete;
+                if(!ebbReset)throw new Exception("Checkpoint retained an unfinished ebb transition");Finish();
             }
         }
         catch(Exception e){failure=e.ToString();Finish();}

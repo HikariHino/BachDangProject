@@ -42,7 +42,41 @@ namespace BeachBoatStory
             return true;
         }
 
+        public int ExposedStakeCount
+        {
+            get
+            {
+                int count=0;
+                foreach(var point in placements)
+                    if(point!=null&&point.planted)foreach(int index in point.stakeIndices)
+                        if(StakeReady(index)&&stakeTops[index]>TideSystem.CurrentWaterHeight+.25f)count++;
+                return count;
+            }
+        }
+        bool StakeReady(int i)=>i>=0&&i<fieldStakes.Length&&fieldStakes[i]!=null&&fieldStakes[i].gameObject.activeInHierarchy;
+        /// <summary>Swept hull footprint against the actual planted stakes, not a timer or waypoint radius.</summary>
+        public bool TryHullContact(Vector3 from,Vector3 to,Vector3 forward,float halfLength,float radius,bool exposedOnly,out Vector3 impact)
+        {
+            impact=default;
+            from-=forward*halfLength;to+=forward*halfLength;from.y=to.y=0;
+            var delta=to-from;
+            foreach(var point in placements)
+            {
+                if(point==null||!point.planted)continue;
+                foreach(int i in point.stakeIndices)
+                {
+                    if(!StakeReady(i)||(exposedOnly&&stakeTops[i]<=TideSystem.CurrentWaterHeight+.25f))continue;
+                    var p=centers[i];p.y=0;
+                    float t=delta.sqrMagnitude>.001f?Mathf.Clamp01(Vector3.Dot(p-from,delta)/delta.sqrMagnitude):0;
+                    if((from+delta*t-p).sqrMagnitude>radius*radius)continue;
+                    impact=new Vector3(p.x,Mathf.Max(TideSystem.CurrentWaterHeight,stakeTops[i]),p.z);return true;
+                }
+            }
+            return false;
+        }
+
         Vector3[] finalPositions, centers;
+        float[] stakeTops;
         Collider[][] colliders;
         bool[][] colliderStates;
         bool[] finished;
@@ -57,6 +91,7 @@ namespace BeachBoatStory
             Instance = this;
             int count = RequiredCount;
             finalPositions = new Vector3[count]; centers = new Vector3[count];
+            stakeTops = new float[count];
             colliders = new Collider[count][]; colliderStates = new bool[count][]; finished = new bool[count];
             var unique = new System.Collections.Generic.HashSet<Transform>();
             ready = count > 0;
@@ -67,6 +102,7 @@ namespace BeachBoatStory
                 finalPositions[i] = stake.position;
                 var renderer = stake.GetComponentInChildren<Renderer>(true);
                 centers[i] = renderer != null ? renderer.bounds.center : stake.position;
+                stakeTops[i] = renderer != null ? renderer.bounds.max.y : stake.position.y;
                 colliders[i] = stake.GetComponentsInChildren<Collider>(true);
                 colliderStates[i] = new bool[colliders[i].Length];
                 for (int c = 0; c < colliders[i].Length; c++) colliderStates[i][c] = colliders[i][c].enabled;
@@ -171,6 +207,7 @@ namespace BeachBoatStory
                     {
                         stake.position = finalPositions[i]; RestoreColliders(i);
                         finished[i] = true; PlantedCount++; changed = true;
+                        BeachBoatSoundscape.Instance?.PlayStake();
                     }
                 }
                 if (changed) BachDangStoryManager.Instance?.UpdateUI();

@@ -15,7 +15,10 @@ namespace BeachBoatStory
         public string BattleCaption {get;private set;}
         public EnemyShip WatchedShip {get;private set;}
         public int CommandScore {get;private set;}
+        public bool EbbStarted {get;private set;}
+        public EnemyShip EbbTriggerShip {get;private set;}
         Coroutine battleLoop;
+        Coroutine tideLoop;
         Camera battleCamera;
         Camera_Script playerCamera;
         bool savedCameraEnabled;
@@ -46,6 +49,14 @@ namespace BeachBoatStory
         }
         public bool IsConfigured=>isActiveAndEnabled&&ShipCount>0;
         public int CommandOpportunityCount=>Mathf.CeilToInt(ShipCount/(float)Mathf.Max(1,shipsPerWave));
+        public int PendingCommandWave
+        {
+            get
+            {
+                for(int i=0;i<enemyShips.Length;i++)if(enemyShips[i]!=null&&enemyShips[i].gameObject.activeInHierarchy&&!enemyShips[i].isDestroyed&&!scoredWaves.Contains(i/Mathf.Max(1,shipsPerWave)))return i/Mathf.Max(1,shipsPerWave);
+                return -1;
+            }
+        }
         void Awake(){Instance=this;}
         void OnDestroy(){if(Instance==this)Instance=null;}
         void OnDisable(){StopBattle();}
@@ -56,7 +67,9 @@ namespace BeachBoatStory
             if(zone==null||!zone.IsComplete)return;
             BattleStarted=true;
             CommandScore=0;
+            EbbStarted=false;EbbTriggerShip=null;
             scoredWaves.Clear();
+            RiverPlayerCombat.Instance?.BeginBattle();
             foreach(var ship in enemyShips)if(ship!=null)ship.gameObject.SetActive(false);
             BachDangBattleTimeline.Instance?.BeginLure();
             BeginBattleView();
@@ -70,31 +83,16 @@ namespace BeachBoatStory
             foreach(var candidate in enemyShips)
                 if(candidate!=null&&seen.Add(candidate))fleet.Add(candidate);
             int waveSize=Mathf.Max(1,shipsPerWave);
-            bool ebbBegun=false;
-            // The reference battle map sends the invaders from the northern branch down
-            // the central channel. The first pair reaches the northern stake field before
-            // the ebb begins; the following pairs enter behind it.
+            tideLoop=StartCoroutine(WatchStakeField(fleet));
+            // Waves enter from the authored northern branch while the water still conceals the field.
             for(int waveStart=0;waveStart<fleet.Count;waveStart+=waveSize)
             {
-                if(!ebbBegun&&waveStart>=waveSize)
-                {
-                    float wait=0;
-                    while(fleet[0]!=null&&fleet[0].gameObject.activeSelf&&
-                          QuestRowboat.FlatDistance(fleet[0].transform.position,fleet[0].targetPoint.position)>430f&&
-                          wait<75f)
-                    {wait+=Time.deltaTime;yield return null;}
-                    BachDangBattleTimeline.Instance?.MarkFleetInside();
-                    BachDangBattleTimeline.Instance?.BeginEbb();
-                    BachDangStoryManager.Instance?.UpdateUI();
-                    ebbBegun=true;
-                }
                 int waveEnd=Mathf.Min(waveStart+waveSize,fleet.Count);
                 for(int i=waveStart;i<waveEnd;i++)
                 {
                     var ship=fleet[i];
                     var spawn=(spawnPoints!=null&&i<spawnPoints.Length&&spawnPoints[i]!=null)?spawnPoints[i].position:ship.spawnPoint;
                     spawn.y=TideSystem.CurrentWaterHeight;
-                    ship.ambushDelay=(i/waveSize)*2.6f;
                     ship.transform.position=spawn;ship.Activate();
                 }
                 watchedFleetIndex=waveStart;
@@ -106,24 +104,8 @@ namespace BeachBoatStory
                 if(waveEnd<fleet.Count)yield return new WaitForSeconds(Mathf.Clamp(waveDelay,3.5f,8f));
             }
 
-            if(!ebbBegun)
-            {
-                BachDangBattleTimeline.Instance?.MarkFleetInside();
-                BachDangBattleTimeline.Instance?.BeginEbb();
-                BachDangStoryManager.Instance?.UpdateUI();
-            }
             watchedFleetIndex=0;
             if(IsShowingBattle&&fleet.Count>0)WatchShip(fleet[0]);
-            BattleCaption="Hạm đội địch đã lọt sâu qua bãi cọc chìm — khóa đường lui!";
-            while(TideSystem.Instance!=null&&TideSystem.CurrentWaterHeight>TideSystem.Instance.lowTideY+1f)
-            {
-                BattleCaption="Nước đang rút — cọc nhọn dần nhô lên, quân hai bờ giữ kín vị trí";
-                yield return null;
-            }
-            BachDangBattleTimeline.Instance?.BeginAmbush();
-            choreography=GetComponent<RiverBattleChoreography>();
-            choreography?.BeginAmbush(fleet);
-            BachDangStoryManager.Instance?.UpdateUI();
 
             while(BattleStarted)
             {
@@ -142,8 +124,13 @@ namespace BeachBoatStory
                     var boat=QuestRowboat.Instance;
                     var readyShip=ReadyShip(fleet,ready,waveSize);
                     float range=boat!=null&&readyShip!=null?QuestRowboat.FlatDistance(boat.transform.position,readyShip.transform.position):float.PositiveInfinity;
-                    BattleCaption=ready<0
+                    bool suppressed=RiverPlayerCombat.Instance==null||RiverPlayerCombat.Instance.HasSuppressedWave(ready);
+                    var timeline=BachDangBattleTimeline.Instance;
+                    BattleCaption=!EbbStarted ? "Giữ kín mai phục — nhử thuyền địch tới bãi cọc chìm" :
+                        timeline!=null&&timeline.CurrentMoment<BachDangBattleTimeline.BattleMoment.Ambush
+                        ? "Nước đang rút dần — quan sát đầu cọc, chưa phất cờ sớm" : ready<0
                         ? $"Giữ đội hình, quan sát nhánh sông • Đã hạ {BachDangStoryManager.Instance?.destroyedEnemyShips ?? 0}/{ShipCount} thuyền"
+                        : !suppressed ? $"HẠ XẠ THỦ ĐỢT {ready+1}: chuột phải ngắm, giữ/thả chuột trái bắn"
                         : range>commandRange
                             ? $"Chèo tới gần thuyền địch đợt {ready+1} để truyền lệnh • Còn {range:0} m"
                             : $"[SPACE] PHẤT CỜ CHO ĐỢT {ready+1}!  Thuyền địch đã vào tầm cọc";
@@ -154,6 +141,26 @@ namespace BeachBoatStory
             BattleStarted=false;
             choreography?.EndBattle();
             EndBattleView();
+        }
+        IEnumerator WatchStakeField(System.Collections.Generic.List<EnemyShip> fleet)
+        {
+            while(BattleStarted&&EbbTriggerShip==null)
+            {
+                foreach(var ship in fleet)
+                    if(ship!=null&&ship.gameObject.activeInHierarchy&&!ship.isDestroyed&&ship.IsHullInsideStakeField)
+                    {EbbTriggerShip=ship;break;}
+                if(EbbTriggerShip==null)yield return null;
+            }
+            if(!BattleStarted)yield break;
+            var timeline=BachDangBattleTimeline.Instance;
+            timeline?.MarkFleetInside();timeline?.BeginEbb();EbbStarted=true;
+            BachDangStoryManager.Instance?.UpdateUI();
+            // Counterattack becomes available as tips emerge, while the ebb is still in progress.
+            while(BattleStarted&&RiverStakeZone.Instance!=null&&RiverStakeZone.Instance.ExposedStakeCount==0)yield return null;
+            if(!BattleStarted)yield break;
+            timeline?.BeginAmbush();
+            choreography=GetComponent<RiverBattleChoreography>();choreography?.BeginAmbush(fleet);
+            BachDangStoryManager.Instance?.UpdateUI();tideLoop=null;
         }
         int ReadyWave(System.Collections.Generic.List<EnemyShip> fleet,int waveSize)
         {
@@ -209,6 +216,8 @@ namespace BeachBoatStory
                 int wave=ReadyWave(fleet,waveSize);
                 if(wave>=0)
                 {
+                    if(RiverPlayerCombat.Instance!=null&&!RiverPlayerCombat.Instance.HasSuppressedWave(wave))
+                    {commandMessageUntil=Time.unscaledTime+1.5f;BattleCaption=$"Hạ ít nhất một xạ thủ đợt {wave+1} để quân ta áp sát phản công";return false;}
                     var boat=QuestRowboat.Instance;
                     var readyShip=ReadyShip(fleet,wave,waveSize);
                     if(boat==null||!boat.IsAboard||readyShip==null||
@@ -251,12 +260,14 @@ namespace BeachBoatStory
             choreography?.EndBattle();
             EndBattleView();
             if(battleLoop!=null){StopCoroutine(battleLoop);battleLoop=null;}
+            if(tideLoop!=null){StopCoroutine(tideLoop);tideLoop=null;}
             BattleStarted=false;
             foreach(var ship in enemyShips??System.Array.Empty<EnemyShip>())if(ship!=null)ship.gameObject.SetActive(false);
         }
         public void ResetForCheckpoint()
         {
-            StopBattle();CommandScore=0;scoredWaves.Clear();watchedFleetIndex=0;commandMessageUntil=0;
+            StopBattle();CommandScore=0;scoredWaves.Clear();watchedFleetIndex=0;commandMessageUntil=0;EbbStarted=false;EbbTriggerShip=null;
+            RiverPlayerCombat.Instance?.ResetForCheckpoint();
             foreach(var ship in enemyShips??System.Array.Empty<EnemyShip>())if(ship!=null)ship.ResetForCheckpoint();
         }
     }

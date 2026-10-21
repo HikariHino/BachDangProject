@@ -139,6 +139,7 @@ namespace BeachBoatStory
         {
             if (Active != this || Failed || kind != ActivityKind.WarDrum || progress >= rhythm.Length || pressed < 1 || pressed > 3) return false;
             bool correct = pressed == rhythm[progress];
+            BeachBoatSoundscape.Instance?.PlayDrum(pressed);
             if (correct) progress++;
             else { mistakes++; elapsed += 2f; progress = Mathf.Max(0, progress - 1); }
             LastInputCorrect = correct;

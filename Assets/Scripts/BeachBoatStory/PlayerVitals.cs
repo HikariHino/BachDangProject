@@ -55,6 +55,7 @@ namespace BeachBoatStory
             Health = Mathf.Max(0, Health - damage);
             LastImpact = obstacle;
             LastImpactDamage = damage;
+            BeachBoatSoundscape.Instance?.PlayHit();
             LastImpactUntil = Time.unscaledTime + 2.4f;
             if (Health <= 0) QuestCheckpoint.Instance?.Defeat();
         }

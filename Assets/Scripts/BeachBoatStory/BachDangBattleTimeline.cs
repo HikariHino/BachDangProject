@@ -10,6 +10,7 @@ namespace BeachBoatStory
     public sealed class BachDangBattleTimeline : MonoBehaviour
     {
         public enum BattleMoment { Preparation, LureAtHighTide, FleetInsideStakeField, TideFalling, Ambush, Victory }
+        [Min(8)] public float battleEbbDuration = 22f;
 
         public static BachDangBattleTimeline Instance { get; private set; }
         public BattleMoment CurrentMoment { get; private set; }
@@ -90,13 +91,13 @@ namespace BeachBoatStory
 
         public void BeginEbb()
         {
-            SetMoment(BattleMoment.TideFalling, 10f, "Khóa đường lui — phát hiệu lệnh phản công", "TRIỀU RÚT — cọc dần lộ");
-            TideSystem.Instance?.HoldLowTide(this);
+            SetMoment(BattleMoment.TideFalling, 10f, "Địch đã vào bãi cọc — chờ đầu cọc nhô lên", "TRIỀU RÚT DẦN — chưa phát lệnh sớm");
+            TideSystem.Instance?.BeginEbb(this, battleEbbDuration);
         }
 
         public void BeginAmbush()
         {
-            SetMoment(BattleMoment.Ambush, 10.67f, "Quân mai phục hai bờ đồng loạt xông ra", "TRIỀU THẤP — chiến thuyền mắc cọc");
+            SetMoment(BattleMoment.Ambush, 10.67f, "Cọc đã lộ — truyền lệnh cho quân hai bờ phản công", "NƯỚC TIẾP TỤC RÚT — chiến thuyền mắc cọc");
         }
 
         public void MarkVictory()
