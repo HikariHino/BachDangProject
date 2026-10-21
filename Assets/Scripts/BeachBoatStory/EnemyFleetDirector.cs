@@ -53,8 +53,18 @@ namespace BeachBoatStory
         {
             get
             {
-                for(int i=0;i<enemyShips.Length;i++)if(enemyShips[i]!=null&&enemyShips[i].gameObject.activeInHierarchy&&!enemyShips[i].isDestroyed&&!scoredWaves.Contains(i/Mathf.Max(1,shipsPerWave)))return i/Mathf.Max(1,shipsPerWave);
+                for(int i=0;i<enemyShips.Length;i++)if(enemyShips[i]!=null&&(enemyShips[i].SignalReady||enemyShips[i].gameObject.activeInHierarchy)&&!scoredWaves.Contains(i/Mathf.Max(1,shipsPerWave)))return i/Mathf.Max(1,shipsPerWave);
                 return -1;
+            }
+        }
+        public Transform CommandTarget
+        {
+            get
+            {
+                int wave=PendingCommandWave;if(wave<0)return null;
+                for(int i=wave*Mathf.Max(1,shipsPerWave);i<Mathf.Min((wave+1)*Mathf.Max(1,shipsPerWave),enemyShips.Length);i++)
+                    if(enemyShips[i]!=null&&enemyShips[i].SignalReady)return enemyShips[i].WreckTarget!=null?enemyShips[i].WreckTarget:enemyShips[i].transform;
+                return null;
             }
         }
         void Awake(){Instance=this;}
@@ -117,7 +127,9 @@ namespace BeachBoatStory
                     if(WatchedShip==null||!WatchedShip.gameObject.activeSelf)
                     {watchedFleetIndex=i;WatchShip(fleet[i]);}
                 }
-                if(!anyActive)break;
+                // Sinking is automatic; surviving archers remain on broken deck rafts.
+                // Keep controls and objective alive until all five counterattacks are ordered.
+                if(!anyActive&&CommandScore>=CommandOpportunityCount){BachDangStoryManager.Instance?.OnBattleVictory();break;}
                 if(IsShowingBattle&&WatchedShip!=null&&Time.unscaledTime>=commandMessageUntil)
                 {
                     int ready=ReadyWave(fleet,waveSize);
@@ -129,11 +141,11 @@ namespace BeachBoatStory
                     BattleCaption=!EbbStarted ? "Giữ kín mai phục — nhử thuyền địch tới bãi cọc chìm" :
                         timeline!=null&&timeline.CurrentMoment<BachDangBattleTimeline.BattleMoment.Ambush
                         ? "Nước đang rút dần — quan sát đầu cọc, chưa phất cờ sớm" : ready<0
-                        ? $"Giữ đội hình, quan sát nhánh sông • Đã hạ {BachDangStoryManager.Instance?.destroyedEnemyShips ?? 0}/{ShipCount} thuyền"
+                        ? $"Thuyền tự mắc cọc khi nước rút • Đã đắm {BachDangStoryManager.Instance?.destroyedEnemyShips ?? 0}/{ShipCount}"
                         : !suppressed ? $"HẠ XẠ THỦ ĐỢT {ready+1}: chuột phải ngắm, giữ/thả chuột trái bắn"
                         : range>commandRange
                             ? $"Chèo tới gần thuyền địch đợt {ready+1} để truyền lệnh • Còn {range:0} m"
-                            : $"[SPACE] PHẤT CỜ CHO ĐỢT {ready+1}!  Thuyền địch đã vào tầm cọc";
+                            : $"[SPACE] PHẤT CỜ ĐỢT {ready+1}!  Quân ta đánh dứt điểm xạ thủ còn lại";
                 }
                 yield return null;
             }
@@ -233,6 +245,9 @@ namespace BeachBoatStory
                     {fleet[i].ReleaseForAmbush();released.Add(fleet[i]);}
                     choreography=GetComponent<RiverBattleChoreography>();
                     choreography?.FireSignalVolley(released);
+                    BeachBoatSoundscape.Instance?.PlayDrum(1);
+                    var combat=RiverPlayerCombat.Instance;
+                    if(combat!=null)foreach(var guard in combat.guards)if(guard!=null&&guard.waveIndex==wave)guard.DefeatFromVolley();
                     BattleCaption=$"HẠ LỆNH PHẢN CÔNG!  {CommandScore}/{CommandOpportunityCount} đợt";
                     BachDangStoryManager.Instance?.UpdateUI();
                 }
@@ -262,7 +277,7 @@ namespace BeachBoatStory
             if(battleLoop!=null){StopCoroutine(battleLoop);battleLoop=null;}
             if(tideLoop!=null){StopCoroutine(tideLoop);tideLoop=null;}
             BattleStarted=false;
-            foreach(var ship in enemyShips??System.Array.Empty<EnemyShip>())if(ship!=null)ship.gameObject.SetActive(false);
+            foreach(var ship in enemyShips??System.Array.Empty<EnemyShip>())if(ship!=null){ship.ClearWreck();ship.gameObject.SetActive(false);}
         }
         public void ResetForCheckpoint()
         {

@@ -9,7 +9,8 @@ namespace BeachBoatStory
         public Transform visual;
         public int waveIndex;
         public int Health {get;private set;}=2;
-        public bool IsAlive=>Health>0&&ship!=null&&!ship.isDestroyed&&gameObject.activeInHierarchy;
+        public bool IsOnWreck {get;private set;}
+        public bool IsAlive=>Health>0&&ship!=null&&(!ship.isDestroyed||IsOnWreck)&&gameObject.activeInHierarchy;
         public Vector3 AimPoint=>transform.position+Vector3.up*9;
         Animator animator;
         Quaternion restRotation;
@@ -18,10 +19,14 @@ namespace BeachBoatStory
         Transform bow,leftUpper,leftFore,leftHand,rightUpper,rightFore,rightHand;
         LineRenderer bowString;
         float draw;
+        Transform deckParent;
+        Vector3 deckPosition,deckScale;
+        Quaternion deckRotation;
         void Awake()=>Cache();
         void Cache()
         {
-            if(initialized)return;animator=GetComponentInChildren<Animator>(true);restRotation=visual.localRotation;initialized=true;
+            if(initialized)return;deckParent=transform.parent;deckPosition=transform.localPosition;deckRotation=transform.localRotation;deckScale=transform.localScale;
+            animator=GetComponentInChildren<Animator>(true);restRotation=visual.localRotation;initialized=true;
             leftUpper=animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);leftFore=animator.GetBoneTransform(HumanBodyBones.LeftLowerArm);leftHand=animator.GetBoneTransform(HumanBodyBones.LeftHand);
             rightUpper=animator.GetBoneTransform(HumanBodyBones.RightUpperArm);rightFore=animator.GetBoneTransform(HumanBodyBones.RightLowerArm);rightHand=animator.GetBoneTransform(HumanBodyBones.RightHand);
             bow=new GameObject("Cung_Xa_Thu").transform;bow.SetParent(transform,false);
@@ -30,7 +35,23 @@ namespace BeachBoatStory
             bowString=new GameObject("Day_Cung").AddComponent<LineRenderer>();bowString.transform.SetParent(bow,false);bowString.sharedMaterial=stave.sharedMaterial;bowString.useWorldSpace=false;bowString.widthMultiplier=.1f;bowString.positionCount=3;
             bowString.SetPositions(new[]{new Vector3(0,-5.5f,0),Vector3.zero,new Vector3(0,5.5f,0)});
         }
-        void OnEnable()=>ResetGuard();
+        void OnEnable(){if(!IsOnWreck)ResetGuard();}
+        public void MoveToWreck(Transform raft,Vector3 position)
+        {
+            Cache();IsOnWreck=true;transform.SetParent(raft,true);transform.localPosition=position;
+            transform.rotation=Quaternion.Euler(0,transform.eulerAngles.y,0);
+        }
+        public void RestoreDeck()
+        {
+            Cache();IsOnWreck=false;transform.SetParent(deckParent,false);
+            transform.localPosition=deckPosition;transform.localRotation=deckRotation;transform.localScale=deckScale;
+        }
+        public void DefeatFromVolley()
+        {
+            if(!IsAlive)return;Health=0;
+            if(animator!=null)animator.enabled=false;
+            GetComponent<Collider>().enabled=false;bow.gameObject.SetActive(false);
+        }
         public void ResetGuard()
         {
             Cache();
@@ -56,6 +77,7 @@ namespace BeachBoatStory
         }
         void LateUpdate()
         {
+            if(IsOnWreck){var p=transform.parent.position;p.y=TideSystem.CurrentWaterHeight+1+Mathf.Sin(Time.time*1.5f)*.15f;transform.parent.position=p;}
             if(Health>0)
             {
                 var combat=RiverPlayerCombat.Instance;if(combat==null||!combat.BattleActive)return;

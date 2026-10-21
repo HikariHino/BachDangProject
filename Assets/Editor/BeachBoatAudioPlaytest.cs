@@ -14,6 +14,9 @@ public static class BeachBoatAudioPlaytest
     static int phase;
     static float outputPeak;
     static bool muteChecked;
+    static bool inlandSilent,riverAudible,interactionAudible;
+    static bool pickupAudible,gateAudible,questAudible;
+    static int interactionBaseline;
     static string failure;
     static readonly float[] Output=new float[1024];
     public static void RunAndExit(){EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");EditorUtility.audioMasterMute=false;SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
@@ -21,7 +24,7 @@ public static class BeachBoatAudioPlaytest
     static void Finish()
     {
         var audio=BeachBoatSoundscape.Instance;Directory.CreateDirectory("Logs");
-        File.WriteAllText("Logs/AudioPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,outputPeak,muteChecked,sampleRate=AudioSettings.outputSampleRate,listenerVolume=AudioListener.volume,listenerPaused=AudioListener.pause,editorMuted=EditorUtility.audioMasterMute,riverPlaying=audio?.RiverSource.isPlaying,windPlaying=audio?.WindSource.isPlaying,effects=audio?.EffectsPlayed,footsteps=audio?.FootstepsPlayed,oars=audio?.OarsPlayed},Formatting.Indented));
+        File.WriteAllText("Logs/AudioPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,outputPeak,muteChecked,inlandSilent,riverAudible,interactionAudible,pickupAudible,gateAudible,questAudible,interactions=audio?.InteractionsPlayed,sampleRate=AudioSettings.outputSampleRate,listenerVolume=AudioListener.volume,listenerPaused=AudioListener.pause,editorMuted=EditorUtility.audioMasterMute,riverPlaying=audio?.RiverSource.isPlaying,windPlaying=audio?.WindSource.isPlaying,effects=audio?.EffectsPlayed,footsteps=audio?.FootstepsPlayed,oars=audio?.OarsPlayed},Formatting.Indented));
         SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(failure==null?0:1);
     }
     static void Tick()
@@ -56,8 +59,74 @@ public static class BeachBoatAudioPlaytest
                 audio.SetMuted(true);phase=5;until=EditorApplication.timeSinceStartup+.4;return;
             }
             if(phase==5){muteChecked=AudioListener.volume==0&&Output.All(s=>Mathf.Abs(s)<.0001f);audio.SetMuted(false);if(!muteChecked)throw new Exception("Mute did not silence the master output");phase=6;until=EditorApplication.timeSinceStartup+.4;return;}
-            if(phase==6){if(AudioListener.volume<=0)throw new Exception("Unmute did not restore master output");Finish();}
+            if(phase==6)
+            {
+                if(AudioListener.volume<=0)throw new Exception("Unmute did not restore master output");
+                foreach(var opening in UnityEngine.Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))opening.SkipOpening();
+                BeachBoatStory.StoryDialogueUI.Instance?.Close();
+                MovePlayer(new Vector3(-6720,124.5f,-4700));phase=7;until=EditorApplication.timeSinceStartup+2;return;
+            }
+            if(phase==7)
+            {
+                inlandSilent=audio.RiverSource.volume<.0001f&&float.IsPositiveInfinity(audio.DistanceToWater);
+                if(!inlandSilent)throw new Exception("River ambience is audible in the inland village: "+audio.RiverSource.volume);
+                MovePlayer(new Vector3(-3000,TideSystem.CurrentWaterHeight+5,2100));phase=8;until=EditorApplication.timeSinceStartup+2;return;
+            }
+            if(phase==8)
+            {
+                riverAudible=audio.DistanceToWater<=20&&audio.RiverSource.volume>.2f;
+                if(!riverAudible)throw new Exception("River ambience did not fade in beside the water: "+audio.DistanceToWater);
+                interactionBaseline=audio.InteractionsPlayed;outputPeak=0;
+                audio.RiverSource.Stop();audio.WindSource.Stop();
+                foreach(var source in audio.GetComponentsInChildren<AudioSource>())source.Stop();
+                phase=9;until=EditorApplication.timeSinceStartup+.5;return;
+            }
+            if(phase==9)
+            {
+                outputPeak=0;BeachBoatStory.StoryDialogueUI.Instance.Show("Kiểm tra","Nhận nhiệm vụ");
+                phase=10;until=EditorApplication.timeSinceStartup+.3;return;
+            }
+            if(phase==10)
+            {
+                interactionAudible=audio.InteractionsPlayed>interactionBaseline&&outputPeak>.001f;
+                if(!interactionAudible)throw new Exception("Dialogue interaction did not reach the audio output");
+                BeachBoatStory.StoryDialogueUI.Instance.Close();phase=11;until=EditorApplication.timeSinceStartup+.5;return;
+            }
+            if(phase==11)
+            {
+                var story=BeachBoatStory.BachDangStoryManager.Instance;story.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act2_CollectWoodInVillage,true);
+                var item=BeachBoatQuestSession.Instance.woodItems[0];item.RestoreCollection(false);MovePlayer(item.transform.position+Vector3.up);
+                int before=audio.InteractionsPlayed;pickupAudible=item.TryCollect()&&audio.InteractionsPlayed==before+1&&!item.TryCollect();
+                if(!pickupAudible)throw new Exception("Successful wood pickup is silent or repeat collection is accepted");phase=12;until=EditorApplication.timeSinceStartup+.5;return;
+            }
+            if(phase==12)
+            {
+                BeachBoatStory.BachDangStoryManager.Instance.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act1_GoToCampGate,true);
+                var gate=UnityEngine.Object.FindObjectsByType<BeachBoatStory.CampGateTransition>(FindObjectsSortMode.None).First(g=>g.gateType==BeachBoatStory.CampGateTransition.GateType.CampGate);
+                MovePlayer(gate.transform.position+Vector3.up);int before=audio.InteractionsPlayed;
+                gateAudible=gate.TryInteract()&&audio.InteractionsPlayed==before+1;
+                if(!gateAudible)throw new Exception("Successful gate transition is silent");phase=13;until=EditorApplication.timeSinceStartup+5;return;
+            }
+            if(phase==13)
+            {
+                if(BeachBoatStory.ScreenFader.Instance.IsTransitioning)return;
+                BeachBoatStory.BachDangStoryManager.Instance.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act1_ExploreCamp,true);
+                var npc=UnityEngine.Object.FindAnyObjectByType<BeachBoatStory.NPCQuestGiver>();MovePlayer(npc.transform.position+Vector3.forward*50);
+                int before=audio.InteractionsPlayed;questAudible=npc.TryTalk()&&audio.InteractionsPlayed==before+1;
+                if(!questAudible)throw new Exception("Quest dialogue opening is silent");phase=14;until=EditorApplication.timeSinceStartup+.5;return;
+            }
+            if(phase==14)
+            {
+                int before=audio.InteractionsPlayed;BeachBoatStory.StoryDialogueUI.Instance.Close();
+                questAudible&=audio.InteractionsPlayed==before+1&&BeachBoatStory.BachDangStoryManager.Instance.currentState==BeachBoatStory.BachDangStoryManager.StoryState.Act1_Training;
+                if(!questAudible)throw new Exception("Quest acceptance is silent or did not advance the quest");Finish();
+            }
         }
         catch(Exception e){failure=e.ToString();Finish();}
+    }
+    static void MovePlayer(Vector3 position)
+    {
+        var player=BeachBoatQuestSession.Instance.player;player.GetComponent<BeachBoatStory.Character_Movement>().enabled=false;
+        player.GetComponent<Rigidbody>().isKinematic=true;player.transform.position=position;player.GetComponent<Rigidbody>().position=position;
     }
 }

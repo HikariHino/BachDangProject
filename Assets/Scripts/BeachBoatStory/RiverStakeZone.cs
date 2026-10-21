@@ -173,6 +173,7 @@ namespace BeachBoatStory
                 QuestRowboat.FlatDistance(boat.transform.position, p.approach.position) > interactDistance ||
                 !HasBoatClearance(boat.transform.position)) return false;
             IsPlanting = true;
+            BeachBoatSoundscape.Instance?.PlayInteraction();
             workingIndex = index;
             story.SetInteractPrompt(false, owner: this); story.UpdateUI();
             planting = StartCoroutine(PlantCluster(index));
@@ -227,7 +228,23 @@ namespace BeachBoatStory
             Vector3 origin = boat != null ? boat.transform.position : transform.position;
             Vector3 forward = boat != null ? boat.transform.forward : Vector3.forward;
             Vector3 right = boat != null ? boat.transform.right : Vector3.right;
-            lostStake.transform.SetPositionAndRotation(origin + forward * 135f + right * 70f,
+            var recoveryPosition=origin+forward*135f+right*70f;
+            recoveryPosition.y=TideSystem.CurrentWaterHeight;
+            // The expanded battle field must not place this quest item inside stakes or shallows.
+            if(boat!=null&&(!HasBoatClearance(recoveryPosition)||!boat.CanOccupy(recoveryPosition,boat.transform.rotation)))
+            {
+                bool found=false;
+                for(float radius=85;radius<=235&&!found;radius+=50)
+                    for(int angle=0;angle<16;angle++)
+                    {
+                        var candidate=origin+Quaternion.Euler(0,angle*22.5f,0)*forward*radius;
+                        candidate.y=TideSystem.CurrentWaterHeight;
+                        if(!HasBoatClearance(candidate)||!boat.CanOccupy(candidate,boat.transform.rotation))continue;
+                        recoveryPosition=candidate;found=true;break;
+                    }
+                if(!found)recoveryPosition=origin;
+            }
+            lostStake.transform.SetPositionAndRotation(recoveryPosition,
                 Quaternion.LookRotation(forward, Vector3.up) * Quaternion.Euler(72f, 0, 0));
             var p = lostStake.transform.position; p.y = TideSystem.CurrentWaterHeight + 1.5f; lostStake.transform.position = p;
             lostStake.SetActive(true);
@@ -242,6 +259,7 @@ namespace BeachBoatStory
                 BeachBoatQuestSession.InteractionBlocked || Mathf.Abs(boat.Speed) > 8f ||
                 QuestRowboat.FlatDistance(boat.transform.position, lostStake.transform.position) > 30f) return false;
             RecoveryRequired = false; lostStake.SetActive(false);
+            BeachBoatSoundscape.Instance?.PlayInteraction();
             BachDangStoryManager.Instance?.UpdateUI();
             StoryDialogueUI.Instance?.Show("Dân binh", "Đã vớt lại đủ cọc và siết chặt dây buộc. Tiếp tục hoàn thành hai cụm còn lại.");
             return true;

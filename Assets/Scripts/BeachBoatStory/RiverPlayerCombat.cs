@@ -81,7 +81,7 @@ namespace BeachBoatStory
         {
             ResetForCheckpoint();wasBattle=true;nextThreat=Time.time+4;
             foreach(var guard in guards)if(guard!=null)guard.ResetGuard();
-            Tell("Hạ xạ thủ mỗi đợt, rồi phất cờ cho quân mai phục. Chuột phải để ngắm.");
+            Tell("Thuyền tự đắm khi va cọc. Hạ xạ thủ trên tàu hoặc mảnh boong nổi, rồi phất cờ phản công.");
         }
         public void ResetForCheckpoint()
         {

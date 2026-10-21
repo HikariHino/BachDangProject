@@ -29,6 +29,8 @@ public static class BeachBoatQuest3Playtest
     static float[] shipSpeeds;
     static float holdUntil,ebbAt=-1,lastWater=float.PositiveInfinity;
     static bool midShot,impactShot;
+    static bool automaticWrecksBeforeOrder,survivorsAvailable;
+    static bool fullySubmerged,survivorShot;
     static float firstImpactAt=-1;
     static EnemyShip impactShip;
     static string failure;
@@ -61,11 +63,14 @@ public static class BeachBoatQuest3Playtest
         File.WriteAllText("Logs/BeachBoatQuest3Playtest.json",JsonConvert.SerializeObject(new {
             success,failure,heldForPlayer=wasHeld,rangeBlockedAtDock=rangeBlocked,
             delayedFleetHeldHigh,hiddenUntilEntry,ebbAtField,gradualEbb,sankDuringEbb,ambushBeforeLow,
+            automaticWrecksBeforeOrder,survivorsAvailable,fieldStakes=BeachBoatStory.RiverStakeZone.Instance?.RequiredCount,
+            fullySubmerged,
             vitalsBarsUpdated,minimapLowerRight,rowingControllerApplied,
             healthWidthBefore,healthWidthAfter,staminaWidthBefore,staminaWidthAfter,
             healthAnchorAfter,staminaAnchorAfter,orders=director?.CommandScore,
             requiredOrders=director?.CommandOpportunityCount,shipsDestroyed=story?.destroyedEnemyShips,
             playerKills=RiverPlayerCombat.Instance?.Kills,playerHits=RiverPlayerCombat.Instance?.Hits,
+            arrows=RiverPlayerCombat.Instance?.Arrows,shots=RiverPlayerCombat.Instance?.ShotsFired,
             totalShips=story?.totalEnemyShips,storyState=story?.currentState.ToString(),
             ships=director?.enemyShips.Select(s=>new {s.name,s.isDestroyed,active=s.gameObject.activeSelf,
                 z=s.transform.position.z}).ToArray()
@@ -177,7 +182,7 @@ public static class BeachBoatQuest3Playtest
             ambushBeforeLow|=BachDangBattleTimeline.Instance.CurrentMoment==BachDangBattleTimeline.BattleMoment.Ambush&&TideSystem.CurrentWaterHeight>tide.lowTideY+1;
             if(!midShot&&zone.ExposedStakeCount>0){midShot=true;CaptureBattle("Emerging",director.EbbTriggerShip);}
             if(firstImpactAt<0&&director.enemyShips.Any(s=>s.isDestroyed)){firstImpactAt=Time.time;impactShip=director.enemyShips.First(s=>s.isDestroyed);}
-            if(!impactShot&&firstImpactAt>=0&&Time.time-firstImpactAt>.65f){impactShot=true;CaptureBattle("Impact",impactShip);}
+            if(!impactShot&&firstImpactAt>=0&&Time.time-firstImpactAt>2.5f){impactShot=true;CaptureBattle("Impact",impactShip);}
         }
         if(!delayedFleetHeldHigh&&Time.time>=holdUntil)
         {
@@ -186,27 +191,35 @@ public static class BeachBoatQuest3Playtest
         }
         if(delayedFleetHeldHigh)for(int i=0;i<shipSpeeds.Length;i++)
             if(Time.time>=holdUntil+(i/Mathf.Max(1,director.shipsPerWave))*director.waveDelay)director.enemyShips[i].moveSpeed=shipSpeeds[i];
-        // Orders are deliberately withheld for a moment so the test proves ships wait
-        // for the player's signal instead of automatically crossing the stake line.
-        if(wasHeld&&elapsed>7&&director.IsShowingBattle&&BachDangBattleTimeline.Instance.CurrentMoment>=BachDangBattleTimeline.BattleMoment.Ambush)
+        // Withhold every shot and flag until all ten real routes physically wreck.
+        // Then finish the combat objective on the floating deck survivors: no softlock.
+        if(story.destroyedEnemyShips==director.ShipCount&&director.IsShowingBattle)
         {
+            automaticWrecksBeforeOrder|=director.CommandScore==0&&RiverPlayerCombat.Instance.Kills==0;
+            fullySubmerged=director.enemyShips.All(s=>s.GetComponentsInChildren<MeshFilter>(true).All(f=>MeshBelowWater(f)));
+            if(!fullySubmerged){failure="A disabled ship still has visible geometry above water";Finish(false,director,story);return;}
+            if(!survivorShot){survivorShot=true;CaptureBattle("Survivors",director.enemyShips[0]);}
             var ready=director.enemyShips.FirstOrDefault(s=>s!=null&&s.SignalReady);
             if(ready!=null)
             {
-                if(!rangeBlocked)rangeBlocked=!director.TrySignalAttack();
-                var near=ready.transform.position+Vector3.left*320f;
-                near.y=TideSystem.CurrentWaterHeight;
-                boat.transform.position=near;
                 var combat=RiverPlayerCombat.Instance;
                 int wave=Array.IndexOf(director.enemyShips,ready)/Mathf.Max(1,director.shipsPerWave);
                 if(combat!=null&&!combat.HasSuppressedWave(wave))
                 {
                     var guard=combat.guards.First(g=>g.waveIndex==wave&&g.IsAlive);
-                    var origin=guard.AimPoint+Vector3.left*200;origin.y=TideSystem.CurrentWaterHeight+14;
+                    survivorsAvailable|=guard.IsOnWreck&&guard.transform.up.y>.99f&&Mathf.Abs(guard.transform.position.y-TideSystem.CurrentWaterHeight)<4;
+                    // Aim from the open channel; the western bank occludes the lower waves.
+                    var origin=guard.AimPoint+Vector3.right*200;origin.y=TideSystem.CurrentWaterHeight+14;
                     boat.transform.position=new Vector3(origin.x,TideSystem.CurrentWaterHeight,origin.z);
                     boat.Step(0,0,.001f);Physics.SyncTransforms();combat.SetAim(true);
                     combat.TryFire(new Ray(origin,(guard.AimPoint-origin).normalized),1);
                     combat.StepArrows(1);combat.SetAim(false);
+                }
+                if(!combat.HasSuppressedWave(wave))return;
+                if(!rangeBlocked)
+                {
+                    var near=boat.transform.position;boat.transform.position=boat.dockPoint.position;
+                    rangeBlocked=!director.TrySignalAttack();boat.transform.position=near;
                 }
                 director.TrySignalAttack();
             }
@@ -215,13 +228,23 @@ public static class BeachBoatQuest3Playtest
         {
             bool success=wasHeld&&rangeBlocked&&vitalsBarsUpdated&&minimapLowerRight&&rowingControllerApplied&&
                 delayedFleetHeldHigh&&hiddenUntilEntry&&ebbAtField&&gradualEbb&&sankDuringEbb&&ambushBeforeLow&&
-                director.CommandScore==5&&story.destroyedEnemyShips==10&&
+                automaticWrecksBeforeOrder&&survivorsAvailable&&fullySubmerged&&director.CommandScore==5&&story.destroyedEnemyShips==10&&
                 director.enemyShips[0].transform.position.z<initialShipZ-600;
             if(!success)failure=$"Battle/HUD check failed: bars={vitalsBarsUpdated}, minimap={minimapLowerRight}, " +
                     $"rowing={rowingControllerApplied}, orders={director.CommandScore}, wrecks={story.destroyedEnemyShips}, " +
                     $"entry={ebbAtField}, gradual={gradualEbb}, sunkDuringEbb={sankDuringEbb}, hiddenUntilEntry={hiddenUntilEntry}";
             Finish(success,director,story);
         }
+    }
+    static bool MeshBelowWater(MeshFilter filter)
+    {
+        if(filter.sharedMesh==null)return true;var b=filter.sharedMesh.bounds;
+        for(int i=0;i<8;i++)
+        {
+            var p=filter.transform.TransformPoint(b.center+Vector3.Scale(b.extents,new Vector3((i&1)==0?-1:1,(i&2)==0?-1:1,(i&4)==0?-1:1)));
+            if(p.y>=TideSystem.CurrentWaterHeight)return false;
+        }
+        return true;
     }
     static void CaptureBattle(string name,EnemyShip ship)
     {

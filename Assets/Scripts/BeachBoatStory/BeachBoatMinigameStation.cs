@@ -89,6 +89,7 @@ namespace BeachBoatStory
             if (Active != null || player == null || !CanOffer() ||
                 QuestRowboat.FlatDistance(player.position, transform.position) > interactDistance) return;
             Active = this;
+            BeachBoatSoundscape.Instance?.PlayInteraction();
             restoreCursorLock = Cursor.lockState == CursorLockMode.Locked;
             HidePrompt();
             ResetRound();
@@ -201,6 +202,7 @@ namespace BeachBoatStory
             if (Active != this || Failed || kind != ActivityKind.SupplyRelay || selectedCargo == 0 ||
                 checkpoints == null || progress >= checkpoints.Length || checkpoints[progress] == null ||
                 QuestRowboat.FlatDistance(player.position, checkpoints[progress].position) > interactDistance) return false;
+            BeachBoatSoundscape.Instance?.PlayInteraction();
             progress++;
             if (progress >= checkpoints.Length) Finish(true);
             else

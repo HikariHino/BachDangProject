@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Linq;
 using BeachBoatStory;
 using Newtonsoft.Json;
 using UnityEditor;
@@ -20,7 +21,7 @@ public static class BeachBoatBattleLaunchPlaytest
     {
         if(!SessionState.GetBool(Flag,false)||!EditorApplication.isPlaying||ran)return;
         if(started==0)started=EditorApplication.timeSinceStartup;if(EditorApplication.timeSinceStartup-started<3)return;
-        ran=true;string failure=null;var cases=new List<object>();float rowingTravel=0,recoveredTravel=0;
+        ran=true;string failure=null;var cases=new List<object>();float rowingTravel=0,recoveredTravel=0;bool[] fieldRoutes=null;bool recoveryClear=false;
         try
         {
             foreach(var intro in UnityEngine.Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))intro.SkipOpening();
@@ -30,6 +31,19 @@ public static class BeachBoatBattleLaunchPlaytest
             typeof(BeachBoatStory.RiverStakeZone).GetField("<PlantedCount>k__BackingField",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(zone,zone.RequiredCount);
             typeof(BeachBoatStory.RiverStakeZone).GetField("<CompletedClusterCount>k__BackingField",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(zone,zone.ClusterCount);
             story.collectedWood=story.totalWoodRequired;
+            zone.RestoreCheckpoint(Enumerable.Repeat(true,zone.ClusterCount).ToArray());
+            TideSystem.Instance.SetTide(false,true);Physics.SyncTransforms();
+            fieldRoutes=VerifyFieldRoutes(boat,zone);
+            if(fieldRoutes.Any(clear=>!clear))throw new Exception("An expanded-field planting approach cannot be reached from the dock");
+            foreach(var point in zone.placements)
+            {
+                var p=point.approach.position;p.y=TideSystem.CurrentWaterHeight;boat.transform.position=p;
+                typeof(BeachBoatStory.RiverStakeZone).GetMethod("BeginRecoveryIncident",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(zone,null);
+                var recovery=zone.RecoveryTarget.position;recovery.y=TideSystem.CurrentWaterHeight;
+                if(!zone.HasBoatClearance(recovery)||!boat.CanOccupy(recovery,boat.transform.rotation))throw new Exception("Lost stakes spawned inside the expanded field");
+                BeachBoatStory.StoryDialogueUI.Instance.Close();zone.RestoreCheckpoint(Enumerable.Repeat(true,zone.ClusterCount).ToArray());
+            }
+            recoveryClear=true;
             var pier=GameObject.Find("Cau_Go_Ra_Ben").transform.position;
             for(int i=0;i<4;i++)
             {
@@ -57,7 +71,30 @@ public static class BeachBoatBattleLaunchPlaytest
             if(session.player.GetComponent<PlayerVitals>().Health<health)throw new Exception("Existing dock overlap incorrectly damaged the player");
         }
         catch(Exception e){failure=e.ToString();}
-        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/BattleLaunchRegression.json",JsonConvert.SerializeObject(new{success=failure==null,failure,cases,rowingTravel,recoveredTravel},Formatting.Indented));
+        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/BattleLaunchRegression.json",JsonConvert.SerializeObject(new{success=failure==null,failure,fieldRoutes,recoveryClear,cases,rowingTravel,recoveredTravel},Formatting.Indented));
         SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(failure==null?0:1);
+    }
+    static bool[] VerifyFieldRoutes(QuestRowboat boat,BeachBoatStory.RiverStakeZone zone)
+    {
+        const int nx=160,nz=95;const float size=20,x0=-3650,z0=1050;
+        var clear=new bool[nx*nz];var visited=new bool[nx*nz];
+        Vector3 Pos(int i)=>new Vector3(x0+(i%nx)*size,TideSystem.CurrentWaterHeight,z0+(i/nx)*size);
+        int Cell(Vector3 p)=>Mathf.Clamp(Mathf.RoundToInt((p.x-x0)/size),0,nx-1)+nx*Mathf.Clamp(Mathf.RoundToInt((p.z-z0)/size),0,nz-1);
+        for(int i=0;i<clear.Length;i++)
+        {
+            clear[i]=true;
+            for(int a=0;a<4;a++)if(!boat.CanOccupy(Pos(i),Quaternion.Euler(0,a*45,0))){clear[i]=false;break;}
+        }
+        int first=Cell(boat.dockPoint.position);if(!clear[first])throw new Exception("Dock navigation grid is obstructed");
+        var queue=new Queue<int>();queue.Enqueue(first);visited[first]=true;
+        while(queue.Count>0)
+        {
+            int i=queue.Dequeue();foreach(int offset in new[]{-1,1,-nx,nx})
+            {
+                int j=i+offset;if(j<0||j>=clear.Length||!clear[j]||visited[j]||Vector3.Distance(Pos(i),Pos(j))>size+1)continue;
+                visited[j]=true;queue.Enqueue(j);
+            }
+        }
+        return zone.placements.Select(p=>visited[Cell(p.approach.position)]).ToArray();
     }
 }

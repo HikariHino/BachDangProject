@@ -12,19 +12,22 @@ namespace BeachBoatStory
         public bool isDestroyed;
         public bool SignalReady {get;private set;}
         public bool IsReleasedForAmbush=>attackReleased;
+        public Transform WreckTarget=>wreckRaft!=null&&wreckRaft.gameObject.activeSelf?wreckRaft:null;
         public bool IsHullInsideStakeField=>RiverStakeZone.Instance!=null&&RiverStakeZone.Instance.TryHullContact(
             transform.position,transform.position,transform.forward,hullHalfLength,stakeHitDistance,false,out _);
         bool battleStarted;
         bool attackReleased;
         int routeIndex;
-        float ambushStartedAt=-1;
         float destroyedTime;
+        float sinkDepth;
+        Transform wreckRaft;
+        EnemyDeckGuard[] deckGuards;
         Vector3 sinkStart;Quaternion sinkRotation;
         GameObject[] debris;
         Rigidbody[] debrisBodies;
         public void Activate()
         {
-            isDestroyed=false;destroyedTime=0;battleStarted=true;ambushStartedAt=-1;
+            isDestroyed=false;destroyedTime=0;battleStarted=true;
             attackReleased=false;SignalReady=false;routeIndex=0;
             var first=routeWaypoints!=null&&routeWaypoints.Length>0?routeWaypoints[0]:targetPoint;
             var direction=first!=null?first.position-transform.position:Vector3.forward;direction.y=0;
@@ -51,10 +54,10 @@ namespace BeachBoatStory
             if(dt<=0||!battleStarted)return;
             if(isDestroyed)
             {
-                destroyedTime+=dt;float t=Mathf.Clamp01(destroyedTime/4.2f);
+                destroyedTime+=dt;float t=Mathf.Clamp01(destroyedTime/7f);
                 float fall=Mathf.SmoothStep(0,1,t);
-                transform.SetPositionAndRotation(sinkStart-transform.forward*(3f*Mathf.Sin(t*Mathf.PI))-Vector3.up*35*fall,
-                    sinkRotation*Quaternion.Euler(28*fall,0,32*fall));
+                transform.SetPositionAndRotation(sinkStart-transform.forward*(8f*Mathf.Sin(t*Mathf.PI))-Vector3.up*sinkDepth*fall,
+                    sinkRotation*Quaternion.Euler(28*fall,0,42*fall));
                 if(t>=1)
                 {
                     HideDebris();
@@ -79,31 +82,23 @@ namespace BeachBoatStory
             bool finalLeg=destination==targetPoint;
             var end=destination.position;end.y=pos.y;
             float distance=Vector3.Distance(pos,end);
-            // The player must give the counterattack order when the hull reaches the trap.
-            // Holding at a readable distance also prevents a ship from passing its stake
-            // while the tide is still high or the soldier is rowing into position.
+            // Orders control the allied volley, never the physics of an enemy hull.
+            // Keep testing a stationary hull too: falling water can expose a stake underneath it.
             float holdDistance=hullHalfLength+stakeHitDistance*.5f;
             if(finalLeg&&!attackReleased&&distance<=holdDistance+.5f)
-            {SignalReady=true;return;}
+                SignalReady=true;
             float step=Mathf.Max(0,moveSpeed)*dt;
-            if(finalLeg&&!attackReleased)step=Mathf.Min(step,Mathf.Max(0,distance-holdDistance));
             var next=Vector3.MoveTowards(pos,end,step);
             if(finalLeg&&!attackReleased&&Vector3.Distance(next,end)<=holdDistance+.5f)SignalReady=true;
             var direction=end-pos;
             if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-2*dt));
             transform.position=next;
-            var timeline=BachDangBattleTimeline.Instance;
-            bool ambushActive=timeline==null||timeline.CurrentMoment>=BachDangBattleTimeline.BattleMoment.Ambush;
-            if(ambushActive&&attackReleased)
-            {
-                // A visible stake touching the hull is the impact; no extra wave timer delays it.
-                CheckStakeHit(pos,next);
-            }
+            CheckStakeHit(pos,next);
         }
         public void ReleaseForAmbush()
         {
-            if(!battleStarted||isDestroyed)return;
-            attackReleased=true;SignalReady=false;ambushStartedAt=Time.time;
+            if(!battleStarted&&!isDestroyed)return;
+            attackReleased=true;SignalReady=false;
         }
         void CheckStakeHit(Vector3 from,Vector3 to)
         {
@@ -116,9 +111,46 @@ namespace BeachBoatStory
         {
             if(!battleStarted||isDestroyed)return;
             isDestroyed=true;destroyedTime=0;sinkStart=transform.position;sinkRotation=transform.rotation;
+            SignalReady=true;
+            // Sink the mast as well as the hull before disabling the vessel.
+            sinkDepth=65;
+            foreach(var renderer in GetComponentsInChildren<Renderer>(true))
+                sinkDepth=Mathf.Max(sinkDepth,renderer.bounds.max.y-sinkStart.y+renderer.bounds.size.x+15);
+            FloatSurvivors();
             LaunchDebris(impactPoint);
             BeachBoatSoundscape.Instance?.PlayCrash();
             FindAnyObjectByType<RiverBattleChoreography>()?.PlayShipImpact();
+        }
+
+        void FloatSurvivors()
+        {
+            if(deckGuards==null)deckGuards=GetComponentsInChildren<EnemyDeckGuard>(true);
+            if(deckGuards.Length==0)return;
+            if(wreckRaft==null)
+            {
+                wreckRaft=new GameObject(name+"_Manh_Boong_Noi").transform;
+                wreckRaft.SetParent(transform.parent,true);
+                Material wood=null;
+                foreach(var r in GetComponentsInChildren<Renderer>(true))
+                    if(r.sharedMaterial!=null){wood=r.sharedMaterial;if(wood.name.ToLowerInvariant().Contains("fedelzet"))break;}
+                for(int i=0;i<8;i++)
+                {
+                    var plank=GameObject.CreatePrimitive(PrimitiveType.Cube);plank.name="Van_Boong_Vo_"+i;plank.transform.SetParent(wreckRaft,false);
+                    plank.transform.localPosition=new Vector3(i%2==0?-1:1,0,(i-3.5f)*5);
+                    plank.transform.localScale=new Vector3(22-(i%3)*2,.8f,4.5f);
+                    plank.GetComponent<Renderer>().sharedMaterial=wood;
+                }
+            }
+            wreckRaft.gameObject.SetActive(true);
+            wreckRaft.SetPositionAndRotation(new Vector3(sinkStart.x,TideSystem.CurrentWaterHeight+1,sinkStart.z),sinkRotation);
+            // Retain a water-level command point even when the entire crew was
+            // defeated before impact. Dead crew stay dead when reparented.
+            for(int i=0;i<deckGuards.Length;i++)deckGuards[i].MoveToWreck(wreckRaft,new Vector3(0,.4f,i==0?10:-10));
+        }
+        public void ClearWreck()
+        {
+            if(deckGuards!=null)foreach(var guard in deckGuards)if(guard!=null)guard.RestoreDeck();
+            if(wreckRaft!=null)wreckRaft.gameObject.SetActive(false);
         }
 
         void EnsureDebrisPool()
@@ -158,9 +190,9 @@ namespace BeachBoatStory
         void HideDebris(){if(debris==null)return;foreach(var piece in debris)if(piece!=null)piece.SetActive(false);}
         public void ResetForCheckpoint()
         {
-            HideDebris();battleStarted=false;isDestroyed=false;attackReleased=false;SignalReady=false;routeIndex=0;ambushStartedAt=-1;destroyedTime=0;
+            ClearWreck();HideDebris();battleStarted=false;isDestroyed=false;attackReleased=false;SignalReady=false;routeIndex=0;destroyedTime=0;
             gameObject.SetActive(false);
         }
-        void OnDestroy(){if(debris==null)return;foreach(var piece in debris)if(piece!=null)Destroy(piece);}
+        void OnDestroy(){if(wreckRaft!=null)Destroy(wreckRaft.gameObject);if(debris==null)return;foreach(var piece in debris)if(piece!=null)Destroy(piece);}
     }
 }

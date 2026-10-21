@@ -158,6 +158,7 @@ namespace BeachBoatStory
             animator.runtimeAnimatorController = rowingController;
             animator.speed = .1f;
             IsAboard = true; Speed = 0; strokePhase = 0;
+            BeachBoatSoundscape.Instance?.PlayInteraction();
             orbit.distance = 115; orbit.heightOffset = 42; orbit.rightOffset = 0;
             AttachPlayer(); orbit.SnapToTarget();
             if (story.currentState == BachDangStoryManager.StoryState.Act3_WaitForLowTide) story.OnReadyForBattle();
@@ -168,6 +169,7 @@ namespace BeachBoatStory
         public bool TryDisembark()
         {
             if (!IsAboard || !AtDock || BeachBoatQuestSession.InteractionBlocked || Mathf.Abs(Speed) > 5) return false;
+            BeachBoatSoundscape.Instance?.PlayInteraction();
             RestorePlayer();
             session.player.transform.SetPositionAndRotation(boardingPoint.position, boardingPoint.rotation);
             playerBody.position = boardingPoint.position; playerBody.rotation = boardingPoint.rotation;

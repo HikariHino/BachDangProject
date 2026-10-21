@@ -51,6 +51,7 @@ public class CampGateTransition : MonoBehaviour
         var story = BachDangStoryManager.Instance;
         if (!isActiveAndEnabled || BeachBoatQuestSession.InteractionBlocked || destinationTarget == null ||
             story == null || !IsAvailable(story.currentState) || !IsInRange(story.GetPlayerTransform())) return false;
+        BeachBoatSoundscape.Instance?.PlayInteraction();
         TriggerTransition();
         return true;
     }

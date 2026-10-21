@@ -161,12 +161,14 @@ public sealed class StoryDialogueUI : MonoBehaviour
         bodyText.text = line;
         onDialogueClosed = onClosed;
         panel.SetActive(true);
+        BeachBoatSoundscape.Instance?.PlayInteraction();
     }
 
     public bool IsOpen => panel != null && panel.activeSelf;
 
     public void Close()
     {
+        if(IsOpen)BeachBoatSoundscape.Instance?.PlayInteraction();
         lastInputFrame = Time.frameCount;
 
         if (panel != null)

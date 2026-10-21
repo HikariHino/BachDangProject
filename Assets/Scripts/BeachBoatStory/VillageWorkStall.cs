@@ -71,7 +71,7 @@ namespace BeachBoatStory
             if(player==null&&BeachBoatQuestSession.Instance!=null)player=BeachBoatQuestSession.Instance.player.transform;
             if(Active!=null||quest==null||!quest.CanWork||player==null||QuestRowboat.FlatDistance(player.position,InteractionPosition)>interactionDistance)return false;
             savedLock=Cursor.lockState;savedCursor=Cursor.visible;Active=this;Phase=WorkPhase.Instructions;HidePrompt();
-            Cursor.lockState=CursorLockMode.None;Cursor.visible=true;VillageWorkUI.EnsureExists();return true;
+            Cursor.lockState=CursorLockMode.None;Cursor.visible=true;VillageWorkUI.EnsureExists();BeachBoatSoundscape.Instance?.PlayInteraction();return true;
         }
         public void SelectDifficulty(int difficulty)
         {

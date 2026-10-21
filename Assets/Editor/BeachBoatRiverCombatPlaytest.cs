@@ -16,7 +16,7 @@ public static class BeachBoatRiverCombatPlaytest
     static int phase;
     static EnemyDeckGuard target;
     static float healthBefore;
-    static bool miss,weakHit,strongHit,cooldown,reload,signalGated,dodged,returnedFire,checkpoint;
+    static bool miss,weakHit,strongHit,cooldown,reload,signalGated,dodged,returnedFire,checkpoint,deadCrewCommand;
     static string failure;
     public static void RunAndExit(){EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;}
@@ -30,7 +30,7 @@ public static class BeachBoatRiverCombatPlaytest
     }
     static void Finish()
     {
-        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/RiverCombatPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,miss,weakHit,strongHit,cooldown,reload,signalGated,dodged,returnedFire,checkpoint,guards=RiverPlayerCombat.Instance?.guards.Length},Formatting.Indented));
+        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/RiverCombatPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,miss,weakHit,strongHit,cooldown,reload,signalGated,dodged,returnedFire,checkpoint,deadCrewCommand,guards=RiverPlayerCombat.Instance?.guards.Length},Formatting.Indented));
         SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(failure==null?0:1);
     }
     static void Tick()
@@ -81,6 +81,10 @@ public static class BeachBoatRiverCombatPlaytest
             {
                 strongHit=Shoot(1)&&!target.IsAlive&&combat.Kills==1&&combat.HasSuppressedWave(target.waveIndex);
                 if(!strongHit)throw new Exception("Charged arrow did not kill/suppress the wave");
+                foreach(var guard in combat.guards.Where(g=>g.ship==target.ship))guard.DefeatFromVolley();
+                target.ship.TakeDamage();target.ship.Step(8);
+                deadCrewCommand=target.ship.WreckTarget!=null&&combat.guards.Where(g=>g.ship==target.ship).All(g=>g.Health==0&&g.IsOnWreck);
+                if(!deadCrewCommand)throw new Exception("Defeating the entire crew lost the wreck command point or revived an archer");
                 BachDangBattleTimeline.Instance.BeginAmbush();if(!fleet.TrySignalAttack()||fleet.CommandScore!=1)throw new Exception("Combat did not unlock flag order");
                 if(!combat.Reload()||!combat.IsReloading||Shoot(1))throw new Exception("Reload gate failed");
                 phase=4;waitUntil=EditorApplication.timeSinceStartup+2.2;return;

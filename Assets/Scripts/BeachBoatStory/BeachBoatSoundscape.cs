@@ -13,6 +13,8 @@ namespace BeachBoatStory
         public int FootstepsPlayed {get;private set;}
         public int OarsPlayed {get;private set;}
         public int EffectsPlayed {get;private set;}
+        public int InteractionsPlayed {get;private set;}
+        public float DistanceToWater {get;private set;}=float.PositiveInfinity;
         public AudioSource RiverSource {get;private set;}
         public AudioSource WindSource {get;private set;}
         AudioSource foley,effects,ui,birds;
@@ -21,6 +23,9 @@ namespace BeachBoatStory
         float distance,nextStep,nextOar,nextBird,toastUntil;
         int footIndex;
         float savedListenerVolume=1;
+        Terrain[] terrains;
+        float nextShoreCheck;
+        int interactionFrame=-1;
         void Awake(){Instance=this;session=GetComponent<BeachBoatQuestSession>();}
         void Start()
         {
@@ -28,7 +33,8 @@ namespace BeachBoatStory
             savedListenerVolume=AudioListener.volume;
             foreach(var old in session.player.GetComponentsInChildren<FootstepSound>(true))old.enabled=false;
             previous=session.player.transform.position;
-            RiverSource=Source("RiverAmbience",river,true,.34f);WindSource=Source("WindAndLeaves",wind,true,.20f);
+            terrains=Terrain.activeTerrains;
+            RiverSource=Source("RiverAmbience",river,true,0);WindSource=Source("WindAndLeaves",wind,true,.20f);
             foley=Source("PlayerFoley",null,false,1);effects=Source("ActionEffects",null,false,1);ui=Source("InteractionFeedback",null,false,1);birds=Source("DistantBirds",null,false,1);
             nextBird=Time.time+4;
         }
@@ -44,7 +50,10 @@ namespace BeachBoatStory
             if(Input.GetKeyDown(KeyCode.F10))SetMuted(!Muted);
             float volume=Muted?0:masterVolume;
             bool dead=QuestCheckpoint.Instance!=null&&QuestCheckpoint.Instance.IsDefeated;
-            RiverSource.volume=Mathf.MoveTowards(RiverSource.volume,volume*(dead ? .08f : QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard ? .34f : .19f),Time.unscaledDeltaTime*.3f);
+            if(Time.unscaledTime>=nextShoreCheck)
+            {nextShoreCheck=Time.unscaledTime+.5f;DistanceToWater=MeasureWaterDistance(session.player.transform.position);}
+            float shore=1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(20,200,DistanceToWater));
+            RiverSource.volume=Mathf.MoveTowards(RiverSource.volume,volume*(dead?.08f:.34f)*shore,Time.unscaledDeltaTime*.3f);
             WindSource.volume=volume*(dead ? .06f : .20f);
             var position=session.player.transform.position;float moved=QuestRowboat.FlatDistance(position,previous);previous=position;
             if(Muted||dead||!session.storyMode)return;
@@ -75,6 +84,35 @@ namespace BeachBoatStory
         public void PlayStake()=>Play(effects,drum,.3f,1.7f);
         public void PlayHit()=>Play(effects,hit,.55f);
         public void PlayResult(bool correct)=>Play(ui,correct?good:bad,.55f);
+        public void PlayInteraction()
+        {
+            if(interactionFrame==Time.frameCount)return;
+            interactionFrame=Time.frameCount;InteractionsPlayed++;Play(ui,good,.65f,1.08f);
+        }
+        // Terrain height is sampled in the horizontal plane. Being at river height in
+        // the inland village must not make the entire water plane audible there.
+        public float MeasureWaterDistance(Vector3 position)
+        {
+            if(IsWater(position))return 0;
+            for(float radius=20;radius<=200;radius+=20)
+                for(int i=0;i<32;i++)
+                {
+                    float angle=i*Mathf.PI/16;
+                    if(IsWater(position+new Vector3(Mathf.Cos(angle)*radius,0,Mathf.Sin(angle)*radius)))return radius;
+                }
+            return float.PositiveInfinity;
+        }
+        bool IsWater(Vector3 p)
+        {
+            foreach(var terrain in terrains??System.Array.Empty<Terrain>())
+            {
+                if(terrain==null||terrain.terrainData==null)continue;
+                var local=p-terrain.transform.position;var size=terrain.terrainData.size;
+                if(local.x>=0&&local.z>=0&&local.x<=size.x&&local.z<=size.z)
+                    return terrain.SampleHeight(p)+terrain.transform.position.y<TideSystem.CurrentWaterHeight-.5f;
+            }
+            return false;
+        }
         void OnGUI()
         {
             if(Time.unscaledTime>=toastUntil)return;

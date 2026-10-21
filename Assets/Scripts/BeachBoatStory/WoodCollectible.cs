@@ -100,7 +100,7 @@ public class WoodCollectible : MonoBehaviour
         if (BeachBoatQuestSession.InteractionBlocked || collected || story == null || story.currentState != BachDangStoryManager.StoryState.Act2_CollectWoodInVillage) return false;
         var player = story.GetPlayerTransform();
         if (player == null || Vector3.Distance(player.position, transform.position) > interactDistance) return false;
-        collected = true; story.OnCollectWood(); story.SetInteractPrompt(false, owner: this);
+        collected = true; BeachBoatSoundscape.Instance?.PlayInteraction(); story.OnCollectWood(); story.SetInteractPrompt(false, owner: this);
         if (interactPromptUI != null) interactPromptUI.SetActive(false);
         gameObject.SetActive(false); return true;
     }

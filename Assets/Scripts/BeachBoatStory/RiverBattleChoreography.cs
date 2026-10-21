@@ -124,12 +124,13 @@ namespace BeachBoatStory
             int index=0;
             foreach(var target in targets)
             {
-                if(target==null||!target.gameObject.activeInHierarchy||target.isDestroyed)continue;
+                if(target==null||(!target.gameObject.activeInHierarchy&&target.WreckTarget==null))continue;
+                var focus=target.WreckTarget!=null?target.WreckTarget.position:target.transform.position;
                 Vector3 source=friendlyBoats!=null&&friendlyBoats.Length>0&&friendlyBoats[index%friendlyBoats.Length]!=null
                     ? friendlyBoats[index%friendlyBoats.Length].transform.position+Vector3.up*17f
-                    : target.transform.position+Vector3.left*140f+Vector3.up*25f;
+                    : focus+Vector3.left*140f+Vector3.up*25f;
                 for(int shot=0;shot<3;shot++)
-                    Launch(source+Vector3.up*(shot*2f),target.transform.position+Vector3.up*(10f+shot*4f),18f+shot*4f);
+                    Launch(source+Vector3.up*(shot*2f),focus+Vector3.up*(10f+shot*4f),18f+shot*4f);
                 index++;
             }
             if(battleAudio!=null&&swordClash!=null)battleAudio.PlayOneShot(swordClash,.9f);

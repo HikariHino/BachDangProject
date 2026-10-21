@@ -67,6 +67,7 @@ namespace BeachBoatStory
                 var fleet = EnemyFleetDirector.Instance;
                 if (fleet != null)
                 {
+                      if(fleet.CommandTarget!=null){title="Chèo lại gần • phất cờ đánh dứt điểm đợt địch";return fleet.CommandTarget;}
                     bool hasReady = false;
                     foreach (var enemy in fleet.enemyShips)
                         if (enemy != null && enemy.gameObject.activeInHierarchy && enemy.SignalReady)
