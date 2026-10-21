@@ -85,6 +85,11 @@ namespace BeachBoatStory
             if (Stamina >= exhaustedRecoveryThreshold) IsExhausted = false;
         }
 
+        public void TreatAtMedicalTent()
+        {
+            Health = maxHealth;
+        }
+
         public void RecoverAtDock()
         {
             Health = Mathf.Clamp(maxHealth * .6f, 1f, maxHealth);

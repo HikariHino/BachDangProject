@@ -53,7 +53,7 @@ public static class BeachBoatMinigamePlaytest
             supplyTrips = supply?.Progress
         }, Formatting.Indented));
         SessionState.SetBool(Flag, false);
-        EditorApplication.Exit(success ? 0 : 1);
+        BeachBoatQAExit.AfterPlayMode(success ? 0 : 1);
     }
 
     static void Tick()

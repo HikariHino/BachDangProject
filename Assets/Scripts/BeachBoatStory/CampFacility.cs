@@ -6,15 +6,14 @@ namespace BeachBoatStory
     [DisallowMultipleComponent]
     public sealed class CampFacility : MonoBehaviour
     {
-        public enum FacilityKind { Barracks, Forge, Armory, Provisions }
+        public enum FacilityKind { Barracks, Forge, Armory, Provisions, Medical }
 
         public FacilityKind kind;
         public string displayName;
         public float interactDistance = 24f;
         public float cooldownSeconds = 45f;
 
-        static readonly float[] LastUse = { float.NegativeInfinity, float.NegativeInfinity,
-            float.NegativeInfinity, float.NegativeInfinity };
+        static readonly float[] LastUse = new float[5];
         bool showingPrompt;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -53,6 +52,7 @@ namespace BeachBoatStory
                 case FacilityKind.Barracks: return "Nghỉ tại " + displayName;
                 case FacilityKind.Forge: return "Gia cố giáp tại " + displayName;
                 case FacilityKind.Armory: return "Luyện thể lực tại " + displayName;
+                case FacilityKind.Medical: return "Băng bó tại " + displayName;
                 default: return "Lấy lương thực tại " + displayName;
             }
         }
@@ -80,6 +80,10 @@ namespace BeachBoatStory
                 case FacilityKind.Armory:
                     vitals.TrainAtArmory();
                     message = "Bạn tập luyện với quân sĩ. Thể lực tối đa tăng lên 120 trong lượt chơi này.";
+                    break;
+                case FacilityKind.Medical:
+                    vitals.TreatAtMedicalTent();
+                    message = "Quân y đã băng bó vết thương. Máu được hồi đầy; bạn có thể tiếp tục nhiệm vụ.";
                     break;
                 default:
                     vitals.TakeProvisions();

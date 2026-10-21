@@ -19,6 +19,8 @@ public static class BeachBoatBarracksPlaytest
     static readonly HashSet<string> Left = new HashSet<string>();
     static readonly Dictionary<string, double> SleepStarted = new Dictionary<string, double>();
     static readonly HashSet<string> DormEntered = new HashSet<string>(), DormSlept = new HashSet<string>(), DormLeft = new HashSet<string>();
+    static readonly HashSet<string> TentEntered = new HashSet<string>(), TentSlept = new HashSet<string>(), TentLeft = new HashSet<string>();
+    const string PendingExit="BarracksPlaytestExit";
     static bool checkedDoors, captured;
     static string failure;
 
@@ -26,11 +28,22 @@ public static class BeachBoatBarracksPlaytest
     {
         EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity", OpenSceneMode.Single);
         SessionState.SetBool(Flag, true);
+        SessionState.SetInt(PendingExit,-1);
         EditorApplication.isPlaying = true;
     }
 
     [InitializeOnLoadMethod]
-    static void Register() { EditorApplication.update -= Tick; EditorApplication.update += Tick; }
+    static void Register()
+    {
+        EditorApplication.update -= Tick; EditorApplication.update += Tick;
+        EditorApplication.playModeStateChanged-=OnMode;EditorApplication.playModeStateChanged+=OnMode;
+    }
+    static void OnMode(PlayModeStateChange state)
+    {
+        int code=SessionState.GetInt(PendingExit,-1);
+        if(state!=PlayModeStateChange.EnteredEditMode||code<0)return;
+        SessionState.SetInt(PendingExit,-1);EditorApplication.delayCall+=()=>EditorApplication.Exit(code);
+    }
 
     static void Capture(Transform house, NPCWander soldier)
     {
@@ -134,10 +147,20 @@ public static class BeachBoatBarracksPlaytest
                 if (DormSlept.Contains(soldier.name) && Vector3.Distance(soldier.transform.position, soldier.waypoints[0].position) < 8)
                     DormLeft.Add(soldier.name);
             }
+            for(int i=9;i<=12;i++)
+            {
+                var soldier=GameObject.Find("Camp_Worker_"+i.ToString("00")).GetComponent<NPCWander>();
+                var tent=soldier.waypoints[0].parent.parent;var local=tent.InverseTransformPoint(soldier.transform.position);
+                bool inside=Mathf.Abs(local.x)<16&&local.z<22&&local.z>-22;
+                if(inside)TentEntered.Add(soldier.name);
+                if(inside&&soldier.IsSleeping)TentSlept.Add(soldier.name);
+                if(TentSlept.Contains(soldier.name)&&local.z>34)TentLeft.Add(soldier.name);
+            }
         }
         catch (Exception error) { failure = error.ToString(); }
         bool complete = checkedDoors && Entered.Count == 8 && Slept.Count == 8 && Left.Count == 8 && captured &&
-            DormEntered.Count == 4 && DormSlept.Count == 4 && DormLeft.Count == 4;
+            DormEntered.Count == 4 && DormSlept.Count == 4 && DormLeft.Count == 4 &&
+            TentEntered.Count==4&&TentSlept.Count==4&&TentLeft.Count==4;
         if (failure == null && !complete && elapsed < 85) return;
         if (failure == null && !complete) failure = "NPC route timed out before all eight soldiers entered, slept and left.";
         var actors = Enumerable.Range(1, 8).Select(i => GameObject.Find("Camp_Worker_" + i.ToString("00"))?.GetComponent<NPCWander>())
@@ -155,7 +178,8 @@ public static class BeachBoatBarracksPlaytest
                 target = w.waypoints[w.WaypointIndex < 0 ? 0 : w.WaypointIndex].position.ToString("F2") }).ToArray();
         File.WriteAllText("Logs/BeachBoatBarracksPlaytest.json", JsonConvert.SerializeObject(new
         { success = failure == null, failure, checkedDoors, entered = Entered.Count, slept = Slept.Count, leftAfterSleep = Left.Count,
-            dormEntered = DormEntered.Count, dormSlept = DormSlept.Count, dormLeft = DormLeft.Count, actors, dormActors }, Formatting.Indented));
-        SessionState.SetBool(Flag, false); EditorApplication.Exit(failure == null ? 0 : 1);
+            dormEntered = DormEntered.Count, dormSlept = DormSlept.Count, dormLeft = DormLeft.Count,
+            tentEntered=TentEntered.Count,tentSlept=TentSlept.Count,tentLeft=TentLeft.Count,actors, dormActors }, Formatting.Indented));
+        SessionState.SetBool(Flag, false);SessionState.SetInt(PendingExit,failure==null?0:1);EditorApplication.isPlaying=false;
     }
 }

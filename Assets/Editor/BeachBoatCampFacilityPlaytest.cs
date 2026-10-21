@@ -50,7 +50,7 @@ public static class BeachBoatCampFacilityPlaytest
         if (started == 0) started = EditorApplication.timeSinceStartup;
         if (EditorApplication.timeSinceStartup - started < 3) return;
         string failure = null;
-        bool rested = false, armored = false, trained = false, supplied = false;
+        bool rested = false, armored = false, trained = false, supplied = false, healed = false, commandReachable = false;
         int facilityCount = 0;
         try
         {
@@ -62,7 +62,7 @@ public static class BeachBoatCampFacilityPlaytest
             var vitals = session?.player?.GetComponent<PlayerVitals>();
             var facilities = UnityEngine.Object.FindObjectsByType<CampFacility>(FindObjectsSortMode.None);
             facilityCount = facilities.Length;
-            if (session == null || story == null || vitals == null || facilityCount != 13)
+            if (session == null || story == null || vitals == null || facilityCount != 27)
             {
                 if (EditorApplication.timeSinceStartup - started < 35) return;
                 var allStories = UnityEngine.Object.FindObjectsByType<BeachBoatStory.BachDangStoryManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -103,13 +103,16 @@ public static class BeachBoatCampFacilityPlaytest
                       Mathf.Approximately(vitals.Stamina, vitals.maxStamina);
             float beforeFood = vitals.Health;
             supplied = Use(CampFacility.FacilityKind.Provisions) && vitals.Health > beforeFood;
-            if (!rested || !armored || !trained || !supplied)
-                failure = "A facility did not change health, armor or stamina as expected.";
+            vitals.TakeImpact(30,"QA");
+            healed = Use(CampFacility.FacilityKind.Medical) && Mathf.Approximately(vitals.Health,vitals.maxHealth);
+            commandReachable=BeachBoatCommandWalkQA.Check(session);
+            if (!rested || !armored || !trained || !supplied || !healed || !commandReachable)
+                failure = "A camp service failed or the relocated command stage could not be reached.";
         }
         catch (Exception error) { failure = error.ToString(); }
         Directory.CreateDirectory("Logs");
         File.WriteAllText("Logs/BeachBoatCampFacilityPlaytest.json", JsonConvert.SerializeObject(new
-        { success = failure == null, failure, facilityCount, rested, armored, trained, supplied }, Formatting.Indented));
+        { success = failure == null, failure, facilityCount, rested, armored, trained, supplied, healed, commandReachable }, Formatting.Indented));
         SessionState.SetBool(Flag, false);
         SessionState.SetInt(PendingExit, failure == null ? 0 : 1);
         EditorApplication.isPlaying = false;

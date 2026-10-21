@@ -87,8 +87,8 @@ public static class BeachBoatVisualRepair
     {
         var existing = AssetDatabase.LoadAssetAtPath<Mesh>(TentMeshPath);
         var b = new TentMeshBuilder();
-        const float x = 18, z = 24, wall = 7, ridge = 22;
-        // A closed A-frame with low canvas walls and two clean roof slopes.
+        const float x = 18, z = 24, wall = 12, ridge = 30;
+        // The front is physically open, with standing headroom for the 14x soldier.
         b.Quad(new Vector3(-x, wall, -z), new Vector3(0, ridge, -z), new Vector3(0, ridge, z), new Vector3(-x, wall, z), 0);
         b.Quad(new Vector3(0, ridge, -z), new Vector3(x, wall, -z), new Vector3(x, wall, z), new Vector3(0, ridge, z), 0);
         foreach (int side in new[] { -1, 1 })
@@ -96,16 +96,20 @@ public static class BeachBoatVisualRepair
             float sx = side * x;
             b.Quad(new Vector3(sx, .3f, -z), new Vector3(sx, wall, -z), new Vector3(sx, wall, z), new Vector3(sx, .3f, z), 0);
         }
-        foreach (int end in new[] { -1, 1 })
+        b.Triangle(new Vector3(-x, wall, -z), new Vector3(0, ridge, -z), new Vector3(x, wall, -z), 0);
+        b.Quad(new Vector3(-x, .3f, -z), new Vector3(-x, wall, -z), new Vector3(x, wall, -z), new Vector3(x, .3f, -z), 0);
+        foreach (int side in new[] { -1, 1 })
         {
-            float ez = end * z;
-            b.Triangle(new Vector3(-x, wall, ez), new Vector3(0, ridge, ez), new Vector3(x, wall, ez), 0);
-            b.Quad(new Vector3(-x, .3f, ez), new Vector3(-x, wall, ez), new Vector3(x, wall, ez), new Vector3(x, .3f, ez), 0);
+            b.Quad(new Vector3(side * 11, .3f, z), new Vector3(side * 11, 12, z),
+                new Vector3(side * 18, 12, z), new Vector3(side * 18, .3f, z), 0);
+            b.Triangle(new Vector3(side * 18, 12, z), new Vector3(side * 11, 19, z), new Vector3(side * 11, 12, z), 0);
+            b.Beam(new Vector3(side * 11.8f, .1f, z), new Vector3(side * 11.8f, 19, z), .8f, 1);
         }
-        // A dark doorway and supporting poles give the tent readable scale from ground level.
-        b.Quad(new Vector3(-5.4f, .35f, z + .12f), new Vector3(-5.4f, 12.5f, z + .12f),
-            new Vector3(5.4f, 12.5f, z + .12f), new Vector3(5.4f, .35f, z + .12f), 1);
-        foreach (float ez in new[] { -z, z }) b.Beam(new Vector3(0, .1f, ez), new Vector3(0, ridge + .6f, ez), .9f, 1);
+        b.Triangle(new Vector3(-11, 18.5f, z), new Vector3(11, 18.5f, z), new Vector3(0, ridge, z), 0);
+        b.Triangle(new Vector3(-11, 18.5f, z), new Vector3(0, ridge, z), new Vector3(-11, 19, z), 0);
+        b.Triangle(new Vector3(11, 18.5f, z), new Vector3(11, 19, z), new Vector3(0, ridge, z), 0);
+        b.Beam(new Vector3(-12, 19, z), new Vector3(12, 19, z), .6f, 1);
+        b.Beam(new Vector3(0, .1f, -z), new Vector3(0, ridge + .6f, -z), .9f, 1);
         b.Beam(new Vector3(0, ridge, -z), new Vector3(0, ridge, z), .75f, 1);
         var mesh = b.Make();
         if (existing == null) { AssetDatabase.CreateAsset(mesh, TentMeshPath); return mesh; }
@@ -113,6 +117,11 @@ public static class BeachBoatVisualRepair
         UnityEngine.Object.DestroyImmediate(mesh);
         EditorUtility.SetDirty(existing);
         return existing;
+    }
+
+    public static void BuildOpenTentAssets()
+    {
+        GetTentMesh(); GetCanvasMaterial(); AssetDatabase.SaveAssets();
     }
 
     public static void RepairTentLightingAndExit()

@@ -63,7 +63,7 @@ public static class BeachBoatQuest3Playtest
                 z=s.transform.position.z}).ToArray()
         },Formatting.Indented));
         SessionState.SetBool(Flag,false);
-        EditorApplication.Exit(success?0:1);
+        BeachBoatQAExit.AfterPlayMode(success?0:1);
     }
 
     static void Tick()
