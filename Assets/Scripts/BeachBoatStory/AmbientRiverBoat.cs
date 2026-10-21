@@ -20,6 +20,8 @@ namespace BeachBoatStory
         float pause, phase;
         bool ready;
         Transform battleTarget;
+        Vector3 checkpointHome;
+        Quaternion checkpointRotation;
 
         public void SetBattleTarget(Transform value) { battleTarget = value; pause = 0; }
 
@@ -44,7 +46,14 @@ namespace BeachBoatStory
             waterlineOffset = transform.position.y - tide.transform.position.y;
             phase = Mathf.Repeat(transform.position.x * .013f + transform.position.z * .009f, Mathf.PI * 2f);
             target = NearestNextPoint(); ready = true;
+            checkpointHome=transform.position;checkpointRotation=transform.rotation;
             SetRowing(true);
+        }
+        public void ResetForCheckpoint()
+        {
+            if(!ready)return;
+            battleTarget=null;pause=0;var position=checkpointHome;position.y=TideSystem.CurrentWaterHeight+waterlineOffset;
+            transform.SetPositionAndRotation(position,checkpointRotation);target=NearestNextPoint();SetRowing(true);
         }
 
         int NearestNextPoint()

@@ -16,6 +16,13 @@ public class WoodCollectible : MonoBehaviour
     private bool isPlayerNear = false;
     private Transform playerTransform;
     private bool collected;
+    public bool IsCollected => collected;
+    public void RestoreCollection(bool value)
+    {
+        collected=value;isPlayerNear=false;lastCollectFrame=-1;
+        if(interactPromptUI!=null)interactPromptUI.SetActive(false);
+        gameObject.SetActive(!value);
+    }
 
     void Start()
     {
@@ -95,7 +102,7 @@ public class WoodCollectible : MonoBehaviour
         if (player == null || Vector3.Distance(player.position, transform.position) > interactDistance) return false;
         collected = true; story.OnCollectWood(); story.SetInteractPrompt(false, owner: this);
         if (interactPromptUI != null) interactPromptUI.SetActive(false);
-        Destroy(gameObject); return true;
+        gameObject.SetActive(false); return true;
     }
 }
 

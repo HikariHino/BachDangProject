@@ -82,8 +82,13 @@ public class BachDangStoryManager : MonoBehaviour
 
     public void TransitionTo(StoryState nextState, bool immediateEnvironment = false)
     {
+        bool enteringBattle = currentState != nextState && nextState == StoryState.Act3_WaitForLowTide;
+        bool beginningVillageWork = currentState != nextState && nextState == StoryState.Act2_SupplyPreparation;
         currentState = nextState;
         BachDangBattleTimeline.Instance?.ApplyStoryState(nextState, immediateEnvironment);
+        if (enteringBattle) QuestRowboat.Instance?.PrepareForBattle();
+        if (beginningVillageWork) VillagePreparationQuest.Instance?.BeginPreparation();
+        QuestCheckpoint.Instance?.Capture(nextState);
         UpdateUI();
     }
 
@@ -201,7 +206,8 @@ public class BachDangStoryManager : MonoBehaviour
 
             case StoryState.Act2_SupplyPreparation:
                 title = "Chuẩn bị vật tư đóng cọc";
-                desc = "- Ở kho, chọn đúng vật tư theo đơn.\n- Giao đến điểm tập kết, rồi quay lại kho nhận đơn tiếp theo.";
+                var villageWork = VillagePreparationQuest.Instance;
+                desc = $"- Giúp các sạp trong làng chuẩn bị vật tư: {villageWork?.CompletedCount ?? 0}/4.\n- Thắng trò chơi ở sạp gỗ, dây, gạo, lương khô rồi nhận hàng.";
                 break;
 
             case StoryState.Act2_ReportToNgoQuyen:
@@ -312,7 +318,7 @@ public class BachDangStoryManager : MonoBehaviour
     {
         if (currentState != StoryState.Act2_SupplyPreparation) return;
         TransitionTo(StoryState.Act2_ReturnToCampGate);
-        StoryDialogueUI.Instance?.Show("Dân binh", "Cọc, dây buộc và dụng cụ đã được chuyển đủ ra điểm tập kết. Hãy về báo Chủ tướng.");
+        StoryDialogueUI.Instance?.Show("Dân binh", "Gỗ, dây buộc, gạo và lương khô đã sẵn sàng. Hãy về doanh trại báo Chủ tướng.");
     }
 
     public void OnVictoryReported()

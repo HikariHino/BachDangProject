@@ -252,6 +252,7 @@ namespace BeachBoatStory
             if (StoryDialogueUI.Instance != null) StoryDialogueUI.Instance.Show("Luyện quân", result, advance);
             else advance?.Invoke();
         }
+        public void CancelActivity(){if(Active==this)Finish(false);}
 
         void SetMarkers(int active)
         {

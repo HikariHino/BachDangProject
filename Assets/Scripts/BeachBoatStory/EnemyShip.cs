@@ -167,6 +167,11 @@ namespace BeachBoatStory
             }
         }
         void HideDebris(){if(debris==null)return;foreach(var piece in debris)if(piece!=null)piece.SetActive(false);}
+        public void ResetForCheckpoint()
+        {
+            HideDebris();battleStarted=false;isDestroyed=false;attackReleased=false;SignalReady=false;routeIndex=0;ambushStartedAt=-1;destroyedTime=0;
+            gameObject.SetActive(false);
+        }
         void OnDestroy(){if(debris==null)return;foreach(var piece in debris)if(piece!=null)Destroy(piece);}
     }
 }

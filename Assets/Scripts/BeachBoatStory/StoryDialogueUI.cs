@@ -178,6 +178,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
         onDialogueClosed = null;
         callback?.Invoke();
     }
+    public void DismissForCheckpoint(){onDialogueClosed=null;Close();}
 
     private void Update()
     {

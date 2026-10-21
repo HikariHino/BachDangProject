@@ -22,6 +22,7 @@ namespace BeachBoatStory
         AudioListener tourAudio;
         GameObject questCanvas;
         GameObject controlsPanel;
+        GameObject vitalsPanel;
         TMP_Text controlsText;
         PlayerVitals vitals;
         Image healthFill, staminaFill;
@@ -35,7 +36,8 @@ namespace BeachBoatStory
              (BeachBoatMinigameStation.Active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum ||
               BeachBoatMinigameStation.Active.IsSelectingCargo || BeachBoatMinigameStation.Active.Failed)) ||
             StoryDialogueUI.InputConsumedThisFrame;
-        public static bool InteractionBlocked => OpeningEvent.IsOpeningActive ||
+        public static bool InteractionBlocked => OpeningEvent.IsOpeningActive || VillageWorkStall.Active != null ||
+            (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
             (RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsPlanting) ||
             (Instance != null && !Instance.storyMode) ||
             (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen) ||
@@ -64,6 +66,7 @@ namespace BeachBoatStory
             var fader = Child("BeachStoryFader"); fader.AddComponent<ScreenFader>();
             SetStoryMode(true);
             BuildIntro();
+            gameObject.AddComponent<QuestCheckpoint>();
         }
 
         // One nearby NPC owns E. Mission dialogue takes priority in its three report stages.
@@ -123,11 +126,14 @@ namespace BeachBoatStory
         void Update()
         {
             var story = GetComponent<BachDangStoryManager>();
-            bool focusedOverlay = BeachBoatMinigameStation.Active != null ||
+            bool focusedOverlay = BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
+                (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen);
             if (story != null && story.objectiveUIPanel != null)
                 story.objectiveUIPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
             if (controlsPanel != null) controlsPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
+            if (vitalsPanel != null) vitalsPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
+            if (impactText != null) impactText.gameObject.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
             if (controlsText != null)
             {
                 if (EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsShowingBattle)
@@ -160,7 +166,7 @@ namespace BeachBoatStory
                     ? vitals.LastImpact + (vitals.LastImpactDamage > 0 ? $"  -{vitals.LastImpactDamage:0} máu" : "")
                     : "";
             }
-            if (Input.GetKeyDown(KeyCode.F9) && !OpeningEvent.IsOpeningActive &&
+            if (Input.GetKeyDown(KeyCode.F9) && !InteractionBlocked && BeachBoatMinigameStation.Active == null &&
                 !(StoryDialogueUI.Instance?.IsOpen ?? false) && !(ScreenFader.Instance?.IsTransitioning ?? false)) SetStoryMode(!storyMode);
         }
         GameObject Child(string name)
@@ -188,6 +194,9 @@ namespace BeachBoatStory
         }
         void BuildQuestUI()
         {
+            if (UnityEngine.EventSystems.EventSystem.current == null)
+                new GameObject("BeachStoryEventSystem", typeof(UnityEngine.EventSystems.EventSystem),
+                    typeof(UnityEngine.EventSystems.StandaloneInputModule)).transform.SetParent(transform, false);
             var canvas = Canvas("BeachStoryHUD"); canvas.sortingOrder = 100; questCanvas = canvas.gameObject;
             var panel = Panel("Objective", canvas.transform, new Vector2(.715f,.765f), new Vector2(.985f,.97f), new Color(.04f,.035f,.025f,.88f));
             var story = GetComponent<BachDangStoryManager>(); story.objectiveUIPanel = panel;
@@ -207,7 +216,7 @@ namespace BeachBoatStory
             controlsText = keys;
             keys.enableAutoSizing = true; keys.fontSizeMin = 10; keys.fontSizeMax = 14;
             keys.text = "WASD: di chuyển  •  Shift: chạy  •  E: tương tác  •  M: bản đồ";
-            var vitalsPanel = Panel("Vitals", canvas.transform, new Vector2(.015f,.077f),
+            vitalsPanel = Panel("Vitals", canvas.transform, new Vector2(.015f,.077f),
                 new Vector2(.257f,.190f), new Color(.02f,.025f,.03f,.80f));
             healthText = Text("HealthLabel", vitalsPanel.transform, new Vector2(.04f,.56f),new Vector2(.44f,.96f),14);
             staminaText = Text("StaminaLabel", vitalsPanel.transform, new Vector2(.04f,.07f),new Vector2(.44f,.47f),14);

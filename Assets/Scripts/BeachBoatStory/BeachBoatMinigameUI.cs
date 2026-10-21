@@ -81,7 +81,7 @@ namespace BeachBoatStory
 
             for (int i = 0; i < beatCards.Length; i++)
             {
-                beatLabels[i].text = i < game.Progress ? "✓" : i == game.Progress ? game.GetRhythmBeat(i).ToString() : "·";
+                beatLabels[i].text = i < game.Progress ? "OK" : i == game.Progress ? game.GetRhythmBeat(i).ToString() : "·";
                 beatCards[i].color = i < game.Progress ? Green : i == game.Progress ? Gold : new Color(.24f, .23f, .2f, 1f);
                 beatLabels[i].color = i == game.Progress ? Color.black : Color.white;
             }

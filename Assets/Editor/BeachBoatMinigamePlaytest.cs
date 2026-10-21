@@ -25,6 +25,7 @@ public static class BeachBoatMinigamePlaytest
     public static void RunAndExit()
     {
         EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity", OpenSceneMode.Single);
+        if(UnityEngine.Object.FindFirstObjectByType<VillagePreparationQuest>()!=null){BeachBoatVillageWorkPlaytest.RunAndExit();return;}
         SessionState.SetBool(Flag, true);
         started = 0; phase = 0; failure = null;
         signFailure = null;

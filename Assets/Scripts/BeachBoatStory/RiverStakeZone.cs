@@ -216,6 +216,27 @@ namespace BeachBoatStory
             for (int c = 0; c < colliders[i].Length; c++)
                 if (colliders[i][c] != null) colliders[i][c].enabled = colliderStates[i][c];
         }
+        public bool[] CaptureCheckpoint()
+        {
+            var states=new bool[placements.Length];for(int i=0;i<states.Length;i++)states[i]=placements[i].planted;return states;
+        }
+        public void RestoreCheckpoint(bool[] states)
+        {
+            if(planting!=null)StopCoroutine(planting);planting=null;IsPlanting=false;workingIndex=-1;
+            PlantedCount=CompletedClusterCount=0;RecoveryRequired=false;recoveryTriggered=false;
+            if(lostStake!=null)lostStake.SetActive(false);
+            for(int i=0;i<fieldStakes.Length;i++)
+            {finished[i]=false;if(fieldStakes[i]!=null){fieldStakes[i].position=finalPositions[i];fieldStakes[i].gameObject.SetActive(false);RestoreColliders(i);}}
+            for(int p=0;p<placements.Length;p++)
+            {
+                bool planted=states!=null&&p<states.Length&&states[p];placements[p].planted=planted;
+                if(placements[p].marker!=null)placements[p].marker.SetActive(false);
+                if(!planted)continue;CompletedClusterCount++;
+                foreach(int i in placements[p].stakeIndices)if(i>=0&&i<fieldStakes.Length&&fieldStakes[i]!=null&&!finished[i])
+                {finished[i]=true;fieldStakes[i].gameObject.SetActive(true);PlantedCount++;}
+            }
+            recoveryTriggered=CompletedClusterCount>=3;
+        }
 
         void Update()
         {

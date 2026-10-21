@@ -38,6 +38,9 @@ namespace BeachBoatStory
 
         void Update()
         {
+            if (BeachBoatQuestSession.InteractionBlocked || BeachBoatMinigameStation.Active != null)
+            { panel.gameObject.SetActive(false); return; }
+            panel.gameObject.SetActive(visible);
             if (Input.GetKeyDown(KeyCode.M))
             {
                 visible = !visible;

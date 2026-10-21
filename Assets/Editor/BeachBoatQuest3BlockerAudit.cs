@@ -155,12 +155,9 @@ public static class BeachBoatQuest3BlockerAudit
             float healthAfterImpact = vitals.Health;
             string lastImpact = vitals.LastImpact;
             vitals.TakeImpact(vitals.Health, "Test knockout");
-            typeof(QuestRowboat).GetField("nextImpactTime", BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(rowboat, 0f);
-            typeof(QuestRowboat).GetField("<Speed>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(rowboat, 50f);
-            rowboat.Step(1, 0, .05f);
-            bool recovered = !rowboat.IsAboard && rowboat.AtDock && vitals.Health >= 60;
+            bool defeated = QuestCheckpoint.Instance.IsDefeated && vitals.Health == 0 && !rowboat.IsAboard;
+            bool retried = QuestCheckpoint.Instance.Retry();
+            bool recovered = defeated && retried && !rowboat.IsAboard && rowboat.AtDock && vitals.Health == vitals.maxHealth;
             var report = new { boarded = rowboat.IsAboard, state = story.currentState.ToString(),
                 blocked = BeachBoatQuestSession.InteractionBlocked, inputBlocked = BeachBoatQuestSession.InputBlocked,
                 cursor = Cursor.lockState.ToString(), from = before.ToString("F1"), to = rowboat.transform.position.ToString("F1"),

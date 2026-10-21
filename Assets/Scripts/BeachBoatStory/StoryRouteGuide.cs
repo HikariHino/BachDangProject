@@ -12,6 +12,7 @@ namespace BeachBoatStory
         RiverStakeZone stakes;
         CampGateTransition[] gates;
         BeachBoatMinigameStation[] activities;
+        VillagePreparationQuest villageWork;
         GameObject panel;
         TMP_Text caption, arrow;
         Transform target;
@@ -24,6 +25,7 @@ namespace BeachBoatStory
             stakes = owner.GetComponentInChildren<RiverStakeZone>(true);
             gates = owner.GetComponentsInChildren<CampGateTransition>(true);
             activities = FindObjectsByType<BeachBoatMinigameStation>(FindObjectsInactive.Exclude);
+            villageWork = FindFirstObjectByType<VillagePreparationQuest>();
             panel = box; caption = text; arrow = pointer;
         }
 
@@ -42,6 +44,12 @@ namespace BeachBoatStory
             if (state == BachDangStoryManager.StoryState.Act1_Training ||
                 state == BachDangStoryManager.StoryState.Act2_SupplyPreparation)
             {
+                if(state==BachDangStoryManager.StoryState.Act2_SupplyPreparation&&villageWork!=null)
+                {
+                    var stall=villageWork.NearestUnfinished(session.player.transform.position);
+                    title=stall!=null?$"{stall.stallName} • Chuẩn bị {villageWork.CompletedCount}/{villageWork.stalls.Length} sạp":"Vật tư đã đủ";
+                    return stall!=null?(stall.interactionPoint!=null?stall.interactionPoint:stall.transform):null;
+                }
                 var required = state == BachDangStoryManager.StoryState.Act1_Training
                     ? BeachBoatMinigameStation.ActivityKind.WarDrum
                     : BeachBoatMinigameStation.ActivityKind.SupplyRelay;

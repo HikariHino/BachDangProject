@@ -122,7 +122,8 @@ namespace BeachBoatStory
 
         void OnGUI()
         {
-            if (OpeningEvent.IsOpeningActive || BeachBoatMinigameStation.Active != null ||
+            if (OpeningEvent.IsOpeningActive || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
+                (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen) ||
                 (BeachBoatQuestSession.Instance != null && !BeachBoatQuestSession.Instance.storyMode)) return;
             EnsureStyles();

@@ -254,5 +254,10 @@ namespace BeachBoatStory
             BattleStarted=false;
             foreach(var ship in enemyShips??System.Array.Empty<EnemyShip>())if(ship!=null)ship.gameObject.SetActive(false);
         }
+        public void ResetForCheckpoint()
+        {
+            StopBattle();CommandScore=0;scoredWaves.Clear();watchedFleetIndex=0;commandMessageUntil=0;
+            foreach(var ship in enemyShips??System.Array.Empty<EnemyShip>())if(ship!=null)ship.ResetForCheckpoint();
+        }
     }
 }

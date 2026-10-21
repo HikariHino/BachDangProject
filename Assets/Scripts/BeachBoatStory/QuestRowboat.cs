@@ -32,6 +32,8 @@ namespace BeachBoatStory
         Vector3 homePosition;
         Quaternion homeRotation;
         float nextImpactTime;
+        bool battleLaunchPrepared, pendingBattleLaunch;
+        float nextLaunchAttempt, wedgedAtDockSeconds;
         Rigidbody playerBody;
         CapsuleCollider playerCollider;
         Animator animator;
@@ -81,11 +83,60 @@ namespace BeachBoatStory
                 paddleParent = paddle.parent; paddlePosition = paddle.localPosition;
                 paddleRotation = paddle.localRotation; paddleScale = paddle.localScale;
             }
+            if (BachDangStoryManager.Instance != null && BachDangStoryManager.Instance.currentState == BachDangStoryManager.StoryState.Act3_WaitForLowTide)
+                PrepareForBattle();
+        }
+
+        /// <summary>Discard Act 2 parking and find a dock pose with a clear, deep-water exit.</summary>
+        public bool PrepareForBattle()
+        {
+            if (session == null || dockPoint == null) return false;
+            battleLaunchPrepared = false;
+            Physics.SyncTransforms();
+            Vector3 origin = homePosition; origin.y = TideSystem.CurrentWaterHeight;
+            for (int ring = 0; ring <= 6; ring++)
+            for (int direction = 0; direction < (ring == 0 ? 1 : 16); direction++)
+            {
+                var candidate = origin + Quaternion.Euler(0, direction * 22.5f, 0) * Vector3.forward * (ring * 14f);
+                if (FlatDistance(candidate, dockPoint.position) > dockingRange - 1) continue;
+                for (int heading = 0; heading < 7; heading++)
+                {
+                    float angle = heading == 0 ? 0 : ((heading + 1) / 2) * 45 * (heading % 2 == 0 ? -1 : 1);
+                    var rotation = homeRotation * Quaternion.Euler(0, angle, 0);
+                    if (!HasClearLaunch(candidate, rotation)) continue;
+                    transform.SetPositionAndRotation(candidate, rotation);
+                    var body = GetComponent<Rigidbody>();
+                    if (body != null) { body.position = candidate; body.rotation = rotation; }
+                    Speed = 0; IsBoosting = false; strokePhase = 0; wedgedAtDockSeconds = 0;
+                    battleLaunchPrepared = true; pendingBattleLaunch = false;
+                    Physics.SyncTransforms();
+                    if (IsAboard) { AttachPlayer(); orbit.SnapToTarget(); }
+                    return true;
+                }
+            }
+            pendingBattleLaunch = true; nextLaunchAttempt = Time.unscaledTime + .5f;
+            return false;
+        }
+
+        bool HasClearLaunch(Vector3 position, Quaternion rotation)
+        {
+            for (int level = 0; level < (tide != null ? 3 : 1); level++)
+            {
+                var surface = position;
+                if (level == 1) surface.y = tide.lowTideY;
+                if (level == 2) surface.y = tide.highTideY;
+                for (float distance = 0; distance <= 120; distance += 8)
+                    if (!CanOccupy(surface + rotation * Vector3.forward * distance, rotation)) return false;
+            }
+            return true;
         }
 
         public bool TryBoard()
         {
             var story = BachDangStoryManager.Instance;
+            if (story != null && story.currentState == BachDangStoryManager.StoryState.Act3_WaitForLowTide && !IsAboard &&
+                (!battleLaunchPrepared || !HasClearLaunch(transform.position, transform.rotation)))
+                if (!PrepareForBattle()) return false;
             if (!isActiveAndEnabled || session == null || IsAboard || BeachBoatQuestSession.InteractionBlocked ||
                 story == null || !CanBoardForState(story.currentState) ||
                 story.collectedWood < story.totalWoodRequired || !AtDock || animator == null ||
@@ -162,6 +213,9 @@ namespace BeachBoatStory
         void Update()
         {
             var story = BachDangStoryManager.Instance;
+            if (pendingBattleLaunch && Time.unscaledTime >= nextLaunchAttempt && story != null &&
+                (story.currentState == BachDangStoryManager.StoryState.Act3_WaitForLowTide || story.currentState == BachDangStoryManager.StoryState.Act3_BattleInProgress))
+                PrepareForBattle();
             if (tide != null)
             {
                 bool building = story != null && (story.currentState == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver ||
@@ -201,10 +255,19 @@ namespace BeachBoatStory
                 acceleration * (IsBoosting ? 1.55f : 1f) * dt);
             var rotation = transform.rotation * Quaternion.Euler(0, Mathf.Clamp(steering, -1, 1) * turnSpeed * dt, 0);
             var next = position + rotation * Vector3.forward * (speed * dt);
-            if (TryCanOccupy(next, rotation, out var obstacle)) { transform.SetPositionAndRotation(next, rotation); Speed = speed; }
+            if (TryCanOccupy(next, rotation, out var obstacle)) { transform.SetPositionAndRotation(next, rotation); Speed = speed; wedgedAtDockSeconds = 0; }
             else
             {
-                bool knockedOut = HandleImpact(obstacle, Mathf.Max(Mathf.Abs(Speed), Mathf.Abs(speed)));
+                var state = BachDangStoryManager.Instance != null ? BachDangStoryManager.Instance.currentState : BachDangStoryManager.StoryState.Act1_ExploreCamp;
+                bool nearQuay = AtDock || (boardingPoint != null && FlatDistance(position, boardingPoint.position) <= dockingRange + hullProbeRadius * 2);
+                bool wedged = nearQuay && !CanOccupy(position, transform.rotation) &&
+                    (state == BachDangStoryManager.StoryState.Act3_WaitForLowTide || state == BachDangStoryManager.StoryState.Act3_BattleInProgress);
+                if (wedged && Mathf.Abs(throttle) > .1f)
+                {
+                    wedgedAtDockSeconds += dt;
+                    if (wedgedAtDockSeconds >= .75f) PrepareForBattle();
+                }
+                bool knockedOut = !wedged && HandleImpact(obstacle, Mathf.Max(Mathf.Abs(Speed), Mathf.Abs(speed)));
                 Speed = 0; IsBoosting = false;
                 if (knockedOut) return;
             }
@@ -248,7 +311,7 @@ namespace BeachBoatStory
                 {
                     var local = sample - terrain.transform.position; var size = terrain.terrainData.size;
                     if (local.x < 0 || local.z < 0 || local.x > size.x || local.z > size.z ||
-                        terrain.SampleHeight(sample) + terrain.transform.position.y + minimumDepth > TideSystem.CurrentWaterHeight)
+                        terrain.SampleHeight(sample) + terrain.transform.position.y + minimumDepth > position.y)
                     { obstacle = BoatObstacleKind.Shore; return false; }
                 }
             }
@@ -298,6 +361,7 @@ namespace BeachBoatStory
             };
             vitals.TakeImpact(damage, label);
             if (vitals.Health > 0) return false;
+            if (QuestCheckpoint.Instance != null) return true;
             RestorePlayer();
             transform.SetPositionAndRotation(new Vector3(homePosition.x, TideSystem.CurrentWaterHeight, homePosition.z), homeRotation);
             session.player.transform.SetPositionAndRotation(boardingPoint.position, boardingPoint.rotation);
@@ -313,6 +377,12 @@ namespace BeachBoatStory
             if (!IsAboard || session == null) return;
             session.player.transform.SetPositionAndRotation(seat.position, seat.rotation);
             playerBody.position = seat.position; playerBody.rotation = seat.rotation;
+        }
+        public void LeaveForCheckpoint()
+        {
+            if(IsAboard)RestorePlayer();
+            Speed=0;IsBoosting=false;pendingBattleLaunch=false;wedgedAtDockSeconds=0;nextImpactTime=0;
+            if(tide!=null)tide.ReleaseLowTide(this);
         }
         void LateUpdate()
         {

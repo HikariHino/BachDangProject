@@ -46,7 +46,7 @@ namespace BeachBoatStory
 
         public void TakeImpact(float damage, string obstacle)
         {
-            if (damage <= 0) return;
+            if (damage <= 0 || Health <= 0) return;
             if (ArmorCharges > 0)
             {
                 damage *= .7f;
@@ -56,6 +56,7 @@ namespace BeachBoatStory
             LastImpact = obstacle;
             LastImpactDamage = damage;
             LastImpactUntil = Time.unscaledTime + 2.4f;
+            if (Health <= 0) QuestCheckpoint.Instance?.Defeat();
         }
 
         public void RestAtBarracks()
@@ -99,6 +100,11 @@ namespace BeachBoatStory
             LastImpact = "Bị thương nặng — đã quay về bến";
             LastImpactDamage = 0;
             LastImpactUntil = Time.unscaledTime + 3.5f;
+        }
+        public void RestoreCheckpoint(int armor)
+        {
+            Health=maxHealth;Stamina=maxStamina;ArmorCharges=Mathf.Max(0,armor);IsExhausted=false;
+            lastEffortTime=float.NegativeInfinity;LastImpact=null;LastImpactDamage=0;LastImpactUntil=0;
         }
     }
 }

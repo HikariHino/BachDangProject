@@ -183,6 +183,7 @@ namespace BeachBoatStory
         }
         void Update()
         {
+            if(QuestCheckpoint.Instance!=null&&QuestCheckpoint.Instance.IsDefeated)return;
             if (animator == null) return;
             float dt=Mathf.Min(Time.unscaledDeltaTime,.05f);
             if(dt<=0)return;
