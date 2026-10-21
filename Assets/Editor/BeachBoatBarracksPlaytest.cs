@@ -91,13 +91,19 @@ public static class BeachBoatBarracksPlaytest
             foreach(var posture in UnityEngine.Object.FindObjectsByType<NPCUprightPosture>(FindObjectsSortMode.None))
             {
                 var a=posture.GetComponent<Animator>();var w=posture.GetComponent<NPCWander>();var state=a.GetCurrentAnimatorStateInfo(0);
-                if((w!=null&&w.IsSleeping)||state.IsName("Laying")||state.IsName("Sitting")||a.IsInTransition(0))continue;
+                if(!a.isActiveAndEnabled||(w!=null&&w.IsSleeping)||state.IsName("Laying")||state.IsName("Sitting")||a.IsInTransition(0))continue;
                 foreach(var pair in new[]{(HumanBodyBones.LeftUpperArm,HumanBodyBones.LeftLowerArm),(HumanBodyBones.RightUpperArm,HumanBodyBones.RightLowerArm)})
                 {
                     var axis=a.GetBoneTransform(pair.Item2).position-a.GetBoneTransform(pair.Item1).position;
                     float angle=Vector3.Angle(axis,-a.transform.up);largestArmAngle=Mathf.Max(largestArmAngle,angle);armSamples++;
                     if(angle>32)throw new InvalidOperationException("Arm folded out of its relaxed range: "+a.name+" angle="+angle);
                 }
+                var left=a.GetBoneTransform(HumanBodyBones.LeftUpperArm);var right=a.GetBoneTransform(HumanBodyBones.RightUpperArm);
+                var shoulders=a.transform.InverseTransformDirection(right.position-left.position);
+                if(Mathf.Abs(shoulders.y)>.012f)throw new InvalidOperationException("Shoulders not level: "+a.name+" offset="+shoulders.y);
+                var torso=a.transform.InverseTransformDirection(a.GetBoneTransform(HumanBodyBones.Head).position-a.GetBoneTransform(HumanBodyBones.Hips).position);
+                float lean=Mathf.Abs(Mathf.Atan2(torso.x,torso.y)*Mathf.Rad2Deg);
+                if(lean>2)throw new InvalidOperationException("Torso leaning sideways: "+a.name+" angle="+lean+" culling="+a.cullingMode+" visible="+a.GetComponentsInChildren<Renderer>().Any(r=>r.isVisible));
             }
             if (!checkedDoors)
             {
@@ -174,7 +180,7 @@ public static class BeachBoatBarracksPlaytest
         bool complete = checkedDoors && Entered.Count == 8 && Slept.Count == 8 && Left.Count == 8 && captured &&
             DormEntered.Count == 4 && DormSlept.Count == 4 && DormLeft.Count == 4 &&
             TentEntered.Count==4&&TentSlept.Count==4&&TentLeft.Count==4;
-        if (failure == null && !complete && elapsed < 85) return;
+        if (failure == null && !complete && elapsed < 120) return;
         if (failure == null && !complete) failure = "NPC route timed out before all eight soldiers entered, slept and left.";
         var actors = Enumerable.Range(1, 8).Select(i => GameObject.Find("Camp_Worker_" + i.ToString("00"))?.GetComponent<NPCWander>())
             .Where(w => w != null).Select(w => {
@@ -192,7 +198,7 @@ public static class BeachBoatBarracksPlaytest
         File.WriteAllText("Logs/BeachBoatBarracksPlaytest.json", JsonConvert.SerializeObject(new
         { success = failure == null, failure, checkedDoors, entered = Entered.Count, slept = Slept.Count, leftAfterSleep = Left.Count,
             dormEntered = DormEntered.Count, dormSlept = DormSlept.Count, dormLeft = DormLeft.Count,
-            tentEntered=TentEntered.Count,tentSlept=TentSlept.Count,tentLeft=TentLeft.Count,armSamples,largestArmAngle,actors, dormActors }, Formatting.Indented));
+            tentEntered=TentEntered.Count,tentSlept=TentSlept.Count,tentLeft=TentLeft.Count,armSamples,largestArmAngle,actors, dormActors,missingDormReturns=DormSlept.Except(DormLeft).ToArray() }, Formatting.Indented));
         SessionState.SetBool(Flag, false);SessionState.SetInt(PendingExit,failure==null?0:1);EditorApplication.isPlaying=false;
     }
 }

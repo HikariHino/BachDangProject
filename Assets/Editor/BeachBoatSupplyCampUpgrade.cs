@@ -306,9 +306,9 @@ public static class BeachBoatSupplyCampUpgrade
             Box("Vách cửa phải", house, new Vector3(frontX, 20, 21), new Vector3(3, 40, 22), timber, true);
             Box("Xà trên cửa", house, new Vector3(frontX, 35, 0), new Vector3(3, 10, 22), timber, true);
             var leftRoof = Box("Mái tranh trái", house, new Vector3(0, 46, -17), new Vector3(70, 3, 40), roof);
-            leftRoof.transform.localRotation = Quaternion.Euler(34, 0, 0);
+            leftRoof.transform.localRotation = Quaternion.Euler(-34, 0, 0);
             var rightRoof = Box("Mái tranh phải", house, new Vector3(0, 46, 17), new Vector3(70, 3, 40), roof);
-            rightRoof.transform.localRotation = Quaternion.Euler(-34, 0, 0);
+            rightRoof.transform.localRotation = Quaternion.Euler(34, 0, 0);
             for (int bed = 0; bed < 2; bed++)
             {
                 int zSide = bed == 0 ? -1 : 1;
