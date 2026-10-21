@@ -22,6 +22,9 @@ public static class BeachBoatBusyWorld
     static GameObject[] civilianSources;
     static GameObject soldierSource;
     static float highWater;
+    static bool expanding;
+    static readonly Dictionary<Vector2Int,List<Vector3>> treeCells=new Dictionary<Vector2Int,List<Vector3>>();
+    static readonly List<Bounds> occupiedDetails=new List<Bounds>();
     static float Ground(Vector3 p)=>terrain.SampleHeight(p)+terrain.transform.position.y;
     static Transform Group(string name,Transform parent,Vector3 position)
     {var t=new GameObject(name).transform;t.SetParent(parent,false);t.position=position;return t;}
@@ -31,6 +34,13 @@ public static class BeachBoatBusyWorld
         var local=p-terrain.transform.position;var size=terrain.terrainData.size;
         if(local.x<0||local.z<0||local.x>size.x||local.z>size.z||p.y<highWater+3)return false;
         if(buildings.Any(b=>p.x>b.min.x-radius&&p.x<b.max.x+radius&&p.z>b.min.z-radius&&p.z<b.max.z+radius))return false;
+        if(expanding)
+        {
+            if(occupiedDetails.Any(b=>p.x>b.min.x-radius&&p.x<b.max.x+radius&&p.z>b.min.z-radius&&p.z<b.max.z+radius))return false;
+            var cell=new Vector2Int(Mathf.FloorToInt(p.x/64),Mathf.FloorToInt(p.z/64));
+            for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)
+                if(treeCells.TryGetValue(cell+new Vector2Int(x,z),out var trees)&&trees.Any(t=>QuestRowboat.FlatDistance(p,t)<radius+7))return false;
+        }
         foreach(var hit in Physics.OverlapCapsule(p+Vector3.up*6,p+Vector3.up*23,radius,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore))
             if(!(hit is TerrainCollider)&&hit.GetComponentInParent<Animator>()==null)return false;
         return true;
@@ -52,6 +62,7 @@ public static class BeachBoatBusyWorld
         foreach(var c in go.GetComponentsInChildren<Collider>(true))UnityEngine.Object.DestroyImmediate(c);
         var rr=go.GetComponentsInChildren<Renderer>();foreach(var r in rr){r.shadowCastingMode=ShadowCastingMode.On;r.receiveShadows=true;}
         var lod=go.GetComponent<LODGroup>();if(lod==null)lod=go.AddComponent<LODGroup>();lod.SetLODs(new[]{new LOD(.018f,rr)});lod.RecalculateBounds();
+        if(expanding)occupiedDetails.Add(BeachBoatWorldAudit.BoundsOf(go.transform));
         return go;
     }
     static void Cargo(Transform actor,bool fish)
@@ -76,7 +87,8 @@ public static class BeachBoatBusyWorld
             route=new[]{a,b,c};break;
         }
         if(route==null)return false;
-        var source=soldier?soldierSource:civilianSources[index%civilianSources.Length];
+        bool military=soldier||role==NPCAmbientDialogue.Role.Guard;
+        var source=military?soldierSource:civilianSources[index%civilianSources.Length];
         var actor=UnityEngine.Object.Instantiate(source,district);actor.name="Ambient_"+role+"_"+citizens.Count.ToString("00");
         foreach(var b in actor.GetComponentsInChildren<MonoBehaviour>(true))
             if(!(b is NPCWander)&&!(b is NPCAmbientDialogue)&&!(b is NPCUprightPosture))UnityEngine.Object.DestroyImmediate(b);
@@ -91,17 +103,19 @@ public static class BeachBoatBusyWorld
         wander.activityLabels=role==NPCAmbientDialogue.Role.Fisher?new[]{"Đang mang giỏ ra bến cá","Đang phân loại mẻ cá","Đang trở về quầy cá"}:
             role==NPCAmbientDialogue.Role.Merchant?new[]{"Đang dọn hàng ra chợ","Đang kiểm hàng và trao đổi","Đang chuyển hàng về quầy"}:
             role==NPCAmbientDialogue.Role.Farmer?new[]{"Đang chuẩn bị nông cụ","Đang kiểm tra rau và thóc","Đang mang nông cụ về sân"}:
-            soldier?new[]{"Đang chuyển vật tư trong trại","Đang kiểm tra quân nhu","Đang tuần tra sân trại"}:new[]{"Đang mang hàng ra sân","Đang chuẩn bị vật tư","Đang trở về kho"};
+            military?new[]{"Đang chuyển vật tư trong trại","Đang kiểm tra quân nhu","Đang tuần tra sân trại"}:new[]{"Đang mang hàng ra sân","Đang chuẩn bị vật tư","Đang trở về kho"};
         wander.walkSpeed=soldier?7:6;wander.minIdleTime=1;wander.maxIdleTime=3;wander.sitLayChance=0;
         actor.transform.SetPositionAndRotation(wander.waypoints[0].position,Quaternion.LookRotation(route[1]-route[0]));
-        var talk=actor.GetComponent<NPCAmbientDialogue>();if(talk==null)talk=actor.AddComponent<NPCAmbientDialogue>();talk.role=role;talk.displayName=soldier?"Lính tiếp vận":role==NPCAmbientDialogue.Role.Fisher?"Ngư dân":role==NPCAmbientDialogue.Role.Farmer?"Người làm ruộng":"Người trong chợ";talk.dailyLife=wander;talk.interactDistance=10;
-        if(index%3==0)Cargo(actor.transform,role==NPCAmbientDialogue.Role.Fisher);
+        var talk=actor.GetComponent<NPCAmbientDialogue>();if(talk==null)talk=actor.AddComponent<NPCAmbientDialogue>();talk.role=role;talk.displayName=role==NPCAmbientDialogue.Role.Guard?"Lính gác":soldier?"Lính tiếp vận":role==NPCAmbientDialogue.Role.Fisher?"Ngư dân":role==NPCAmbientDialogue.Role.Farmer?"Người làm ruộng":role==NPCAmbientDialogue.Role.Porter?"Người chuyển hàng":"Người trong chợ";talk.dailyLife=wander;talk.interactDistance=10;
+        if(index%3==0&&role!=NPCAmbientDialogue.Role.Guard)Cargo(actor.transform,role==NPCAmbientDialogue.Role.Fisher);
         citizens.Add(wander);return true;
     }
     static void District(string name,Vector3 center,int count,float radius,NPCAmbientDialogue.Role role,bool soldiers=false)
     {
-        var district=Group(name,root,center);var random=new System.Random(name.Length*93+(int)center.z);int built=0;
-        for(int attempt=0;attempt<600&&built<count;attempt++)
+        var district=root.Find(name);if(district==null)district=Group(name,root,center);
+        var random=new System.Random(name.Length*93+(int)center.z);int built=0;
+        int firstYard=district.Cast<Transform>().Count(t=>t.name.StartsWith("Workyard_"));
+        for(int attempt=0;attempt<1800&&built<count;attempt++)
         {
             float angle=(float)random.NextDouble()*Mathf.PI*2;float distance=40+(float)random.NextDouble()*radius;
             var p=center+new Vector3(Mathf.Sin(angle),0,Mathf.Cos(angle))*distance;p.y=Ground(p);
@@ -111,7 +125,7 @@ public static class BeachBoatBusyWorld
             if(soldiers&&(Mathf.Abs(d.x)<35||Mathf.Abs(d.z-150)<25||Mathf.Abs(d.x)>290||d.z< -250||d.z>500))continue;
             if(!Person(district,p,built*2,role,soldiers))continue;
             Person(district,p,built*2+1,role,soldiers);
-            var yard=Group("Workyard_"+built.ToString("00"),district,p);
+            var yard=Group("Workyard_"+(firstYard+built).ToString("00"),district,p);
             Prop(role==NPCAmbientDialogue.Role.Fisher?"barrel_fish_01":"barrels_02","Working_Stock",yard,p,11,built*37);
             Prop("plankpile_01","Low_Work_Bench",yard,p+new Vector3(11,0,6),4,built*37+90);
             Prop("buckets_01","Water_And_Baskets",yard,p+new Vector3(-10,0,9),6);
@@ -217,5 +231,84 @@ public static class BeachBoatBusyWorld
         EditorSceneManager.MarkSceneDirty(scene);EditorSceneManager.SaveScene(scene);AssetDatabase.SaveAssets();
         Directory.CreateDirectory("Logs");File.WriteAllText("Logs/BusyWorldBuild.json",JsonConvert.SerializeObject(new{workyards=yards.Count,people=citizens.Count,maximumAnimated=budget.maximumAnimated},Formatting.Indented));
         EditorApplication.Exit(0);
+    }
+
+    public static void DensifyAndExit()
+    {
+        var scene=EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");
+        root=GameObject.Find(RootName).transform;
+        if(root.Find("Ngo_Cho_Moc")!=null)throw new InvalidOperationException("The denser population is already installed.");
+        Directory.CreateDirectory(".utmp/DenseWorld");EditorSceneManager.SaveScene(scene,".utmp/DenseWorld/before.unity",true);
+        terrain=Terrain.activeTerrain;highWater=UnityEngine.Object.FindFirstObjectByType<TideSystem>().highTideY;
+        var budget=root.GetComponent<AmbientPopulationBudget>();citizens.Clear();citizens.AddRange(budget.citizens);int original=citizens.Count;
+        var all=UnityEngine.Object.FindObjectsByType<NPCWander>(FindObjectsInactive.Include,FindObjectsSortMode.None);
+        civilianSources=all.Where(w=>w.GetComponent<Animator>()!=null&&AssetDatabase.GetAssetPath(w.GetComponent<Animator>().avatar).Contains("Pea")).Select(w=>w.gameObject).Take(3).ToArray();
+        soldierSource=GameObject.Find("Camp_Worker_01");
+        if(civilianSources.Length<3||soldierSource==null)throw new InvalidOperationException("Existing textured civilian/soldier sources are missing.");
+        buildings=UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include,FindObjectsSortMode.None)
+            .Where(t=>t.name.StartsWith("Nha_Dan_")||t.name.StartsWith("Wooden_Barracks_")||t.name.StartsWith("Nha_Nghi_Linh_")||t.name.StartsWith("Barracks_Tent_")||t.name.StartsWith("Lan_Quan_")||t.name=="Central_Supply_Store"||t.name=="Lo_Ren_Quan_Do"||t.name=="Kho_Khi_Gioi_Nho")
+            .Where(t=>t.GetComponentsInChildren<Renderer>(true).Length>0).Select(BeachBoatWorldAudit.BoundsOf).ToArray();
+        questKeepouts=UnityEngine.Object.FindObjectsByType<BeachBoatStory.CampGateTransition>(FindObjectsSortMode.None).Select(g=>g.transform.position)
+            .Concat(UnityEngine.Object.FindObjectsByType<BeachBoatStory.WoodCollectible>(FindObjectsSortMode.None).Select(w=>w.transform.position))
+            .Concat(UnityEngine.Object.FindObjectsByType<VillageWorkStall>(FindObjectsSortMode.None).Select(s=>s.InteractionPosition))
+            .Concat(UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsSortMode.None).SelectMany(s=>new[]{s.transform.position}.Concat(s.checkpoints.Where(t=>t!=null).Select(t=>t.position))))
+            .Concat(new[]{UnityEngine.Object.FindAnyObjectByType<BeachBoatStory.NPCQuestGiver>().transform.position}).ToArray();
+        occupiedDetails.Clear();yards.Clear();treeCells.Clear();
+        foreach(Transform district in root)foreach(var yard in district.Cast<Transform>().Where(t=>t.name.StartsWith("Workyard_")))
+        {yards.Add(yard.position);foreach(Transform prop in yard)if(prop.GetComponentsInChildren<Renderer>().Length>0)occupiedDetails.Add(BeachBoatWorldAudit.BoundsOf(prop));}
+        foreach(var tree in terrain.terrainData.treeInstances)
+        {
+            var p=terrain.transform.position+Vector3.Scale(tree.position,terrain.terrainData.size);
+            var cell=new Vector2Int(Mathf.FloorToInt(p.x/64),Mathf.FloorToInt(p.z/64));
+            if(!treeCells.TryGetValue(cell,out var list))treeCells[cell]=list=new List<Vector3>();list.Add(p);
+        }
+        expanding=true;Physics.SyncTransforms();
+        District("Cho_Ben_Song",root.Find("Cho_Ben_Song").position,12,440,NPCAmbientDialogue.Role.Merchant);
+        District("Xom_Chai",root.Find("Xom_Chai").position,8,420,NPCAmbientDialogue.Role.Fisher);
+        District("Xom_Ruong_Vuon",root.Find("Xom_Ruong_Vuon").position,8,420,NPCAmbientDialogue.Role.Farmer);
+        District("Doanh_Trai",root.Find("Doanh_Trai").position,8,280,NPCAmbientDialogue.Role.Porter,true);
+        District("Ben_Tiep_Van",root.Find("Ben_Tiep_Van").position,5,240,NPCAmbientDialogue.Role.Porter);
+        var stalls=UnityEngine.Object.FindObjectsByType<VillageWorkStall>(FindObjectsSortMode.None).OrderBy(s=>s.kind).ToArray();
+        var names=new[]{"Ngo_Cho_Moc","Ngo_Cho_Day","Ngo_Cho_Thoc","Ngo_Cho_Luong"};
+        for(int i=0;i<stalls.Length;i++)District(names[i],stalls[i].transform.position,5,180,NPCAmbientDialogue.Role.Merchant);
+        var settlements=GameObject.Find("BachDang_Living_Settlements").transform;
+        District("Trai_Bo_Dong_Dong_Duc",settlements.Find("06_Trai_Bo_Dong").position,8,260,NPCAmbientDialogue.Role.Guard);
+        var oldCamp=GameObject.Find("1_DaiBanDoanh_NgoQuyen");
+        if(oldCamp!=null&&QuestRowboat.FlatDistance(oldCamp.transform.position,root.Find("Doanh_Trai").position)>650)
+            District("Trai_Quan_Bo_Song",oldCamp.transform.position,7,300,NPCAmbientDialogue.Role.Guard);
+        PolishWorkyards(root);
+        budget.citizens=citizens.ToArray();budget.maximumAnimated=44;budget.activeDistance=700;budget.visibleDistance=850;
+        if(citizens.Count<160)throw new InvalidOperationException("Expected at least 160 ambient residents after densifying; got "+citizens.Count);
+        int animals=BeachBoatVillageAnimals.Build(root,terrain,p=>Free(p,18));
+        var streamer=UnityEngine.Object.FindAnyObjectByType<MapZoneStreamer>();
+        var tracked=new HashSet<GameObject>(streamer.zones.Where(z=>z.content!=null).Select(z=>z.content));
+        streamer.zones=streamer.zones.Concat(root.Cast<Transform>().Where(t=>!tracked.Contains(t.gameObject)).Select(t=>new MapZoneStreamer.Zone{content=t.gameObject,center=t.position,visibleDistance=1700})).ToArray();
+        EditorUtility.SetDirty(budget);EditorUtility.SetDirty(streamer);EditorSceneManager.MarkSceneDirty(scene);EditorSceneManager.SaveScene(scene);AssetDatabase.SaveAssets();
+        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/DenseWorldBuild.json",JsonConvert.SerializeObject(new{original,people=citizens.Count,animals,maximumAnimated=budget.maximumAnimated,
+            districts=root.Cast<Transform>().Select(d=>new{d.name,people=d.GetComponentsInChildren<NPCWander>(true).Length,workyards=d.Cast<Transform>().Count(t=>t.name.StartsWith("Workyard_"))}).ToArray()},Formatting.Indented));
+        EditorApplication.Exit(0);
+    }
+    public static void EquipOutpostGuardsAndExit()
+    {
+        var scene=EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");
+        var budget=UnityEngine.Object.FindAnyObjectByType<AmbientPopulationBudget>();
+        var source=GameObject.Find("Camp_Worker_01");int replaced=0;
+        for(int i=0;i<budget.citizens.Length;i++)
+        {
+            var old=budget.citizens[i];var dialogue=old.GetComponent<NPCAmbientDialogue>();
+            if(dialogue.role!=NPCAmbientDialogue.Role.Guard)continue;
+            var actor=UnityEngine.Object.Instantiate(source,old.transform.parent);actor.name=old.name;
+            foreach(var behaviour in actor.GetComponentsInChildren<MonoBehaviour>(true))
+                if(!(behaviour is NPCWander)&&!(behaviour is NPCAmbientDialogue)&&!(behaviour is NPCUprightPosture))UnityEngine.Object.DestroyImmediate(behaviour);
+            foreach(var collider in actor.GetComponentsInChildren<Collider>(true))UnityEngine.Object.DestroyImmediate(collider);
+            foreach(var body in actor.GetComponentsInChildren<Rigidbody>(true))UnityEngine.Object.DestroyImmediate(body);
+            actor.transform.localScale=source.transform.lossyScale;actor.transform.SetPositionAndRotation(old.transform.position,old.transform.rotation);actor.tag="Untagged";
+            var wander=actor.GetComponent<NPCWander>()??actor.AddComponent<NPCWander>();EditorUtility.CopySerialized(old,wander);wander.animator=actor.GetComponent<Animator>();wander.animator.applyRootMotion=false;wander.animator.cullingMode=AnimatorCullingMode.CullCompletely;
+            var talk=actor.GetComponent<NPCAmbientDialogue>()??actor.AddComponent<NPCAmbientDialogue>();EditorUtility.CopySerialized(dialogue,talk);talk.dailyLife=wander;talk.displayName="Lính gác";
+            wander.activityLabels=new[]{"Đang tuần tra quanh trại","Đang kiểm tra hàng rào và kho","Đang trở về vị trí gác"};
+            budget.citizens[i]=wander;UnityEngine.Object.DestroyImmediate(old.gameObject);replaced++;
+        }
+        EditorUtility.SetDirty(budget);EditorSceneManager.MarkSceneDirty(scene);EditorSceneManager.SaveScene(scene);
+        Debug.Log("Equipped outpost patrols: "+replaced);EditorApplication.Exit(0);
     }
 }

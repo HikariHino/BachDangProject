@@ -213,11 +213,12 @@ namespace BeachBoatStory
         }
         Vector3 FindClearHeading(Vector3 desired,float step)
         {
+            if(AmbientPopulationBudget.Instance!=null)desired=AmbientPopulationBudget.Instance.Separate(this,desired);
             float probe=Mathf.Max(step+.3f*scale,obstacleProbeDistance*scale);
             if(!Blocked(desired,probe))return desired;
-            float[] turns={avoidanceAngle,-avoidanceAngle,avoidanceAngle*1.8f,-avoidanceAngle*1.8f};
-            foreach(float turn in turns)
+            for(int option=0;option<4;option++)
             {
+                float turn=avoidanceAngle*(option<2?1:1.8f)*(option%2==0?1:-1);
                 var candidate=Quaternion.Euler(0,turn,0)*desired;
                 var test=transform.position+candidate*Mathf.Max(step,.35f*scale);
                 if(ValidGround(test)&&!Blocked(candidate,probe))return candidate;
