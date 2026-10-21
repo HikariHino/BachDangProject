@@ -39,7 +39,7 @@ public static class BeachBoatWholeMapPlaytest
     }
     static void Audit()
     {
-        var terrain=Terrain.activeTerrain;var houses=root.GetComponentsInChildren<Transform>(true).Where(t=>t.name.StartsWith("Regional_House_")).ToArray();
+        var terrain=Terrain.activeTerrain;var houses=root.GetComponentsInChildren<Transform>(true).Where(t=>t.name.StartsWith("Regional_House_")||t.name.StartsWith("Riverside_Home_")).ToArray();
         var overlaps=new List<string>();
         for(int i=0;i<houses.Length;i++)for(int j=i+1;j<houses.Length;j++)
         {

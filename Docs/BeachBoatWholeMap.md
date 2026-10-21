@@ -2,7 +2,11 @@
 
 Terrain rộng 42.000 × 42.000 đơn vị. Các khu dân cư cũ tập trung quanh nhiệm vụ, để lại nhiều vùng đất trống nhìn thấy khi chèo thuyền hoặc quan sát từ xa. Scene hiện có thêm 46 cụm gồm 39 xóm dân và 7 trại tiền tiêu, rải từ khoảng -19.500 đến 19.500 theo cả hai trục.
 
-Phần mới nằm dưới `BeachBoat_Whole_Map_Life`, có 164 ngôi nhà, 276 người dân/lính, 184 con gà, 164 đường đi giữa nhà và sân chung, 331 cụm đồ dùng/hàng rào, ruộng trồng và 415 cụm cây/đá từ prefab địa hình. Nhà được chọn theo nền đất khô, độ dốc và cây có sẵn, không thay đổi heightmap, mực thủy triều hoặc xóa rừng terrain. Các nhà trong trại mới dùng prefab doanh trại có cửa mở và nội thất, cao 47 đơn vị; nhà dân cao 42 đơn vị.
+Phần mở rộng dưới `BeachBoat_Whole_Map_Life` hiện có 689 ngôi nhà và 801 người dân/lính. Ngoài 164 nhà và sân chung ban đầu, có thêm 525 hộ nằm dọc 525 ngõ nối vào xóm, kéo khu dân cư ra phần đất trước mặt thay vì tụ thành cụm nhỏ ở xa. Mỗi hộ có sân, hàng bụi, gỗ và đồ chứa; NPC đi giữa các điểm làm việc. Cả scene có 1.017 NPC sinh hoạt và 240 con gà, cùng ruộng trồng, hàng rào và 415 cụm cây/đá đặt trong scene. Nhà trại dùng prefab doanh trại có cửa mở và nội thất, cao 47 đơn vị; nhà dân cao 42 đơn vị.
+
+Terrain có 332.385 instance thực vật/đá: giữ lại 49.827 instance gốc, thêm 31.201 cây lớn, 248.258 bụi/dương xỉ/cây thấp và 3.099 đá. Cây thấp gồm 106.419 instance ở sân vườn và khoảng giữa các hộ. Cây lớn dùng hai prototype có chiều cao đo được trên 4 đơn vị; các prototype cỏ cũ không bị phóng thành cây lớn. Bụi và dương xỉ dùng mesh có sẵn cùng vật liệu URP Lit alpha clip, chia sẻ asset và hỗ trợ instancing.
+
+Nhà được chọn theo nền đất khô, độ dốc và công trình có sẵn. Ngõ dùng tìm đường trên lưới, tránh nhà, ruộng, thân cây gốc và nước. Cây được tỉa dưới nền nhà mới, ngõ và sân duyệt binh; giữ khoảng trống ở điểm tương tác và tuyến NPC. Heightmap và mực thủy triều không thay đổi. Thống kê lưu tại `Assets/BeachBoatStory/Wilderness/PlacementSummary.json`; không cần thư mục Logs để đọc thống kê trên checkout mới.
 
 Các mái `Market_Canopy` hình tấm vách dựng sai đã được thay bằng sạp mở: bốn cột tiếp đất, mái hai dốc và bàn hàng. Cổng `RiverToCamp` được thu về tỉ lệ người, đặt trên đường từ cầu tàu vào trạm gác, nối hàng rào, chòi, đồ tiếp vận và hai lính gác. Điểm lên/xuống thuyền vẫn nằm ở cầu tàu; điểm đến khi chuyển từ doanh trại được đặt trên lối đi trong bờ.
 
@@ -19,9 +23,10 @@ Tất cả dân cư thêm vào dùng chung `AmbientPopulationBudget`, tối đa 
 ## Kiểm tra
 
 - `BeachBoatWholeMapPlaytest.RunAndExit`: kiểm tra tất cả nhà mới về kích thước, nền đất và chồng lấn; ghé tám khu đại diện để kiểm tra NPC di chuyển và ngân sách hoạt ảnh; kiểm tra thác/âm thanh cục bộ; thử chèo thoát, tuần tra nhường đường và va chạm mới.
+- `BeachBoatWildernessPlaytest.RunAndExit`: kiểm tra số lượng và vật liệu thực vật, độ cao so với triều cao; render tám góc rộng để kiểm tra phủ cảnh và vật liệu lỗi. Ảnh ở `Logs/Wilderness_Wide_*.png`, báo cáo `Logs/WildernessPlaytest.json`.
 - `BeachBoatBattleLaunchPlaytest.RunAndExit`: các tư thế đậu thuyền lỗi, lối ra bến ở hai mực triều, đường tới các cụm cọc và thoát kẹt cầu tàu.
 - `BeachBoatVillageWorkPlaytest.RunAndExit`: sạp nhiệm vụ, câu đố, thắng/thua và chơi lại.
 - `BeachBoatQuest3Playtest.RunAndExit`: thuyền địch theo tuyến, triều rút, toàn bộ tàu chìm, chiến đấu và kết thúc nhiệm vụ.
 - `BeachBoatCheckpointPlaytest.RunAndExit` và `BeachBoatAudioPlaytest.RunAndExit`: phục hồi checkpoint và âm thanh tương tác/gần-xa.
 
-Báo cáo và ảnh chạy thử nằm trong `Logs/WholeMap*.json`, `Logs/WholeMap_*.png` và các báo cáo nhiệm vụ tương ứng; thư mục Logs không đưa vào Git. Builder `BeachBoatWholeMapExpansion` áp dụng trực tiếp vào scene bằng Unity Editor, từ chối dựng trùng, không tạo thêm khu ngẫu nhiên mỗi lần chơi.
+Báo cáo và ảnh chạy thử nằm trong `Logs/WholeMap*.json`, `Logs/WholeMap_*.png` và các báo cáo nhiệm vụ tương ứng; thư mục Logs không đưa vào Git. Các builder `BeachBoatWholeMapExpansion`, `BeachBoatWildernessDensity` và `BeachBoatVillageInfill` áp dụng trực tiếp vào scene/terrain bằng Unity Editor và từ chối dựng trùng, không tạo thêm khu ngẫu nhiên mỗi lần chơi.

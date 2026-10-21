@@ -1,0 +1,22 @@
+{
+  "asset": "Assets/BachDangScaleAndLife/BeachBoat_Player7Terrain.asset",
+  "original": 49827,
+  "treeCount": 31201,
+  "bushCount": 248258,
+  "rockCount": 3099,
+  "total": 332385,
+  "firstShrub": 16,
+  "treeSpecies": [
+    {
+      "prototype": 0,
+      "name": "Tree_5f935f8fac3d57e47bf64ce987cf46a8_Player7",
+      "height": 10.9016142
+    },
+    {
+      "prototype": 1,
+      "name": "Tree_cce4d8667f2436a479759f07084d8ff4_Player7",
+      "height": 29.4166012
+    }
+  ],
+  "gardenGroundCover": 106419
+}

@@ -98,8 +98,9 @@ public static class BeachBoatWholeMapExpansion
         var arrival=Object.FindObjectsByType<BeachBoatStory.CampGateTransition>(FindObjectsInactive.Include,FindObjectsSortMode.None).First(g=>g.gateType==BeachBoatStory.CampGateTransition.GateType.CampRiverGate).destinationTarget;
         var landing=p+Vector3.back*26;landing.y=Ground(landing)+3.2f;arrival.SetPositionAndRotation(landing,Quaternion.identity);
     }
-    static Transform House(Transform parent,Vector3 p,float yaw,int variant,bool military)
+    public static Transform House(Transform parent,Vector3 p,float yaw,int variant,bool military)
     {
+        if(terrain==null)terrain=Terrain.activeTerrain;
         p.y=Ground(p);
         string path=military?"Assets/BeachBoatStory/Camp/WalkIn_Barracks.prefab":"Assets/Prefabs/Buildings/"+new[]{"pf_build_small_house_straw_roof_01.prefab","pf_build_small_house_tall_roof_01.prefab","pf_build_small_house_01.prefab"}[variant%3];
         var go=BachDangSettlementAssets.Place(path,"Regional_House_"+houses,parent,p,yaw);

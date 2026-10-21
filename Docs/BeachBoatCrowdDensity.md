@@ -1,6 +1,6 @@
 # Dân cư và sân sinh hoạt — beachBoat
 
-Scene `Assets/Scenes/beachBoat.unity` có 492 NPC sinh hoạt: 214 trong 11 khu nhiệm vụ dưới đây, 276 tại 46 cụm xóm/trại mới trải khắp terrain, và 2 lính gác bến. Nhân vật nhiệm vụ, người chơi và thủy thủ chiến đấu được giữ riêng. Chi tiết phần mở rộng nằm trong `Docs/BeachBoatWholeMap.md`.
+Scene `Assets/Scenes/beachBoat.unity` có 1.017 NPC sinh hoạt: 214 trong 11 khu nhiệm vụ dưới đây, 801 tại 46 cụm xóm/trại trải khắp terrain (gồm 525 người tại các hộ mở rộng), và 2 lính gác bến. Nhân vật nhiệm vụ, người chơi và thủy thủ chiến đấu được giữ riêng. Chi tiết 689 ngôi nhà, ngõ nối và lớp cây thấp phủ đất nằm trong `Docs/BeachBoatWholeMap.md`. Ngân sách hoạt ảnh vẫn là 44 NPC ở gần camera.
 
 | Khu | NPC sinh hoạt |
 |---|---:|
