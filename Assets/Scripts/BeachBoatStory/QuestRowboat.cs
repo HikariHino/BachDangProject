@@ -284,6 +284,26 @@ namespace BeachBoatStory
 
         public bool CanOccupy(Vector3 position, Quaternion rotation) => TryCanOccupy(position, rotation, out _);
 
+        float ShipClearance(Vector3 position, Quaternion rotation, Vector3 ship, float radius)
+        {
+            var axis=rotation*Vector3.forward;axis.y=0;axis.Normalize();
+            var offset=ship-position;offset.y=0;
+            var closest=position+axis*Mathf.Clamp(Vector3.Dot(offset,axis),-hullProbeSpacing,hullProbeSpacing);
+            return FlatDistance(closest,ship)-radius;
+        }
+
+        bool EscapingShip(Vector3 position, Quaternion rotation, Transform ship, float radius)
+        {
+            float current=ShipClearance(transform.position,transform.rotation,ship.position,radius);
+            if(current>=0)return false;
+            float next=ShipClearance(position,rotation,ship.position,radius);
+            // When a ship's center lies within our keel segment, the capsule depth is
+            // constant until the stern clears it. Increasing center separation must still
+            // count as escape; three discrete probes incorrectly created another trap.
+            return next>current+.0001f || (next>=current-.0001f &&
+                FlatDistance(position,ship.position)>FlatDistance(transform.position,ship.position)+.0001f);
+        }
+
         bool TryCanOccupy(Vector3 position, Quaternion rotation, out BoatObstacleKind obstacle)
         {
             obstacle = BoatObstacleKind.None;
@@ -293,12 +313,14 @@ namespace BeachBoatStory
                 if (nearbyFriendlyBoats != null)
                     foreach (var other in nearbyFriendlyBoats)
                         if (other != null && other.gameObject.activeInHierarchy &&
-                            FlatDistance(sample, other.transform.position) < 48f)
+                            FlatDistance(sample, other.transform.position) < 48f &&
+                            !EscapingShip(position,rotation,other.transform,48))
                         { obstacle = BoatObstacleKind.Ship; return false; }
                 if (enemyShips != null)
                     foreach (var other in enemyShips)
                         if (other != null && other.gameObject.activeInHierarchy && !other.isDestroyed &&
-                            FlatDistance(sample, other.transform.position) < 53f)
+                            FlatDistance(sample, other.transform.position) < 53f &&
+                            !EscapingShip(position,rotation,other.transform,53))
                         { obstacle = BoatObstacleKind.Ship; return false; }
                 int count = Physics.OverlapSphereNonAlloc(sample + Vector3.up * 2, hullProbeRadius, overlaps, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
                 if (count == overlaps.Length) { obstacle = BoatObstacleKind.Structure; return false; }
@@ -307,6 +329,10 @@ namespace BeachBoatStory
                     var hit = overlaps[n];
                     if (hit == null || hit is TerrainCollider || hit.transform.IsChildOf(transform) ||
                         (session != null && hit.transform.IsChildOf(session.player.transform))) continue;
+                    var friendly=hit.GetComponentInParent<AmbientRiverBoat>();
+                    var enemy=hit.GetComponentInParent<EnemyShip>();
+                    if(friendly!=null && EscapingShip(position,rotation,friendly.transform,48))continue;
+                    if(enemy!=null && EscapingShip(position,rotation,enemy.transform,53))continue;
                     obstacle = ClassifyObstacle(hit);
                     return false;
                 }

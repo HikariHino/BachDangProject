@@ -22,6 +22,9 @@ namespace BeachBoatStory
         Transform battleTarget;
         Vector3 checkpointHome;
         Quaternion checkpointRotation;
+        Terrain terrain;
+        Vector3 yieldDirection;
+        readonly Collider[] yieldHits = new Collider[24];
 
         public void SetBattleTarget(Transform value) { battleTarget = value; pause = 0; }
 
@@ -47,6 +50,7 @@ namespace BeachBoatStory
             phase = Mathf.Repeat(transform.position.x * .013f + transform.position.z * .009f, Mathf.PI * 2f);
             target = NearestNextPoint(); ready = true;
             checkpointHome=transform.position;checkpointRotation=transform.rotation;
+            terrain=Terrain.activeTerrain;
             SetRowing(true);
         }
         public void ResetForCheckpoint()
@@ -68,10 +72,13 @@ namespace BeachBoatStory
             return (nearest + 1) % route.Length;
         }
 
-        void Update()
+        void Update() => Step(Time.deltaTime);
+
+        public void Step(float dt)
         {
-            if (!ready) return;
-            float dt = Time.deltaTime;
+            if (!ready || dt <= 0 || BeachBoatQuestSession.InteractionBlocked) return;
+            dt=Mathf.Min(dt,.05f);
+            if (YieldToPlayer(dt)) return;
             if (battleTarget != null && battleTarget.gameObject.activeInHierarchy)
             {
                 Vector3 battleDirection = battleTarget.position - transform.position; battleDirection.y = 0;
@@ -93,6 +100,67 @@ namespace BeachBoatStory
                 target = (target + 1) % route.Length; pause = pauseAtPoint; SetRowing(false); FloatOnly(); return;
             }
             MoveAlongBow(direction, dt, cruiseSpeed);
+        }
+
+        // Reserve a corridor around the small quest boat, including while it is at the pier.
+        // A lateral current is intentional here: turning a long hull in place can sweep its
+        // stern through the player even when its bow is steering away.
+        bool YieldToPlayer(float dt)
+        {
+            var player=QuestRowboat.Instance;
+            if(player==null || !player.gameObject.activeInHierarchy)return false;
+            var away=transform.position-player.transform.position;away.y=0;
+            var bow=transform.rotation*Quaternion.Euler(0,visualForwardYaw,0)*Vector3.forward;
+            var relative=away+(bow*cruiseSpeed-player.transform.forward*player.Speed)*2;
+            float distance=away.magnitude;
+            if(distance>185 && relative.magnitude>160){yieldDirection=Vector3.zero;return false;}
+            if(yieldDirection==Vector3.zero)
+            {
+                var tangent=Vector3.Cross(Vector3.up,bow).normalized;
+                if(Vector3.Dot(tangent,away)<0)tangent=-tangent;
+                yieldDirection=(tangent+away.normalized*.6f).normalized;
+            }
+            Vector3 best=Vector3.zero;float score=float.NegativeInfinity;
+            for(int i=0;i<8;i++)
+            {
+                var direction=Quaternion.Euler(0,i*45,0)*yieldDirection;
+                var candidate=transform.position+direction*30;
+                if(!ClearWater(candidate,bow))continue;
+                float separation=QuestRowboat.FlatDistance(candidate,player.transform.position);
+                if(separation<distance+.5f)continue;
+                float value=separation+Vector3.Dot(direction,yieldDirection)*15;
+                if(value>score){score=value;best=direction;}
+            }
+            if(best!=Vector3.zero)
+            {
+                yieldDirection=best;
+                var next=transform.position+best*Mathf.Max(24,cruiseSpeed*1.6f)*dt;
+                if(ClearWater(next,bow))transform.position=next;
+                SetRowing(true);
+            }
+            else SetRowing(false);
+            FloatOnly();return true;
+        }
+
+        bool ClearWater(Vector3 position,Vector3 bow)
+        {
+            if(terrain==null)return false;
+            for(int i=-1;i<=1;i++)
+            {
+                var p=position+bow*(i*46);var local=p-terrain.transform.position;
+                if(local.x<0||local.z<0||local.x>terrain.terrainData.size.x||local.z>terrain.terrainData.size.z||
+                    terrain.SampleHeight(p)+terrain.transform.position.y+15>TideSystem.CurrentWaterHeight)return false;
+                int count=Physics.OverlapSphereNonAlloc(p+Vector3.up*2,16,yieldHits,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+                if(count==yieldHits.Length)return false;
+                for(int n=0;n<count;n++)
+                {
+                    var hit=yieldHits[n];
+                    if(hit is TerrainCollider||hit.transform.IsChildOf(transform)||
+                        hit.GetComponentInParent<QuestRowboat>()!=null||hit.GetComponentInParent<Animator>()!=null)continue;
+                    return false;
+                }
+            }
+            return true;
         }
 
         void MoveAlongBow(Vector3 direction, float dt, float speed)

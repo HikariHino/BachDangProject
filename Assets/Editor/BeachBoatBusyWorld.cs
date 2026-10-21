@@ -110,6 +110,26 @@ public static class BeachBoatBusyWorld
         if(index%3==0&&role!=NPCAmbientDialogue.Role.Guard)Cargo(actor.transform,role==NPCAmbientDialogue.Role.Fisher);
         citizens.Add(wander);return true;
     }
+    // Reuse the same source rigs and clear-route rules for remote settlements.
+    public static int PopulateRegion(Transform district, Vector3 center, int count, bool military)
+    {
+        terrain=Terrain.activeTerrain;highWater=UnityEngine.Object.FindAnyObjectByType<TideSystem>().highTideY;
+        if(civilianSources==null)
+        {
+            var all=UnityEngine.Object.FindObjectsByType<NPCWander>(FindObjectsInactive.Include,FindObjectsSortMode.None);
+            civilianSources=all.Where(w=>w.GetComponent<Animator>()!=null&&AssetDatabase.GetAssetPath(w.GetComponent<Animator>().avatar).Contains("Pea")).GroupBy(w=>w.GetComponent<Animator>().avatar).Select(g=>g.First().gameObject).Take(3).ToArray();
+            soldierSource=GameObject.Find("Camp_Worker_01");
+        }
+        buildings=Array.Empty<Bounds>();expanding=false;
+        var budget=UnityEngine.Object.FindAnyObjectByType<AmbientPopulationBudget>();
+        citizens.Clear();citizens.AddRange(budget.citizens);int initial=citizens.Count;
+        for(int i=0;i<count;i++)
+        {
+            var p=center+Quaternion.Euler(0,i*360f/count,0)*Vector3.forward*65;
+            Person(district,p,i,military?NPCAmbientDialogue.Role.Guard:i%3==0?NPCAmbientDialogue.Role.Merchant:NPCAmbientDialogue.Role.Farmer,military);
+        }
+        budget.citizens=citizens.ToArray();EditorUtility.SetDirty(budget);return citizens.Count-initial;
+    }
     static void District(string name,Vector3 center,int count,float radius,NPCAmbientDialogue.Role role,bool soldiers=false)
     {
         var district=root.Find(name);if(district==null)district=Group(name,root,center);
