@@ -43,6 +43,12 @@ public static class BeachBoatBoardingPlaytest
                 stallsClear=Object.FindObjectsByType<VillageWorkStall>(FindObjectsSortMode.None).All(s=>!fields.Any(b=>Overlap(BeachBoatWorldAudit.BoundsOf(s.transform),b)));
                 float row=Length(boat.transform);scaleCorrect=fleet.enemyShips.All(s=>Length(s.transform.Find("RedSailJunkVisual"))>row*2.2f)&&game.friendlyBoats.All(b=>Length(b.transform.Find("DaiVietPatrolVisual_Rebuilt"))>row*1.9f);
                 if(!stallsClear||!scaleCorrect)throw new Exception("A stall still overlaps farmland or ships remain too small");
+                if(fleet.enemyShips.Any(s=>s.transform.Find("RedSailJunkVisual/Flagship_Timber_Hull")==null||s.GetComponentsInChildren<EnemyDeckGuard>(true).Length<6))throw new Exception("Fleet still mixes old ships or lacks deck soldiers");
+                foreach(var patrol in game.friendlyBoats)
+                {
+                    var crew=patrol.GetComponentInChildren<FleetDeckCrew>();
+                    if(crew==null||crew.soldiers.Length!=6||crew.soldiers.Any(s=>!s.gameObject.activeInHierarchy||s.GetComponentInChildren<Renderer>().bounds.size.y<10))throw new Exception("Patrol crew missing or incorrectly scaled");
+                }
                 ship=fleet.enemyShips.First(s=>s.transform.Find("RedSailJunkVisual/Flagship_Timber_Hull")!=null);
                 CompareShips(boat,game.friendlyBoats[0],fleet.enemyShips.First(s=>s!=ship),ship);
                 BeachBoatStory.RiverStakeZone.Instance.RestoreCheckpoint(Enumerable.Repeat(true,BeachBoatStory.RiverStakeZone.Instance.ClusterCount).ToArray());
@@ -82,6 +88,10 @@ public static class BeachBoatBoardingPlaytest
             }
             if(phase==3)
             {
+                var pose=session.player.GetComponent<RiverFighterPose>();pose.FitSwordToGrip();
+                var b=pose.Weapon.GetComponent<MeshFilter>().sharedMesh.bounds;
+                var grip=pose.Weapon.TransformPoint(new Vector3(b.center.x,b.min.y+b.size.y*.105f,b.center.z));
+                if(Vector3.Distance(grip,pose.GripPosition)>.15f||Vector3.Dot(pose.Weapon.up,pose.BladeDirection)<.99f)throw new Exception("Sword hilt does not track palm or blade points the wrong way");
                 var p=session.player.transform.position;Capture("Boarding_Sword_Duel",p+new Vector3(-45,38,-55),p+Vector3.up*13);
                 for(int i=0;i<game.friendlyBoats.Length;i++)game.friendlyBoats[i].transform.position=ship.transform.position+new Vector3(-140-i*20,0,i*22);
                 for(int n=0;n<450;n++){game.StepAllies(.1f);game.StepHostiles(.1f);game.StepEnemies(.1f);}
@@ -104,9 +114,15 @@ public static class BeachBoatBoardingPlaytest
     {
         var roots=new[]{row.transform,patrol.transform,red.transform,flagship.transform};var positions=roots.Select(t=>t.position).ToArray();var rotations=roots.Select(t=>t.rotation).ToArray();var active=roots.Select(t=>t.gameObject.activeSelf).ToArray();
         for(int i=0;i<roots.Length;i++){roots[i].gameObject.SetActive(true);roots[i].SetPositionAndRotation(new Vector3(-3000+i*350,TideSystem.CurrentWaterHeight,2300),Quaternion.identity);}
+        // The QA camera teleports a patrol out of its distance-culled home between frames.
+        var crewRenderers=patrol.GetComponentInChildren<FleetDeckCrew>().GetComponentsInChildren<Renderer>();
+        var crewVisibility=crewRenderers.Select(r=>r.enabled).ToArray();foreach(var renderer in crewRenderers)renderer.enabled=true;
         Capture("Fleet_Size_Comparison",new Vector3(-2475,TideSystem.CurrentWaterHeight+490,1200),new Vector3(-2475,TideSystem.CurrentWaterHeight+50,2300));
+        Capture("Patrol_Deck_Crew",patrol.transform.position+new Vector3(-100,70,-160),patrol.transform.position+Vector3.up*22);
+        Capture("Patrol_Deck_Crew_Top",patrol.transform.position+new Vector3(20,140,-80),patrol.transform.position+Vector3.up*18);
         Capture("NamHan_Indigo_Flagship",flagship.transform.position+new Vector3(-260,170,240),flagship.transform.position+Vector3.up*70);
         for(int i=0;i<roots.Length;i++){roots[i].SetPositionAndRotation(positions[i],rotations[i]);roots[i].gameObject.SetActive(active[i]);}
+        for(int i=0;i<crewRenderers.Length;i++)crewRenderers[i].enabled=crewVisibility[i];
     }
     static void Capture(string name,Vector3 position,Vector3 focus)
     {

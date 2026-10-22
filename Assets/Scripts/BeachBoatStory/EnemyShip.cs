@@ -145,7 +145,7 @@ namespace BeachBoatStory
             wreckRaft.SetPositionAndRotation(new Vector3(sinkStart.x,TideSystem.CurrentWaterHeight+1,sinkStart.z),sinkRotation);
             // Retain a water-level command point even when the entire crew was
             // defeated before impact. Dead crew stay dead when reparented.
-            for(int i=0;i<deckGuards.Length;i++)deckGuards[i].MoveToWreck(wreckRaft,new Vector3(0,.4f,i==0?10:-10));
+            for(int i=0;i<deckGuards.Length;i++)deckGuards[i].MoveToWreck(wreckRaft,new Vector3(i%2==0?-5:5,.4f,(i/2-(deckGuards.Length-1)/4f)*11));
         }
         public void ClearWreck()
         {

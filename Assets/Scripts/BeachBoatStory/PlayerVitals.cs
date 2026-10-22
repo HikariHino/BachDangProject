@@ -17,6 +17,7 @@ namespace BeachBoatStory
         public float StaminaFraction => maxStamina > 0 ? Stamina / maxStamina : 0;
         public bool IsExhausted { get; private set; }
         public int ArmorCharges { get; private set; }
+        public int CompletedTrainingLevels { get; private set; }
         public string LastImpact { get; private set; }
         public float LastImpactDamage { get; private set; }
         public float LastImpactUntil { get; private set; }
@@ -74,11 +75,13 @@ namespace BeachBoatStory
             ArmorCharges = 3;
         }
 
-        public void TrainAtArmory()
+        public bool TrainAtArmory(int level)
         {
-            maxStamina = Mathf.Max(maxStamina, 120f);
+            if(level<1||level>3||level>CompletedTrainingLevels+1)return false;
+            if(level==CompletedTrainingLevels+1){CompletedTrainingLevels++;maxStamina+=20f;}
             Stamina = maxStamina;
             IsExhausted = false;
+            return true;
         }
 
         public void TakeProvisions()

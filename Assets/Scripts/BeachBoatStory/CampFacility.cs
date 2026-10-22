@@ -96,8 +96,8 @@ namespace BeachBoatStory
                     message = "Thợ rèn gia cố giáp. Ba lần va chạm tiếp theo giảm 30% sát thương.";
                     break;
                 case FacilityKind.Armory:
-                    vitals.TrainAtArmory();
-                    message = "Bạn tập luyện với quân sĩ. Thể lực tối đa tăng lên 120 trong lượt chơi này.";
+                    if(!vitals.TrainAtArmory(CampRecoveryGame.Active.TrainingLevel))return false;
+                    message = $"Hoàn thành cấp {vitals.CompletedTrainingLevels}/3. Thể lực tối đa: {vitals.maxStamina:0}.";
                     break;
                 case FacilityKind.Medical:
                     vitals.TreatAtMedicalTent();
@@ -108,7 +108,7 @@ namespace BeachBoatStory
                     message = "Bạn nhận lương khô và nước: hồi 25 máu, 35 thể lực.";
                     break;
             }
-            LastUse[(int)kind] = Time.unscaledTime;
+            if(kind!=FacilityKind.Armory||vitals.CompletedTrainingLevels>=3)LastUse[(int)kind] = Time.unscaledTime;
             HidePrompt();
             if(CampRecoveryGame.Active==null)StoryDialogueUI.Instance?.Show(displayName, message);
             else BeachBoatSoundscape.Instance?.PlayResult(true);

@@ -96,8 +96,21 @@ public static class BeachBoatCampFacilityPlaytest
                 if(game.ClaimReward()||vitals.Health!=hp||vitals.Stamina!=sp)throw new Exception("Opening a tent granted an unearned reward");
                 game.StartAttempt();game.AdvanceTime(game.TimeLimit+1);
                 if(game.Phase!=CampRecoveryGame.GamePhase.Lost||game.ClaimReward())throw new Exception("Timeout granted recovery");
+                int levels=game.Training?3:1;float previousWidth=1,previousTime=10;
+                for(int level=1;level<=levels;level++)
+                {
+                hp=vitals.Health;sp=vitals.Stamina;float beforeMaximum=vitals.maxStamina;
                 game.StartAttempt();
-                Capture("Recovery_"+kind);
+                if(game.Training)
+                {
+                    if(game.TrainingLevel!=level||game.GreenWidth>=previousWidth||game.CrossingSeconds>=previousTime)throw new Exception("Training difficulty did not narrow and speed up");
+                    previousWidth=game.GreenWidth;previousTime=game.CrossingSeconds;
+                    var green=game.transform.Find("CampRecoveryCanvas/RecoveryOverlay/Card/Activity/Rhythm/BreathTrack/GoodZone").GetComponent<RectTransform>();
+                    if(Mathf.Abs(green.anchorMax.x-green.anchorMin.x-game.GreenWidth)>.0001f)throw new Exception("Visible green zone differs from gameplay hit window");
+                    game.AdvanceTime(.1f);float first=game.RhythmPosition;game.AdvanceTime(.1f);
+                    if(Mathf.Abs(game.RhythmPosition-first-.1f/game.CrossingSeconds)>.001f)throw new Exception("Cursor did not accelerate with training difficulty");
+                }
+                Capture("Recovery_"+kind+"_Level"+level);
                 float lastCorrect=-100;
                 for(int i=0;i<game.Goal;i++)
                 {
@@ -106,15 +119,25 @@ public static class BeachBoatCampFacilityPlaytest
                         for(int step=0;step<600;step++)
                         {
                             float phase=game.RhythmPosition;
-                            if(phase>.64f&&phase<.76f&&game.Elapsed-lastCorrect>.67f&&game.Submit(game.ExpectedAction)){lastCorrect=game.Elapsed;break;}
-                            game.AdvanceTime(.02f);
+                            if(phase>game.GreenMin+.01f&&phase<game.GreenMax-.01f&&game.Elapsed-lastCorrect>.67f&&game.Submit(game.ExpectedAction)){lastCorrect=game.Elapsed;break;}
+                            game.AdvanceTime(.005f);
                             if(game.Phase!=CampRecoveryGame.GamePhase.Playing&&game.Phase!=CampRecoveryGame.GamePhase.Won)throw new Exception("Could not complete recovery rhythm");
                         }
                     }
                     else if(!game.Submit(game.ExpectedAction))throw new Exception("Recovery sequence rejected correct action");
                 }
                 if(game.Phase!=CampRecoveryGame.GamePhase.Won||vitals.Health!=hp||vitals.Stamina!=sp)throw new Exception("Reward must wait for explicit claim");
-                return game.ClaimReward()&&CampRecoveryGame.Active==null;
+                if(!game.ClaimReward())throw new Exception("Won recovery could not be claimed");
+                if(game.Training&&(vitals.maxStamina!=beforeMaximum+20||vitals.CompletedTrainingLevels!=level||game.ClaimReward()))throw new Exception("Training reward duplicated or did not add exactly 20");
+                }
+                if(kind==CampFacility.FacilityKind.Armory)
+                {
+                    float maximum=vitals.maxStamina;
+                    if(vitals.TrainAtArmory(4)||!vitals.TrainAtArmory(3)||vitals.maxStamina!=maximum)throw new Exception("Completed levels can farm extra maximum stamina");
+                    vitals.RestoreCheckpoint(vitals.ArmorCharges);
+                    if(vitals.CompletedTrainingLevels!=3||vitals.maxStamina!=160)throw new Exception("Checkpoint erased training progression");
+                }
+                return CampRecoveryGame.Active==null;
             }
 
             vitals.TakeImpact(40, "QA");
@@ -125,8 +148,9 @@ public static class BeachBoatCampFacilityPlaytest
             float beforeHit = vitals.Health;
             vitals.TakeImpact(20, "QA");
             armored &= Mathf.Abs((beforeHit - vitals.Health) - 14) < .1f && vitals.ArmorCharges == 2;
-            trained = Use(CampFacility.FacilityKind.Armory) && vitals.maxStamina >= 120 &&
+            trained = Use(CampFacility.FacilityKind.Armory) && vitals.maxStamina == 160 &&
                       Mathf.Approximately(vitals.Stamina, vitals.maxStamina);
+            vitals.TakeImpact(20,"Provisions QA after training checkpoint");
             float beforeFood = vitals.Health;
             supplied = Use(CampFacility.FacilityKind.Provisions) && vitals.Health > beforeFood;
             vitals.TakeImpact(30,"QA");

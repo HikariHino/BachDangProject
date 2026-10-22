@@ -78,7 +78,7 @@ public static class BeachBoatFleetAndStallUpgrade
     }
     static Bounds LocalBounds(Transform root,Transform visual)
     {var rotation=root.rotation;root.rotation=Quaternion.identity;var b=BeachBoatWorldAudit.BoundsOf(visual);root.rotation=rotation;return b;}
-    static float Deck(Transform visual,Transform ship,Vector3 point)
+    public static float Deck(Transform visual,Transform ship,Vector3 point,float minimumY=0)
     {
         float best=-1000;
         foreach(var filter in visual.GetComponentsInChildren<MeshFilter>(true))
@@ -90,7 +90,7 @@ public static class BeachBoatFleetAndStallUpgrade
                 var a=vertices[indices[i]];var b=vertices[indices[i+1]];var c=vertices[indices[i+2]];var normal=Vector3.Cross(b-a,c-a);if(normal.sqrMagnitude<.001f||Mathf.Abs(normal.normalized.y)<.65f)continue;
                 float den=(b.z-c.z)*(a.x-c.x)+(c.x-b.x)*(a.z-c.z);if(Mathf.Abs(den)<.0001f)continue;
                 float u=((b.z-c.z)*(point.x-c.x)+(c.x-b.x)*(point.z-c.z))/den,v=((c.z-a.z)*(point.x-c.x)+(a.x-c.x)*(point.z-c.z))/den;
-                float y=u*a.y+v*b.y+(1-u-v)*c.y;if(u>=0&&v>=0&&u+v<=1&&y>0&&y<90)best=Mathf.Max(best,y);
+                float y=u*a.y+v*b.y+(1-u-v)*c.y;if(u>=0&&v>=0&&u+v<=1&&y>minimumY&&y<90)best=Mathf.Max(best,y);
             }
         }
         if(best<-999)throw new Exception("No enlarged deck under archer "+point);return best+.3f;

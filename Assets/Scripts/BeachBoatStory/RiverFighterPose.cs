@@ -12,6 +12,12 @@ namespace BeachBoatStory
         public bool SwordVisible {get;private set;}
         public RuntimeAnimatorController swordController;
         Transform weapon;
+        Transform indexKnuckle,littleKnuckle,indexMiddle,littleMiddle;
+        float swordScale;
+        Vector3 gripInMesh;
+        public Transform Weapon=>weapon;
+        public Vector3 GripPosition {get;private set;}
+        public Vector3 BladeDirection {get;private set;}
         Transform rangedBow,leftHand,rightHand;
         bool ranged;
         float actorHeight;
@@ -27,10 +33,17 @@ namespace BeachBoatStory
             bones=new Transform[ids.Length];rotations=new Quaternion[ids.Length];for(int i=0;i<ids.Length;i++){bones[i]=animator.GetBoneTransform(ids[i]);rotations[i]=bones[i].localRotation;}
             weapon=Instantiate(sword,animator.GetBoneTransform(HumanBodyBones.RightHand),false).transform;weapon.name="River_Combat_Sword";
             foreach(var c in weapon.GetComponentsInChildren<Collider>(true))Destroy(c);
-            var renderers=weapon.GetComponentsInChildren<Renderer>(true);var bounds=renderers[0].bounds;foreach(var r in renderers)bounds.Encapsulate(r.bounds);
-            weapon.localScale*=length/Mathf.Max(bounds.size.x,bounds.size.y,bounds.size.z);
-            weapon.localPosition=Vector3.zero;weapon.localRotation=Quaternion.Euler(0,90,-90);weapon.gameObject.SetActive(false);
+            foreach(var lod in weapon.GetComponentsInChildren<LODGroup>(true))lod.enabled=false;
+            var bounds=weapon.GetComponent<MeshFilter>().sharedMesh.bounds;
+            swordScale=length/bounds.size.y;
+            // This mesh is centred on the blade, with the handle in its negative-Y end.
+            gripInMesh=new Vector3(bounds.center.x,bounds.min.y+bounds.size.y*.105f,bounds.center.z);
+            var handScale=weapon.parent.lossyScale;
+            weapon.localScale=new Vector3(swordScale/handScale.x,swordScale/handScale.y,swordScale/handScale.z);
+            weapon.localPosition=Vector3.zero;weapon.localRotation=Quaternion.identity;weapon.gameObject.SetActive(false);
             leftHand=animator.GetBoneTransform(HumanBodyBones.LeftHand);rightHand=animator.GetBoneTransform(HumanBodyBones.RightHand);
+            indexKnuckle=animator.GetBoneTransform(HumanBodyBones.RightIndexProximal);littleKnuckle=animator.GetBoneTransform(HumanBodyBones.RightLittleProximal);
+            indexMiddle=animator.GetBoneTransform(HumanBodyBones.RightIndexIntermediate);littleMiddle=animator.GetBoneTransform(HumanBodyBones.RightLittleIntermediate);
         }
         public void SetSword(bool value)
         {
@@ -50,6 +63,7 @@ namespace BeachBoatStory
         void LateUpdate()
         {
             if(Animator==null)return;
+            if(SwordVisible)FitSwordToGrip();
             if(Traversal==Motion.Idle)
             {
                 if(ranged&&rangedBow!=null)
@@ -76,6 +90,21 @@ namespace BeachBoatStory
                 QuestRowboat.SolveArm(bones[0],bones[2],leftHand,grip-transform.right*(actorHeight*.18f)+Vector3.up*(Mathf.Sin(phase)*actorHeight*.07f),bones[0].position-transform.right*actorHeight*.4f);
                 QuestRowboat.SolveArm(bones[1],bones[3],rightHand,grip+transform.right*(actorHeight*.18f)-Vector3.up*(Mathf.Sin(phase)*actorHeight*.07f),bones[1].position+transform.right*actorHeight*.4f);
             }
+        }
+        public void FitSwordToGrip()
+        {
+            if(weapon==null||rightHand==null)return;
+            // Follow the palm and its thumb side, rather than guessing bone Euler axes.
+            var across=indexKnuckle!=null&&littleKnuckle!=null?indexKnuckle.position-littleKnuckle.position:rightHand.up;
+            BladeDirection=across.normalized;
+            var knuckles=indexKnuckle!=null&&littleKnuckle!=null?(indexKnuckle.position+littleKnuckle.position)*.5f:rightHand.position;
+            GripPosition=indexMiddle!=null&&littleMiddle!=null?(knuckles+(indexMiddle.position+littleMiddle.position)*.5f)*.5f:Vector3.Lerp(rightHand.position,knuckles,.6f);
+            var along=knuckles-rightHand.position;
+            if(along.sqrMagnitude<.000001f)along=rightHand.forward;
+            var normal=Vector3.Cross(along,BladeDirection).normalized;
+            if(normal.sqrMagnitude<.5f)normal=rightHand.forward;
+            var rotation=Quaternion.LookRotation(normal,BladeDirection);
+            weapon.SetPositionAndRotation(GripPosition-rotation*(gripInMesh*swordScale),rotation);
         }
         public void FinishTraversal(){Traversal=Motion.Idle;if(Animator!=null)Animator.transform.localRotation=modelRotation;}
         public void SetRanged(bool value)
