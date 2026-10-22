@@ -10,7 +10,10 @@ namespace BeachBoatStory
         public int waveIndex;
         public int Health {get;private set;}=2;
         public bool IsOnWreck {get;private set;}
-        public bool IsAlive=>Health>0&&ship!=null&&(!ship.isDestroyed||IsOnWreck)&&gameObject.activeInHierarchy;
+        public bool IsIndependentBoarder;
+        public bool IsInMelee {get;private set;}
+        public void SetMelee(bool value){IsInMelee=value;if(bow!=null)bow.gameObject.SetActive(!value&&Health>0);}
+        public bool IsAlive=>Health>0&&ship!=null&&(!ship.isDestroyed||IsOnWreck||IsIndependentBoarder)&&gameObject.activeInHierarchy;
         public Vector3 AimPoint=>transform.position+Vector3.up*9;
         Animator animator;
         Quaternion restRotation;
@@ -55,13 +58,13 @@ namespace BeachBoatStory
         public void ResetGuard()
         {
             Cache();
-            Health=2;fall=0;if(visual==null)return;
+            Health=2;fall=0;IsInMelee=false;if(visual==null)return;
             bow.gameObject.SetActive(true);
             visual.localRotation=restRotation;
             if(animator!=null)animator.enabled=true;
             var col=GetComponent<Collider>();if(col!=null)col.enabled=true;
         }
-        public bool Hit(int damage)
+        public bool Hit(int damage,bool creditPlayer=true)
         {
             if(!IsAlive||damage<=0)return false;
             Health=Mathf.Max(0,Health-damage);
@@ -71,7 +74,7 @@ namespace BeachBoatStory
                 if(animator!=null)animator.enabled=false;
                 GetComponent<Collider>().enabled=false;
                 bow.gameObject.SetActive(false);
-                RiverPlayerCombat.Instance?.RegisterKill(this);
+                if(creditPlayer)RiverPlayerCombat.Instance?.RegisterKill(this);else RiverPlayerCombat.Instance?.RegisterAlliedKill(this);
             }
             return true;
         }
@@ -80,6 +83,7 @@ namespace BeachBoatStory
             if(IsOnWreck){var p=transform.parent.position;p.y=TideSystem.CurrentWaterHeight+1+Mathf.Sin(Time.time*1.5f)*.15f;transform.parent.position=p;}
             if(Health>0)
             {
+                if(IsInMelee)return;
                 var combat=RiverPlayerCombat.Instance;if(combat==null||!combat.BattleActive)return;
                 var player=BeachBoatQuestSession.Instance.player.transform.position;var direction=player-transform.position;direction.y=0;
                 if(direction.sqrMagnitude<500*500&&direction.sqrMagnitude>1)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),Time.deltaTime*90);

@@ -57,6 +57,10 @@ public static class BeachBoatVillageWorkPlaytest
                 Story.Instance.TransitionTo(Story.StoryState.Act2_SupplyPreparation,true);phase=1;return;
             }
             var stall=quest.stalls[index];
+            if(phase==11)
+            {
+                Click("VillageWorkCanvas/WorkOverlay/Workbench/Instructions/StartWork");phase=2;waitUntil=EditorApplication.timeSinceStartup+.15;return;
+            }
             if(phase==1)
             {
                 BeachBoatStory.StoryDialogueUI.Instance?.Close();Move(stall.InteractionPosition);
@@ -72,7 +76,7 @@ public static class BeachBoatVillageWorkPlaytest
                 if(stall.Phase!=VillageWorkStall.WorkPhase.Playing||stall.Difficulty!=0)throw new Exception("Mouse cannot start selected difficulty");
                 float easy=stall.TimeLimit;stall.AdvanceTime(easy+1);
                 timeoutChecked=stall.Phase==VillageWorkStall.WorkPhase.Lost&&!stall.Completed&&quest.CompletedCount==index;
-                stall.StartAttempt(2);difficultyChecked|=stall.TimeLimit<easy;stall.AdvanceTime(stall.TimeLimit+1);stall.StartAttempt(1);
+                stall.StartAttempt(2);difficultyChecked|=stall.Difficulty==0;stall.AdvanceTime(stall.TimeLimit+1);stall.StartAttempt(0);
                 retryChecked=stall.Phase==VillageWorkStall.WorkPhase.Playing&&stall.Elapsed==0&&stall.Progress==0;
                 if(!timeoutChecked||!retryChecked||!difficultyChecked)throw new Exception("Timeout/retry/difficulty rules failed");
                 if(stall.kind==VillageWorkStall.WorkKind.Timber)
@@ -95,6 +99,11 @@ public static class BeachBoatVillageWorkPlaytest
             if(phase==3)
             {
                 Click("VillageWorkCanvas/WorkOverlay/Workbench/Result/ConfirmResult");
+                if(stall.CompletedLevels<3)
+                {
+                    if(stall.Completed||quest.CompletedCount!=index||VillageWorkStall.Active!=stall||stall.Phase!=VillageWorkStall.WorkPhase.Instructions||stall.Difficulty!=stall.CompletedLevels)throw new Exception("Level unlock skipped progression or granted early goods");
+                    phase=11;waitUntil=EditorApplication.timeSinceStartup+.2;return;
+                }
                 if(quest.CompletedCount!=index+1||VillageWorkStall.Active!=null)throw new Exception("Mouse claim/progress/modal close failed");
                 Results.Add(new{stall.stallName,stall.kind,stall.Completed,stall.Progress,stall.Mistakes,stall.Elapsed});index++;phase=1;
                 if(index==4)
@@ -122,6 +131,20 @@ public static class BeachBoatVillageWorkPlaytest
         }
         catch(Exception e){failure=e.ToString();Finish();}
     }
+    static bool RopeSolution(VillageWorkStall stall,int cell,int entry,int visited,Dictionary<int,int> solution)
+    {
+        if((visited&(1<<cell))!=0)return false;visited|=1<<cell;
+        int ports=stall.RopePorts(cell);
+        for(int turn=0;turn<4;turn++,ports=VillageWorkStall.RotatePorts(ports))
+        {
+            if((ports&entry)==0)continue;int exit=ports^entry;solution[cell]=ports;
+            if(cell==5&&exit==2)return true;
+            int next=exit==1?cell-3:exit==2?cell+1:exit==4?cell+3:cell-1;
+            int nextEntry=exit==1?4:exit==2?8:exit==4?1:2;
+            if(next>=0&&next<9&&Mathf.Abs(next%3-cell%3)+Mathf.Abs(next/3-cell/3)==1&&RopeSolution(stall,next,nextEntry,visited,solution))return true;
+        }
+        solution.Remove(cell);return false;
+    }
     static void Click(string path)
     {
         var target=GameObject.Find(path);if(target==null||EventSystem.current==null)throw new Exception("Missing UI input target "+path);
@@ -145,8 +168,7 @@ public static class BeachBoatVillageWorkPlaytest
             }
             else if(stall.kind==VillageWorkStall.WorkKind.Rope)
             {
-                bool upper=stall.RopePorts(1)!=5&&stall.RopePorts(1)!=10;
-                var targets=upper?new Dictionary<int,int>{{3,10},{4,9},{1,6},{2,12},{5,3}}:new Dictionary<int,int>{{3,10},{4,12},{7,3},{8,9},{5,6}};
+                var targets=new Dictionary<int,int>();if(!RopeSolution(stall,3,8,0,targets))throw new Exception("Generated rope has no solution");
                 foreach(var target in targets)for(int n=0;n<4&&stall.RopePorts(target.Key)!=target.Value;n++)stall.SubmitOption(target.Key);
                 if(!stall.RopeConnected())throw new Exception("Rope solution did not form a connected path");stall.SubmitOption(9);
             }

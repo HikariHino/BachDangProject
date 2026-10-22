@@ -168,6 +168,7 @@ namespace BeachBoatStory
 
         public bool TryDisembark()
         {
+            if(RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.PlayerAway)return false;
             if (!IsAboard || !AtDock || BeachBoatQuestSession.InteractionBlocked || Mathf.Abs(Speed) > 5) return false;
             BeachBoatSoundscape.Instance?.PlayInteraction();
             RestorePlayer();
@@ -244,6 +245,9 @@ namespace BeachBoatStory
         // Shared by live controls and editor validation; no allocation or scene scans per tick.
         public void Step(float throttle, float steering, float dt, bool boostWanted = false)
         {
+            var boarding=RiverBoardingCombat.Instance;
+            if(IsAboard&&boarding!=null&&(boarding.PlayerAway||boarding.SwordDrawn))
+            {Speed=0;IsBoosting=false;animator.speed=1;if(!boarding.PlayerAway)AttachPlayer();return;}
             if(RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming){throttle=0;steering=0;boostWanted=false;}
             if (dt <= 0 || !isActiveAndEnabled) return;
             var position = transform.position; position.y = TideSystem.CurrentWaterHeight;
@@ -404,7 +408,9 @@ namespace BeachBoatStory
         void AttachPlayer()
         {
             if (!IsAboard || session == null) return;
+            if(RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.PlayerAway)return;
             bool aiming=RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming;
+            aiming|=RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.SwordDrawn;
             var position=aiming?transform.position+Vector3.up*10-transform.forward*6:seat.position;
             session.player.transform.SetPositionAndRotation(position, seat.rotation);
             playerBody.position = position; playerBody.rotation = seat.rotation;
@@ -417,6 +423,7 @@ namespace BeachBoatStory
         }
         void LateUpdate()
         {
+            if(RiverBoardingCombat.Instance!=null&&(RiverBoardingCombat.Instance.PlayerAway||RiverBoardingCombat.Instance.SwordDrawn)){if(paddle!=null)paddle.gameObject.SetActive(false);return;}
             bool aiming=IsAboard&&RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming;
             if(paddle!=null)paddle.gameObject.SetActive(!aiming);
             if(aiming)return;

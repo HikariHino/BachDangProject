@@ -17,6 +17,7 @@ namespace BeachBoatStory
         Quaternion rotation;
         int woodCount,destroyedCount,armor;
         bool[] woods,stalls,stakes;
+        int[] stallLevels;
         bool restoring;
         float previousTimeScale=1;
         GameObject overlay;
@@ -48,14 +49,14 @@ namespace BeachBoatStory
         {
             if(restoring||IsDefeated)return;
             var village=VillagePreparationQuest.Instance;if(village==null)return;
-            stalls=new bool[village.stalls.Length];for(int i=0;i<stalls.Length;i++)stalls[i]=village.stalls[i]!=null&&village.stalls[i].Completed;
+            stalls=new bool[village.stalls.Length];stallLevels=new int[stalls.Length];for(int i=0;i<stalls.Length;i++){stalls[i]=village.stalls[i]!=null&&village.stalls[i].Completed;stallLevels[i]=village.stalls[i]!=null?village.stalls[i].CompletedLevels:0;}
         }
         public void Defeat()
         {
             if(IsDefeated)return;
             if(!HasCheckpoint)Capture(BachDangStoryManager.Instance.currentState);
             IsDefeated=true;previousTimeScale=Time.timeScale>0?Time.timeScale:1;
-            CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();StoryDialogueUI.Instance?.DismissForCheckpoint();
+            RiverBoardingCombat.Instance?.ResetBattle();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();StoryDialogueUI.Instance?.DismissForCheckpoint();
             EnemyFleetDirector.Instance?.StopBattle();QuestRowboat.Instance?.LeaveForCheckpoint();
             var body=session.player.GetComponent<Rigidbody>();if(!body.isKinematic){body.linearVelocity=Vector3.zero;body.angularVelocity=Vector3.zero;}body.isKinematic=true;
             Time.timeScale=0;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;
@@ -74,7 +75,7 @@ namespace BeachBoatStory
             story.collectedWood=woodCount;story.destroyedEnemyShips=destroyedCount;story.TransitionTo(SavedState,true);
             var village=VillagePreparationQuest.Instance;
             if(village!=null)for(int i=0;i<village.stalls.Length;i++)
-                if(village.stalls[i]!=null){village.stalls[i].ResetCollection();if(stalls!=null&&i<stalls.Length&&stalls[i])village.stalls[i].MarkCollected();}
+                if(village.stalls[i]!=null){village.stalls[i].RestoreLearningProgress(stallLevels!=null&&i<stallLevels.Length?stallLevels[i]:0);if(stalls!=null&&i<stalls.Length&&stalls[i])village.stalls[i].MarkCollected();}
             foreach(var patrol in FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None))patrol.ResetForCheckpoint();
             if(boat!=null)boat.PrepareForBattle();
             var player=session.player;var body=player.GetComponent<Rigidbody>();

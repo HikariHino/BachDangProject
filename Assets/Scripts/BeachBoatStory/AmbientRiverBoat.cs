@@ -82,7 +82,7 @@ namespace BeachBoatStory
             if (battleTarget != null && battleTarget.gameObject.activeInHierarchy)
             {
                 Vector3 battleDirection = battleTarget.position - transform.position; battleDirection.y = 0;
-                if (battleDirection.sqrMagnitude > 90f * 90f) MoveAlongBow(battleDirection, dt, cruiseSpeed * 1.28f);
+                if (battleDirection.sqrMagnitude > 155f * 155f) MoveAlongBow(battleDirection, dt, cruiseSpeed * 1.28f);
                 else
                 {
                     Quaternion broadside = Quaternion.LookRotation(battleDirection.normalized, Vector3.up) * Quaternion.Euler(0, -visualForwardYaw - 18f, 0);

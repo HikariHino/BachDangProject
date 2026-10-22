@@ -79,7 +79,7 @@ namespace BeachBoatStory
             if (state == BachDangStoryManager.StoryState.Act3_BattleInProgress)
             {
                 var guard=RiverPlayerCombat.Instance!=null?RiverPlayerCombat.Instance.PriorityGuard:null;
-                if(guard!=null){title=$"Hạ xạ thủ đợt {guard.waveIndex+1} • Chuột phải để ngắm";return guard.transform;}
+                if(guard!=null){title=$"Lính địch đợt {guard.waveIndex+1} • Dùng cung hoặc kiếm";return guard.transform;}
                 var fleet = EnemyFleetDirector.Instance;
                 if (fleet != null)
                 {
@@ -156,7 +156,7 @@ namespace BeachBoatStory
                 {
                     var offset = target.position - session.player.transform.position; offset.y = 0;
                     caption.text = title + "\n" + WorldDistance.Format(offset.magnitude) +
-                        (story.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress?" • Bắn xạ thủ / SPACE phản công":
+                        (story.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress?" • Cung/kiếm • SPACE phản công":
                         InInteractionRange(target)?" • Trong tầm tương tác • Bấm E":" • Đến gần để bấm E");
                 }
             }

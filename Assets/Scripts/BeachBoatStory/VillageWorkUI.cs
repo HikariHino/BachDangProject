@@ -11,6 +11,7 @@ namespace BeachBoatStory
         GameObject shade,instructions,work,result,woodChoices,foodChoices,ropeGame,riceGame;
         TMP_Text title,rules,stats,task,feedback,resultTitle,resultBody,startLabel;
         TMP_Text[] difficultyLabels,woodLabels,foodLabels,riceLabels;
+        Button[] difficultyButtons;
         TMP_Text ropeMoves;
         RectTransform clockFill,progressFill,riceFill;
         VillageWorkIcon[] woodIcons,ropeIcons;
@@ -37,11 +38,11 @@ namespace BeachBoatStory
             instructions=Box("Instructions",card,new Vector2(.05f,.06f),new Vector2(.95f,.80f),Color.clear);
             rules=Label("Rules",instructions.transform,new Vector2(.04f,.53f),new Vector2(.96f,.96f),23,Color.white);
             Label("DifficultyCaption",instructions.transform,new Vector2(.04f,.40f),new Vector2(.96f,.50f),18,Gold).text="CHỌN ĐỘ KHÓ";
-            difficultyLabels=new TMP_Text[3];
+            difficultyLabels=new TMP_Text[3];difficultyButtons=new Button[3];
             for(int i=0;i<3;i++)
             {
                 int level=i;var b=Click("Difficulty"+i,instructions.transform,new Vector2(.04f+i*.31f,.24f),new Vector2(.32f+i*.31f,.39f),new[]{"DỄ","VỪA","KHÓ"}[i],()=>{selectedDifficulty=level;VillageWorkStall.Active?.SelectDifficulty(level);});
-                difficultyLabels[i]=b.GetComponentInChildren<TMP_Text>();
+                difficultyLabels[i]=b.GetComponentInChildren<TMP_Text>();difficultyButtons[i]=b.GetComponent<Button>();
             }
             var start=Click("StartWork",instructions.transform,new Vector2(.25f,.02f),new Vector2(.75f,.18f),"BẮT ĐẦU",()=>VillageWorkStall.Active?.StartAttempt(selectedDifficulty));startLabel=start.GetComponentInChildren<TMP_Text>();
             work=Box("Work",card,new Vector2(.05f,.05f),new Vector2(.95f,.80f),Color.clear);
@@ -100,18 +101,19 @@ namespace BeachBoatStory
             instructions.SetActive(intro);work.SetActive(playing);result.SetActive(!intro&&!playing);
             if(intro)
             {
-                rules.text=s.Instructions+"\n\nZ: hoàn tác; C: làm lại phần hiện tại. Thời gian và số lỗi không hoàn lại. Mỗi lỗi mất 2 giây. Hết giờ hoặc quá số lỗi sẽ thua. ESC để rời sạp.";
-                for(int i=0;i<3;i++)difficultyLabels[i].color=i==selectedDifficulty?Gold:Color.white;
+                selectedDifficulty=s.Difficulty;
+                rules.text=s.Instructions+"\n\nHoàn thành lần lượt Dễ → Vừa → Khó để nhận vật tư. Z: hoàn tác; C: làm lại phần này. Không hoàn thời gian/lỗi. Mỗi lỗi mất 2 giây. ESC: rời sạp.";
+                for(int i=0;i<3;i++){difficultyLabels[i].color=i==selectedDifficulty?Gold:Color.white;difficultyButtons[i].interactable=i<=s.UnlockedDifficulty;difficultyLabels[i].text=new[]{"DỄ","VỪA","KHÓ"}[i]+(i<s.CompletedLevels?" • XONG":i>s.UnlockedDifficulty?" • KHÓA":"");}
                 startLabel.text="BẮT ĐẦU  •  "+new[]{"DỄ","VỪA","KHÓ"}[selectedDifficulty];return;
             }
             if(!playing)
             {
                 bool won=s.Phase==VillageWorkStall.WorkPhase.Won;
                 resultTitle.text=won?"LÀM TỐT LẮM!":"CHƯA HOÀN THÀNH";resultTitle.color=won?Green:new Color(1,.4f,.3f);
-                resultBody.text=won?$"Đã làm xong {s.Progress}/{s.Goal} phần việc trong {s.Elapsed:0.0}s.\nNhận vật tư để tính tiến độ nhiệm vụ.":s.Feedback+"\nTiến độ ở các sạp khác vẫn được giữ.";
-                result.transform.Find("ConfirmResult/Label").GetComponent<TMP_Text>().text=won?"NHẬN VẬT TƯ  [ENTER]":"CHƠI LẠI  [R]";return;
+                resultBody.text=won?$"Xong mức {new[]{"DỄ","VỪA","KHÓ"}[s.Difficulty]}: {s.Progress}/{s.Goal} phần việc trong {s.Elapsed:0.0}s.\n"+(s.Difficulty==2?"Nhận vật tư để tính tiến độ nhiệm vụ.":"Xác nhận để mở mức tiếp theo. Chưa nhận vật tư."):s.Feedback+"\nMức đã hoàn thành và các sạp khác vẫn được giữ.";
+                result.transform.Find("ConfirmResult/Label").GetComponent<TMP_Text>().text=won?(s.Difficulty==2?"NHẬN VẬT TƯ  [ENTER]":"MỞ MỨC TIẾP THEO  [ENTER]"):"CHƠI LẠI  [R]";return;
             }
-            stats.text=$"CÒN {s.TimeRemaining:0.0}s     •     XONG {s.Progress}/{s.Goal}     •     SAI {s.Mistakes}/{s.MistakeLimit}";
+            stats.text=$"{new[]{"DỄ","VỪA","KHÓ"}[s.Difficulty]}  •  CÒN {s.TimeRemaining:0.0}s  •  XONG {s.Progress}/{s.Goal}  •  SAI {s.Mistakes}/{s.MistakeLimit}";
             undoButton.interactable=s.CanUndo;restoreButton.interactable=s.CanRestore;
             stats.color=s.TimeRemaining<7?new Color(1,.4f,.3f):Color.white;
             clockFill.anchorMax=new Vector2(s.TimeRemaining/s.TimeLimit,1);progressFill.anchorMax=new Vector2(s.Progress/(float)s.Goal,1);
@@ -119,7 +121,7 @@ namespace BeachBoatStory
             ropeGame.SetActive(s.kind==VillageWorkStall.WorkKind.Rope);riceGame.SetActive(s.kind==VillageWorkStall.WorkKind.Rice);
             task.text=s.kind==VillageWorkStall.WorkKind.Timber?$"CHỌN 2 THANH ĐỦ {s.TimberTarget} THƯỚC  •  ĐÃ CHỌN {s.TimberTotal}":
                 s.kind==VillageWorkStall.WorkKind.Rope?"XOAY Ô ĐỂ NỐI DÂY LIỀN TỪ VÀO ĐẾN RA":
-                s.kind==VillageWorkStall.WorkKind.Rice?$"CẦN {s.RiceTarget} ĐƠN VỊ  •  CÓ {s.RiceLoad}  •  LƯỢT {s.Moves}/{s.MoveLimit}":$"{s.People} NGƯỜI: MỖI NGƯỜI 2 GẠO + 1 CÁ; CẢ GÓI 1 MUỐI";
+                s.kind==VillageWorkStall.WorkKind.Rice?$"CẦN {s.RiceTarget} ĐƠN VỊ  •  CÓ {s.RiceLoad}  •  LƯỢT {s.Moves}/{s.MoveLimit}":$"{s.People} NGƯỜI: MỖI NGƯỜI {s.RicePerPerson} GẠO + {s.FishPerPerson} CÁ; CẢ GÓI {s.SaltPerBundle} MUỐI";
             feedback.text=s.Feedback;feedback.color=s.FeedbackVersion==0?Color.white:s.LastCorrect?Green:new Color(1,.5f,.35f);
             for(int i=0;i<4;i++){woodIcons[i].SetDamaged(!s.IsSoundTimber(i));woodIcons[i].color=s.TimberUsed(i)?new Color(.4f,.4f,.4f):Color.white;woodLabels[i].text=s.TimberUsed(i)?"ĐÃ CHỌN":s.TimberLength(i)+" thước";}
             for(int i=0;i<9;i++)ropeIcons[i].SetPorts(s.RopePorts(i));

@@ -216,6 +216,9 @@ public static class BeachBoatQuest3Playtest
                     combat.StepArrows(1);combat.SetAim(false);
                 }
                 if(!combat.HasSuppressedWave(wave))return;
+                var anchor=ready.WreckTarget!=null?ready.WreckTarget:ready.transform;
+                var commandPosition=anchor.position+Vector3.right*200;commandPosition.y=TideSystem.CurrentWaterHeight;
+                boat.transform.position=commandPosition;boat.Step(0,0,.001f);Physics.SyncTransforms();
                 if(!rangeBlocked)
                 {
                     var near=boat.transform.position;boat.transform.position=boat.dockPoint.position;
@@ -228,7 +231,7 @@ public static class BeachBoatQuest3Playtest
         {
             bool success=wasHeld&&rangeBlocked&&vitalsBarsUpdated&&minimapLowerRight&&rowingControllerApplied&&
                 delayedFleetHeldHigh&&hiddenUntilEntry&&ebbAtField&&gradualEbb&&sankDuringEbb&&ambushBeforeLow&&
-                automaticWrecksBeforeOrder&&survivorsAvailable&&fullySubmerged&&director.CommandScore==5&&story.destroyedEnemyShips==10&&
+                automaticWrecksBeforeOrder&&(survivorsAvailable||RiverPlayerCombat.Instance.AlliedKills>0)&&fullySubmerged&&director.CommandScore==5&&story.destroyedEnemyShips==10&&
                 director.enemyShips[0].transform.position.z<initialShipZ-600;
             if(!success)failure=$"Battle/HUD check failed: bars={vitalsBarsUpdated}, minimap={minimapLowerRight}, " +
                     $"rowing={rowingControllerApplied}, orders={director.CommandScore}, wrecks={story.destroyedEnemyShips}, " +

@@ -258,7 +258,7 @@ public class BachDangStoryManager : MonoBehaviour
                     : moment == BachDangBattleTimeline.BattleMoment.TideFalling
                         ? $"Thủy triều đang rút — giữ kín trận địa!\nChờ địch đến gần cọc rồi phất cờ [SPACE] • {issuedOrders}/{neededOrders}."
                         : $"Chèo theo chỉ hướng, tới gần thuyền mắc bẫy rồi [SPACE] phất cờ.\nHiệu lệnh: {issuedOrders}/{neededOrders} • Địch chìm: {destroyedEnemyShips}/{totalEnemyShips}.";
-                if(RiverPlayerCombat.Instance!=null)desc=$"Địch đắm: {destroyedEnemyShips}/{totalEnemyShips} • Xạ thủ: {RiverPlayerCombat.Instance.Kills}/{RiverPlayerCombat.Instance.RequiredKills} • Cờ: {issuedOrders}/{neededOrders}.\nHạ xạ thủ mỗi đợt trên tàu hoặc mảnh boong nổi, rồi [SPACE] phản công.";
+                if(RiverPlayerCombat.Instance!=null)desc=$"Địch đắm: {destroyedEnemyShips}/{totalEnemyShips} • Đợt áp chế: {RiverPlayerCombat.Instance.SuppressedWaveCount}/{RiverPlayerCombat.Instance.RequiredKills} • Cờ: {issuedOrders}/{neededOrders}.\nDùng cung/kiếm, phối hợp đồng minh, rồi [SPACE] phất cờ từng đợt.";
                 break;
 
             case StoryState.Act3_Victory:
@@ -415,7 +415,8 @@ public class BachDangStoryManager : MonoBehaviour
     public void OnBattleVictory()
     {
         if (currentState != StoryState.Act3_BattleInProgress) return;
-        if(RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.Kills<RiverPlayerCombat.Instance.RequiredKills)return;
+        if(destroyedEnemyShips<totalEnemyShips)return;
+        if(RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.SuppressedWaveCount<RiverPlayerCombat.Instance.RequiredKills)return;
         if(EnemyFleetDirector.Instance!=null&&EnemyFleetDirector.Instance.CommandScore<EnemyFleetDirector.Instance.CommandOpportunityCount)return;
         TransitionTo(StoryState.Act3_Victory);
         BachDangBattleTimeline.Instance?.MarkVictory();

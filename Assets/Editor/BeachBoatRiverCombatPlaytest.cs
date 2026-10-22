@@ -42,9 +42,10 @@ public static class BeachBoatRiverCombatPlaytest
         try
         {
             var combat=RiverPlayerCombat.Instance;var fleet=EnemyFleetDirector.Instance;var boat=QuestRowboat.Instance;var session=BeachBoatQuestSession.Instance;var vitals=session.player.GetComponent<PlayerVitals>();
-            if(combat==null||combat.guards.Length!=20)throw new Exception("Expected 20 scene-owned enemy archers");
+            if(combat==null||combat.guards.Length<20)throw new Exception("Expected at least 20 scene-owned enemy archers");
             if(phase==0)
             {
+                RiverBoardingCombat.Instance.AlliedAIEnabled=false;
                 foreach(var intro in UnityEngine.Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))intro.SkipOpening();BeachBoatStory.StoryDialogueUI.Instance?.Close();
                 BeachBoatStory.RiverStakeZone.Instance.RestoreCheckpoint(Enumerable.Repeat(true,BeachBoatStory.RiverStakeZone.Instance.ClusterCount).ToArray());
                 Story.Instance.collectedWood=Story.Instance.totalWoodRequired;Story.Instance.TransitionTo(Story.StoryState.Act3_WaitForLowTide,true);
@@ -83,7 +84,7 @@ public static class BeachBoatRiverCombatPlaytest
                 if(!strongHit)throw new Exception("Charged arrow did not kill/suppress the wave");
                 foreach(var guard in combat.guards.Where(g=>g.ship==target.ship))guard.DefeatFromVolley();
                 target.ship.TakeDamage();target.ship.Step(8);
-                deadCrewCommand=target.ship.WreckTarget!=null&&combat.guards.Where(g=>g.ship==target.ship).All(g=>g.Health==0&&g.IsOnWreck);
+                deadCrewCommand=target.ship.WreckTarget!=null&&combat.guards.Where(g=>g.ship==target.ship&&!g.IsIndependentBoarder).All(g=>g.Health==0&&g.IsOnWreck);
                 if(!deadCrewCommand)throw new Exception("Defeating the entire crew lost the wreck command point or revived an archer");
                 BachDangBattleTimeline.Instance.BeginAmbush();if(!fleet.TrySignalAttack()||fleet.CommandScore!=1)throw new Exception("Combat did not unlock flag order");
                 if(!combat.Reload()||!combat.IsReloading||Shoot(1))throw new Exception("Reload gate failed");

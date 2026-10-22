@@ -16,7 +16,9 @@ namespace BeachBoatStory
         public static VillageWorkStall Active {get;private set;}
         public WorkPhase Phase {get;private set;}
         public bool Completed {get;private set;}
-        public int Difficulty {get;private set;}=1;
+        public int Difficulty {get;private set;}
+        public int CompletedLevels {get;private set;}
+        public int UnlockedDifficulty=>Mathf.Min(2,CompletedLevels);
         public int Progress {get;private set;}
         public int Mistakes {get;private set;}
         public float Elapsed {get;private set;}
@@ -25,8 +27,11 @@ namespace BeachBoatStory
         public int TimberTarget {get;private set;}
         public int TimberTotal {get;private set;}
         public int Moves {get;private set;}
-        public int RiceSmall=>Difficulty==2?4:3;
-        public int RiceLarge=>Difficulty==2?7:5;
+        public int RiceSmall {get;private set;}=3;
+        public int RiceLarge {get;private set;}=5;
+        public int RicePerPerson {get;private set;}=2;
+        public int FishPerPerson {get;private set;}=1;
+        public int SaltPerBundle {get;private set;}=1;
         public int MoveLimit {get;private set;}
         public int People {get;private set;}
         public string Feedback {get;private set;}="";
@@ -40,7 +45,7 @@ namespace BeachBoatStory
         public string Instructions=>kind==WorkKind.Timber?"Chọn HAI thanh gỗ có tổng chiều dài đúng đơn hàng. Mỗi thanh chỉ dùng một lần. Gỗ có vết nứt không dùng được; hãy tính tổng trước khi chọn.":
             kind==WorkKind.Rope?"Bấm từng ô để xoay đoạn dây 90 độ. Nối một đường liên tục từ đầu VÀO bên trái hàng giữa sang đầu RA bên phải hàng giữa. Dây không được đứt hoặc tạo vòng kín. Số lượt xoay có hạn.":
             kind==WorkKind.Rice?"Đong đúng lượng gạo yêu cầu bằng hai gáo khác cỡ. Chỉ được thêm một gáo nhỏ, thêm một gáo lớn hoặc bớt một gáo nhỏ. Hãy tính cách đong trong số lượt cho phép rồi đóng túi.":
-            "Gói lương theo số quân sĩ: MỖI NGƯỜI cần 2 phần gạo và 1 phần cá khô. CẢ GÓI cần 1 phần muối. Tính số phần cần cho cả nhóm, chọn nguyên liệu rồi kiểm tra gói.";
+            "Đọc công thức mỗi đơn hàng: số người, gạo/cá cho mỗi người và muối cho cả gói đều có thể thay đổi. Tính đủ nguyên liệu, sửa bằng Hoàn tác nếu nhầm rồi kiểm tra gói.";
         public static string IngredientName(int n)=>n==0?"GẠO":n==1?"CÁ KHÔ":"MUỐI";
         readonly bool[] soundTimber=new bool[4];
         readonly int[] timberLengths=new int[4],ropePorts=new int[9],ingredients=new int[3];
@@ -107,12 +112,12 @@ namespace BeachBoatStory
         }
         public void SelectDifficulty(int difficulty)
         {
-            if(Active==this&&Phase==WorkPhase.Instructions)Difficulty=Mathf.Clamp(difficulty,0,2);
+            if(Active==this&&Phase==WorkPhase.Instructions)Difficulty=Mathf.Clamp(difficulty,0,UnlockedDifficulty);
         }
         public void StartAttempt(int difficulty)
         {
             if(Active!=this||Phase==WorkPhase.Playing)return;
-            Difficulty=Mathf.Clamp(difficulty,0,2);Progress=Mistakes=RiceLoad=0;Elapsed=0;Feedback="Hãy xem yêu cầu và tính trước khi làm.";FeedbackVersion=0;
+            Difficulty=Mathf.Clamp(difficulty,0,UnlockedDifficulty);Progress=Mistakes=RiceLoad=0;Elapsed=0;Feedback="Hãy xem yêu cầu và tính trước khi làm.";FeedbackVersion=0;
             Phase=WorkPhase.Playing;NewTask();
         }
         public void AdvanceTime(float dt)
@@ -126,7 +131,7 @@ namespace BeachBoatStory
         public bool TimberUsed(int i)=>timberUsed[i];
         public int RopePorts(int i)=>ropePorts[i];
         public int IngredientCount(int i)=>ingredients[i];
-        public int RequiredIngredient(int i)=>i==0?People*2:i==1?People:1;
+        public int RequiredIngredient(int i)=>i==0?People*RicePerPerson:i==1?People*FishPerPerson:SaltPerBundle;
         public static int RotatePorts(int ports)=>((ports<<1)&15)|((ports>>3)&1);
         public bool RopeConnected()
         {
@@ -180,7 +185,7 @@ namespace BeachBoatStory
             if(correct)Score("Khẩu phần đã đủ cho cả nhóm quân sĩ.");
             else
             {
-                Fault("Khẩu phần chưa đúng công thức. Gói lại: mỗi người 2 gạo + 1 cá, cả gói 1 muối.");
+                Fault($"Chưa đúng: mỗi người {RicePerPerson} gạo + {FishPerPerson} cá; cả gói {SaltPerBundle} muối.");
                 // Keep the unsubmitted ration visible so the player can undo excess ingredients.
             }
             return correct;
@@ -204,24 +209,41 @@ namespace BeachBoatStory
             if(kind==WorkKind.Timber)
             {
                 int bad=Random.Range(0,4);var good=new int[3];int next=0;
-                for(int i=0;i<4;i++){soundTimber[i]=i!=bad;timberUsed[i]=false;timberLengths[i]=2+i*2+Random.Range(0,2);if(i!=bad)good[next++]=i;}
+                for(int i=0;i<4;i++){soundTimber[i]=i!=bad;timberUsed[i]=false;timberLengths[i]=Random.Range(2,9+Difficulty*5);if(i!=bad)good[next++]=i;}
                 int excluded=Random.Range(0,3);TimberTarget=0;for(int i=0;i<3;i++)if(i!=excluded)TimberTarget+=timberLengths[good[i]];
             }
             else if(kind==WorkKind.Rope)
             {
-                bool upper=Random.value>.5f;
-                int[] solved=upper?new[]{6,6,12,10,9,3,3,10,9}:new[]{6,10,12,10,12,6,3,3,9};
-                for(int i=0;i<9;i++){ropePorts[i]=solved[i];for(int n=Random.Range(0,4);n>0;n--)ropePorts[i]=RotatePorts(ropePorts[i]);}
+                var paths=new List<int[]>();BuildRopePaths(3,new List<int>(),0,paths);
+                int minimum=Difficulty==0?3:Difficulty==1?5:7;
+                var eligible=paths.FindAll(p=>p.Length>=minimum&&p.Length<=minimum+2);
+                var path=eligible[Random.Range(0,eligible.Count)];var solved=new int[9];
+                for(int i=0;i<9;i++)solved[i]=new[]{3,5,6,9,10,12}[Random.Range(0,6)];
+                int Direction(int from,int to)=>to==from-3?1:to==from+1?2:to==from+3?4:8;
+                for(int i=0;i<path.Length;i++)solved[path[i]]=(i==0?8:Direction(path[i],path[i-1]))|(i==path.Length-1?2:Direction(path[i],path[i+1]));
+                int rotations=0;
+                for(int i=0;i<9;i++){ropePorts[i]=solved[i];int turns=Random.Range(0,4);for(int n=0;n<turns;n++)ropePorts[i]=RotatePorts(ropePorts[i]);}
                 if(RopeConnected())ropePorts[3]=RotatePorts(ropePorts[3]);
-                MoveLimit=Difficulty==0?26:Difficulty==1?22:18;
+                foreach(int i in path){int ports=ropePorts[i],turns=0;while(ports!=solved[i]&&turns<4){ports=RotatePorts(ports);turns++;}rotations+=turns;}
+                MoveLimit=rotations+(Difficulty==0?12:Difficulty==1?7:3);
             }
             else if(kind==WorkKind.Rice)
             {
-                RiceTarget=Difficulty==2?Random.Range(9,21):Random.Range(7,15);
+                int[,] pairs={{2,3},{3,5},{4,7},{5,8}};int choice=Random.Range(0,Difficulty==0?2:4);
+                RiceSmall=pairs[choice,0];RiceLarge=pairs[choice,1];
+                RiceTarget=Difficulty==2?Random.Range(9,23):Random.Range(6,16);
                 MoveLimit=MinimumScoops(RiceTarget,RiceSmall,RiceLarge)+(Difficulty==0?2:Difficulty==1?1:0);
             }
-            else {People=Random.Range(1+Difficulty,3+Difficulty);for(int i=0;i<3;i++)ingredients[i]=0;}
+            else {People=Random.Range(1+Difficulty,3+Difficulty);RicePerPerson=Random.Range(1,3+Difficulty);FishPerPerson=Random.Range(1,2+Difficulty);SaltPerBundle=Random.Range(1,3);for(int i=0;i<3;i++)ingredients[i]=0;}
             history.Clear();initialWork=CaptureWork();
+        }
+        static void BuildRopePaths(int cell,List<int> path,int visited,List<int[]> result)
+        {
+            path.Add(cell);visited|=1<<cell;
+            if(cell==5)result.Add(path.ToArray());
+            else foreach(int next in new[]{cell-3,cell+1,cell+3,cell-1})
+                if(next>=0&&next<9&&(visited&(1<<next))==0&&Mathf.Abs(next%3-cell%3)+Mathf.Abs(next/3-cell/3)==1)BuildRopePaths(next,path,visited,result);
+            path.RemoveAt(path.Count-1);
         }
         static int MinimumScoops(int target,int small,int large)
         {
@@ -238,10 +260,19 @@ namespace BeachBoatStory
         public bool ClaimReward()
         {
             if(Active!=this||Phase!=WorkPhase.Won)return false;
+            if(!Completed&&Difficulty<CompletedLevels){Difficulty=CompletedLevels;Phase=WorkPhase.Instructions;return true;}
+            if(!Completed&&Difficulty==CompletedLevels)
+            {
+                CompletedLevels++;QuestCheckpoint.Instance?.RefreshVillageProgress();
+                if(CompletedLevels<3)
+                {Difficulty=CompletedLevels;Phase=WorkPhase.Instructions;history.Clear();initialWork=null;Feedback="Đã mở mức tiếp theo.";return true;}
+            }
+            if(CompletedLevels<3)return false;
             Close();quest.Collect(this);return true;
         }
-        public void MarkCollected(){Completed=true;}
-        public void ResetCollection(){Completed=false;}
+        public void MarkCollected(){Completed=true;CompletedLevels=3;}
+        public void ResetCollection(){RestoreLearningProgress(0);}
+        public void RestoreLearningProgress(int levels){CompletedLevels=Mathf.Clamp(levels,0,3);Completed=CompletedLevels==3;Difficulty=UnlockedDifficulty;history.Clear();initialWork=null;}
         public void Close()
         {
             if(Active!=this)return;Active=null;history.Clear();initialWork=null;HidePrompt();Cursor.lockState=savedLock;Cursor.visible=savedCursor;

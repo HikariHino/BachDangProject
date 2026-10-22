@@ -44,7 +44,7 @@ namespace BeachBoatStory
             foreach (var ship in fleet) if (ship != null && !enemies.Contains(ship)) enemies.Add(ship);
             if (friendlyBoats == null || friendlyBoats.Length == 0)
                 friendlyBoats = FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            fighting = false;
+            fighting = true;
             nextVolley = Time.time + .25f; nextAssignment = 0; volley = 0;
         }
 
@@ -70,7 +70,7 @@ namespace BeachBoatStory
             var active = ActiveEnemies();
             if (active.Count == 0) { EndBattle(); return; }
             for (int i = 0; i < friendlyBoats.Length; i++)
-                if (friendlyBoats[i] != null) friendlyBoats[i].SetBattleTarget(active[i % active.Count].transform);
+                if (friendlyBoats[i] != null){var ship=active[i % active.Count];friendlyBoats[i].SetBattleTarget(ship.WreckTarget!=null?ship.WreckTarget:ship.transform);}
         }
 
         void FireVolley()
@@ -84,7 +84,7 @@ namespace BeachBoatStory
                 if (friendlyBoats != null && friendlyBoats.Length > 0 && friendlyBoats[(volley + i) % friendlyBoats.Length] != null)
                     source = friendlyBoats[(volley + i) % friendlyBoats.Length].transform.position + Vector3.up * (13 + i * 2);
                 else source = target.transform.position + (i % 2 == 0 ? Vector3.left : Vector3.right) * 180 + Vector3.up * 30;
-                Launch(source, target.transform.position + Vector3.up * Random.Range(9f, 22f), 13 + i * 3);
+                Launch(source, (target.WreckTarget!=null?target.WreckTarget.position:target.transform.position) + Vector3.up * Random.Range(9f, 22f), 13 + i * 3);
             }
             // The invaders answer with one darker shot toward a Vietnamese boat.
             if (friendlyBoats != null && friendlyBoats.Length > 0)
@@ -93,7 +93,7 @@ namespace BeachBoatStory
                 if (friendly != null)
                 {
                     var enemy = active[volley % active.Count];
-                    Launch(enemy.transform.position + Vector3.up * 22, friendly.transform.position + Vector3.up * 8, 18);
+                    Launch((enemy.WreckTarget!=null?enemy.WreckTarget.position:enemy.transform.position) + Vector3.up * 22, friendly.transform.position + Vector3.up * 8, 18);
                 }
             }
             if (battleAudio != null && volley % 2 == 0)
@@ -139,8 +139,9 @@ namespace BeachBoatStory
         List<EnemyShip> ActiveEnemies()
         {
             activeScratch.Clear();
-            foreach (var enemy in enemies) if (enemy != null && enemy.gameObject.activeInHierarchy &&
-                    !enemy.isDestroyed && enemy.IsReleasedForAmbush) activeScratch.Add(enemy);
+            foreach (var enemy in enemies) if (enemy != null &&
+                    (enemy.WreckTarget!=null||enemy.gameObject.activeInHierarchy&&!enemy.isDestroyed)&&
+                    (enemy.IsReleasedForAmbush||EnemyFleetDirector.Instance.EbbStarted)) activeScratch.Add(enemy);
             return activeScratch;
         }
 
