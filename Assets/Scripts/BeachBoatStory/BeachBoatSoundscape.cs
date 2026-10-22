@@ -34,7 +34,11 @@ namespace BeachBoatStory
             foreach(var old in session.player.GetComponentsInChildren<FootstepSound>(true))old.enabled=false;
             previous=session.player.transform.position;
             terrains=Terrain.activeTerrains;
-            RiverSource=Source("RiverAmbience",river,true,0);WindSource=Source("WindAndLeaves",wind,true,.20f);
+            RiverSource=Source("RiverAmbience",river,true,0);WindSource=Source("WindAndLeaves",wind,true,0);
+            // The procedural leaf loop contains broadband hiss. Keep it a soft bed,
+            // rather than a full-volume rush that sounds like water throughout camp.
+            var windFilter=WindSource.gameObject.AddComponent<AudioLowPassFilter>();
+            windFilter.cutoffFrequency=700;windFilter.lowpassResonanceQ=1;
             foley=Source("PlayerFoley",null,false,1);effects=Source("ActionEffects",null,false,1);ui=Source("InteractionFeedback",null,false,1);birds=Source("DistantBirds",null,false,1);
             nextBird=Time.time+4;
         }
@@ -53,8 +57,10 @@ namespace BeachBoatStory
             if(Time.unscaledTime>=nextShoreCheck)
             {nextShoreCheck=Time.unscaledTime+.5f;DistanceToWater=MeasureWaterDistance(session.player.transform.position);}
             float shore=1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(20,200,DistanceToWater));
-            RiverSource.volume=Mathf.MoveTowards(RiverSource.volume,volume*(dead?.08f:.34f)*shore,Time.unscaledDeltaTime*.3f);
-            WindSource.volume=volume*(dead ? .06f : .20f);
+            float intro=OpeningEvent.IsOpeningActive?.15f:1f;
+            RiverSource.volume=Mathf.MoveTowards(RiverSource.volume,volume*(dead?.08f:.34f)*shore*intro,Time.unscaledDeltaTime*.3f);
+            float breeze=.035f+.01f*Mathf.Sin(Time.unscaledTime*.23f);
+            WindSource.volume=Mathf.MoveTowards(WindSource.volume,volume*(dead?.01f:breeze)*intro,Time.unscaledDeltaTime*.012f);
             var position=session.player.transform.position;float moved=QuestRowboat.FlatDistance(position,previous);previous=position;
             if(Muted||dead||!session.storyMode)return;
             if(Time.time>=nextBird){nextBird=Time.time+Random.Range(8,15);birds.panStereo=Random.Range(-.6f,.6f);Play(birds,bird,.22f,Random.Range(.94f,1.08f));}
