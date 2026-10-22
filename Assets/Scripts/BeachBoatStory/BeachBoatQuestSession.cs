@@ -36,7 +36,7 @@ namespace BeachBoatStory
              (BeachBoatMinigameStation.Active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum ||
               BeachBoatMinigameStation.Active.IsSelectingCargo || BeachBoatMinigameStation.Active.Failed)) ||
             StoryDialogueUI.InputConsumedThisFrame;
-        public static bool InteractionBlocked => OpeningEvent.IsOpeningActive || VillageWorkStall.Active != null ||
+        public static bool InteractionBlocked => CampRecoveryGame.Active != null || OpeningEvent.IsOpeningActive || VillageWorkStall.Active != null ||
             (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
             (RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsPlanting) ||
             (Instance != null && !Instance.storyMode) ||
@@ -57,9 +57,8 @@ namespace BeachBoatStory
             for (int i = 0; i < tourControls.Length; i++) savedControls[i] = tourControls[i] != null && tourControls[i].enabled;
             tourTag = tourCamera.tag; tourCameraEnabled = tourCamera.enabled;
             tourAudio = tourCamera.GetComponent<AudioListener>(); tourAudioEnabled = tourAudio != null && tourAudio.enabled;
-            player.transform.SetPositionAndRotation(playerSpawn.position, playerSpawn.rotation);
+            PlayerArrival.Teleport(player, playerSpawn.position, playerSpawn.rotation);
             var body = player.GetComponent<Rigidbody>();
-            body.position = playerSpawn.position; body.rotation = playerSpawn.rotation;
             body.linearVelocity = Vector3.zero;
             BuildQuestUI();
             var dialogue = Child("BeachStoryDialogue"); dialogue.AddComponent<StoryDialogueUI>();
@@ -97,10 +96,10 @@ namespace BeachBoatStory
             {
                 if (npc == null || !npc.isActiveAndEnabled) continue;
                 float distance = (npc.transform.position - position).sqrMagnitude;
-                if (distance <= npc.interactDistance * npc.interactDistance && distance < best)
+                if (distance < best && NearbyConversation.InReach(npc.transform,npc.interactDistance))
                 { best = distance; nearest = npc; }
             }
-            return nearest == candidate;
+            return nearest == candidate && NearbyConversation.IsPreferred(candidate);
         }
 
         public void SetStoryMode(bool value)
@@ -126,7 +125,7 @@ namespace BeachBoatStory
         void Update()
         {
             var story = GetComponent<BachDangStoryManager>();
-            bool focusedOverlay = BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
+            bool focusedOverlay = CampRecoveryGame.Active != null || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
                 (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen);
             if (story != null && story.objectiveUIPanel != null)

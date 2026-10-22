@@ -186,18 +186,7 @@ public class CampGateTransition : MonoBehaviour
     private static void TeleportPlayer(Transform player, Vector3 position, Quaternion rotation)
     {
         if (player == null) return;
-        var controller = player.GetComponent<CharacterController>();
-        if (controller != null) controller.enabled = false;
-        var body = player.GetComponent<Rigidbody>();
-        if (body != null)
-        {
-            body.position = position;
-            body.rotation = rotation;
-            if (!body.isKinematic) { body.linearVelocity = Vector3.zero; body.angularVelocity = Vector3.zero; }
-        }
-        player.SetPositionAndRotation(position, rotation);
-        if (controller != null) controller.enabled = true;
-        Physics.SyncTransforms();
+        PlayerArrival.Teleport(player.gameObject,position,rotation);
         var camera = Camera.main;
         if (camera != null && camera.TryGetComponent<Camera_Script>(out var orbit)) orbit.SnapToTarget();
     }

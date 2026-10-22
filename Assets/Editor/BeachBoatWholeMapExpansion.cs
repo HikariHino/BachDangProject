@@ -361,6 +361,9 @@ public static class BeachBoatWholeMapExpansion
         }
         var gate=Object.FindObjectsByType<BeachBoatStory.CampGateTransition>(FindObjectsSortMode.None).First(g=>g.gateType==BeachBoatStory.CampGateTransition.GateType.RiverGate);
         var guard=gate.transform.Find("Riverside_Guard_Post");guard.localRotation=Quaternion.Euler(0,90,0);
+        var arrival=Object.FindObjectsByType<BeachBoatStory.CampGateTransition>(FindObjectsSortMode.None).First(g=>g.gateType==BeachBoatStory.CampGateTransition.GateType.CampRiverGate).destinationTarget;
+        var landing=gate.transform.position+guard.forward*30;landing.y=Ground(landing)+3.2f;
+        arrival.SetPositionAndRotation(landing,Quaternion.LookRotation(guard.forward));
         var details=Group("Dock_Checkpoint_Yard",gate.transform,gate.transform.position);
         var generated=new List<string>();var painter=new BachDangVillageGround(terrain,7,Folder,generated);
         painter.CreatePath(details,"Pier_To_Guard_Post",new[]{new Vector3(-3675,0,1880),new Vector3(-3770,0,1880),gate.transform.position,new Vector3(-3910,0,1920)},2.1f,painter.Earth,900,new List<Bounds>());

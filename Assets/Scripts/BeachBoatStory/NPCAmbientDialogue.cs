@@ -26,12 +26,13 @@ namespace BeachBoatStory
         };
 
         void Start(){dailyLife=dailyLife!=null?dailyLife:GetComponent<NPCWander>();FindPlayer();}
+        void OnEnable(){NearbyConversation.Register(this);}
         void FindPlayer(){var go=OpeningEvent.FindPlayerInScene();player=go!=null?go.transform:null;}
         void Update()
         {
             if(player==null){FindPlayer();return;}
             if(BeachBoatQuestSession.InputBlocked||(StoryDialogueUI.Instance!=null&&StoryDialogueUI.Instance.IsOpen)){HidePrompt();return;}
-            bool near=Vector3.Distance(transform.position,player.position)<=interactDistance;
+            bool near=NearbyConversation.IsPreferred(this);
             if(!near){HidePrompt();return;}
             var story=BachDangStoryManager.Instance;if(story==null)return;
             showingPrompt=true;story.SetInteractPrompt(true,$"[E] Trò chuyện với {displayName}",this);
@@ -40,7 +41,7 @@ namespace BeachBoatStory
         public bool Talk()
         {
             if(player==null)FindPlayer();
-            if(player==null||Vector3.Distance(transform.position,player.position)>interactDistance||BeachBoatQuestSession.InteractionBlocked)return false;
+            if(player==null||!NearbyConversation.InReach(transform,interactDistance)||!NearbyConversation.IsPreferred(this)||BeachBoatQuestSession.InteractionBlocked)return false;
             dailyLife?.PauseForConversation(player);
             var lines=Lines[Mathf.Clamp((int)role,0,Lines.Length-1)];
             string activity=dailyLife!=null&&!string.IsNullOrWhiteSpace(dailyLife.CurrentActivity)?dailyLife.CurrentActivity+". ":"";
@@ -48,6 +49,6 @@ namespace BeachBoatStory
             HidePrompt();return true;
         }
         void HidePrompt(){if(!showingPrompt)return;showingPrompt=false;BachDangStoryManager.Instance?.SetInteractPrompt(false,owner:this);}
-        void OnDisable(){HidePrompt();}
+        void OnDisable(){HidePrompt();NearbyConversation.Remove(this);}
     }
 }

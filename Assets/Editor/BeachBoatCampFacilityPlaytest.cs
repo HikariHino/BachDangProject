@@ -88,7 +88,33 @@ public static class BeachBoatCampFacilityPlaytest
                 var body = session.player.GetComponent<Rigidbody>();
                 if (body != null) { body.position = facility.transform.position; body.linearVelocity = Vector3.zero; }
                 Physics.SyncTransforms();
-                return facility.TryUse();
+                if(!facility.TryUse())return false;
+                if(kind==CampFacility.FacilityKind.Forge)return true;
+                var game=CampRecoveryGame.Active;
+                if(game==null)return false;
+                float hp=vitals.Health,sp=vitals.Stamina;
+                if(game.ClaimReward()||vitals.Health!=hp||vitals.Stamina!=sp)throw new Exception("Opening a tent granted an unearned reward");
+                game.StartAttempt();game.AdvanceTime(game.TimeLimit+1);
+                if(game.Phase!=CampRecoveryGame.GamePhase.Lost||game.ClaimReward())throw new Exception("Timeout granted recovery");
+                game.StartAttempt();
+                Capture("Recovery_"+kind);
+                float lastCorrect=-100;
+                for(int i=0;i<game.Goal;i++)
+                {
+                    if(!game.Sequence)
+                    {
+                        for(int step=0;step<600;step++)
+                        {
+                            float phase=game.RhythmPosition;
+                            if(phase>.64f&&phase<.76f&&game.Elapsed-lastCorrect>.67f&&game.Submit(game.ExpectedAction)){lastCorrect=game.Elapsed;break;}
+                            game.AdvanceTime(.02f);
+                            if(game.Phase!=CampRecoveryGame.GamePhase.Playing&&game.Phase!=CampRecoveryGame.GamePhase.Won)throw new Exception("Could not complete recovery rhythm");
+                        }
+                    }
+                    else if(!game.Submit(game.ExpectedAction))throw new Exception("Recovery sequence rejected correct action");
+                }
+                if(game.Phase!=CampRecoveryGame.GamePhase.Won||vitals.Health!=hp||vitals.Stamina!=sp)throw new Exception("Reward must wait for explicit claim");
+                return game.ClaimReward()&&CampRecoveryGame.Active==null;
             }
 
             vitals.TakeImpact(40, "QA");
@@ -116,5 +142,17 @@ public static class BeachBoatCampFacilityPlaytest
         SessionState.SetBool(Flag, false);
         SessionState.SetInt(PendingExit, failure == null ? 0 : 1);
         EditorApplication.isPlaying = false;
+    }
+    public static void Capture(string name)
+    {
+        Canvas.ForceUpdateCanvases();
+        var texture=UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None).First(c=>c.name=="CampRecoveryCanvas");
+        var camera=BeachBoatQuestSession.Instance.storyCamera;var previous=texture.renderMode;var previousCamera=texture.worldCamera;
+        texture.renderMode=RenderMode.ScreenSpaceCamera;texture.worldCamera=camera;texture.planeDistance=2;
+        var target=new RenderTexture(1280,720,24);var png=new Texture2D(1280,720,TextureFormat.RGB24,false);
+        camera.targetTexture=target;camera.Render();RenderTexture.active=target;png.ReadPixels(new Rect(0,0,1280,720),0,0);png.Apply();
+        Directory.CreateDirectory("Logs");File.WriteAllBytes("Logs/"+name+".png",png.EncodeToPNG());
+        camera.targetTexture=null;RenderTexture.active=null;texture.renderMode=previous;texture.worldCamera=previousCamera;
+        UnityEngine.Object.DestroyImmediate(target);UnityEngine.Object.DestroyImmediate(png);
     }
 }

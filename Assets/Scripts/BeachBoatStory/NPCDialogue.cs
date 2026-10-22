@@ -16,6 +16,7 @@ public class NPCDialogue : MonoBehaviour
     public GameObject interactPromptUI;
 
     private bool isPlayerNear;
+    private void OnEnable(){NearbyConversation.Register(this);}
 
     private void Update()
     {
@@ -63,6 +64,8 @@ public class NPCDialogue : MonoBehaviour
 
     private void OnDisable()
     {
+        NearbyConversation.Remove(this);
+        BachDangStoryManager.Instance?.SetInteractPrompt(false,owner:this);
         if (interactPromptUI != null) interactPromptUI.SetActive(false);
     }
 }

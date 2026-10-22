@@ -30,6 +30,7 @@ namespace BeachBoatStory
 
         void Update()
         {
+            if(CampRecoveryGame.Active!=null)return;
             if (Time.time - lastEffortTime < recoveryDelay) return;
             Stamina = Mathf.MoveTowards(Stamina, maxStamina, staminaRecoveryPerSecond * Time.deltaTime);
             if (IsExhausted && Stamina >= exhaustedRecoveryThreshold) IsExhausted = false;

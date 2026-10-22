@@ -55,7 +55,7 @@ namespace BeachBoatStory
             if(IsDefeated)return;
             if(!HasCheckpoint)Capture(BachDangStoryManager.Instance.currentState);
             IsDefeated=true;previousTimeScale=Time.timeScale>0?Time.timeScale:1;
-            VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();StoryDialogueUI.Instance?.DismissForCheckpoint();
+            CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();StoryDialogueUI.Instance?.DismissForCheckpoint();
             EnemyFleetDirector.Instance?.StopBattle();QuestRowboat.Instance?.LeaveForCheckpoint();
             var body=session.player.GetComponent<Rigidbody>();if(!body.isKinematic){body.linearVelocity=Vector3.zero;body.angularVelocity=Vector3.zero;}body.isKinematic=true;
             Time.timeScale=0;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;
@@ -78,7 +78,7 @@ namespace BeachBoatStory
             foreach(var patrol in FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None))patrol.ResetForCheckpoint();
             if(boat!=null)boat.PrepareForBattle();
             var player=session.player;var body=player.GetComponent<Rigidbody>();
-            player.transform.SetPositionAndRotation(position,rotation);body.position=position;body.rotation=rotation;body.isKinematic=!session.storyMode;
+            PlayerArrival.Teleport(player,position,rotation);body.isKinematic=!session.storyMode;
             player.GetComponent<CapsuleCollider>().enabled=true;player.GetComponent<Character_Movement>().enabled=session.storyMode;
             vitals.RestoreCheckpoint(armor);Physics.SyncTransforms();IsDefeated=false;restoring=false;Time.timeScale=previousTimeScale;
             overlay.SetActive(false);var camera=session.storyCamera.GetComponent<Camera_Script>();camera.SnapToTarget();camera.CaptureCursor(session.storyMode);story.UpdateUI();return true;

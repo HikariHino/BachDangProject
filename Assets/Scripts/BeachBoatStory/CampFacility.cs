@@ -66,6 +66,24 @@ namespace BeachBoatStory
                 Time.unscaledTime - LastUse[(int)kind] < cooldownSeconds) return false;
             var vitals = session.player.GetComponent<PlayerVitals>();
             if (vitals == null) return false;
+            if(kind!=FacilityKind.Forge)
+            {
+                HidePrompt();return CampRecoveryGame.Open(this);
+            }
+            return ApplyReward(vitals);
+        }
+
+        internal bool CompleteRecovery(CampRecoveryGame game)
+        {
+            if(game!=CampRecoveryGame.Active||game.Facility!=this||game.Phase!=CampRecoveryGame.GamePhase.Won||
+               !isActiveAndEnabled||Time.unscaledTime-LastUse[(int)kind]<cooldownSeconds)return false;
+            var session=BeachBoatQuestSession.Instance;
+            if(session==null||QuestRowboat.FlatDistance(session.player.transform.position,transform.position)>interactDistance)return false;
+            return ApplyReward(session.player.GetComponent<PlayerVitals>());
+        }
+
+        bool ApplyReward(PlayerVitals vitals)
+        {
             string message;
             switch (kind)
             {
@@ -92,7 +110,8 @@ namespace BeachBoatStory
             }
             LastUse[(int)kind] = Time.unscaledTime;
             HidePrompt();
-            StoryDialogueUI.Instance?.Show(displayName, message);
+            if(CampRecoveryGame.Active==null)StoryDialogueUI.Instance?.Show(displayName, message);
+            else BeachBoatSoundscape.Instance?.PlayResult(true);
             return true;
         }
 
@@ -103,6 +122,6 @@ namespace BeachBoatStory
             BeachBoatQuestSession.Instance?.GetComponent<BachDangStoryManager>()?.SetInteractPrompt(false, owner: this);
         }
 
-        void OnDisable() { HidePrompt(); }
+        void OnDisable() { HidePrompt(); if(CampRecoveryGame.Active!=null&&CampRecoveryGame.Active.Facility==this)CampRecoveryGame.Active.Close(); }
     }
 }
