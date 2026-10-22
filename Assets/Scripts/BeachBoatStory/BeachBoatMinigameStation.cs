@@ -174,7 +174,7 @@ namespace BeachBoatStory
                 return;
             }
             if (BeachBoatMinigameUI.Instance == null)
-                story.SetInteractPrompt(true, $"Giao {CargoName(selectedCargo)} tới điểm sáng • {CurrentTargetDistance:0} m • Còn {TimeRemaining:0}s", this);
+                story.SetInteractPrompt(true, $"Giao {CargoName(selectedCargo)} tới điểm sáng • {WorldDistance.Format(CurrentTargetDistance)} • Còn {TimeRemaining:0}s", this);
             if (CurrentTargetDistance <= interactDistance && Input.GetKeyDown(KeyCode.E) && StoryDialogueUI.TryConsumeInput()) TryDeliver();
         }
 

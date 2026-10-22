@@ -15,6 +15,7 @@ namespace BeachBoatStory
         public MonoBehaviour[] tourControls;
         public WoodCollectible[] woodItems;
         public bool storyMode = true;
+        public float WorldUnitsPerMetre {get;private set;}=1;
         bool[] savedControls;
         string tourTag;
         bool tourCameraEnabled;
@@ -49,6 +50,12 @@ namespace BeachBoatStory
             questGiver = GetComponentInChildren<NPCQuestGiver>(true);
             gates = GetComponentsInChildren<CampGateTransition>(true);
             Instance = this;
+            foreach(var root in gameObject.scene.GetRootGameObjects())
+            {
+                var scale=root.GetComponent<BachDangWorldScale>();
+                if(scale!=null&&scale.isActiveAndEnabled)
+                {WorldUnitsPerMetre=Mathf.Max(.01f,scale.fittedCharacterHeight/Mathf.Max(.01f,scale.referenceCharacterHeight));break;}
+            }
             if (player == null || storyCamera == null || tourCamera == null || playerSpawn == null)
             { Debug.LogError("BeachBoat story bindings are incomplete.", this); enabled = false; return; }
             vitals = player.GetComponent<PlayerVitals>();

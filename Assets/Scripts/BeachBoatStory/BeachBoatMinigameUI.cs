@@ -120,12 +120,12 @@ namespace BeachBoatStory
                 ? $"ĐƠN HÀNG {game.Progress + 1}: {BeachBoatMinigameStation.CargoName(game.RequestedCargo)}"
                 : $"ĐANG CHỞ: {BeachBoatMinigameStation.CargoName(game.SelectedCargo)}";
             relayHint.text = game.ReturningToWarehouse
-                ? $"Về kho lấy vật tư • {Mathf.RoundToInt(game.CurrentTargetDistance)} m"
+                ? $"Về kho lấy vật tư • {WorldDistance.Format(game.CurrentTargetDistance)}"
                 : game.IsSelectingCargo
                 ? "Đọc phiếu, chọn vật tư cùng tên ở kho (phím 1–3 hoặc bấm ô). Chọn sai mất 8 giây."
                 : game.CurrentTargetDistance <= game.interactDistance
                     ? $"Đã tới biển GIAO {BeachBoatMinigameStation.CargoName(game.SelectedCargo)} — bấm E để giao"
-                    : $"Theo biển GIAO {BeachBoatMinigameStation.CargoName(game.SelectedCargo)} • {Mathf.RoundToInt(game.CurrentTargetDistance)} m";
+                    : $"Theo biển GIAO {BeachBoatMinigameStation.CargoName(game.SelectedCargo)} • {WorldDistance.Format(game.CurrentTargetDistance)}";
             if (Time.unscaledTime < relayErrorUntil)
                 relayHint.text = "SAI VẬT TƯ: xem tên trên phiếu và thùng hàng. Bị trừ 8 giây.";
             relayHint.color = Time.unscaledTime < relayErrorUntil ? Red : Color.white;
@@ -135,10 +135,10 @@ namespace BeachBoatStory
                 ? $"VỀ KHO NHẬN VẬT TƯ   •   {game.Progress}/{total}"
                 : $"GIAO {BeachBoatMinigameStation.CargoName(game.SelectedCargo)}   •   {game.Progress}/{total}";
             relayTravelHint.text = game.ReturningToWarehouse
-                ? $"Về kho • {Mathf.RoundToInt(game.CurrentTargetDistance)} m"
+                ? $"Về kho • {WorldDistance.Format(game.CurrentTargetDistance)}"
                 : game.CurrentTargetDistance <= game.interactDistance
                     ? "Đã tới điểm giao • Bấm E để giao vật tư"
-                    : $"Theo biển giao hàng • {Mathf.RoundToInt(game.CurrentTargetDistance)} m";
+                    : $"Theo biển giao hàng • {WorldDistance.Format(game.CurrentTargetDistance)}";
             relayTravelTime.text = $"CÒN {game.TimeRemaining:0}s";
             relayTravelTime.color = game.TimeRemaining < 20f ? Red : Color.white;
         }

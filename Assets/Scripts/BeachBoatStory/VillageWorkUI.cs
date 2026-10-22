@@ -16,6 +16,7 @@ namespace BeachBoatStory
         VillageWorkIcon[] woodIcons,ropeIcons;
         VillageWorkStall shown;
         int selectedDifficulty=1;
+        Button undoButton,restoreButton;
         static readonly Color Gold=new Color(1,.75f,.30f),Green=new Color(.25f,.70f,.48f),Ink=new Color(.045f,.06f,.07f,.98f);
         public static void EnsureExists()
         {
@@ -47,7 +48,9 @@ namespace BeachBoatStory
             stats=Label("Stats",work.transform,new Vector2(0,.90f),new Vector2(1,1),19,Color.white);
             var clock=Box("Clock",work.transform,new Vector2(0,.85f),new Vector2(1,.875f),new Color(.2f,.2f,.2f));clockFill=Box("Fill",clock.transform,Vector2.zero,Vector2.one,Gold).GetComponent<RectTransform>();
             task=Label("Task",work.transform,new Vector2(0,.67f),new Vector2(1,.81f),24,Gold);
-            feedback=Label("Feedback",work.transform,new Vector2(0,.12f),new Vector2(1,.23f),18,Color.white);
+            feedback=Label("Feedback",work.transform,new Vector2(0,.08f),new Vector2(1,.16f),17,Color.white);
+            undoButton=Click("Undo",work.transform,new Vector2(0,.17f),new Vector2(.48f,.25f),"HOÀN TÁC  [Z]",()=>VillageWorkStall.Active?.Undo()).GetComponent<Button>();
+            restoreButton=Click("RestoreTask",work.transform,new Vector2(.52f,.17f),new Vector2(1,.25f),"LÀM LẠI PHẦN NÀY  [C]",()=>VillageWorkStall.Active?.RestoreCurrentTask()).GetComponent<Button>();
             var progress=Box("Progress",work.transform,new Vector2(0,.045f),new Vector2(1,.075f),new Color(.2f,.2f,.2f));progressFill=Box("Fill",progress.transform,Vector2.zero,Vector2.one,Green).GetComponent<RectTransform>();
             woodChoices=Box("TimberChoices",work.transform,new Vector2(0,.27f),new Vector2(1,.65f),Color.clear);woodIcons=new VillageWorkIcon[4];woodLabels=new TMP_Text[4];
             for(int i=0;i<4;i++)
@@ -97,7 +100,7 @@ namespace BeachBoatStory
             instructions.SetActive(intro);work.SetActive(playing);result.SetActive(!intro&&!playing);
             if(intro)
             {
-                rules.text=s.Instructions+"\n\nMỗi lần sai mất 2 giây. Hết giờ hoặc sai quá giới hạn sẽ thua. ESC để rời sạp.";
+                rules.text=s.Instructions+"\n\nZ: hoàn tác; C: làm lại phần hiện tại. Thời gian và số lỗi không hoàn lại. Mỗi lỗi mất 2 giây. Hết giờ hoặc quá số lỗi sẽ thua. ESC để rời sạp.";
                 for(int i=0;i<3;i++)difficultyLabels[i].color=i==selectedDifficulty?Gold:Color.white;
                 startLabel.text="BẮT ĐẦU  •  "+new[]{"DỄ","VỪA","KHÓ"}[selectedDifficulty];return;
             }
@@ -109,6 +112,7 @@ namespace BeachBoatStory
                 result.transform.Find("ConfirmResult/Label").GetComponent<TMP_Text>().text=won?"NHẬN VẬT TƯ  [ENTER]":"CHƠI LẠI  [R]";return;
             }
             stats.text=$"CÒN {s.TimeRemaining:0.0}s     •     XONG {s.Progress}/{s.Goal}     •     SAI {s.Mistakes}/{s.MistakeLimit}";
+            undoButton.interactable=s.CanUndo;restoreButton.interactable=s.CanRestore;
             stats.color=s.TimeRemaining<7?new Color(1,.4f,.3f):Color.white;
             clockFill.anchorMax=new Vector2(s.TimeRemaining/s.TimeLimit,1);progressFill.anchorMax=new Vector2(s.Progress/(float)s.Goal,1);
             woodChoices.SetActive(s.kind==VillageWorkStall.WorkKind.Timber);foodChoices.SetActive(s.kind==VillageWorkStall.WorkKind.Provisions);

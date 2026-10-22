@@ -30,6 +30,22 @@ namespace BeachBoatStory
         }
 
         public Transform CurrentTarget => target;
+        public float CurrentDistanceMetres=>target!=null?WorldDistance.ToMetres(QuestRowboat.FlatDistance(target.position,session.player.transform.position)):0;
+        public bool InInteractionRange(Transform destination)
+        {
+            if(destination==null)return false;
+            var player=session.player.transform;
+            foreach(var activity in activities)
+                if(activity!=null&&activity.transform==destination)return QuestRowboat.FlatDistance(player.position,destination.position)<=activity.interactDistance;
+            if(villageWork!=null)foreach(var stall in villageWork.stalls)
+                if(stall!=null&&(stall.interactionPoint==destination||stall.transform==destination))return QuestRowboat.FlatDistance(player.position,stall.InteractionPosition)<=stall.interactionDistance;
+            foreach(var gate in gates)if(gate!=null&&gate.transform==destination)return gate.IsInRange(player);
+            if(commander!=null&&commander.transform==destination)return Vector3.Distance(player.position,destination.position)<=commander.interactDistance;
+            foreach(var wood in session.woodItems)if(wood!=null&&wood.transform==destination)return Vector3.Distance(player.position,destination.position)<=wood.interactDistance;
+            var boat=QuestRowboat.Instance;
+            if(boat!=null&&!boat.IsAboard&&boat.boardingPoint==destination)return QuestRowboat.FlatDistance(player.position,destination.position)<=boat.boardingRange;
+            return false;
+        }
 
         // River travel shares quest states with work/reporting. Choose the local end of that leg.
         public Transform ResolveTarget(out string title)
@@ -139,8 +155,9 @@ namespace BeachBoatStory
                 if (target != null)
                 {
                     var offset = target.position - session.player.transform.position; offset.y = 0;
-                    caption.text = title + "\n" + Mathf.RoundToInt(offset.magnitude) +
-                        (story.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress?" m • Bắn xạ thủ / SPACE phản công":" m • Đến gần để bấm E");
+                    caption.text = title + "\n" + WorldDistance.Format(offset.magnitude) +
+                        (story.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress?" • Bắn xạ thủ / SPACE phản công":
+                        InInteractionRange(target)?" • Trong tầm tương tác • Bấm E":" • Đến gần để bấm E");
                 }
             }
             if (target == null || session.storyCamera == null) return;

@@ -144,7 +144,7 @@ namespace BeachBoatStory
                         ? $"Thuyền tự mắc cọc khi nước rút • Đã đắm {BachDangStoryManager.Instance?.destroyedEnemyShips ?? 0}/{ShipCount}"
                         : !suppressed ? $"HẠ XẠ THỦ ĐỢT {ready+1}: chuột phải ngắm, giữ/thả chuột trái bắn"
                         : range>commandRange
-                            ? $"Chèo tới gần thuyền địch đợt {ready+1} để truyền lệnh • Còn {range:0} m"
+                            ? $"Chèo tới gần thuyền địch đợt {ready+1} để truyền lệnh • Còn {WorldDistance.Format(range)}"
                             : $"[SPACE] PHẤT CỜ ĐỢT {ready+1}!  Quân ta đánh dứt điểm xạ thủ còn lại";
                 }
                 yield return null;

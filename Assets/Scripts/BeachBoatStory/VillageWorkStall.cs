@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace BeachBoatStory
 {
@@ -45,6 +46,35 @@ namespace BeachBoatStory
         readonly int[] timberLengths=new int[4],ropePorts=new int[9],ingredients=new int[3];
         readonly bool[] timberUsed=new bool[4];
         int timberPieces;
+        sealed class WorkSnapshot
+        {
+            public int rice,moves,total,pieces;
+            public int[] rope,food;
+            public bool[] timber;
+        }
+        readonly List<WorkSnapshot> history=new List<WorkSnapshot>();
+        WorkSnapshot initialWork;
+        public bool CanUndo=>Active==this&&Phase==WorkPhase.Playing&&history.Count>0;
+        public bool CanRestore=>Active==this&&Phase==WorkPhase.Playing&&initialWork!=null&&history.Count>0;
+        WorkSnapshot CaptureWork()=>new WorkSnapshot{rice=RiceLoad,moves=Moves,total=TimberTotal,pieces=timberPieces,rope=(int[])ropePorts.Clone(),food=(int[])ingredients.Clone(),timber=(bool[])timberUsed.Clone()};
+        void RememberWork(){if(history.Count>=128)history.RemoveAt(0);history.Add(CaptureWork());}
+        void RestoreWork(WorkSnapshot saved)
+        {
+            RiceLoad=saved.rice;Moves=saved.moves;TimberTotal=saved.total;timberPieces=saved.pieces;
+            System.Array.Copy(saved.rope,ropePorts,9);System.Array.Copy(saved.food,ingredients,3);System.Array.Copy(saved.timber,timberUsed,4);
+        }
+        public bool Undo()
+        {
+            if(!CanUndo)return false;
+            int last=history.Count-1;RestoreWork(history[last]);history.RemoveAt(last);
+            Feedback="Đã hoàn tác thao tác cuối. Thời gian và số lỗi vẫn giữ nguyên.";LastCorrect=true;FeedbackVersion++;BeachBoatSoundscape.Instance?.PlayInteraction();return true;
+        }
+        public bool RestoreCurrentTask()
+        {
+            if(!CanRestore)return false;
+            RestoreWork(initialWork);history.Clear();
+            Feedback="Đã làm lại phần này; giữ đơn hàng, tiến độ, thời gian và số lỗi.";LastCorrect=true;FeedbackVersion++;BeachBoatSoundscape.Instance?.PlayInteraction();return true;
+        }
         Transform player;
         CursorLockMode savedLock;
         bool savedCursor,prompt;
@@ -57,6 +87,8 @@ namespace BeachBoatStory
                 if(Phase==WorkPhase.Lost){if(Input.GetKeyDown(KeyCode.R))StartAttempt(Difficulty);return;}
                 if(Phase==WorkPhase.Won){if(Input.GetKeyDown(KeyCode.Return))ClaimReward();return;}
                 AdvanceTime(Time.unscaledDeltaTime);
+                if(Input.GetKeyDown(KeyCode.Z)){Undo();return;}
+                if(Input.GetKeyDown(KeyCode.C)){RestoreCurrentTask();return;}
                 if(kind==WorkKind.Rope){if(Input.GetKeyDown(KeyCode.Space))SubmitOption(9);}
                 else for(int i=0;i<4;i++)if(Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1+i)))SubmitOption(i);
                 return;
@@ -118,7 +150,7 @@ namespace BeachBoatStory
             if(Active!=this||Phase!=WorkPhase.Playing||option<0||option>(kind==WorkKind.Rope?9:3))return false;
             if(kind==WorkKind.Rope)
             {
-                if(option<9){ropePorts[option]=RotatePorts(ropePorts[option]);Moves++;if(Moves>MoveLimit)Lose("Đã hết lượt xoay. Quan sát đường dây rồi thử lại.");return true;}
+                if(option<9){RememberWork();ropePorts[option]=RotatePorts(ropePorts[option]);Moves++;if(Moves>MoveLimit)Lose("Đã hết lượt xoay. Quan sát đường dây rồi thử lại.");return true;}
                 if(RopeConnected()){Score("Dây đã nối liền từ đầu vào tới đầu ra.");return true;}
                 Fault("Đường dây còn đứt hoặc đi ra ngoài khung. Kiểm tra các đầu nối.");return false;
             }
@@ -126,7 +158,7 @@ namespace BeachBoatStory
             {
                 if(timberUsed[option])return false;
                 if(!soundTimber[option]){Fault("Thanh này bị nứt. Hãy chọn hai thanh liền thân.");return false;}
-                timberUsed[option]=true;TimberTotal+=timberLengths[option];timberPieces++;
+                RememberWork();timberUsed[option]=true;TimberTotal+=timberLengths[option];timberPieces++;
                 if(timberPieces==2&&TimberTotal==TimberTarget){Score("Hai thanh vừa đúng chiều dài đơn hàng.");return true;}
                 if(TimberTotal>=TimberTarget||timberPieces>=2)
                 {Fault("Tổng chiều dài không đúng. Tính lại cặp gỗ rồi chọn lại.");for(int i=0;i<4;i++)timberUsed[i]=false;TimberTotal=timberPieces=0;return false;}
@@ -134,6 +166,7 @@ namespace BeachBoatStory
             }
             if(kind==WorkKind.Rice)
             {
+                if(option<3&&(option!=2||RiceLoad>=RiceSmall))RememberWork();
                 if(option==0)RiceLoad+=RiceSmall;
                 else if(option==1)RiceLoad+=RiceLarge;
                 else if(option==2){if(RiceLoad<RiceSmall){Fault("Không đủ gạo để bớt một gáo nhỏ.");return false;}RiceLoad-=RiceSmall;}
@@ -142,13 +175,13 @@ namespace BeachBoatStory
                 Moves++;if(Moves>MoveLimit){RiceLoad=Moves=0;Fault("Quá số lượt đong. Hãy tính đường đi ngắn hơn.");return false;}
                 return true;
             }
-            if(option<3){ingredients[option]++;return true;}
+            if(option<3){RememberWork();ingredients[option]++;return true;}
             bool correct=true;for(int i=0;i<3;i++)correct&=ingredients[i]==RequiredIngredient(i);
             if(correct)Score("Khẩu phần đã đủ cho cả nhóm quân sĩ.");
             else
             {
                 Fault("Khẩu phần chưa đúng công thức. Gói lại: mỗi người 2 gạo + 1 cá, cả gói 1 muối.");
-                for(int i=0;i<3;i++)ingredients[i]=0;
+                // Keep the unsubmitted ration visible so the player can undo excess ingredients.
             }
             return correct;
         }
@@ -188,6 +221,7 @@ namespace BeachBoatStory
                 MoveLimit=MinimumScoops(RiceTarget,RiceSmall,RiceLarge)+(Difficulty==0?2:Difficulty==1?1:0);
             }
             else {People=Random.Range(1+Difficulty,3+Difficulty);for(int i=0;i<3;i++)ingredients[i]=0;}
+            history.Clear();initialWork=CaptureWork();
         }
         static int MinimumScoops(int target,int small,int large)
         {
@@ -210,7 +244,7 @@ namespace BeachBoatStory
         public void ResetCollection(){Completed=false;}
         public void Close()
         {
-            if(Active!=this)return;Active=null;HidePrompt();Cursor.lockState=savedLock;Cursor.visible=savedCursor;
+            if(Active!=this)return;Active=null;history.Clear();initialWork=null;HidePrompt();Cursor.lockState=savedLock;Cursor.visible=savedCursor;
         }
         void HidePrompt(){if(prompt){BachDangStoryManager.Instance?.SetInteractPrompt(false,owner:this);prompt=false;}}
         void OnDisable(){Close();HidePrompt();}
