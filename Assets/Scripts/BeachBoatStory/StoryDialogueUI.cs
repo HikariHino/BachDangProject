@@ -165,13 +165,14 @@ public sealed class StoryDialogueUI : MonoBehaviour
         bodyText.text = line;
         onDialogueClosed = onClosed;
         panel.SetActive(true);
-        StartVoice(speaker,line,DialogueVoice.ActorIdentity(speaker,actor),DialogueVoice.ActorIsFemale(speaker,actor));
+        string identity=DialogueVoice.ActorIdentity(speaker,actor);bool female=DialogueVoice.ActorIsFemale(speaker,actor);
+        StartVoice(speaker,line,identity,female,DialogueVoice.ActorProfile(speaker,actor,identity,female));
         BeachBoatSoundscape.Instance?.PlayInteraction();
     }
 
-    void StartVoice(string speaker,string line,string identity,bool female)
+    void StartVoice(string speaker,string line,string identity,bool female,string profile=null)
     {
-        voice.Play(speaker,line,identity,female);bodyText.maxVisibleCharacters=int.MaxValue;bodyText.ForceMeshUpdate();
+        voice.Play(speaker,line,identity,female,profile);bodyText.maxVisibleCharacters=int.MaxValue;bodyText.ForceMeshUpdate();
         revealDuration=voice.Duration>0?Mathf.Max(.25f,voice.Duration*.92f):Mathf.Max(.25f,bodyText.textInfo.characterCount/38f);
         revealElapsed=0;revealed=0;bodyText.maxVisibleCharacters=0;
     }
@@ -202,7 +203,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
     }
     public void DismissForCheckpoint(){onDialogueClosed=null;Close();}
     public BachDangSaveData.Dialogue CaptureSave()=>IsOpen?new BachDangSaveData.Dialogue {
-        active=true,speaker=speakerText.text,line=bodyText.text,action=onDialogueClosed?.Method.Name,voiceIdentity=voice.Identity,femaleVoice=voice.Female}:null;
+        active=true,speaker=speakerText.text,line=bodyText.text,action=onDialogueClosed?.Method.Name,voiceIdentity=voice.Identity,voiceProfile=voice.ProfileId,femaleVoice=voice.Female}:null;
     public void RestoreSave(BachDangSaveData.Dialogue data)
     {
         if(data==null||!data.active)return;
@@ -219,7 +220,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
             case nameof(BachDangStoryManager.OnVictoryReported):callback=story.OnVictoryReported;break;
         }
         Show(data.speaker,data.line,callback);
-        if(!string.IsNullOrEmpty(data.voiceIdentity))StartVoice(data.speaker,data.line,data.voiceIdentity,data.femaleVoice);
+        if(!string.IsNullOrEmpty(data.voiceIdentity))StartVoice(data.speaker,data.line,data.voiceIdentity,data.femaleVoice,data.voiceProfile);
     }
 
     private void Update()

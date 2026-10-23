@@ -8,7 +8,8 @@ public static class BeachBoatDialogueVoiceSetup
     public static void ApplyAndExit()
     {
         const string folder="Assets/Resources/BachDang938/Voices";
-        var files=Directory.GetFiles(folder,"*.mp3");
+        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+        var files=Directory.GetFiles(folder,"*.mp3",SearchOption.AllDirectories);
         if(files.Length<76)throw new Exception("Vietnamese dialogue recordings are incomplete");
         foreach(var file in files)
         {

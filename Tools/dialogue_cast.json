@@ -1,0 +1,104 @@
+{
+  "commander": {
+    "label": "Ngô Quyền",
+    "voice": "vi-VN-NamMinhNeural",
+    "rate": "-8%",
+    "pitch": "-12Hz"
+  },
+  "soldier": {
+    "label": "Lính trẻ",
+    "voice": "en-US-AndrewMultilingualNeural",
+    "rate": "+2%",
+    "pitch": "-3Hz"
+  },
+  "veteran": {
+    "label": "Quản quân / lính lâu năm",
+    "voice": "vi-VN-NamMinhNeural",
+    "rate": "-2%",
+    "pitch": "-5Hz"
+  },
+  "villager_m": {
+    "label": "Nam dân làng",
+    "voice": "vi-VN-NamMinhNeural",
+    "rate": "+5%",
+    "pitch": "+3Hz"
+  },
+  "villager_f": {
+    "label": "Nữ dân làng",
+    "voice": "vi-VN-HoaiMyNeural",
+    "rate": "+1%",
+    "pitch": "-2Hz"
+  },
+  "farmer_m": {
+    "label": "Nông dân nam",
+    "voice": "vi-VN-NamMinhNeural",
+    "rate": "-1%",
+    "pitch": "-3Hz"
+  },
+  "farmer_f": {
+    "label": "Nông dân nữ",
+    "voice": "vi-VN-HoaiMyNeural",
+    "rate": "-3%",
+    "pitch": "-5Hz"
+  },
+  "fisher_m": {
+    "label": "Ngư dân nam",
+    "voice": "en-US-BrianMultilingualNeural",
+    "rate": "+2%",
+    "pitch": "+0Hz"
+  },
+  "fisher_f": {
+    "label": "Ngư dân nữ",
+    "voice": "vi-VN-HoaiMyNeural",
+    "rate": "+3%",
+    "pitch": "+1Hz"
+  },
+  "merchant_m": {
+    "label": "Người buôn nam",
+    "voice": "en-US-AndrewMultilingualNeural",
+    "rate": "+6%",
+    "pitch": "+3Hz"
+  },
+  "merchant_f": {
+    "label": "Người buôn nữ",
+    "voice": "en-US-EmmaMultilingualNeural",
+    "rate": "+3%",
+    "pitch": "+0Hz"
+  },
+  "porter_m": {
+    "label": "Người khuân vác nam",
+    "voice": "vi-VN-NamMinhNeural",
+    "rate": "+4%",
+    "pitch": "-4Hz"
+  },
+  "porter_f": {
+    "label": "Người khuân vác nữ",
+    "voice": "vi-VN-HoaiMyNeural",
+    "rate": "+4%",
+    "pitch": "-3Hz"
+  },
+  "smith_m": {
+    "label": "Thợ rèn nam",
+    "voice": "en-US-BrianMultilingualNeural",
+    "rate": "-1%",
+    "pitch": "-6Hz"
+  },
+  "smith_f": {
+    "label": "Thợ rèn nữ",
+    "voice": "en-US-EmmaMultilingualNeural",
+    "rate": "-1%",
+    "pitch": "-4Hz"
+  },
+  "villager_alt_m": {
+    "label": "Nam dân làng khác",
+    "voice": "en-US-AndrewMultilingualNeural",
+    "rate": "+1%",
+    "pitch": "+2Hz"
+  },
+  "villager_alt_f": {
+    "label": "Nữ dân làng khác",
+    "voice": "en-US-EmmaMultilingualNeural",
+    "rate": "+0%",
+    "pitch": "+2Hz"
+  }
+}

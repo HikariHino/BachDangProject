@@ -3,202 +3,783 @@
     {
       "line": "Bà con đã gom gỗ dọc đường làng. Xin mang về cho quân ta dựng trận địa cọc!",
       "male": "BachDang938/Voices/33a306bd0186d6db7b85_m",
-      "female": "BachDang938/Voices/33a306bd0186d6db7b85_f"
+      "female": "BachDang938/Voices/33a306bd0186d6db7b85_f",
+      "variants": [
+        {
+          "profile": "villager_m",
+          "path": "BachDang938/Voices/Cast/5c92deea6264c90bbef7_villager_m"
+        },
+        {
+          "profile": "villager_f",
+          "path": "BachDang938/Voices/Cast/320b73b11315d35bd38c_villager_f"
+        },
+        {
+          "profile": "villager_alt_m",
+          "path": "BachDang938/Voices/Cast/3e34a08ae3db0757ff9f_villager_alt_m"
+        },
+        {
+          "profile": "villager_alt_f",
+          "path": "BachDang938/Voices/Cast/0b36613822e0660c4808_villager_alt_f"
+        }
+      ]
     },
     {
       "line": "Búa, kìm và than đã đủ cho một ngày làm việc.",
       "male": "BachDang938/Voices/b47be7dc7569f6b565f5_m",
-      "female": "BachDang938/Voices/b47be7dc7569f6b565f5_f"
+      "female": "BachDang938/Voices/b47be7dc7569f6b565f5_f",
+      "variants": [
+        {
+          "profile": "smith_m",
+          "path": "BachDang938/Voices/Cast/b58e6671fa9443e2f539_smith_m"
+        },
+        {
+          "profile": "smith_f",
+          "path": "BachDang938/Voices/Cast/3f842c7547949fff49fb_smith_f"
+        }
+      ]
     },
     {
       "line": "Ca gác này yên ổn, nhưng chúng tôi vẫn không lơ là.",
       "male": "BachDang938/Voices/edc7b190f5b99c7aa6e1_m",
-      "female": "BachDang938/Voices/edc7b190f5b99c7aa6e1_f"
+      "female": "BachDang938/Voices/edc7b190f5b99c7aa6e1_f",
+      "variants": [
+        {
+          "profile": "soldier",
+          "path": "BachDang938/Voices/Cast/f85d3591b87dfeb464d2_soldier"
+        },
+        {
+          "profile": "veteran",
+          "path": "BachDang938/Voices/Cast/4017d5f13755c3620d6b_veteran"
+        }
+      ]
     },
     {
       "line": "Chợ họp từ sáng, bà con đổi cá lấy thóc và củi.",
       "male": "BachDang938/Voices/27fae555e38963582de7_m",
-      "female": "BachDang938/Voices/27fae555e38963582de7_f"
+      "female": "BachDang938/Voices/27fae555e38963582de7_f",
+      "variants": [
+        {
+          "profile": "merchant_m",
+          "path": "BachDang938/Voices/Cast/db0116fba5ac7788d91a_merchant_m"
+        },
+        {
+          "profile": "merchant_f",
+          "path": "BachDang938/Voices/Cast/8872236a0f0271eecf61_merchant_f"
+        }
+      ]
     },
     {
       "line": "Cổng trại luôn phải thông thoáng để quân có thể xuất phát nhanh.",
       "male": "BachDang938/Voices/923b2ce8fe464b442c53_m",
-      "female": "BachDang938/Voices/923b2ce8fe464b442c53_f"
+      "female": "BachDang938/Voices/923b2ce8fe464b442c53_f",
+      "variants": [
+        {
+          "profile": "soldier",
+          "path": "BachDang938/Voices/Cast/1a45aa465719d4c0cc30_soldier"
+        },
+        {
+          "profile": "veteran",
+          "path": "BachDang938/Voices/Cast/9c0e5d577f63ff3e202f_veteran"
+        }
+      ]
     },
     {
       "line": "Củi gỗ của làng đều xin góp cho đại quân. Hãy tìm đủ năm khúc rồi trở về báo tin.",
       "male": "BachDang938/Voices/78d73838173f29a25ec8_m",
-      "female": "BachDang938/Voices/78d73838173f29a25ec8_f"
+      "female": "BachDang938/Voices/78d73838173f29a25ec8_f",
+      "variants": [
+        {
+          "profile": "villager_m",
+          "path": "BachDang938/Voices/Cast/c040b48a4628c68f6c43_villager_m"
+        },
+        {
+          "profile": "villager_f",
+          "path": "BachDang938/Voices/Cast/0d648fd7014f4b31f7ee_villager_f"
+        },
+        {
+          "profile": "villager_alt_m",
+          "path": "BachDang938/Voices/Cast/9a55a334cb5e81017106_villager_alt_m"
+        },
+        {
+          "profile": "villager_alt_f",
+          "path": "BachDang938/Voices/Cast/20ede07a5ee44d8c20f0_villager_alt_f"
+        }
+      ]
     },
     {
       "line": "Doanh trại đã sẵn sàng. Quân sĩ đang chờ lệnh của Chủ tướng.",
       "male": "BachDang938/Voices/732188eebd6111d890b9_m",
-      "female": "BachDang938/Voices/732188eebd6111d890b9_f"
+      "female": "BachDang938/Voices/732188eebd6111d890b9_f",
+      "variants": [
+        {
+          "profile": "soldier",
+          "path": "BachDang938/Voices/Cast/d8e7ff9adf5596a95693_soldier"
+        },
+        {
+          "profile": "veteran",
+          "path": "BachDang938/Voices/Cast/fd3ab5bb327ca1796266_veteran"
+        }
+      ]
     },
     {
       "line": "Dân làng ven sông đã sẵn lòng giúp sức. Mong quân ta sớm chuẩn bị đủ cọc để chặn thuyền giặc.",
       "male": "BachDang938/Voices/e3615543179ac2096ce0_m",
-      "female": "BachDang938/Voices/e3615543179ac2096ce0_f"
+      "female": "BachDang938/Voices/e3615543179ac2096ce0_f",
+      "variants": [
+        {
+          "profile": "villager_m",
+          "path": "BachDang938/Voices/Cast/d39469a724c1308ad783_villager_m"
+        },
+        {
+          "profile": "villager_f",
+          "path": "BachDang938/Voices/Cast/7fa2cb080c2774e55538_villager_f"
+        },
+        {
+          "profile": "villager_alt_m",
+          "path": "BachDang938/Voices/Cast/7986c81e927f001fe835_villager_alt_m"
+        },
+        {
+          "profile": "villager_alt_f",
+          "path": "BachDang938/Voices/Cast/a4ae4edd1e2d8295de7a_villager_alt_f"
+        }
+      ]
     },
     {
       "line": "Gạo, cá khô và chum nước đều đã được chuyển vào kho.",
       "male": "BachDang938/Voices/122105fc9b874e25fa0c_m",
-      "female": "BachDang938/Voices/122105fc9b874e25fa0c_f"
+      "female": "BachDang938/Voices/122105fc9b874e25fa0c_f",
+      "variants": [
+        {
+          "profile": "merchant_m",
+          "path": "BachDang938/Voices/Cast/76452da761639ad15869_merchant_m"
+        },
+        {
+          "profile": "merchant_f",
+          "path": "BachDang938/Voices/Cast/491b4f3ef6fafc3ca525_merchant_f"
+        }
+      ]
     },
     {
       "line": "Gỗ, dây buộc, gạo và lương khô đã chuẩn bị đủ. Hãy về doanh trại báo cáo Ngô Quyền.",
       "male": "BachDang938/Voices/9bc116f3247b5fb7314a_m",
-      "female": "BachDang938/Voices/9bc116f3247b5fb7314a_f"
+      "female": "BachDang938/Voices/9bc116f3247b5fb7314a_f",
+      "variants": [
+        {
+          "profile": "villager_m",
+          "path": "BachDang938/Voices/Cast/a8e583e899ea7e9bc3ae_villager_m"
+        },
+        {
+          "profile": "villager_f",
+          "path": "BachDang938/Voices/Cast/5535645e90ed06cc07ac_villager_f"
+        },
+        {
+          "profile": "villager_alt_m",
+          "path": "BachDang938/Voices/Cast/f6c36cfb3aaf1779d807_villager_alt_m"
+        },
+        {
+          "profile": "villager_alt_f",
+          "path": "BachDang938/Voices/Cast/a814820d86dbaa4d7ff9_villager_alt_f"
+        }
+      ]
     },
     {
       "line": "Gỗ, dây buộc, gạo và lương khô đã sẵn sàng. Hãy về doanh trại báo Chủ tướng.",
       "male": "BachDang938/Voices/029cdfdd67e820ce8748_m",
-      "female": "BachDang938/Voices/029cdfdd67e820ce8748_f"
+      "female": "BachDang938/Voices/029cdfdd67e820ce8748_f",
+      "variants": [
+        {
+          "profile": "soldier",
+          "path": "BachDang938/Voices/Cast/04fe5d5c82a30d1521c1_soldier"
+        },
+        {
+          "profile": "veteran",
+          "path": "BachDang938/Voices/Cast/715ed159f852e235a155_veteran"
+        }
+      ]
     },
     {
       "line": "Kho lương phải luôn đầy để quân sĩ yên tâm luyện tập.",
       "male": "BachDang938/Voices/056605e5dd178c4a6e3f_m",
-      "female": "BachDang938/Voices/056605e5dd178c4a6e3f_f"
+      "female": "BachDang938/Voices/056605e5dd178c4a6e3f_f",
+      "variants": [
+        {
+          "profile": "porter_m",
+          "path": "BachDang938/Voices/Cast/634d75d2bfc1ae16c658_porter_m"
+        },
+        {
+          "profile": "porter_f",
+          "path": "BachDang938/Voices/Cast/a9ed90239da799b28c2a_porter_f"
+        }
+      ]
     },
     {
       "line": "Khúc sông này phải thuộc con nước mới chèo thuyền an toàn.",
       "male": "BachDang938/Voices/07babad4c134ffcc3f52_m",
-      "female": "BachDang938/Voices/07babad4c134ffcc3f52_f"
+      "female": "BachDang938/Voices/07babad4c134ffcc3f52_f",
+      "variants": [
+        {
+          "profile": "fisher_m",
+          "path": "BachDang938/Voices/Cast/618aba2c013c6e44bd7d_fisher_m"
+        },
+        {
+          "profile": "fisher_f",
+          "path": "BachDang938/Voices/Cast/177e7d0ec4aee7d11764_fisher_f"
+        }
+      ]
     },
     {
       "line": "Làng ven sông hôm nay đông vui hơn mọi ngày.",
       "male": "BachDang938/Voices/acc338c875273f8d0910_m",
-      "female": "BachDang938/Voices/acc338c875273f8d0910_f"
+      "female": "BachDang938/Voices/acc338c875273f8d0910_f",
+      "variants": [
+        {
+          "profile": "villager_m",
+          "path": "BachDang938/Voices/Cast/9d2336740a4f67f56c64_villager_m"
+        },
+        {
+          "profile": "villager_f",
+          "path": "BachDang938/Voices/Cast/27c317d6dfab4e4b53d7_villager_f"
+        },
+        {
+          "profile": "villager_alt_m",
+          "path": "BachDang938/Voices/Cast/63ac04ed6efc581796f0_villager_alt_m"
+        },
+        {
+          "profile": "villager_alt_f",
+          "path": "BachDang938/Voices/Cast/00bfdf2e512347428aaa_villager_alt_f"
+        }
+      ]
     },
     {
       "line": "Lò rèn phải đỏ lửa cả ngày để sửa giáo và nông cụ.",
       "male": "BachDang938/Voices/52979ae67cfffba7b823_m",
-      "female": "BachDang938/Voices/52979ae67cfffba7b823_f"
+      "female": "BachDang938/Voices/52979ae67cfffba7b823_f",
+      "variants": [
+        {
+          "profile": "smith_m",
+          "path": "BachDang938/Voices/Cast/db9482942cab4ce7c2bd_smith_m"
+        },
+        {
+          "profile": "smith_f",
+          "path": "BachDang938/Voices/Cast/946b84d44234bb55d6b6_smith_f"
+        }
+      ]
     },
     {
       "line": "Mọi người đều góp sức chuẩn bị cho những ngày sắp tới.",
       "male": "BachDang938/Voices/09afb5a83c6d7cf16dd7_m",
-      "female": "BachDang938/Voices/09afb5a83c6d7cf16dd7_f"
+      "female": "BachDang938/Voices/09afb5a83c6d7cf16dd7_f",
+      "variants": [
+        {
+          "profile": "villager_m",
+          "path": "BachDang938/Voices/Cast/2798b7d95e641197c4de_villager_m"
+        },
+        {
+          "profile": "villager_f",
+          "path": "BachDang938/Voices/Cast/4dcbae9c8a371c017361_villager_f"
+        },
+        {
+          "profile": "villager_alt_m",
+          "path": "BachDang938/Voices/Cast/16e237b7db5f6e0d586d_villager_alt_m"
+        },
+        {
+          "profile": "villager_alt_f",
+          "path": "BachDang938/Voices/Cast/bef25f9f412632a73f83_villager_alt_f"
+        }
+      ]
     },
     {
       "line": "Một bó cọc vừa tuột dây và trôi theo dòng! Hãy chèo tới điểm đánh dấu, dừng thuyền rồi bấm E để vớt lại.",
       "male": "BachDang938/Voices/5302eb284910096d6b65_m",
-      "female": "BachDang938/Voices/5302eb284910096d6b65_f"
+      "female": "BachDang938/Voices/5302eb284910096d6b65_f",
+      "variants": [
+        {
+          "profile": "soldier",
+          "path": "BachDang938/Voices/Cast/a150dae4eef4656ae099_soldier"
+        },
+        {
+          "profile": "veteran",
+          "path": "BachDang938/Voices/Cast/d20c95d2fcf761f7ffca_veteran"
+        }
+      ]
     },
     {
       "line": "Ngươi đã hoàn thành bài luyện hiệu lệnh trống.",
       "male": "BachDang938/Voices/e32d09bf6074092820b5_m",
-      "female": "BachDang938/Voices/e32d09bf6074092820b5_f"
+      "female": "BachDang938/Voices/e32d09bf6074092820b5_f",
+      "variants": [
+        {
+          "profile": "soldier",
+          "path": "BachDang938/Voices/Cast/a0fd4edce70484c31672_soldier"
+        },
+        {
+          "profile": "veteran",
+          "path": "BachDang938/Voices/Cast/8aaf9e414be7cd5c0995_veteran"
+        }
+      ]
     },
     {
       "line": "Ngươi đã thuộc hiệu lệnh. Hãy qua cổng sang làng, cùng dân binh chuẩn bị cọc gỗ.",
       "male": "BachDang938/Voices/d108452f32bb52bf718c_m",
-      "female": "BachDang938/Voices/d108452f32bb52bf718c_f"
+      "female": "BachDang938/Voices/d108452f32bb52bf718c_f",
+      "variants": [
+        {
+          "profile": "soldier",
+          "path": "BachDang938/Voices/Cast/307e6f5397d48c72ec92_soldier"
+        },
+        {
+          "profile": "veteran",
+          "path": "BachDang938/Voices/Cast/013febad81ac60fde98c_veteran"
+        }
+      ]
     },
     {
       "line": "Nhà tôi đang hong thóc, lát nữa còn phải vá lại mái tranh.",
       "male": "BachDang938/Voices/8f8df97fb72c13a6e419_m",
-      "female": "BachDang938/Voices/8f8df97fb72c13a6e419_f"
+      "female": "BachDang938/Voices/8f8df97fb72c13a6e419_f",
+      "variants": [
+        {
+          "profile": "villager_m",
+          "path": "BachDang938/Voices/Cast/cb92e4a90379eae4d21c_villager_m"
+        },
+        {
+          "profile": "villager_f",
+          "path": "BachDang938/Voices/Cast/8342c6dd1d21e05dbb53_villager_f"
+        },
+        {
+          "profile": "villager_alt_m",
+          "path": "BachDang938/Voices/Cast/311ce2109ca90077a118_villager_alt_m"
+        },
+        {
+          "profile": "villager_alt_f",
+          "path": "BachDang938/Voices/Cast/c8d1af249f55d04d59fb_villager_alt_f"
+        }
+      ]
     },
     {
       "line": "Nước rút là bà con tranh thủ làm đất ngay.",
       "male": "BachDang938/Voices/01d7583f351725c16189_m",
-      "female": "BachDang938/Voices/01d7583f351725c16189_f"
+      "female": "BachDang938/Voices/01d7583f351725c16189_f",
+      "variants": [
+        {
+          "profile": "farmer_m",
+          "path": "BachDang938/Voices/Cast/ea95daa2c65bda0d91b5_farmer_m"
+        },
+        {
+          "profile": "farmer_f",
+          "path": "BachDang938/Voices/Cast/8458ab7c94856dd49ca7_farmer_f"
+        }
+      ]
     },
     {
       "line": "Nước sông lên xuống theo con triều. Mong quân ta chọn đúng thời cơ đánh giặc.",
       "male": "BachDang938/Voices/aa540a3a869865959470_m",
-      "female": "BachDang938/Voices/aa540a3a869865959470_f"
+      "female": "BachDang938/Voices/aa540a3a869865959470_f",
+      "variants": [
+        {
+          "profile": "villager_m",
+          "path": "BachDang938/Voices/Cast/811e9c5278af7767231d_villager_m"
+        },
+        {
+          "profile": "villager_f",
+          "path": "BachDang938/Voices/Cast/813d24a849da3790e8da_villager_f"
+        },
+        {
+          "profile": "villager_alt_m",
+          "path": "BachDang938/Voices/Cast/c9bcc81ae4fa312d54ce_villager_alt_m"
+        },
+        {
+          "profile": "villager_alt_f",
+          "path": "BachDang938/Voices/Cast/f95697ece81097054d53_villager_alt_f"
+        }
+      ]
     },
     {
       "line": "Quân Nam Hán đang dòm ngó bờ cõi. Chúng tôi sẽ giữ vững doanh trại để Chủ tướng yên tâm lo kế sách.",
       "male": "BachDang938/Voices/9f3406759854ea3fee08_m",
-      "female": "BachDang938/Voices/9f3406759854ea3fee08_f"
+      "female": "BachDang938/Voices/9f3406759854ea3fee08_f",
+      "variants": [
+        {
+          "profile": "soldier",
+          "path": "BachDang938/Voices/Cast/f8298622686dc1f8489d_soldier"
+        },
+        {
+          "profile": "veteran",
+          "path": "BachDang938/Voices/Cast/94280869d2739eed8473_veteran"
+        }
+      ]
     },
     {
       "line": "Quân Nam Hán đang lăm le xâm phạm bờ cõi. Hãy đến làng ven sông, cùng bà con chuẩn bị gỗ làm cọc. Ta trông cậy vào ngươi.",
       "male": "BachDang938/Voices/69b47aad5e7ca02178f5_m",
-      "female": "BachDang938/Voices/69b47aad5e7ca02178f5_f"
+      "female": "BachDang938/Voices/69b47aad5e7ca02178f5_f",
+      "variants": [
+        {
+          "profile": "commander",
+          "path": "BachDang938/Voices/Cast/3b83aabcee6c345eb6eb_commander"
+        }
+      ]
     },
     {
       "line": "Quân Nam Hán đã kéo thuyền đến xâm phạm. Trận địa cọc đã sẵn sàng. Hãy lên thuyền chỉ huy, chờ thủy triều rút - bãi cọc sẽ lộ ra đâm thủng thuyền giặc. Ta sẽ đại thắng ngay trên sông Bạch Đằng hôm nay!",
       "male": "BachDang938/Voices/2ce318a5b6d03f61d503_m",
-      "female": "BachDang938/Voices/2ce318a5b6d03f61d503_f"
+      "female": "BachDang938/Voices/2ce318a5b6d03f61d503_f",
+      "variants": [
+        {
+          "profile": "commander",
+          "path": "BachDang938/Voices/Cast/066663ee186851d1bd55_commander"
+        }
+      ]
     },
     {
       "line": "Ruộng ngoài bãi phù sa tốt lắm, mùa này lúa lên đều.",
       "male": "BachDang938/Voices/a2ea2b6b0bc4a4610eac_m",
-      "female": "BachDang938/Voices/a2ea2b6b0bc4a4610eac_f"
+      "female": "BachDang938/Voices/a2ea2b6b0bc4a4610eac_f",
+      "variants": [
+        {
+          "profile": "farmer_m",
+          "path": "BachDang938/Voices/Cast/b92c31b3e7d626d30319_farmer_m"
+        },
+        {
+          "profile": "farmer_f",
+          "path": "BachDang938/Voices/Cast/cd0236b19fe784206542_farmer_f"
+        }
+      ]
     },
     {
       "line": "Sáng sớm cá về nhiều, tôi đang sửa lưới để kịp chuyến sau.",
       "male": "BachDang938/Voices/4fb644893f4b6b8b7fb2_m",
-      "female": "BachDang938/Voices/4fb644893f4b6b8b7fb2_f"
+      "female": "BachDang938/Voices/4fb644893f4b6b8b7fb2_f",
+      "variants": [
+        {
+          "profile": "fisher_m",
+          "path": "BachDang938/Voices/Cast/db394c369f527689e545_fisher_m"
+        },
+        {
+          "profile": "fisher_f",
+          "path": "BachDang938/Voices/Cast/c6ba7cd6cdb0e51a8a1e_fisher_f"
+        }
+      ]
     },
     {
       "line": "Trận địa cọc đã hoàn thành. Toàn quân hãy giữ kín kế hoạch, chờ thủy triều và thời cơ đánh giặc!",
       "male": "BachDang938/Voices/2db1efd2985557c80c04_m",
-      "female": "BachDang938/Voices/2db1efd2985557c80c04_f"
+      "female": "BachDang938/Voices/2db1efd2985557c80c04_f",
+      "variants": [
+        {
+          "profile": "commander",
+          "path": "BachDang938/Voices/Cast/0ceca56678781a68fece_commander"
+        }
+      ]
     },
     {
       "line": "Tôi đang chuyển bó củi này sang bếp trại.",
       "male": "BachDang938/Voices/132013b59fd553dfc582_m",
-      "female": "BachDang938/Voices/132013b59fd553dfc582_f"
+      "female": "BachDang938/Voices/132013b59fd553dfc582_f",
+      "variants": [
+        {
+          "profile": "porter_m",
+          "path": "BachDang938/Voices/Cast/1a64087c07febe5648a8_porter_m"
+        },
+        {
+          "profile": "porter_f",
+          "path": "BachDang938/Voices/Cast/fe34f15d9b28f17d9bd3_porter_f"
+        }
+      ]
     },
     {
       "line": "Tôi đang chuyển cá vào chợ trước khi nắng lên.",
       "male": "BachDang938/Voices/f102c895988798529ab6_m",
-      "female": "BachDang938/Voices/f102c895988798529ab6_f"
+      "female": "BachDang938/Voices/f102c895988798529ab6_f",
+      "variants": [
+        {
+          "profile": "fisher_m",
+          "path": "BachDang938/Voices/Cast/de88d22319dfc1c61a27_fisher_m"
+        },
+        {
+          "profile": "fisher_f",
+          "path": "BachDang938/Voices/Cast/84ecbb3fdc8f35530d72_fisher_f"
+        }
+      ]
     },
     {
       "line": "Tôi đang kiểm lại hàng trước khi mang sang doanh trại.",
       "male": "BachDang938/Voices/3c5d3197ffe0496f8c7a_m",
-      "female": "BachDang938/Voices/3c5d3197ffe0496f8c7a_f"
+      "female": "BachDang938/Voices/3c5d3197ffe0496f8c7a_f",
+      "variants": [
+        {
+          "profile": "merchant_m",
+          "path": "BachDang938/Voices/Cast/8c5a5468fab0404cdbd1_merchant_m"
+        },
+        {
+          "profile": "merchant_f",
+          "path": "BachDang938/Voices/Cast/deec6dc68957ae39f60e_merchant_f"
+        }
+      ]
     },
     {
       "line": "Tôi đang mang nông cụ ra đồng rồi sẽ về phơi thóc.",
       "male": "BachDang938/Voices/30453a361bda848897c9_m",
-      "female": "BachDang938/Voices/30453a361bda848897c9_f"
+      "female": "BachDang938/Voices/30453a361bda848897c9_f",
+      "variants": [
+        {
+          "profile": "farmer_m",
+          "path": "BachDang938/Voices/Cast/5ddade81a39271dfec4b_farmer_m"
+        },
+        {
+          "profile": "farmer_f",
+          "path": "BachDang938/Voices/Cast/24dc9957af2ad712d77e_farmer_f"
+        }
+      ]
     },
     {
       "line": "Tôi đang tuần tra từ cổng đến kho lương.",
       "male": "BachDang938/Voices/dbb373dc2433b4a76ce0_m",
-      "female": "BachDang938/Voices/dbb373dc2433b4a76ce0_f"
+      "female": "BachDang938/Voices/dbb373dc2433b4a76ce0_f",
+      "variants": [
+        {
+          "profile": "soldier",
+          "path": "BachDang938/Voices/Cast/1abf6ecf97fef6ba0548_soldier"
+        },
+        {
+          "profile": "veteran",
+          "path": "BachDang938/Voices/Cast/8d1b6810c4b11e06c0c5_veteran"
+        }
+      ]
     },
     {
       "line": "Tôi đang tôi lại mũi giáo, tránh để thép quá giòn.",
       "male": "BachDang938/Voices/1acf8f106abb5a9bbd22_m",
-      "female": "BachDang938/Voices/1acf8f106abb5a9bbd22_f"
+      "female": "BachDang938/Voices/1acf8f106abb5a9bbd22_f",
+      "variants": [
+        {
+          "profile": "smith_m",
+          "path": "BachDang938/Voices/Cast/05e4bba7c01acded226e_smith_m"
+        },
+        {
+          "profile": "smith_f",
+          "path": "BachDang938/Voices/Cast/abd28726cf7c77024d1e_smith_f"
+        }
+      ]
     },
     {
       "line": "Tốt lắm. Mang năm cọc này qua cổng ra bến, rồi lên thuyền. Chèo tới năm điểm đánh dấu ngoài sông. Ở mỗi điểm, dừng thuyền và bấm E để cùng quân sĩ dựng một cụm cọc. Làm đủ cả năm cụm rồi chèo về bến báo cáo. Triều rút sẽ lộ cọc, triều lên sẽ giấu kín trận địa. Việc này quyết định thắng bại.",
       "male": "BachDang938/Voices/93e8e322fa42dad128a1_m",
-      "female": "BachDang938/Voices/93e8e322fa42dad128a1_f"
+      "female": "BachDang938/Voices/93e8e322fa42dad128a1_f",
+      "variants": [
+        {
+          "profile": "commander",
+          "path": "BachDang938/Voices/Cast/788c024caf9bf081f0f4_commander"
+        }
+      ]
     },
     {
       "line": "Vật tư đã được tập kết đầy đủ.",
       "male": "BachDang938/Voices/74d98d1205fade5305cf_m",
-      "female": "BachDang938/Voices/74d98d1205fade5305cf_f"
+      "female": "BachDang938/Voices/74d98d1205fade5305cf_f",
+      "variants": [
+        {
+          "profile": "villager_m",
+          "path": "BachDang938/Voices/Cast/5014b74a66497da744c4_villager_m"
+        },
+        {
+          "profile": "villager_f",
+          "path": "BachDang938/Voices/Cast/70d67678cd7a905fe548_villager_f"
+        },
+        {
+          "profile": "villager_alt_m",
+          "path": "BachDang938/Voices/Cast/49798581a9c535fd76ca_villager_alt_m"
+        },
+        {
+          "profile": "villager_alt_f",
+          "path": "BachDang938/Voices/Cast/b7f0ec335ac2483e7e3c_villager_alt_f"
+        }
+      ]
     },
     {
       "line": "Đã vớt lại đủ cọc và siết chặt dây buộc. Tiếp tục hoàn thành hai cụm còn lại.",
       "male": "BachDang938/Voices/db16f09574ef38290322_m",
-      "female": "BachDang938/Voices/db16f09574ef38290322_f"
+      "female": "BachDang938/Voices/db16f09574ef38290322_f",
+      "variants": [
+        {
+          "profile": "soldier",
+          "path": "BachDang938/Voices/Cast/e8c1df8410dcfaa70ef8_soldier"
+        },
+        {
+          "profile": "veteran",
+          "path": "BachDang938/Voices/Cast/7f3bed9f08a64cc8a234_veteran"
+        }
+      ]
     },
     {
       "line": "Đường qua cổng đã dọn trống, xe hàng có thể đi lại.",
       "male": "BachDang938/Voices/aacd27e55abe4acad369_m",
-      "female": "BachDang938/Voices/aacd27e55abe4acad369_f"
+      "female": "BachDang938/Voices/aacd27e55abe4acad369_f",
+      "variants": [
+        {
+          "profile": "porter_m",
+          "path": "BachDang938/Voices/Cast/4892b9680252550a2815_porter_m"
+        },
+        {
+          "profile": "porter_f",
+          "path": "BachDang938/Voices/Cast/ba23ce3bf770d4d2dad6_porter_f"
+        }
+      ]
     },
     {
       "line": "Đại thắng! Quân Nam Hán bị đánh tan trên sông Bạch Đằng. Từ nay, nước Việt ta bước vào thời kỳ độc lập, tự chủ. Toàn quân trở về đại bản doanh báo công!",
       "male": "BachDang938/Voices/e0b1617d57a8dbf3e14e_m",
-      "female": "BachDang938/Voices/e0b1617d57a8dbf3e14e_f"
+      "female": "BachDang938/Voices/e0b1617d57a8dbf3e14e_f",
+      "variants": [
+        {
+          "profile": "commander",
+          "path": "BachDang938/Voices/Cast/e84593456cd257f29fae_commander"
+        }
+      ]
     },
     {
       "line": "Đại thắng! Quân dân cùng trở về doanh trại, nổi trống mừng nền tự chủ của nước Việt.",
       "male": "BachDang938/Voices/eb7abf4ff66452e21bc7_m",
-      "female": "BachDang938/Voices/eb7abf4ff66452e21bc7_f"
+      "female": "BachDang938/Voices/eb7abf4ff66452e21bc7_f",
+      "variants": [
+        {
+          "profile": "villager_m",
+          "path": "BachDang938/Voices/Cast/2f8013f90434a3a259ae_villager_m"
+        },
+        {
+          "profile": "villager_f",
+          "path": "BachDang938/Voices/Cast/80961753d2f76de4e5de_villager_f"
+        },
+        {
+          "profile": "villager_alt_m",
+          "path": "BachDang938/Voices/Cast/74a73e437a843a57f6e8_villager_alt_m"
+        },
+        {
+          "profile": "villager_alt_f",
+          "path": "BachDang938/Voices/Cast/7b5d31650c7ab0a3ff59_villager_alt_f"
+        }
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "id": "commander",
+      "label": "Ngô Quyền",
+      "voice": "vi-VN-NamMinhNeural",
+      "rate": "-8%",
+      "pitch": "-12Hz"
+    },
+    {
+      "id": "soldier",
+      "label": "Lính trẻ",
+      "voice": "en-US-AndrewMultilingualNeural",
+      "rate": "+2%",
+      "pitch": "-3Hz"
+    },
+    {
+      "id": "veteran",
+      "label": "Quản quân / lính lâu năm",
+      "voice": "vi-VN-NamMinhNeural",
+      "rate": "-2%",
+      "pitch": "-5Hz"
+    },
+    {
+      "id": "villager_m",
+      "label": "Nam dân làng",
+      "voice": "vi-VN-NamMinhNeural",
+      "rate": "+5%",
+      "pitch": "+3Hz"
+    },
+    {
+      "id": "villager_f",
+      "label": "Nữ dân làng",
+      "voice": "vi-VN-HoaiMyNeural",
+      "rate": "+1%",
+      "pitch": "-2Hz"
+    },
+    {
+      "id": "farmer_m",
+      "label": "Nông dân nam",
+      "voice": "vi-VN-NamMinhNeural",
+      "rate": "-1%",
+      "pitch": "-3Hz"
+    },
+    {
+      "id": "farmer_f",
+      "label": "Nông dân nữ",
+      "voice": "vi-VN-HoaiMyNeural",
+      "rate": "-3%",
+      "pitch": "-5Hz"
+    },
+    {
+      "id": "fisher_m",
+      "label": "Ngư dân nam",
+      "voice": "en-US-BrianMultilingualNeural",
+      "rate": "+2%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "fisher_f",
+      "label": "Ngư dân nữ",
+      "voice": "vi-VN-HoaiMyNeural",
+      "rate": "+3%",
+      "pitch": "+1Hz"
+    },
+    {
+      "id": "merchant_m",
+      "label": "Người buôn nam",
+      "voice": "en-US-AndrewMultilingualNeural",
+      "rate": "+6%",
+      "pitch": "+3Hz"
+    },
+    {
+      "id": "merchant_f",
+      "label": "Người buôn nữ",
+      "voice": "en-US-EmmaMultilingualNeural",
+      "rate": "+3%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "porter_m",
+      "label": "Người khuân vác nam",
+      "voice": "vi-VN-NamMinhNeural",
+      "rate": "+4%",
+      "pitch": "-4Hz"
+    },
+    {
+      "id": "porter_f",
+      "label": "Người khuân vác nữ",
+      "voice": "vi-VN-HoaiMyNeural",
+      "rate": "+4%",
+      "pitch": "-3Hz"
+    },
+    {
+      "id": "smith_m",
+      "label": "Thợ rèn nam",
+      "voice": "en-US-BrianMultilingualNeural",
+      "rate": "-1%",
+      "pitch": "-6Hz"
+    },
+    {
+      "id": "smith_f",
+      "label": "Thợ rèn nữ",
+      "voice": "en-US-EmmaMultilingualNeural",
+      "rate": "-1%",
+      "pitch": "-4Hz"
+    },
+    {
+      "id": "villager_alt_m",
+      "label": "Nam dân làng khác",
+      "voice": "en-US-AndrewMultilingualNeural",
+      "rate": "+1%",
+      "pitch": "+2Hz"
+    },
+    {
+      "id": "villager_alt_f",
+      "label": "Nữ dân làng khác",
+      "voice": "en-US-EmmaMultilingualNeural",
+      "rate": "+0%",
+      "pitch": "+2Hz"
     }
   ]
 }
