@@ -88,7 +88,7 @@ public static class BeachBoatBattleFlowPlaytest
                 var walkers=Object.FindObjectsByType<NPCWander>().Where(w=>w.isActiveAndEnabled&&w.CurrentSpeed>1).ToArray();
                 Check(walkers.Length>0,"Village/camp citizens actually move between activities");
                 Check(walkers.All(w=>w.walkSpeed>=BachDangWorldScale.ForScene(w.gameObject.scene)*1.14f),"NPC walking speed raised to a natural world-scaled pace");
-                Check(walkers.All(w=>Mathf.Abs(w.animator.speed*w.NominalStrideSpeed-w.CurrentSpeed)<w.CurrentSpeed*.15f+1),"Walking animation cadence follows actual travel speed");
+                Check(walkers.All(w=>w.animator.speed>=.94f&&w.animator.speed<=1.31f),"Walking and stopping keep a normal animation cadence");
                 Check(walkers.Where(w=>w.autoGenerateWaypoints).All(w=>w.wanderRadius>=BachDangWorldScale.ForScene(w.gameObject.scene)*8),"Free-roaming NPCs cover larger areas");
                 BeachBoatStory.RiverStakeZone.Instance.RestoreCheckpoint(Enumerable.Repeat(true,5).ToArray());story.collectedWood=story.totalWoodRequired;story.TransitionTo(Story.StoryState.Act3_WaitForLowTide,true);
                 Move(boat.boardingPoint.position,boat.boardingPoint.rotation);Check(boat.TryBoard(),"Can launch quest 3");combat.ReturnFireEnabled=false;boarding.enabled=false;

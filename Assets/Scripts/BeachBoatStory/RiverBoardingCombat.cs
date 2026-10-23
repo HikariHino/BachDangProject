@@ -80,7 +80,7 @@ namespace BeachBoatStory
                 if(h==null){h=new Hostile{go=guard.gameObject,guard=guard,pose=enemyPoses[guard]};hostiles.Add(h);}
                 h.source=Ship(saved.source);h.boat=Boat(saved.boat);h.state=saved.state;h.time=saved.time;h.start=saved.start;h.local=saved.local;h.fromWreck=saved.fromWreck;h.targetPlayer=saved.targetPlayer;
                 h.go.SetActive(saved.active);h.go.transform.SetPositionAndRotation(saved.position,saved.rotation);
-                h.pose.FinishTraversal();h.pose.SetSword(h.state==3);
+                h.pose.FinishTraversal();h.pose.SetSword(h.state==3);if(h.state==3)h.guard.FitStandingOnDeck();
                 if(h.state==1)h.pose.Traversal=RiverFighterPose.Motion.Swim;else if(h.state==2)h.pose.Traversal=RiverFighterPose.Motion.Climb;
             }
             foreach(var saved in data.allies??Array.Empty<BachDangSaveData.Fighter>())
@@ -405,7 +405,7 @@ namespace BeachBoatStory
                 }
                 if(h.targetPlayer)h.boat=State==PlayerState.EnemyDeck&&deckAnchor!=null?deckAnchor:QuestRowboat.Instance.transform;
                 if(h.boat==null){h.source=null;continue;}
-                var end=h.targetPlayer&&PlayerAway?session.player.transform.position:h.boat.position+h.boat.right*10+Vector3.up*(h.boat==QuestRowboat.Instance.transform?10:24);
+                var end=h.targetPlayer&&PlayerAway?session.player.transform.position:h.boat.position+h.boat.right*(h.boat==QuestRowboat.Instance.transform?4:10)+Vector3.up*(h.boat==QuestRowboat.Instance.transform?10:24);
                 if(h.boat!=QuestRowboat.Instance.transform&&h.boat.GetComponent<AmbientRiverBoat>()!=null)
                 {var crew=h.boat.GetComponentInChildren<FleetDeckCrew>();if(crew!=null&&crew.soldiers.Length>0)end=crew.soldiers[0].position+h.boat.forward*8;}
                 if(h.state==1)
@@ -436,7 +436,7 @@ namespace BeachBoatStory
                     h.time+=dt;float t=Mathf.Clamp01(h.time/1.9f);var above=h.start;above.y=end.y+2;
                     h.go.transform.position=t<.72f?Vector3.Lerp(h.start,above,Mathf.SmoothStep(0,1,t/.72f)):Vector3.Lerp(above,end,Mathf.SmoothStep(0,1,(t-.72f)/.28f));
                     h.pose.ClimbProgress=t;h.pose.ClimbRail=new Vector3(h.start.x,end.y+1,h.start.z);
-                    if(h.time>=1.9f){h.state=3;h.local=h.boat.InverseTransformPoint(end);h.pose.FinishTraversal();h.pose.SetSword(true);HostileBoardings++;}
+                    if(h.time>=1.9f){h.state=3;h.local=h.boat.InverseTransformPoint(end);h.pose.FinishTraversal();h.pose.SetSword(true);h.pose.Animator.Update(0);h.guard.FitStandingOnDeck();HostileBoardings++;}
                 }
                 else h.go.transform.position=h.boat.TransformPoint(h.local);
                 var forward=end-h.go.transform.position;forward.y=0;if(forward.sqrMagnitude>.01f)h.go.transform.rotation=Quaternion.LookRotation(forward);

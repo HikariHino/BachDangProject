@@ -62,6 +62,15 @@ namespace BeachBoatStory
         void Awake() { Instance = this; }
         void Start()
         {
+            // Resize only the hull and its footprint: scaling the boat root would also
+            // scale attachments and visiting soldiers. The player keeps their own scale.
+            const float footprint=.82f;
+            var hull=transform.Find("Thuyen_Go_Song");
+            if(hull!=null)hull.localScale=Vector3.Scale(hull.localScale,new Vector3(footprint,1,footprint));
+            if(seat!=null)seat.localPosition=Vector3.Scale(seat.localPosition,new Vector3(footprint,1,footprint));
+            foreach(var box in GetComponents<BoxCollider>())
+            {box.size=Vector3.Scale(box.size,new Vector3(footprint,1,footprint));box.center=Vector3.Scale(box.center,new Vector3(footprint,1,footprint));}
+            hullProbeSpacing*=footprint;hullProbeRadius*=footprint;
             session = BeachBoatQuestSession.Instance;
             if (session == null || boardingPoint == null || dockPoint == null || seat == null || rowingController == null)
             { Debug.LogError("Quest rowboat bindings incomplete.", this); enabled = false; return; }

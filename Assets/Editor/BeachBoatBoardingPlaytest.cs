@@ -60,7 +60,9 @@ public static class BeachBoatBoardingPlaytest
             }
             if(phase==1)
             {
-                game.enabled=false;foreach(var vessel in fleet.enemyShips)vessel.moveSpeed=0;
+                // Keep the fixture still while screenshots render; a zero throttle does not
+                // stop EnemyShip steering, which can rotate the ladder away between phases.
+                game.enabled=false;foreach(var vessel in fleet.enemyShips){vessel.moveSpeed=0;vessel.enabled=false;}
                 if(!ship.gameObject.activeSelf)ship.Activate();ship.transform.position=boat.transform.position+Vector3.forward*170;ship.transform.rotation=Quaternion.identity;
                 var animator=session.player.GetComponentInChildren<Animator>();
                 float reference=EnemyDeckGuard.RigHeight(animator);

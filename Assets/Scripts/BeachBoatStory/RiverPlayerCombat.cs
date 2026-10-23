@@ -70,7 +70,7 @@ namespace BeachBoatStory
         float savedAimDistance,savedAimFov;
         string message;
         void Awake(){Instance=this;session=GetComponent<BeachBoatQuestSession>();camera=session.storyCamera;animator=session.player.GetComponentInChildren<Animator>();leftFoot=animator.GetBoneTransform(HumanBodyBones.LeftFoot);rightFoot=animator.GetBoneTransform(HumanBodyBones.RightFoot);}
-        void Start(){BuildBow();BuildHUD();BuildArrows();}
+        void Start(){BuildBow();BuildHUD();BuildArrows();gameObject.AddComponent<EnemyHealthHUD>();}
         public bool HasSuppressedWave(int wave)=>suppressed.Contains(wave);
         public void FillSave(BachDangSaveData.Fleet data)
         {

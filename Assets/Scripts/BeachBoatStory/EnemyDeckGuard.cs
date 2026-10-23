@@ -8,7 +8,9 @@ namespace BeachBoatStory
         public EnemyShip ship;
         public Transform visual;
         public int waveIndex;
-        public int Health {get;private set;}=2;
+        public const int MaximumHealth=2;
+        public int Health {get;private set;}=MaximumHealth;
+        public float HealthFraction=>Health/(float)MaximumHealth;
         public bool IsOnWreck {get;private set;}
         public bool IsIndependentBoarder;
         public bool IsInMelee {get;private set;}
@@ -16,12 +18,12 @@ namespace BeachBoatStory
         public bool IsAlive=>Health>0&&ship!=null&&(!ship.isDestroyed||IsOnWreck||IsIndependentBoarder)&&gameObject.activeInHierarchy;
         public float BodyHeight {get;private set;}=17.6f;
         public Vector3 AimPoint=>transform.position+Vector3.up*(BodyHeight*.55f);
+        static readonly HumanBodyBones[] heightChain={HumanBodyBones.LeftFoot,HumanBodyBones.LeftLowerLeg,HumanBodyBones.LeftUpperLeg,HumanBodyBones.Hips,
+                HumanBodyBones.Spine,HumanBodyBones.Chest,HumanBodyBones.Neck,HumanBodyBones.Head};
         public static float RigHeight(Animator animator)
         {
-            var chain=new[]{HumanBodyBones.LeftFoot,HumanBodyBones.LeftLowerLeg,HumanBodyBones.LeftUpperLeg,HumanBodyBones.Hips,
-                HumanBodyBones.Spine,HumanBodyBones.Chest,HumanBodyBones.Neck,HumanBodyBones.Head};
             float length=0;Transform previous=null;
-            foreach(var bone in chain){var next=animator.GetBoneTransform(bone);if(next==null)continue;if(previous!=null)length+=Vector3.Distance(previous.position,next.position);previous=next;}
+            foreach(var bone in heightChain){var next=animator.GetBoneTransform(bone);if(next==null)continue;if(previous!=null)length+=Vector3.Distance(previous.position,next.position);previous=next;}
             return length;
         }
         public void MatchPlayerSize()
@@ -39,6 +41,7 @@ namespace BeachBoatStory
         Quaternion restRotation;
         float fall;
         bool initialized;
+        int sizeCheckFrames;
         Transform bow,leftUpper,leftFore,leftHand,rightUpper,rightFore,rightHand;
         LineRenderer bowString;
         float draw;
@@ -58,7 +61,7 @@ namespace BeachBoatStory
             bowString=new GameObject("Day_Cung").AddComponent<LineRenderer>();bowString.transform.SetParent(bow,false);bowString.sharedMaterial=stave.sharedMaterial;bowString.useWorldSpace=false;bowString.widthMultiplier=.1f;bowString.positionCount=3;
             bowString.SetPositions(new[]{new Vector3(0,-5.5f,0),Vector3.zero,new Vector3(0,5.5f,0)});
         }
-        void OnEnable(){if(!IsOnWreck)ResetGuard();}
+        void OnEnable(){sizeCheckFrames=3;if(!IsOnWreck)ResetGuard();}
         public void MoveToWreck(Transform raft,Vector3 position)
         {
             Cache();IsOnWreck=true;transform.SetParent(raft,true);transform.localPosition=position;
@@ -110,8 +113,23 @@ namespace BeachBoatStory
             GetComponent<Collider>().enabled=Health>0;animator.enabled=Health>0;
             SetMelee(data.independent);if(Health==0)bow.gameObject.SetActive(false);
         }
+        public void FitStandingOnDeck()
+        {
+            MatchPlayerSize();
+            float feet=Mathf.Min(animator.GetBoneTransform(HumanBodyBones.LeftFoot).position.y,animator.GetBoneTransform(HumanBodyBones.RightFoot).position.y);
+            visual.position+=Vector3.up*(transform.position.y+.4f-feet);
+        }
         void LateUpdate()
         {
+            // Inactive pooled avatars have not evaluated their humanoid retargeting yet.
+            // Validate after evaluation too, including restored and boarding characters.
+            if(sizeCheckFrames>0&&Health>0&&animator!=null&&animator.isActiveAndEnabled)
+            {
+                sizeCheckFrames--;
+                var reference=BeachBoatQuestSession.Instance.player.GetComponentInChildren<Animator>();
+                float ratio=RigHeight(reference)/Mathf.Max(.01f,RigHeight(animator));
+                if(ratio<.96f||ratio>1.04f)MatchPlayerSize();
+            }
             if(IsOnWreck){var p=transform.parent.position;p.y=TideSystem.CurrentWaterHeight+1+Mathf.Sin(Time.time*1.5f)*.15f;transform.parent.position=p;}
             if(Health>0)
             {

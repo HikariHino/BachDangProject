@@ -35,12 +35,13 @@ namespace BeachBoatStory
         bool hasWalk, hasSit, hasLay, hasPose, walking, sitting;
         RuntimeAnimatorController controller;
         readonly RaycastHit[] hits = new RaycastHit[12];
-        readonly System.Collections.Generic.List<AnimatorClipInfo> currentClips=new System.Collections.Generic.List<AnimatorClipInfo>(4);
+        static Transform[] neighbourhoodStops;
+        static UnityEngine.SceneManagement.Scene neighbourhoodScene;
+        public float PatrolRadius {get;private set;}
+        public float DistanceTravelled {get;private set;}
+        bool raisedPatrol;
         public float CurrentSpeed=>currentSpeed;
         public float NominalStrideSpeed {get;private set;}
-        Transform leftFoot,rightFoot;
-        Vector3 previousLeftFoot,previousRightFoot;
-        bool sampledFeet;
 
         public static bool IsEligible(Animator a)
         {
@@ -61,17 +62,20 @@ namespace BeachBoatStory
             if (!IsEligible(animator) || animator.transform != transform) { enabled = false; return; }
             home = transform.position; terrain = Terrain.activeTerrain;
             scale = Mathf.Max(1, BachDangWorldScale.ForScene(gameObject.scene));
-            walkSpeed=Mathf.Clamp(walkSpeed*1.4f,scale*1.15f,scale*2f);
-            acceleration=Mathf.Max(acceleration,scale*2.4f);deceleration=Mathf.Max(deceleration,scale*3.2f);
+            // The characters are twice the terrain's reference scale. Use the actual
+            // skeleton, rather than the terrain multiplier, to set a human walking pace.
+            NominalStrideSpeed=Mathf.Max(scale*1.3f,EnemyDeckGuard.RigHeight(animator)*.85f);
+            walkSpeed=NominalStrideSpeed*UnityEngine.Random.Range(1.02f,1.14f);
+            acceleration=Mathf.Max(acceleration,scale*2.4f);deceleration=Mathf.Max(deceleration,scale*3.2f);turnSpeed=Mathf.Max(turnSpeed,240);
             if(autoGenerateWaypoints)wanderRadius=Mathf.Clamp(wanderRadius*2.5f,scale*8,scale*25);
             minIdleTime=Mathf.Min(minIdleTime,1.5f);maxIdleTime=Mathf.Min(maxIdleTime,5);
-            NominalStrideSpeed=scale*1.3f;
-            leftFoot=animator.GetBoneTransform(HumanBodyBones.LeftFoot);rightFoot=animator.GetBoneTransform(HumanBodyBones.RightFoot);
+            PatrolRadius=Mathf.Max(scale*24,NominalStrideSpeed*16);
             // Some guards patrol raised wooden platforms. Preserve that authored height instead of
             // snapping them down to terrain; routes are kept on the same platform by the setup tool.
             groundOffset = terrain != null ? Mathf.Clamp(home.y - Ground(home), 0, scale * 5f) : 0;
+            raisedPatrol=groundOffset>scale*1.5f;
             animator.applyRootMotion = false;
-            baseAnimatorSpeed = animator.speed;
+            baseAnimatorSpeed = 1;
             personalPace = UnityEngine.Random.Range(Mathf.Min(minimumPace,maximumPace),Mathf.Max(minimumPace,maximumPace));
             // Stagger the first action so a group never starts walking in lockstep.
             CacheParameters(); idleRemaining = UnityEngine.Random.Range(0f,Mathf.Max(1f,maxIdleTime*.65f));
@@ -102,7 +106,9 @@ namespace BeachBoatStory
         }
         void Pose(bool walk, bool sit)
         {
-            if (hasWalk && walking != walk) animator.SetBool(walkHash,walk);
+            // Reactivation and legacy idle initializers can reset the controller boolean.
+            if (hasWalk) animator.SetBool(walkHash,walk);
+            if(!walk)animator.speed=baseAnimatorSpeed;
             // A soldier can sit at one stop and lie down at the next. Keep the pose
             // in sync without sending animator parameters on every idle frame.
             int nextPose = sit ? restPose : 0;
@@ -125,6 +131,9 @@ namespace BeachBoatStory
         void PickTarget()
         {
             IsSleeping=false;Pose(false,false); target = home;
+            // Alternate jobs with longer trips along clear village/camp lanes. Platform
+            // sentries retain their authored route and never step off their guard post.
+            if(!raisedPatrol&&UnityEngine.Random.value<.65f&&TryNeighbourhoodTrip())return;
             for(int attempt=0;attempt<8;attempt++)
             {
                 Vector3 candidate;
@@ -140,15 +149,58 @@ namespace BeachBoatStory
                             targetIndex = Mathf.Clamp(targetIndex + routeDirection, 0, waypoints.Length - 1);
                         }
                     }
-                    else targetIndex=UnityEngine.Random.Range(0,waypoints.Length);
+                    else {
+                        int previous=targetIndex;
+                        targetIndex=UnityEngine.Random.Range(0,waypoints.Length);
+                        if(targetIndex==previous&&waypoints.Length>1)targetIndex=(targetIndex+1)%waypoints.Length;
+                    }
                     var wp=waypoints[targetIndex];
                     if(wp==null)continue;candidate=wp.position;
                 }
                 else {var offset=UnityEngine.Random.insideUnitCircle.normalized*UnityEngine.Random.Range(wanderRadius*.45f,wanderRadius);candidate=home+new Vector3(offset.x,0,offset.y);}
-                if(!ValidGround(candidate))continue;
+                if(!ValidGround(candidate)||QuestRowboat.FlatDistance(candidate,transform.position)<scale*.5f)continue;
                 target=candidate;CurrentActivity="Đang đi làm";return;
             }
             Idle();
+        }
+        bool TryNeighbourhoodTrip()
+        {
+            if(neighbourhoodStops==null||neighbourhoodScene!=gameObject.scene)
+            {
+                neighbourhoodScene=gameObject.scene;
+                var stops=new System.Collections.Generic.HashSet<Transform>();
+                foreach(var walker in FindObjectsByType<NPCWander>(FindObjectsInactive.Include))
+                    if(walker.gameObject.scene==gameObject.scene&&walker.waypoints!=null)
+                        foreach(var stop in walker.waypoints)if(stop!=null)stops.Add(stop);
+                neighbourhoodStops=new Transform[stops.Count];stops.CopyTo(neighbourhoodStops);
+            }
+            for(int attempt=0;attempt<24;attempt++)
+            {
+                Vector3 candidate;
+                if(attempt<16&&neighbourhoodStops.Length>0)
+                {var stop=neighbourhoodStops[UnityEngine.Random.Range(0,neighbourhoodStops.Length)];if(stop==null)continue;candidate=stop.position;}
+                else {var offset=UnityEngine.Random.insideUnitCircle.normalized*UnityEngine.Random.Range(PatrolRadius*.4f,PatrolRadius);candidate=home+new Vector3(offset.x,0,offset.y);}
+                float distance=QuestRowboat.FlatDistance(candidate,transform.position);
+                if(distance<NominalStrideSpeed*3||QuestRowboat.FlatDistance(candidate,home)>PatrolRadius||!ValidGround(candidate))continue;
+                if(terrain!=null)candidate.y=Ground(candidate)+groundOffset;
+                var direction=candidate-transform.position;direction.y=0;direction.Normalize();
+                bool clear=true;
+                for(float d=0;d<=distance;d+=scale*2)
+                {
+                    var point=transform.position+direction*d;
+                    if(!ValidGround(point)||(terrain!=null&&Mathf.Abs(Ground(point)-Ground(transform.position))>scale*1.25f)){clear=false;break;}
+                }
+                if(!clear)continue;
+                int count=Physics.SphereCastNonAlloc(transform.position+Vector3.up*scale,.25f*scale,direction,hits,distance,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+                for(int i=0;i<count;i++)
+                {
+                    var hit=hits[i];if(hit.collider==null||hit.collider is TerrainCollider||hit.transform.IsChildOf(transform)||transform.IsChildOf(hit.transform)||hit.collider.GetComponentInParent<Animator>()!=null)continue;
+                    clear=false;break;
+                }
+                if(!clear)continue;
+                target=candidate;targetIndex=-1;CurrentActivity="Đang đi qua làng / tuần tra";return true;
+            }
+            return false;
         }
         void Idle()
         {
@@ -206,35 +258,30 @@ namespace BeachBoatStory
             if (idleRemaining > 0) { idleRemaining-=dt;if(!IsSleeping)UpdateIdleLook();if(idleRemaining<=0)PickTarget();return; }
             var direction=target-transform.position;direction.y=0;
             float remaining=direction.magnitude;
-            if(remaining<.75f){Idle();return;}
-            float desiredSpeed=Mathf.Max(0,walkSpeed)*personalPace*Mathf.Clamp01(remaining/Mathf.Max(1,arrivalSlowDistance));
+            if(remaining<Mathf.Max(1,scale*.2f)){Idle();return;}
+            float desiredSpeed=Mathf.Max(0,walkSpeed)*personalPace*Mathf.Clamp01(remaining/Mathf.Max(1,scale*.35f));
             currentSpeed=Mathf.MoveTowards(currentSpeed,desiredSpeed,(desiredSpeed>currentSpeed?acceleration:deceleration)*dt);
             var heading=FindClearHeading(direction/remaining,currentSpeed*dt);
             if(heading.sqrMagnitude<.5f)
             {
-                currentSpeed=0;idleRemaining=UnityEngine.Random.Range(.5f,1.4f);Pose(false,false);
+                currentSpeed=0;idleRemaining=UnityEngine.Random.Range(.2f,.5f);Pose(false,false);
                 CurrentActivity="Đang tránh vật cản";PickIdleFacing();return;
             }
             var next=transform.position+heading*currentSpeed*dt;
             if(!ValidGround(next)){Idle();return;}
             if(terrain!=null){next.y=Ground(next)+groundOffset;if(Mathf.Abs(next.y-transform.position.y)>scale){Idle();return;}}
+            DistanceTravelled+=Vector3.Distance(transform.position,next);
             transform.position=next;
             transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(heading),turnSpeed*personalPace*dt);
-            animator.GetCurrentAnimatorClipInfo(0,currentClips);
-            foreach(var info in currentClips)
-                if(info.clip!=null&&info.clip.name.IndexOf("walk",StringComparison.OrdinalIgnoreCase)>=0)
-                {
-                    float authored=info.clip.averageSpeed.magnitude*Mathf.Abs(transform.lossyScale.x);
-                    if(authored>scale*.4f&&authored<scale*3)NominalStrideSpeed=authored;
-                    break;
-                }
-            animator.speed=baseAnimatorSpeed*Mathf.Clamp(currentSpeed/Mathf.Max(.1f,NominalStrideSpeed),.15f,1.8f);
+            // Keep the walk cycle at normal cadence through acceleration and stopping.
+            // Slowing the entire Animator to 0.15 also slowed idle and exit transitions.
+            animator.speed=Mathf.Clamp(walkSpeed*personalPace/NominalStrideSpeed,.95f,1.3f);
             Pose(currentSpeed>.12f,false);
         }
         Vector3 FindClearHeading(Vector3 desired,float step)
         {
             if(AmbientPopulationBudget.Instance!=null)desired=AmbientPopulationBudget.Instance.Separate(this,desired);
-            float probe=Mathf.Max(step+.3f*scale,obstacleProbeDistance*scale);
+            float probe=Mathf.Max(step+.3f*scale,Mathf.Min(obstacleProbeDistance,1.0f)*scale);
             if(!Blocked(desired,probe))return desired;
             for(int option=0;option<4;option++)
             {
@@ -244,24 +291,6 @@ namespace BeachBoatStory
                 if(ValidGround(test)&&!Blocked(candidate,probe))return candidate;
             }
             return Vector3.zero;
-        }
-        void LateUpdate()
-        {
-            // In-place clips have zero averageSpeed. Measure their planted foot's backward
-            // travel in actor space instead, so each avatar's stride sets its own cadence.
-            if(animator==null||leftFoot==null||rightFoot==null||!walking||animator.IsInTransition(0)||Time.deltaTime<=0)
-            {sampledFeet=false;return;}
-            var left=transform.InverseTransformPoint(leftFoot.position);var right=transform.InverseTransformPoint(rightFoot.position);
-            if(sampledFeet)
-            {
-                float units=Mathf.Abs(transform.lossyScale.z),dt=Time.deltaTime*Mathf.Max(.15f,animator.speed);
-                float a=-(left.z-previousLeftFoot.z)*units/dt,b=-(right.z-previousRightFoot.z)*units/dt;
-                float sum=0;int count=0;float tolerance=scale*.05f/Mathf.Max(.01f,Mathf.Abs(transform.lossyScale.y));
-                if(left.y<=right.y+tolerance&&a>scale*.65f&&a<scale*2.4f){sum+=a;count++;}
-                if(right.y<=left.y+tolerance&&b>scale*.65f&&b<scale*2.4f){sum+=b;count++;}
-                if(count>0)NominalStrideSpeed=Mathf.Lerp(NominalStrideSpeed,sum/count,1-Mathf.Exp(-Time.deltaTime*4));
-            }
-            previousLeftFoot=left;previousRightFoot=right;sampledFeet=true;
         }
         bool Blocked(Vector3 heading,float distance)
         {
