@@ -38,6 +38,9 @@ namespace BeachBoatStory
         CapsuleCollider playerCollider;
         Animator animator;
         Transform leftHand, rightHand;
+        Transform leftIndex,leftLittle,leftIndexMid,leftLittleMid,rightIndex,rightLittle,rightIndexMid,rightLittleMid;
+        public Vector3 LeftPaddleGrip {get;private set;}
+        public Vector3 RightPaddleGrip {get;private set;}
         Transform leftUpperArm, leftForearm, rightUpperArm, rightForearm;
         float strokePhase;
         public Vector3 BladeCenter { get; private set; }
@@ -73,6 +76,10 @@ namespace BeachBoatStory
             if (animator != null && animator.isHuman)
             {
                 leftHand = animator.GetBoneTransform(HumanBodyBones.LeftHand); rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand);
+                leftIndex=animator.GetBoneTransform(HumanBodyBones.LeftIndexProximal);leftLittle=animator.GetBoneTransform(HumanBodyBones.LeftLittleProximal);
+                leftIndexMid=animator.GetBoneTransform(HumanBodyBones.LeftIndexIntermediate);leftLittleMid=animator.GetBoneTransform(HumanBodyBones.LeftLittleIntermediate);
+                rightIndex=animator.GetBoneTransform(HumanBodyBones.RightIndexProximal);rightLittle=animator.GetBoneTransform(HumanBodyBones.RightLittleProximal);
+                rightIndexMid=animator.GetBoneTransform(HumanBodyBones.RightIndexIntermediate);rightLittleMid=animator.GetBoneTransform(HumanBodyBones.RightLittleIntermediate);
                 leftUpperArm = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm); leftForearm = animator.GetBoneTransform(HumanBodyBones.LeftLowerArm);
                 rightUpperArm = animator.GetBoneTransform(HumanBodyBones.RightUpperArm); rightForearm = animator.GetBoneTransform(HumanBodyBones.RightLowerArm);
             }
@@ -141,6 +148,11 @@ namespace BeachBoatStory
                 story == null || !CanBoardForState(story.currentState) ||
                 story.collectedWood < story.totalWoodRequired || !AtDock || animator == null ||
                 FlatDistance(session.player.transform.position, boardingPoint.position) > boardingRange) return false;
+            return BoardPlayer(true);
+        }
+        bool BoardPlayer(bool advanceStory)
+        {
+            var story=BachDangStoryManager.Instance;
             motorEnabled = motor.enabled; bodyKinematic = playerBody.isKinematic; colliderEnabled = playerCollider.enabled;
             originalController = animator.runtimeAnimatorController; originalRootMotion = animator.applyRootMotion;
             originalInterpolation = playerBody.interpolation;
@@ -161,9 +173,17 @@ namespace BeachBoatStory
             BeachBoatSoundscape.Instance?.PlayInteraction();
             orbit.distance = 115; orbit.heightOffset = 42; orbit.rightOffset = 0;
             AttachPlayer(); orbit.SnapToTarget();
-            if (story.currentState == BachDangStoryManager.StoryState.Act3_WaitForLowTide) story.OnReadyForBattle();
+            if (advanceStory && story.currentState == BachDangStoryManager.StoryState.Act3_WaitForLowTide) story.OnReadyForBattle();
             story.SetInteractPrompt(false, owner: this); story.UpdateUI();
             return true;
+        }
+
+        public void RestoreSave(bool aboard,Vector3 position,Quaternion rotation)
+        {
+            if(IsAboard)RestorePlayer();
+            transform.SetPositionAndRotation(position,rotation);
+            if(aboard)BoardPlayer(false);
+            Speed=0;IsBoosting=false;
         }
 
         public bool TryDisembark()
@@ -444,12 +464,34 @@ namespace BeachBoatStory
             BladeCenter = new Vector3(BladeCenter.x, TideSystem.CurrentWaterHeight - 1.5f - (lift >= 0 ? 1.5f : 5.5f) * lift, BladeCenter.z);
             var direction = (BladeCenter - grip).normalized;
             var forward = Vector3.ProjectOnPlane(transform.forward, direction).normalized;
-            paddle.SetPositionAndRotation(grip, Quaternion.LookRotation(forward, -direction));
-            paddle.localScale = new Vector3(1, Vector3.Distance(grip, BladeCenter) / 24, 1);
-            SolveArm(leftUpperArm, leftForearm, leftHand, grip,
-                leftUpperArm.position - transform.right * 5 - transform.forward * 2 - Vector3.up * 2);
-            SolveArm(rightUpperArm, rightForearm, rightHand, grip + direction * 4f,
-                rightUpperArm.position + transform.right * 5 - transform.forward * 2 - Vector3.up * 2);
+            // The grip is in the palm between curled fingers, not at the wrist bone.
+            for(int i=0;i<3;i++)
+            {
+                AlignHand(leftHand,leftIndex,leftLittle,direction);AlignHand(rightHand,rightIndex,rightLittle,direction);
+                var leftOffset=Palm(leftHand,leftIndex,leftLittle,leftIndexMid,leftLittleMid)-leftHand.position;
+                var rightOffset=Palm(rightHand,rightIndex,rightLittle,rightIndexMid,rightLittleMid)-rightHand.position;
+                SolveArm(leftUpperArm,leftForearm,leftHand,grip-leftOffset,leftUpperArm.position-transform.right*5-transform.forward*2-Vector3.up*2);
+                SolveArm(rightUpperArm,rightForearm,rightHand,grip+direction*4-rightOffset,rightUpperArm.position+transform.right*5-transform.forward*2-Vector3.up*2);
+            }
+            LeftPaddleGrip=Palm(leftHand,leftIndex,leftLittle,leftIndexMid,leftLittleMid);
+            RightPaddleGrip=Palm(rightHand,rightIndex,rightLittle,rightIndexMid,rightLittleMid);
+            var between=RightPaddleGrip-LeftPaddleGrip;if(between.sqrMagnitude>.1f)direction=between.normalized;
+            forward=Vector3.ProjectOnPlane(transform.forward,direction).normalized;
+            paddle.SetPositionAndRotation(LeftPaddleGrip,Quaternion.LookRotation(forward,-direction));
+            paddle.localScale=new Vector3(1,Vector3.Distance(LeftPaddleGrip,BladeCenter)/24,1);
+            BladeCenter=paddle.TransformPoint(new Vector3(0,-24,0));
+        }
+        static Vector3 Palm(Transform hand,Transform index,Transform little,Transform middleIndex,Transform middleLittle)
+        {
+            if(index==null||little==null)return hand.position;
+            var knuckles=(index.position+little.position)*.5f;
+            return middleIndex!=null&&middleLittle!=null?(knuckles+(middleIndex.position+middleLittle.position)*.5f)*.5f:Vector3.Lerp(hand.position,knuckles,.6f);
+        }
+        static void AlignHand(Transform hand,Transform index,Transform little,Vector3 shaft)
+        {
+            if(index==null||little==null)return;var across=index.position-little.position;
+            if(Vector3.Dot(across,shaft)<0)shaft=-shaft;
+            hand.rotation=Quaternion.FromToRotation(across,shaft)*hand.rotation;
         }
 
         internal static void SolveArm(Transform upper, Transform forearm, Transform hand, Vector3 target, Vector3 hint)

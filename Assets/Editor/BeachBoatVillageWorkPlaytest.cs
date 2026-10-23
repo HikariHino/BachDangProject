@@ -49,6 +49,7 @@ public static class BeachBoatVillageWorkPlaytest
                 var terrain=Terrain.activeTerrain;
                 treesClear=terrain.terrainData.treeInstances.All(t=>sites.All(p=>QuestRowboat.FlatDistance(p,terrain.transform.position+Vector3.Scale(t.position,terrain.terrainData.size))>=55));
                 if(!layoutSpread||!interactionClear||!treesClear)throw new Exception("Stalls are clustered, an interaction is blocked, or a terrain tree crosses a stall");
+                BeachBoatStory.BachDangFrontEnd.Instance?.Play();
                 foreach(var intro in UnityEngine.Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))intro.SkipOpening();
                 BeachBoatStory.StoryDialogueUI.Instance?.Close();
                 var drum=UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsSortMode.None).First(s=>s.kind==BeachBoatMinigameStation.ActivityKind.WarDrum);

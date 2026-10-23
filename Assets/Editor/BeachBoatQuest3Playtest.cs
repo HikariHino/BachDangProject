@@ -95,6 +95,7 @@ public static class BeachBoatQuest3Playtest
         if(director==null||story==null||zone==null||boat==null||session==null)return;
         if(phase==0&&elapsed>2)
         {
+            BeachBoatStory.BachDangFrontEnd.Instance?.Play();
             foreach(var opening in UnityEngine.Object.FindObjectsByType<StoryOpening>(FindObjectsInactive.Include,FindObjectsSortMode.None))
                 opening.SkipOpening();
             StoryDialogue.Instance?.Close();

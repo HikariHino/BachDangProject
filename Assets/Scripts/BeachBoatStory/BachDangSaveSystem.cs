@@ -1,0 +1,133 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+namespace BeachBoatStory
+{
+    /// <summary>Versioned manual saves. A verified temporary file replaces the old save atomically.</summary>
+    public static class BachDangSaveSystem
+    {
+        [Serializable] sealed class Envelope {public string payload,sha256;}
+        public static BachDangSaveData PendingLoad;
+#if UNITY_EDITOR
+        public static string TestDirectory;
+#endif
+        public static string SavePath
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if(!string.IsNullOrEmpty(TestDirectory))return Path.Combine(TestDirectory,"campaign938.json");
+#endif
+                return Path.Combine(Application.persistentDataPath,"campaign938.json");
+            }
+        }
+        public static string LastError {get;private set;}
+        public static string GuardId(EnemyDeckGuard guard)=>guard.name.StartsWith("Linh_Nam_Han_Nhay_Tau_",StringComparison.Ordinal)?"pool/"+guard.name:guard.ship.name+"/"+guard.name;
+        static string Digest(string value){using(var sha=SHA256.Create())return Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(value)));}
+        static bool Valid(BachDangSaveData data)
+        {
+            bool Finite(float v)=>!float.IsNaN(v)&&!float.IsInfinity(v);
+            return data!=null&&data.version==1&&data.scene=="beachBoat"&&Enum.IsDefined(typeof(BachDangStoryManager.StoryState),data.storyState)&&
+                Finite(data.playerPosition.x)&&Finite(data.playerPosition.y)&&Finite(data.playerPosition.z)&&
+                Finite(data.health)&&data.health>0&&Finite(data.maxHealth)&&data.maxHealth>0&&data.woods!=null&&data.stakes!=null&&data.stallLevels!=null;
+        }
+        static bool ReadFile(string path,out BachDangSaveData data)
+        {
+            data=null;if(!File.Exists(path))return false;
+            try
+            {
+                var info=new FileInfo(path);if(info.Length>4*1024*1024)return false;
+                var envelope=JsonUtility.FromJson<Envelope>(File.ReadAllText(path,Encoding.UTF8));
+                if(envelope==null||string.IsNullOrEmpty(envelope.payload)||envelope.sha256!=Digest(envelope.payload))return false;
+                data=JsonUtility.FromJson<BachDangSaveData>(envelope.payload);return Valid(data);
+            }
+            catch(Exception e) when(e is IOException||e is UnauthorizedAccessException||e is ArgumentException){return false;}
+        }
+        public static bool TryRead(out BachDangSaveData data)
+        {
+            LastError="";if(ReadFile(SavePath,out data))return true;
+            if(ReadFile(SavePath+".bak",out data)){LastError="Đang dùng bản lưu dự phòng gần nhất.";return true;}
+            LastError=File.Exists(SavePath)?"Không đọc được bản lưu. Tiến trình hiện tại chưa bị thay đổi.":"Chưa có bản lưu. Hãy lưu tại lều hoặc trong menu Esc.";return false;
+        }
+        public static bool CanSave=>BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
+            !(QuestCheckpoint.Instance?.IsDefeated??false)&&!(ScreenFader.Instance?.IsTransitioning??false);
+        public static bool Save(string location)
+        {
+            LastError="";
+            if(!CanSave){LastError="Hãy kết thúc thao tác đang làm trước khi lưu.";return false;}
+            try
+            {
+                var data=Capture(location);if(!Valid(data))throw new InvalidDataException("Invalid campaign state");
+                var payload=JsonUtility.ToJson(data);var envelope=new Envelope{payload=payload,sha256=Digest(payload)};
+                Directory.CreateDirectory(Path.GetDirectoryName(SavePath));string temp=SavePath+".tmp";
+                File.WriteAllText(temp,JsonUtility.ToJson(envelope),new UTF8Encoding(false));
+                if(!ReadFile(temp,out _))throw new InvalidDataException("Save verification failed");
+                if(File.Exists(SavePath))File.Replace(temp,SavePath,SavePath+".bak");else File.Move(temp,SavePath);
+                QuestCheckpoint.Instance?.Capture((BachDangStoryManager.StoryState)data.storyState);
+                BeachBoatSoundscape.Instance?.PlayResult(true);return true;
+            }
+            catch(Exception e) when(e is IOException||e is UnauthorizedAccessException||e is ArgumentException)
+            {LastError="Không thể lưu: "+e.Message;return false;}
+        }
+        public static BachDangSaveData Capture(string location)
+        {
+            var session=BeachBoatQuestSession.Instance;var story=BachDangStoryManager.Instance;var vitals=session.player.GetComponent<PlayerVitals>();var boat=QuestRowboat.Instance;
+            return new BachDangSaveData{
+                savedAt=DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),location=location,storyState=(int)story.currentState,woodCount=story.collectedWood,destroyedCount=story.destroyedEnemyShips,
+                playerPosition=session.player.transform.position,playerRotation=session.player.transform.rotation,aboard=boat!=null&&boat.IsAboard,
+                boatPosition=boat!=null?boat.transform.position:Vector3.zero,boatRotation=boat!=null?boat.transform.rotation:Quaternion.identity,
+                health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,
+                woods=session.woodItems.Select(w=>w!=null&&w.IsCollected).ToArray(),stakes=RiverStakeZone.Instance?.CaptureCheckpoint()??Array.Empty<bool>(),
+                stallLevels=VillagePreparationQuest.Instance.stalls.Select(s=>s.CompletedLevels).ToArray(),
+                activities=UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsSortMode.None).Select(s=>new BachDangSaveData.Activity{name=s.name,completed=s.HasCompleted,bestTime=s.BestTime,bestMistakes=s.BestMistakes}).ToArray(),
+                tide=TideSystem.Instance?.CaptureSave(),fleet=EnemyFleetDirector.Instance?.CaptureSave(),
+                ships=EnemyFleetDirector.Instance.enemyShips.Select(s=>s.CaptureSave()).ToArray(),
+                guards=RiverPlayerCombat.Instance.guards.Select(g=>new BachDangSaveData.Guard{id=GuardId(g),ship=g.ship.name,health=g.Health,active=g.gameObject.activeSelf,independent=g.IsIndependentBoarder,position=g.transform.position,rotation=g.transform.rotation}).ToArray(),
+                boarding=RiverBoardingCombat.Instance?.CaptureSave(),dialogue=StoryDialogueUI.Instance?.CaptureSave(),
+                patrols=UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None).Select(p=>new BachDangSaveData.Patrol{name=p.name,position=p.transform.position,rotation=p.transform.rotation}).ToArray()
+            };
+        }
+        public static void Apply(BachDangSaveData data)
+        {
+            if(!Valid(data))throw new InvalidDataException("Unsupported campaign save");
+            var session=BeachBoatQuestSession.Instance;var story=BachDangStoryManager.Instance;var boat=QuestRowboat.Instance;
+            BachDangFrontEnd.Instance?.ReleaseHiddenUI();
+            foreach(var intro in UnityEngine.Object.FindObjectsByType<OpeningEvent>(FindObjectsInactive.Include,FindObjectsSortMode.None))intro.SkipOpening();
+            StoryDialogueUI.Instance?.DismissForCheckpoint();EnemyFleetDirector.Instance.ResetForCheckpoint();
+            for(int i=0;i<session.woodItems.Length;i++)session.woodItems[i]?.RestoreCollection(i<data.woods.Length&&data.woods[i]);
+            RiverStakeZone.Instance.RestoreCheckpoint(data.stakes);
+            story.collectedWood=data.woodCount;story.destroyedEnemyShips=data.destroyedCount;
+            story.TransitionTo((BachDangStoryManager.StoryState)data.storyState,true);
+            var stalls=VillagePreparationQuest.Instance.stalls;for(int i=0;i<stalls.Length;i++)stalls[i].RestoreLearningProgress(i<data.stallLevels.Length?data.stallLevels[i]:0);
+            foreach(var activity in data.activities??Array.Empty<BachDangSaveData.Activity>())
+                foreach(var station in UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsInactive.Include,FindObjectsSortMode.None))if(station.name==activity.name)station.RestoreSave(activity);
+            foreach(var patrol in UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None))
+            {var saved=(data.patrols??Array.Empty<BachDangSaveData.Patrol>()).FirstOrDefault(p=>p.name==patrol.name);if(saved!=null)patrol.transform.SetPositionAndRotation(saved.position,saved.rotation);}
+            if(data.tide!=null){BachDangBattleTimeline.Instance.RestoreSave(data.tide);TideSystem.Instance.RestoreSave(data.tide);}
+            boat.RestoreSave(data.aboard,data.boatPosition,data.boatRotation);
+            foreach(var saved in data.ships??Array.Empty<BachDangSaveData.Ship>()){var ship=EnemyFleetDirector.Instance.enemyShips.FirstOrDefault(s=>s.name==saved.name);ship?.RestoreSave(saved);}
+            RiverBoardingCombat.Instance.RestoreSave(data.boarding);
+            foreach(var saved in data.guards??Array.Empty<BachDangSaveData.Guard>())
+            {var guard=RiverPlayerCombat.Instance.guards.FirstOrDefault(g=>GuardId(g)==saved.id);guard?.RestoreSave(saved);}
+            if(data.fleet!=null){RiverPlayerCombat.Instance.RestoreSave(data.fleet);EnemyFleetDirector.Instance.RestoreSave(data.fleet);}
+            var player=session.player;var body=player.GetComponent<Rigidbody>();player.transform.SetPositionAndRotation(data.playerPosition,data.playerRotation);body.position=data.playerPosition;body.rotation=data.playerRotation;
+            if(!body.isKinematic){body.linearVelocity=Vector3.zero;body.angularVelocity=Vector3.zero;}
+            player.GetComponent<PlayerVitals>().RestoreSave(data);Physics.SyncTransforms();
+            StoryDialogueUI.Instance.RestoreSave(data.dialogue);
+            session.storyCamera.GetComponent<Camera_Script>().SnapToTarget();BachDangPreferences.Apply();
+            QuestCheckpoint.Instance.Capture((BachDangStoryManager.StoryState)data.storyState);story.UpdateUI();
+        }
+        public static string Chapter(int state)
+        {
+            var s=(BachDangStoryManager.StoryState)state;
+            if(s==BachDangStoryManager.StoryState.Act1_ExploreCamp||s==BachDangStoryManager.StoryState.Act1_Training||s==BachDangStoryManager.StoryState.Act1_GoToCampGate)return "HỒI I • DOANH TRẠI";
+            if(s==BachDangStoryManager.StoryState.Act3_Celebration||s==BachDangStoryManager.StoryState.Act3_Victory)return "ĐẠI THẮNG BẠCH ĐẰNG";
+            return state>=8&&state<=10?"HỒI III • THỦY CHIẾN":"HỒI II • TRẬN ĐỊA CỌC";
+        }
+    }
+}

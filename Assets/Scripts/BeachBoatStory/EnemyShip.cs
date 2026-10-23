@@ -26,6 +26,28 @@ namespace BeachBoatStory
         Vector3 sinkStart;Quaternion sinkRotation;
         GameObject[] debris;
         Rigidbody[] debrisBodies;
+        MeshCollider[] wreckColliders;
+        public bool HasSolidWreck=>isDestroyed&&wreckColliders!=null&&System.Array.Exists(wreckColliders,c=>c!=null&&c.enabled);
+        void ConfigureWreckCollision(bool wreck)
+        {
+            if(wreckColliders==null)
+            {
+                var colliders=new System.Collections.Generic.List<MeshCollider>();var visual=transform.Find("RedSailJunkVisual");
+                if(visual!=null)foreach(var filter in visual.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    // Actual timber surfaces, never the large navigation box or fabric sails.
+                    string n=filter.name;
+                    if(!(n.Contains("Hull")||n.Contains("Deck")||n=="Roof"||n=="Upturned_Bow"||n=="Mast"||n=="Carved_Pillar"))continue;
+                    if(filter.sharedMesh==null)continue;
+                    var collider=filter.GetComponent<MeshCollider>();
+                    if(collider==null)collider=filter.gameObject.AddComponent<MeshCollider>();
+                    collider.sharedMesh=filter.sharedMesh;collider.convex=false;collider.isTrigger=false;colliders.Add(collider);
+                }
+                wreckColliders=colliders.ToArray();
+            }
+            foreach(var col in GetComponentsInChildren<Collider>(true))
+                if(col.GetComponentInParent<EnemyDeckGuard>()==null)col.enabled=System.Array.IndexOf(wreckColliders,col)>=0?wreck:!wreck;
+        }
         public void Activate()
         {
             isDestroyed=false;HasSettled=false;destroyedTime=0;battleStarted=true;
@@ -48,6 +70,7 @@ namespace BeachBoatStory
                 }
             }
             EnsureDebrisPool();
+            ConfigureWreckCollision(false);
         }
         void Update()=>Step(Time.deltaTime);
         public void Step(float dt)
@@ -122,7 +145,7 @@ namespace BeachBoatStory
             foreach(float x in new[]{-40f,40f})foreach(float z in new[]{-120f,120f})
                 hullBottom=Mathf.Min(hullBottom,(finalRotation*new Vector3(x,-4,z)).y);
             sinkDepth=Mathf.Max(18,sinkStart.y-(ground-hullBottom+1));
-            foreach(var collider in GetComponentsInChildren<Collider>(true))if(collider.GetComponentInParent<EnemyDeckGuard>()==null)collider.enabled=false;
+            ConfigureWreckCollision(true);
             FloatSurvivors();
             LaunchDebris(impactPoint);
             BeachBoatSoundscape.Instance?.PlayCrash();
@@ -146,8 +169,31 @@ namespace BeachBoatStory
         public void ClearWreck()
         {
             if(deckGuards!=null)foreach(var guard in deckGuards)if(guard!=null){guard.IsIndependentBoarder=false;guard.RestoreDeck();guard.ResetGuard();}
-            foreach(var collider in GetComponentsInChildren<Collider>(true))if(collider.GetComponentInParent<EnemyDeckGuard>()==null)collider.enabled=true;
+            ConfigureWreckCollision(false);
             if(wreckRaft!=null)wreckRaft.gameObject.SetActive(false);
+        }
+        public BachDangSaveData.Ship CaptureSave()=>new BachDangSaveData.Ship {
+            name=name,active=gameObject.activeSelf,started=battleStarted,destroyed=isDestroyed,settled=HasSettled,released=attackReleased,
+            signal=SignalReady,route=routeIndex,destroyedTime=destroyedTime,sinkDepth=sinkDepth,
+            position=transform.position,rotation=transform.rotation,sinkStart=sinkStart,sinkRotation=sinkRotation};
+        public void RestoreSave(BachDangSaveData.Ship data)
+        {
+            // Activate seats the visual against the water. Calibrate at a floating root,
+            // then apply the saved sinking pose so a wreck never gets a second vertical offset.
+            var floating=data.position;floating.y=TideSystem.CurrentWaterHeight;
+            transform.SetPositionAndRotation(floating,Quaternion.Euler(0,data.rotation.eulerAngles.y,0));
+            if(data.active)Activate();
+            if(deckGuards==null)deckGuards=GetComponentsInChildren<EnemyDeckGuard>(true);
+            battleStarted=data.started;isDestroyed=data.destroyed;HasSettled=data.settled;attackReleased=data.released;
+            SignalReady=data.signal;routeIndex=data.route;destroyedTime=data.destroyedTime;sinkDepth=data.sinkDepth;
+            sinkStart=data.sinkStart;sinkRotation=data.sinkRotation;transform.SetPositionAndRotation(data.position,data.rotation);
+            if(isDestroyed)
+            {
+                if(wreckRaft==null){wreckRaft=new GameObject(name+"_ViTri_XacTau").transform;wreckRaft.SetParent(transform.parent,true);}
+                wreckRaft.gameObject.SetActive(true);wreckRaft.SetPositionAndRotation(new Vector3(sinkStart.x,TideSystem.CurrentWaterHeight+1,sinkStart.z),sinkRotation);
+                ConfigureWreckCollision(true);
+            }
+            gameObject.SetActive(data.active);
         }
 
         void EnsureDebrisPool()

@@ -106,6 +106,17 @@ public class TideSystem : MonoBehaviour
         currentTargetY = transform.position.y;
         CurrentWaterHeight = transform.position.y;
     }
+    public BeachBoatStory.BachDangSaveData.Tide CaptureSave()=>new BeachBoatStory.BachDangSaveData.Tide {
+        height=transform.position.y,target=currentTargetY,start=ebbStartY,elapsed=ebbElapsed,duration=ebbDuration,
+        rising=isRising,controlled=controlledEbb,locked=IsTideLocked,high=heldHigh,
+        hour=BeachBoatStory.BachDangBattleTimeline.Instance.DisplayHour,moment=(int)BeachBoatStory.BachDangBattleTimeline.Instance.CurrentMoment};
+    public void RestoreSave(BeachBoatStory.BachDangSaveData.Tide data)
+    {
+        var p=transform.position;p.y=data.height;transform.position=p;CurrentWaterHeight=p.y;
+        currentTargetY=data.target;ebbStartY=data.start;ebbElapsed=data.elapsed;ebbDuration=Mathf.Max(1,data.duration);
+        isRising=data.rising;controlledEbb=data.controlled;heldHigh=data.high;
+        tideOwner=data.locked?BeachBoatStory.BachDangBattleTimeline.Instance:null;autoCycle=false;timer=0;
+    }
 
     void OnDestroy()
     {
@@ -161,7 +172,7 @@ public class TideSystem : MonoBehaviour
     void Update()
     {
         // 1. Phím tắt T để chuyển đổi nhanh Thủy Triều
-        if (!IsTideLocked && Input.GetKeyDown(toggleTideKey))
+        if (!BeachBoatStory.BachDangFrontEnd.IsBlocking && !IsTideLocked && Input.GetKeyDown(toggleTideKey))
         {
             ToggleTide();
         }

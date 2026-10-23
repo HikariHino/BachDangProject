@@ -36,6 +36,7 @@ public static class BeachBoatSwimmingWreckPlaytest
             var session=BeachBoatQuestSession.Instance;var game=RiverBoardingCombat.Instance;var boat=QuestRowboat.Instance;var fleet=EnemyFleetDirector.Instance;
             if(phase==0)
             {
+                BeachBoatStory.BachDangFrontEnd.Instance?.Play();
                 foreach(var intro in Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))intro.SkipOpening();BeachBoatStory.StoryDialogueUI.Instance?.Close();
                 BeachBoatStory.RiverStakeZone.Instance.RestoreCheckpoint(Enumerable.Repeat(true,5).ToArray());
                 var story=BeachBoatStory.BachDangStoryManager.Instance;story.collectedWood=story.totalWoodRequired;story.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act3_WaitForLowTide,true);
@@ -80,6 +81,15 @@ public static class BeachBoatSwimmingWreckPlaytest
                 ship.TakeDamage();for(int i=0;i<80;i++)ship.Step(.1f);
                 mixedCrew=game.ShipwreckDeaths>0&&game.ShipwreckSurvivors>0;targetsBoth=game.SurvivorsTargetingPlayer>0&&game.SurvivorsTargetingAllies>0;
                 noRaft=ship.WreckTarget!=null&&ship.WreckTarget.childCount==0;
+                Physics.SyncTransforms();
+                var hull=ship.transform.Find("RedSailJunkVisual/Flagship_Timber_Hull").GetComponent<MeshCollider>();
+                if(!ship.HasSolidWreck||hull==null||!hull.enabled||ship.transform.Find("Warship_Hull_Collision").GetComponent<BoxCollider>().enabled)throw new Exception("Wreck has no real timber collision or retains the invisible navigation box");
+                var vertices=hull.sharedMesh.vertices;var indices=hull.sharedMesh.triangles;int triangle=(indices.Length/6)*3;
+                var va=hull.transform.TransformPoint(vertices[indices[triangle]]);var vb=hull.transform.TransformPoint(vertices[indices[triangle+1]]);var vc=hull.transform.TransformPoint(vertices[indices[triangle+2]]);
+                var center=(va+vb+vc)/3;var outward=Vector3.Cross(vb-va,vc-va);outward.y=0;outward.Normalize();
+                var start=center+outward*40;var end=center-outward*40;
+                if(!hull.Raycast(new Ray(start,-outward),out var contact,80))throw new Exception("Solid wreck cannot be hit by a physical ray");
+                if(Vector3.Distance(RiverHullCollision.Move(start,end,4),end)<5)throw new Exception("A swimmer can cross through the wreck hull");
                 wreckRetained=ship.HasSettled&&ship.gameObject.activeSelf&&ship.transform.position.y<TideSystem.CurrentWaterHeight-10;
                 if(!mixedCrew||!targetsBoth||!noRaft||!wreckRetained)throw new Exception("Wreck missing, crew not split, or an artificial raft remains");
                 var survivors=RiverPlayerCombat.Instance.guards.Where(g=>g.ship==ship&&g.IsIndependentBoarder&&g.IsAlive).ToArray();

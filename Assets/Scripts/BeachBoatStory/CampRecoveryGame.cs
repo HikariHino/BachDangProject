@@ -109,9 +109,10 @@ namespace BeachBoatStory
         }
         void Update()
         {
+            if(BachDangFrontEnd.IsBlocking||StoryDialogueUI.InputConsumedThisFrame)return;
             if(Active!=this)return;
             if(Facility==null||!Facility.isActiveAndEnabled){Close();return;}
-            if(Input.GetKeyDown(KeyCode.Escape)){Close();return;}
+            if(Input.GetKeyDown(KeyCode.X)){Close();return;}
             if(Phase==GamePhase.Instructions){if(Input.GetKeyDown(KeyCode.Return))StartAttempt();return;}
             if(Phase==GamePhase.Lost){if(Input.GetKeyDown(KeyCode.R))StartAttempt();return;}
             if(Phase==GamePhase.Won){if(Input.GetKeyDown(KeyCode.Return))ClaimReward();return;}
@@ -156,7 +157,7 @@ namespace BeachBoatStory
             title.text=Facility.kind==CampFacility.FacilityKind.Medical?"QUÂN Y — BĂNG BÓ":Facility.kind==CampFacility.FacilityKind.Provisions?"BẾP TRẠI — BỮA HỒI SỨC":Training?"LUYỆN THỂ LỰC":"LỀU NGHỈ — ĐIỀU HÒA NHỊP THỞ";
             if(Training)title.text+=$" • CẤP {TrainingLevel}/3 — "+new[]{"DỄ","VỪA","KHÓ"}[TrainingLevel-1];
             instructions.SetActive(Phase==GamePhase.Instructions);playing.SetActive(Phase==GamePhase.Playing);result.SetActive(Phase==GamePhase.Won||Phase==GamePhase.Lost);
-            rules.text=Rules()+"\n\n"+Reward()+"\nChỉ nhận thưởng sau khi thắng. Esc: rời lều, không nhận thưởng.";
+            rules.text=Rules()+"\n\n"+Reward()+"\nChỉ nhận thưởng sau khi thắng. X: rời lều, không nhận thưởng. Esc: tạm dừng.";
             stats.text=$"CÒN {Mathf.Max(0,TimeLimit-Elapsed):0.0}s    •    Hoàn thành {Progress}/{Goal}    •    Sai {Mistakes}/3";
             clockFill.anchorMax=new Vector2(Mathf.Clamp01(1-Elapsed/TimeLimit),1);progressFill.anchorMax=new Vector2((float)Progress/Goal,1);
             choices.SetActive(Sequence);rhythm.SetActive(!Sequence);
@@ -165,7 +166,7 @@ namespace BeachBoatStory
             cursor.anchorMin=new Vector2(RhythmPosition*.988f,0);cursor.anchorMax=new Vector2(RhythmPosition*.988f+.012f,1);
             goodZone.anchorMin=new Vector2(GreenMin,0);goodZone.anchorMax=new Vector2(GreenMax,1);
             actionLabel.text=Training?"ĐÚNG NHỊP [SPACE]":"THỞ RA [SPACE]";feedback.text=Feedback;
-            resultText.text=(Phase==GamePhase.Won?"HOÀN THÀNH\n\n"+Reward():"CHƯA HOÀN THÀNH\n\n"+Feedback)+"\n\nEsc: rời lều";
+            resultText.text=(Phase==GamePhase.Won?"HOÀN THÀNH\n\n"+Reward():"CHƯA HOÀN THÀNH\n\n"+Feedback)+"\n\nX: rời lều • Esc: tạm dừng";
             result.transform.Find("RetryOrClaim/Label").GetComponent<TMP_Text>().text=Phase==GamePhase.Won?(Training&&TrainingLevel<3?"NHẬN +20 • SANG CẤP TIẾP [ENTER]":"NHẬN THƯỞNG [ENTER]"):"THỬ LẠI [R]";
         }
         static GameObject Box(string name,Transform parent,Vector2 min,Vector2 max,Color color)

@@ -98,9 +98,10 @@ namespace BeachBoatStory
         bool savedCursor,prompt;
         void Update()
         {
+            if(BachDangFrontEnd.IsBlocking||StoryDialogueUI.InputConsumedThisFrame)return;
             if(Active==this)
             {
-                if(Input.GetKeyDown(KeyCode.Escape)){Close();return;}
+                if(Input.GetKeyDown(KeyCode.X)){Close();return;}
                 if(Phase==WorkPhase.Instructions){if(Input.GetKeyDown(KeyCode.Return))StartAttempt(Difficulty);return;}
                 if(Phase==WorkPhase.Lost){if(Input.GetKeyDown(KeyCode.R))StartAttempt(Difficulty);return;}
                 if(Phase==WorkPhase.Won){if(Input.GetKeyDown(KeyCode.Return))ClaimReward();return;}

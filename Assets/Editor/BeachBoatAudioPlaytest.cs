@@ -62,6 +62,7 @@ public static class BeachBoatAudioPlaytest
             if(phase==6)
             {
                 if(AudioListener.volume<=0)throw new Exception("Unmute did not restore master output");
+                BeachBoatStory.BachDangFrontEnd.Instance?.Play();
                 foreach(var opening in UnityEngine.Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))opening.SkipOpening();
                 BeachBoatStory.StoryDialogueUI.Instance?.Close();
                 MovePlayer(new Vector3(-6720,124.5f,-4700));phase=7;until=EditorApplication.timeSinceStartup+2;return;

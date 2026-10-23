@@ -69,12 +69,14 @@ public class OpeningEvent : MonoBehaviour
     {
         // Story bootstrap creates its UI after Awake. Capture that UI once, not every frame.
         yield return null;
+        while(BachDangFrontEnd.AtTitle)yield return null;
+        if(IsOpeningEnded)yield break;
         RefreshHiddenUI();
         Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
         for (int i = 0; i < storyLines.Length; i++)
         {
             CurrentLine = i; advanceRequested = false; readyToAdvance = false;
-            storyText.text = storyLines[i] + "\n\n<size=60%><color=#BBBBBB>[Space / Enter: tiếp tục]     [Giữ Esc: bỏ qua]</color></size>";
+            storyText.text = storyLines[i] + "\n\n<size=60%><color=#BBBBBB>[Space / Enter: tiếp tục]     [Giữ Backspace: bỏ qua]</color></size>";
             yield return FadeText(0, 1, .35f);
             lineReadyAt = Time.unscaledTime; readyToAdvance = true;
             float readingTime = Mathf.Max(minimumReadingSeconds, storyLines[i].Length * secondsPerCharacter);
@@ -87,14 +89,14 @@ public class OpeningEvent : MonoBehaviour
 
     void Update()
     {
-        if (!IsOpeningActive || current != this) return;
+        if (BachDangFrontEnd.IsBlocking || !IsOpeningActive || current != this) return;
         if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) AdvanceLine();
-        skipHeld = Input.GetKey(KeyCode.Escape) ? skipHeld + Time.unscaledDeltaTime : 0;
+        skipHeld = Input.GetKey(KeyCode.Backspace) ? skipHeld + Time.unscaledDeltaTime : 0;
         if (skipHeld >= .8f) SkipOpening();
     }
     public void AdvanceLine()
     {
-        if (readyToAdvance && Time.unscaledTime - lineReadyAt >= .25f) advanceRequested = true;
+        if (!BachDangFrontEnd.IsBlocking && readyToAdvance && Time.unscaledTime - lineReadyAt >= .25f) advanceRequested = true;
     }
     public void SkipOpening()
     {
@@ -104,7 +106,7 @@ public class OpeningEvent : MonoBehaviour
     IEnumerator FadeText(float from, float to, float seconds)
     {
         for (float elapsed = 0; elapsed < seconds; elapsed += Time.unscaledDeltaTime)
-        { if (storyText == null) yield break; storyText.alpha = Mathf.Lerp(from, to, elapsed / seconds); yield return null; }
+        { while(BachDangFrontEnd.IsBlocking)yield return null; if (storyText == null) yield break; storyText.alpha = Mathf.Lerp(from, to, elapsed / seconds); yield return null; }
         if (storyText != null) storyText.alpha = to;
     }
     public void RefreshHiddenUI()
@@ -121,7 +123,7 @@ public class OpeningEvent : MonoBehaviour
         {
             foreach (var canvas in root.GetComponentsInChildren<Canvas>(true))
             {
-                if (canvas == openingCanvas || canvas.transform.IsChildOf(openingCanvas.transform)) continue;
+                if (canvas.GetComponent<BachDangFrontEnd>()!=null || canvas == openingCanvas || canvas.transform.IsChildOf(openingCanvas.transform)) continue;
                 if (!hiddenCanvases.ContainsKey(canvas)) hiddenCanvases.Add(canvas, canvas.enabled);
                 canvas.enabled = false;
             }

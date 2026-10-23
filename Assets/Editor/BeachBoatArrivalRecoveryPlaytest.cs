@@ -35,6 +35,7 @@ public static class BeachBoatArrivalRecoveryPlaytest
         try
         {
             var session=BeachBoatQuestSession.Instance;var player=session.player;var vitals=player.GetComponent<PlayerVitals>();
+            BeachBoatStory.BachDangFrontEnd.Instance?.Play();
             foreach(var intro in Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))intro.SkipOpening();
             BeachBoatStory.StoryDialogueUI.Instance?.Close();
             if(phase==0)

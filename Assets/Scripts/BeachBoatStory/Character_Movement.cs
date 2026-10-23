@@ -12,6 +12,7 @@ public class Character_Movement : MonoBehaviour
     public float acceleration = 120f, braking = 180f;
     public float jumpHeight = 5f, gravityMultiplier = 3f;
     public bool IsGrounded { get; private set; }
+    public bool IsRunning=>sprint;
     Rigidbody body;
     CapsuleCollider capsule;
     Camera_Script orbit;

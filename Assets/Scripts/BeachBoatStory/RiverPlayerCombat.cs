@@ -73,6 +73,17 @@ namespace BeachBoatStory
         void Awake(){Instance=this;session=GetComponent<BeachBoatQuestSession>();camera=session.storyCamera;animator=session.player.GetComponentInChildren<Animator>();leftFoot=animator.GetBoneTransform(HumanBodyBones.LeftFoot);rightFoot=animator.GetBoneTransform(HumanBodyBones.RightFoot);}
         void Start(){BuildBow();BuildHUD();BuildArrows();}
         public bool HasSuppressedWave(int wave)=>suppressed.Contains(wave);
+        public void FillSave(BachDangSaveData.Fleet data)
+        {
+            data.kills=Kills;data.alliedKills=AlliedKills;data.arrows=Arrows;data.shots=ShotsFired;data.hits=Hits;
+            data.suppressed=new List<int>(suppressed).ToArray();
+        }
+        public void RestoreSave(BachDangSaveData.Fleet data)
+        {
+            Kills=data.kills;AlliedKills=data.alliedKills;Arrows=Mathf.Clamp(data.arrows,0,6);ShotsFired=data.shots;Hits=data.hits;
+            suppressed.Clear();foreach(int wave in data.suppressed??System.Array.Empty<int>())suppressed.Add(wave);
+            wasBattle=data.active;threat=null;reloadUntil=nextShot=0;nextThreat=Time.time+4;
+        }
         public void RegisterKill(EnemyDeckGuard guard)
         {
             Kills++;suppressed.Add(guard.waveIndex);
@@ -104,8 +115,8 @@ namespace BeachBoatStory
             SetAim((boarding==null||!boarding.SwordDrawn&&!boarding.IsTraversing)&&Input.GetMouseButton(1)&&Cursor.lockState==CursorLockMode.Locked);
             if(Input.GetKeyDown(KeyCode.R))Reload();
             AimedGuard=FindTarget(camera.ViewportPointToRay(new Vector3(.5f,.5f)),out _);
-            if(IsAiming&&!IsReloading&&Input.GetMouseButton(0))charge=Mathf.Min(1.1f,charge+Time.deltaTime);
-            if(IsAiming&&Input.GetMouseButtonUp(0)){TryFire(camera.ViewportPointToRay(new Vector3(.5f,.5f)),charge);charge=0;}
+            if(IsAiming&&!IsReloading&&Input.GetMouseButton(1))charge=Mathf.Min(1.1f,charge+Time.deltaTime);
+            if(IsAiming&&Input.GetMouseButtonDown(0)){TryFire(camera.ViewportPointToRay(new Vector3(.5f,.5f)),charge);charge=0;}
             if(!IsAiming)charge=0;
             StepArrows(Time.deltaTime);UpdateThreat();UpdateHUD();
         }
@@ -234,7 +245,7 @@ namespace BeachBoatStory
             targetText.text=IsAiming&&AimedGuard!=null?$"XẠ THỦ ĐỢT {AimedGuard.waveIndex+1}  •  {AimedGuard.Health}/2":"";
             notice.text=threat!=null?"ĐỊCH ĐANG NHẮM! DI CHUYỂN ĐỂ NÉ TÊN":Time.time<noticeUntil?message:
                 RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.SwordDrawn?"Chuột trái: chém • Chuột phải: đỡ • Q: cất kiếm":
-                "Chuột phải: ngắm • Giữ/thả chuột trái: bắn • R: nạp tên • Q: kiếm";
+                "Giữ chuột phải: giương/ngắm • Chuột trái: bắn • R: nạp tên • Q: kiếm";
             notice.color=threat!=null?new Color(1,.42f,.28f):Color.white;
             reticle.gameObject.SetActive(IsAiming);reticle.color=Time.time<hitUntil?Color.white:AimedGuard!=null?new Color(1,.25f,.2f):new Color(1,.83f,.4f);
             chargeFill.rectTransform.anchorMax=new Vector2(IsAiming?charge/1.1f:0,1);

@@ -114,6 +114,19 @@ namespace BeachBoatStory
             EventLabel = eventLabel;
             TideLabel = tideLabel;
         }
+        public void RestoreSave(BachDangSaveData.Tide data)
+        {
+            switch((BattleMoment)data.moment)
+            {
+                case BattleMoment.LureAtHighTide:BeginLure();break;
+                case BattleMoment.FleetInsideStakeField:MarkFleetInside();break;
+                case BattleMoment.TideFalling:BeginEbb();break;
+                case BattleMoment.Ambush:BeginAmbush();break;
+                case BattleMoment.Victory:MarkVictory();break;
+                default:ApplyStoryState(BachDangStoryManager.Instance.currentState,true);break;
+            }
+            DisplayHour=data.hour;if(cycle!=null)cycle.SetTimeOfDay(DisplayHour);
+        }
 
         void SetFreeTide(bool high, bool immediate)
         {
@@ -123,7 +136,7 @@ namespace BeachBoatStory
 
         void OnGUI()
         {
-            if (OpeningEvent.IsOpeningActive || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
+            if (BachDangFrontEnd.IsBlocking || OpeningEvent.IsOpeningActive || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
                 (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen) ||
                 (BeachBoatQuestSession.Instance != null && !BeachBoatQuestSession.Instance.storyMode)) return;

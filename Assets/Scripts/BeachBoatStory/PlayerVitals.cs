@@ -111,5 +111,12 @@ namespace BeachBoatStory
             Health=maxHealth;Stamina=maxStamina;ArmorCharges=Mathf.Max(0,armor);IsExhausted=false;
             lastEffortTime=float.NegativeInfinity;LastImpact=null;LastImpactDamage=0;LastImpactUntil=0;
         }
+        public void RestoreSave(BachDangSaveData data)
+        {
+            maxHealth=Mathf.Max(1,data.maxHealth);maxStamina=Mathf.Max(1,data.maxStamina);
+            Health=Mathf.Clamp(data.health,1,maxHealth);Stamina=Mathf.Clamp(data.stamina,0,maxStamina);
+            ArmorCharges=Mathf.Max(0,data.armor);CompletedTrainingLevels=Mathf.Clamp(data.trainingLevels,0,3);
+            IsExhausted=Stamina<=0;lastEffortTime=Time.time;LastImpact=null;LastImpactUntil=0;
+        }
     }
 }

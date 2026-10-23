@@ -39,6 +39,7 @@ public static class BeachBoatDistanceUndoPlaytest
             var guide=Object.FindAnyObjectByType<StoryRouteGuide>();
             if(phase==0)
             {
+                BeachBoatStory.BachDangFrontEnd.Instance?.Play();
                 foreach(var intro in Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))intro.SkipOpening();BeachBoatStory.StoryDialogueUI.Instance?.Close();
                 story.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act1_Training,true);
                 physicalMetres=Mathf.Abs(session.WorldUnitsPerMetre-14)<.01f&&Mathf.Abs(WorldDistance.ToMetres(21)-1.5f)<.001f;

@@ -30,10 +30,7 @@ public class CampGateTransition : MonoBehaviour
 
     public bool IsAvailable(BachDangStoryManager.StoryState state)
     {
-        return (gateType == GateType.CampGate && state == BachDangStoryManager.StoryState.Act1_GoToCampGate) ||
-            (gateType == GateType.VillageGate && state == BachDangStoryManager.StoryState.Act2_ReturnToCampGate) ||
-            (gateType == GateType.CampRiverGate && (state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver || state == BachDangStoryManager.StoryState.Act3_WaitForLowTide)) ||
-            (gateType == GateType.RiverGate && (state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp || state == BachDangStoryManager.StoryState.Act3_Victory));
+        return destinationTarget!=null;
     }
 
     public bool IsInRange(Transform player)
@@ -69,47 +66,9 @@ public class CampGateTransition : MonoBehaviour
         Vector3 gateFlat = new Vector3(transform.position.x, 0f, transform.position.z);
         Vector3 playerFlat = new Vector3(player.position.x, 0f, player.position.z);
         float dist = Vector3.Distance(gateFlat, playerFlat);
-        bool canInteract = false;
-        string promptMessage = "";
-
-        if (gateType == GateType.CampGate)
-        {
-            if (story.currentState == BachDangStoryManager.StoryState.Act1_GoToCampGate)
-            {
-                canInteract = true;
-                promptMessage = "Bấm E để đến dân làng bên sông";
-            }
-            else if (story.currentState == BachDangStoryManager.StoryState.Act1_ExploreCamp)
-            {
-                // Chưa nhận lệnh từ Ngô Quyền
-                canInteract = false;
-            }
-        }
-        else if (gateType == GateType.CampRiverGate && IsAvailable(story.currentState))
-        {
-            canInteract = true;
-            promptMessage = "[E] Ra bến thuyền";
-        }
-        else if (gateType == GateType.RiverGate && IsAvailable(story.currentState))
-        {
-            canInteract = true;
-            promptMessage = "[E] Quay về doanh trại báo tin";
-        }
-        else if (gateType == GateType.VillageGate)
-        {
-            if (story.currentState == BachDangStoryManager.StoryState.Act2_ReturnToCampGate)
-            {
-                canInteract = true;
-                promptMessage = "[E] Quay về Doanh Trại";
-            }
-            else if (story.currentState == BachDangStoryManager.StoryState.Act2_CollectWoodInVillage)
-            {
-                // Chưa nhặt đủ 5 gỗ
-                promptMessage = $"Cần thu thập đủ 5 cọc gỗ ({story.collectedWood}/{story.totalWoodRequired})";
-            }
-        }
-
-        bool canShowPrompt = canInteract || (!canInteract && !string.IsNullOrEmpty(promptMessage));
+        bool canInteract=IsAvailable(story.currentState);
+        string promptMessage=gateType==GateType.CampGate?"[E] Đến làng ven sông":gateType==GateType.CampRiverGate?"[E] Đến bến thuyền":"[E] Về doanh trại";
+        bool canShowPrompt=canInteract;
         if (dist <= interactDistance && canShowPrompt)
         {
             isPlayerInRange = true;
@@ -139,48 +98,17 @@ public class CampGateTransition : MonoBehaviour
 
         story.SetInteractPrompt(false, owner: this);
 
-        if (gateType == GateType.CampGate)
-        {
-            string narrative = "Theo quân lệnh của Chủ tướng Ngô Quyền,\nbạn lên đường sang Làng Ven Sông quyên góp cọc gỗ...";
-            System.Action move = () =>
-            {
-                Transform player = story.GetPlayerTransform();
-                Vector3 targetPos = destinationTarget != null ? destinationTarget.position : new Vector3(225f, 17.6f, -1235f);
-                TeleportPlayer(player, targetPos, destinationTarget != null ? destinationTarget.rotation : Quaternion.identity);
+        var previous=story.currentState;
+        string narrative=gateType==GateType.CampGate?"Đường làng ven sông — dân binh cùng chuẩn bị trận địa.":gateType==GateType.CampRiverGate?"Bến thuyền Bạch Đằng — nơi bố trí trận địa cọc.":"Trở về doanh trại Ngô Quyền.";
+        System.Action move=()=>{
+            TeleportPlayer(story.GetPlayerTransform(),destinationTarget.position,destinationTarget.rotation);
+            if(gateType==GateType.CampGate&&previous==BachDangStoryManager.StoryState.Act1_GoToCampGate)
                 story.TransitionTo(BachDangStoryManager.StoryState.Act2_CollectWoodInVillage);
-            };
-            if (ScreenFader.Instance != null) ScreenFader.Instance.FadeTransition(narrative, move);
-            else move();
-        }
-        else if (gateType == GateType.VillageGate)
-        {
-            string narrative = "Dân làng đồng lòng gom góp cọc gỗ,\ntoàn quân khẩn trương vận chuyển cọc về đại bản doanh...";
-            System.Action move = () =>
-            {
-                Transform player = story.GetPlayerTransform();
-                Vector3 targetPos = destinationTarget != null ? destinationTarget.position : new Vector3(-765f, 32.85f, 195f);
-                TeleportPlayer(player, targetPos, destinationTarget != null ? destinationTarget.rotation : Quaternion.identity);
+            else if(gateType==GateType.VillageGate&&previous==BachDangStoryManager.StoryState.Act2_ReturnToCampGate)
                 story.TransitionTo(BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen);
-            };
-            if (ScreenFader.Instance != null) ScreenFader.Instance.FadeTransition(narrative, move);
-            else move();
-        }
-        else if (gateType == GateType.CampRiverGate || gateType == GateType.RiverGate)
-        {
-            string narrative = gateType == GateType.CampRiverGate
-                ? "Mang cọc ra bến. Lên thuyền, chèo tới các điểm đánh dấu trong trận địa cọc dưới sông."
-                : "Trận địa cọc đã hoàn thành. Trở về doanh trại báo tin cho Chủ tướng.";
-            System.Action move = () =>
-            {
-                Transform player = story.GetPlayerTransform();
-                Quaternion targetRot = destinationTarget != null ? destinationTarget.rotation : Quaternion.identity;
-                Vector3 targetPos = destinationTarget != null ? destinationTarget.position : Vector3.zero;
-                TeleportPlayer(player, targetPos, targetRot);
-                story.UpdateUI();
-            };
-            if (ScreenFader.Instance != null) ScreenFader.Instance.FadeTransition(narrative, move);
-            else move();
-        }
+            else story.UpdateUI();
+        };
+        if(ScreenFader.Instance!=null)ScreenFader.Instance.FadeTransition(narrative,move);else move();
     }
 
     private static void TeleportPlayer(Transform player, Vector3 position, Quaternion rotation)

@@ -53,7 +53,7 @@ public class Camera_Script : MonoBehaviour
             if (target == null) return;
         }
         if (!initialized) SnapToTarget();
-        if (!BeachBoatQuestSession.InputBlocked && Input.GetKeyDown(KeyCode.Escape)) CaptureCursor(!InputCaptured);
+        if (BachDangFrontEnd.Instance==null && !BeachBoatQuestSession.InputBlocked && Input.GetKeyDown(KeyCode.Escape)) CaptureCursor(!InputCaptured);
         // Click to resume after unlocking; the opening itself never skips on mouse input.
         if (!BeachBoatQuestSession.InputBlocked && !InputCaptured && Input.GetMouseButtonDown(0) &&
             (UnityEngine.EventSystems.EventSystem.current == null || !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())) CaptureCursor(true);

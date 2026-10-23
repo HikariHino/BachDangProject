@@ -105,7 +105,7 @@ namespace BeachBoatStory
             if(intro)
             {
                 selectedDifficulty=s.Difficulty;
-                rules.text=s.Instructions+"\n\nHoàn thành lần lượt Dễ → Vừa → Khó để nhận vật tư. Z: hoàn tác; C: làm lại phần này. Không hoàn thời gian/lỗi. Mỗi lỗi mất 2 giây. ESC: rời sạp.";
+                rules.text=s.Instructions+"\n\nHoàn thành lần lượt Dễ → Vừa → Khó để nhận vật tư. Z: hoàn tác; C: làm lại phần này. Không hoàn thời gian/lỗi. Mỗi lỗi mất 2 giây. X: rời sạp. ESC: tạm dừng.";
                 for(int i=0;i<3;i++){difficultyLabels[i].color=i==selectedDifficulty?Gold:Color.white;difficultyButtons[i].interactable=i<=s.UnlockedDifficulty;difficultyLabels[i].text=new[]{"DỄ","VỪA","KHÓ"}[i]+(i<s.CompletedLevels?" • XONG":i>s.UnlockedDifficulty?" • KHÓA":"");}
                 startLabel.text="BẮT ĐẦU  •  "+new[]{"DỄ","VỪA","KHÓ"}[selectedDifficulty];return;
             }

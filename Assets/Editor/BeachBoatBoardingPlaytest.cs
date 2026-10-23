@@ -37,6 +37,7 @@ public static class BeachBoatBoardingPlaytest
             var session=BeachBoatQuestSession.Instance;var game=RiverBoardingCombat.Instance;var archery=RiverPlayerCombat.Instance;var fleet=EnemyFleetDirector.Instance;var boat=QuestRowboat.Instance;
             if(phase==0)
             {
+                BeachBoatStory.BachDangFrontEnd.Instance?.Play();
                 foreach(var intro in Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))intro.SkipOpening();BeachBoatStory.StoryDialogueUI.Instance?.Close();
                 var fields=Object.FindObjectsByType<MeshRenderer>(FindObjectsInactive.Include,FindObjectsSortMode.None).Where(r=>r.name=="Dat_Ruong"||r.name=="Lua_Non"||r.name.Contains("Field")||r.name.Contains("Rice_Rows")).Select(r=>r.bounds).ToArray();
                 bool Overlap(Bounds a,Bounds b)=>a.min.x<b.max.x&&a.max.x>b.min.x&&a.min.z<b.max.z&&a.max.z>b.min.z;
@@ -61,7 +62,20 @@ public static class BeachBoatBoardingPlaytest
             {
                 game.enabled=false;foreach(var vessel in fleet.enemyShips)vessel.moveSpeed=0;
                 if(!ship.gameObject.activeSelf)ship.Activate();ship.transform.position=boat.transform.position+Vector3.forward*170;ship.transform.rotation=Quaternion.identity;
-                swam=game.TryTraverse()&&game.State==RiverBoardingCombat.PlayerState.Swimming;
+                var animator=session.player.GetComponentInChildren<Animator>();
+                float reference=EnemyDeckGuard.RigHeight(animator);
+                if(archery.guards.Any(g=>Mathf.Abs(EnemyDeckGuard.RigHeight(g.visual.GetComponentInChildren<Animator>())/reference-1)>.05f))throw new Exception("Enemy soldier size differs from the player");
+                if(!game.HandleActionKey(KeyCode.Q)||!game.SwordDrawn||!game.HandleActionKey(KeyCode.Q)||game.SwordDrawn)throw new Exception("Q no longer draws and sheathes sword");
+                for(int i=0;i<32;i++)
+                {
+                    animator.Update(0);boat.ApplyRowingPose(i/32f);
+                    var shaft=-boat.paddle.up;
+                    if(Vector3.Distance(boat.paddle.position,boat.LeftPaddleGrip)>.05f||Vector3.Cross(boat.RightPaddleGrip-boat.paddle.position,shaft).magnitude>.05f)throw new Exception("Paddle shaft detaches from a palm");
+                }
+                Capture("Rowing_Palm_Grips",session.player.transform.position+new Vector3(-35,25,-38),session.player.transform.position+Vector3.up*12);
+                archery.SetAim(true);typeof(QuestRowboat).GetMethod("LateUpdate",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(boat,null);
+                if(!archery.IsAiming||boat.paddle.gameObject.activeSelf)throw new Exception("Aiming bow does not release and hide paddle");archery.SetAim(false);
+                swam=game.HandleActionKey(KeyCode.F)&&game.State==RiverBoardingCombat.PlayerState.Swimming;
                 if(!swam)throw new Exception("F did not start swimming");
                 var p=ship.transform.TransformPoint(new Vector3(-(ship.stakeHitDistance+10),0,0));p.y=TideSystem.CurrentWaterHeight-5;MovePlayer(p,Quaternion.LookRotation(Vector3.right));
                 phase=2;until=EditorApplication.timeSinceStartup+.15;return;
@@ -69,7 +83,9 @@ public static class BeachBoatBoardingPlaytest
             if(phase==2)
             {
                 var p=session.player.transform.position;Capture("Boarding_Player_Swim",p+new Vector3(-55,32,-60),p+Vector3.up*7);
-                if(!game.TryTraverse()||game.State!=RiverBoardingCombat.PlayerState.Climbing)throw new Exception("F cannot climb a nearby ship edge");
+                if(game.HandleActionKey(KeyCode.F))throw new Exception("F still climbs from water");
+                if(!game.HandleActionKey(KeyCode.Space)||game.State!=RiverBoardingCombat.PlayerState.Climbing)throw new Exception("Space cannot climb a nearby ship edge");
+                if(fleet.TrySignalAttack())throw new Exception("Climbing Space also signals an attack");
                 game.StepPlayer(.8f);phase=21;until=EditorApplication.timeSinceStartup+.15;return;
             }
             if(phase==21)

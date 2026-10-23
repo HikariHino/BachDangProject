@@ -14,7 +14,27 @@ namespace BeachBoatStory
         public bool IsInMelee {get;private set;}
         public void SetMelee(bool value){IsInMelee=value;if(bow!=null)bow.gameObject.SetActive(!value&&Health>0);}
         public bool IsAlive=>Health>0&&ship!=null&&(!ship.isDestroyed||IsOnWreck||IsIndependentBoarder)&&gameObject.activeInHierarchy;
-        public Vector3 AimPoint=>transform.position+Vector3.up*9;
+        public float BodyHeight {get;private set;}=17.6f;
+        public Vector3 AimPoint=>transform.position+Vector3.up*(BodyHeight*.55f);
+        public static float RigHeight(Animator animator)
+        {
+            var chain=new[]{HumanBodyBones.LeftFoot,HumanBodyBones.LeftLowerLeg,HumanBodyBones.LeftUpperLeg,HumanBodyBones.Hips,
+                HumanBodyBones.Spine,HumanBodyBones.Chest,HumanBodyBones.Neck,HumanBodyBones.Head};
+            float length=0;Transform previous=null;
+            foreach(var bone in chain){var next=animator.GetBoneTransform(bone);if(next==null)continue;if(previous!=null)length+=Vector3.Distance(previous.position,next.position);previous=next;}
+            return length;
+        }
+        public void MatchPlayerSize()
+        {
+            Cache();var player=BeachBoatQuestSession.Instance.player;var reference=player.GetComponentInChildren<Animator>();
+            float oldFeet=Mathf.Min(animator.GetBoneTransform(HumanBodyBones.LeftFoot).position.y,animator.GetBoneTransform(HumanBodyBones.RightFoot).position.y);
+            visual.localScale*=RigHeight(reference)/Mathf.Max(.01f,RigHeight(animator));
+            float newFeet=Mathf.Min(animator.GetBoneTransform(HumanBodyBones.LeftFoot).position.y,animator.GetBoneTransform(HumanBodyBones.RightFoot).position.y);
+            visual.position+=Vector3.up*(oldFeet-newFeet);
+            BodyHeight=player.GetComponent<CapsuleCollider>().height*Mathf.Abs(player.transform.lossyScale.y);
+            if(GetComponent<Collider>() is CapsuleCollider capsule){capsule.height=BodyHeight/transform.lossyScale.y;capsule.radius=BodyHeight*.16f/Mathf.Abs(transform.lossyScale.x);capsule.center=Vector3.up*(capsule.height*.5f);}
+            bow.localScale=Vector3.one*(BodyHeight/17.6f);
+        }
         Animator animator;
         Quaternion restRotation;
         float fall;
@@ -79,6 +99,17 @@ namespace BeachBoatStory
             }
             return true;
         }
+        public void RestoreSave(BachDangSaveData.Guard data)
+        {
+            Cache();RestoreDeck();ResetGuard();
+            foreach(var candidate in EnemyFleetDirector.Instance.enemyShips)if(candidate.name==data.ship){ship=candidate;break;}
+            IsIndependentBoarder=data.independent;
+            if(data.independent)transform.SetParent(BeachBoatQuestSession.Instance.transform,true);
+            transform.SetPositionAndRotation(data.position,data.rotation);gameObject.SetActive(data.active);
+            Health=Mathf.Clamp(data.health,0,2);fall=Health==0?1:0;
+            GetComponent<Collider>().enabled=Health>0;animator.enabled=Health>0;
+            SetMelee(data.independent);if(Health==0)bow.gameObject.SetActive(false);
+        }
         void LateUpdate()
         {
             if(IsOnWreck){var p=transform.parent.position;p.y=TideSystem.CurrentWaterHeight+1+Mathf.Sin(Time.time*1.5f)*.15f;transform.parent.position=p;}
@@ -89,10 +120,11 @@ namespace BeachBoatStory
                 var player=BeachBoatQuestSession.Instance.player.transform.position;var direction=player-transform.position;direction.y=0;
                 if(direction.sqrMagnitude<500*500&&direction.sqrMagnitude>1)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),Time.deltaTime*90);
                 draw=Mathf.MoveTowards(draw,combat.ThreatGuard==this?1:0,Time.deltaTime*2);
-                bow.SetPositionAndRotation(transform.position+Vector3.up*10+transform.forward*4,transform.rotation);
+                float scale=BodyHeight/17.6f;
+                bow.SetPositionAndRotation(transform.position+Vector3.up*(BodyHeight*.57f)+transform.forward*(4*scale),transform.rotation);
                 bowString.SetPosition(1,new Vector3(0,0,-draw*2));
-                QuestRowboat.SolveArm(leftUpper,leftFore,leftHand,bow.position,leftUpper.position-transform.right*3-Vector3.up*2);
-                QuestRowboat.SolveArm(rightUpper,rightFore,rightHand,bow.position-transform.forward*(1+draw*2),rightUpper.position+transform.right*4);
+                QuestRowboat.SolveArm(leftUpper,leftFore,leftHand,bow.position,leftUpper.position-transform.right*(3*scale)-Vector3.up*(2*scale));
+                QuestRowboat.SolveArm(rightUpper,rightFore,rightHand,bow.position-transform.forward*((1+draw*2)*scale),rightUpper.position+transform.right*(4*scale));
                 return;
             }
             fall=Mathf.MoveTowards(fall,1,Time.deltaTime*2.5f);

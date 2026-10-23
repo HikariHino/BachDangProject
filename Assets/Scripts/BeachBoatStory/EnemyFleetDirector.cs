@@ -85,9 +85,20 @@ namespace BeachBoatStory
             BeginBattleView();
             battleLoop=StartCoroutine(SpawnWaves());
         }
-        IEnumerator SpawnWaves()
+        public BachDangSaveData.Fleet CaptureSave()
         {
-            yield return new WaitForSeconds(2);
+            var data=new BachDangSaveData.Fleet{active=BattleStarted,ebb=EbbStarted,commands=CommandScore,scored=new System.Collections.Generic.List<int>(scoredWaves).ToArray()};
+            RiverPlayerCombat.Instance?.FillSave(data);return data;
+        }
+        public void RestoreSave(BachDangSaveData.Fleet data)
+        {
+            BattleStarted=data.active;EbbStarted=data.ebb;CommandScore=data.commands;scoredWaves.Clear();
+            foreach(int wave in data.scored??System.Array.Empty<int>())scoredWaves.Add(wave);
+            if(BattleStarted){BeginBattleView();battleLoop=StartCoroutine(SpawnWaves(true));}
+        }
+        IEnumerator SpawnWaves(bool resume=false)
+        {
+            if(!resume)yield return new WaitForSeconds(2);
             var seen=new System.Collections.Generic.HashSet<EnemyShip>();
             var fleet=new System.Collections.Generic.List<EnemyShip>();
             foreach(var candidate in enemyShips)
@@ -101,6 +112,7 @@ namespace BeachBoatStory
                 for(int i=waveStart;i<waveEnd;i++)
                 {
                     var ship=fleet[i];
+                    if(resume&&(ship.gameObject.activeSelf||ship.isDestroyed))continue;
                     var spawn=(spawnPoints!=null&&i<spawnPoints.Length&&spawnPoints[i]!=null)?spawnPoints[i].position:ship.spawnPoint;
                     spawn.y=TideSystem.CurrentWaterHeight;
                     ship.transform.position=spawn;ship.Activate();
@@ -142,7 +154,7 @@ namespace BeachBoatStory
                         timeline!=null&&timeline.CurrentMoment<BachDangBattleTimeline.BattleMoment.Ambush
                         ? "Nước đang rút dần — quan sát đầu cọc, chưa phất cờ sớm" : ready<0
                         ? $"Thuyền tự mắc cọc khi nước rút • Đã đắm {BachDangStoryManager.Instance?.destroyedEnemyShips ?? 0}/{ShipCount}"
-                        : !suppressed ? $"HẠ XẠ THỦ ĐỢT {ready+1}: chuột phải ngắm, giữ/thả chuột trái bắn"
+                        : !suppressed ? $"HẠ XẠ THỦ ĐỢT {ready+1}: giữ chuột phải ngắm, chuột trái bắn"
                         : range>commandRange
                             ? $"Chèo tới gần thuyền địch đợt {ready+1} để truyền lệnh • Còn {WorldDistance.Format(range)}"
                             : $"[SPACE] PHẤT CỜ ĐỢT {ready+1}!  Quân ta đánh dứt điểm xạ thủ còn lại";
@@ -156,7 +168,7 @@ namespace BeachBoatStory
         }
         IEnumerator WatchStakeField(System.Collections.Generic.List<EnemyShip> fleet)
         {
-            while(BattleStarted&&EbbTriggerShip==null)
+            while(BattleStarted&&!EbbStarted&&EbbTriggerShip==null)
             {
                 foreach(var ship in fleet)
                     if(ship!=null&&ship.gameObject.activeInHierarchy&&!ship.isDestroyed&&ship.IsHullInsideStakeField)
@@ -165,7 +177,7 @@ namespace BeachBoatStory
             }
             if(!BattleStarted)yield break;
             var timeline=BachDangBattleTimeline.Instance;
-            timeline?.MarkFleetInside();timeline?.BeginEbb();EbbStarted=true;
+            if(!EbbStarted){timeline?.MarkFleetInside();timeline?.BeginEbb();EbbStarted=true;}
             BachDangStoryManager.Instance?.UpdateUI();
             // Counterattack becomes available as tips emerge, while the ebb is still in progress.
             while(BattleStarted&&RiverStakeZone.Instance!=null&&RiverStakeZone.Instance.ExposedStakeCount==0)yield return null;
@@ -219,7 +231,8 @@ namespace BeachBoatStory
         }
         public bool TrySignalAttack()
         {
-            if(!IsShowingBattle||!BattleStarted)return false;
+            if(!IsShowingBattle||!BattleStarted||BeachBoatQuestSession.InputBlocked||
+                (RiverBoardingCombat.Instance!=null&&(RiverBoardingCombat.Instance.PlayerAway||RiverBoardingCombat.Instance.UsedTraversalThisFrame)))return false;
             {
                 int waveSize=Mathf.Max(1,shipsPerWave);
                 var fleet=new System.Collections.Generic.List<EnemyShip>();

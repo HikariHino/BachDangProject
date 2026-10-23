@@ -15,6 +15,7 @@ namespace BeachBoatStory
         public float BestTime { get; private set; }
         public int BestMistakes { get; private set; } = int.MaxValue;
         public bool HasCompleted { get; private set; }
+        public void RestoreSave(BachDangSaveData.Activity data){HasCompleted=data.completed;BestTime=data.bestTime;BestMistakes=data.bestMistakes;}
         public int Progress => progress;
         public int Mistakes => mistakes;
         public int Round => round;
@@ -56,6 +57,7 @@ namespace BeachBoatStory
 
         void Update()
         {
+            if(BachDangFrontEnd.IsBlocking||StoryDialogueUI.InputConsumedThisFrame)return;
             if (story == null) story = BachDangStoryManager.Instance;
             if (player == null && story != null) player = story.GetPlayerTransform();
             if (story == null || player == null) return;
@@ -121,7 +123,7 @@ namespace BeachBoatStory
 
         void RunActivity()
         {
-            if (Input.GetKeyDown(KeyCode.Escape)) { Finish(false); return; }
+            if (Input.GetKeyDown(KeyCode.X)) { Finish(false); return; }
             if (Failed) { if (Input.GetKeyDown(KeyCode.R)) RetryActivity(); return; }
             elapsed += Time.unscaledDeltaTime;
             if (elapsed >= TimeLimit) { FailActivity(); return; }

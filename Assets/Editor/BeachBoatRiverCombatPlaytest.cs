@@ -46,6 +46,7 @@ public static class BeachBoatRiverCombatPlaytest
             if(phase==0)
             {
                 RiverBoardingCombat.Instance.AlliedAIEnabled=false;
+                BeachBoatStory.BachDangFrontEnd.Instance?.Play();
                 foreach(var intro in UnityEngine.Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))intro.SkipOpening();BeachBoatStory.StoryDialogueUI.Instance?.Close();
                 BeachBoatStory.RiverStakeZone.Instance.RestoreCheckpoint(Enumerable.Repeat(true,BeachBoatStory.RiverStakeZone.Instance.ClusterCount).ToArray());
                 Story.Instance.collectedWood=Story.Instance.totalWoodRequired;Story.Instance.TransitionTo(Story.StoryState.Act3_WaitForLowTide,true);

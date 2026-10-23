@@ -37,7 +37,7 @@ namespace BeachBoatStory
              (BeachBoatMinigameStation.Active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum ||
               BeachBoatMinigameStation.Active.IsSelectingCargo || BeachBoatMinigameStation.Active.Failed)) ||
             StoryDialogueUI.InputConsumedThisFrame;
-        public static bool InteractionBlocked => CampRecoveryGame.Active != null || OpeningEvent.IsOpeningActive || VillageWorkStall.Active != null ||
+        public static bool InteractionBlocked => BachDangFrontEnd.IsBlocking || CampRecoveryGame.Active != null || OpeningEvent.IsOpeningActive || VillageWorkStall.Active != null ||
             (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
             (RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsPlanting) ||
             (Instance != null && !Instance.storyMode) ||
@@ -73,12 +73,13 @@ namespace BeachBoatStory
             SetStoryMode(true);
             BuildIntro();
             gameObject.AddComponent<QuestCheckpoint>();
+            var frontEnd=Child("BachDangFrontEnd");frontEnd.AddComponent<BachDangFrontEnd>();
         }
 
         // One nearby NPC owns E. Mission dialogue takes priority in its three report stages.
         public bool IsPreferredTalker(NPCDialogue candidate)
         {
-            if (player == null || !player.activeInHierarchy) return false;
+            if (player == null || !player.activeInHierarchy || CampaignSavePoint.HasNearbyPoint()) return false;
             var position = player.transform.position;
             var state = GetComponent<BachDangStoryManager>().currentState;
             bool reporting = state == BachDangStoryManager.StoryState.Act1_ExploreCamp ||
@@ -132,7 +133,7 @@ namespace BeachBoatStory
         void Update()
         {
             var story = GetComponent<BachDangStoryManager>();
-            bool focusedOverlay = CampRecoveryGame.Active != null || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
+            bool focusedOverlay = BachDangFrontEnd.IsBlocking || CampRecoveryGame.Active != null || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
                 (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen);
             if (story != null && story.objectiveUIPanel != null)
@@ -144,7 +145,7 @@ namespace BeachBoatStory
             {
                 if (EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsShowingBattle)
                 {
-                    controlsText.text = "WASD: chèo/bơi/đi • Q: kiếm/cung • F: bơi/leo • Chuột trái: đánh • Chuột phải: ngắm/đỡ • Space: phất cờ";
+                    controlsText.text = "WASD: chèo/bơi/đi • Q: rút/cất kiếm • F: xuống nước • Chuột trái: đánh • Chuột phải: ngắm/đỡ • Space: leo tàu/phất cờ";
                 }
                 else if (story != null && story.currentState == BachDangStoryManager.StoryState.Act3_BattleInProgress)
                 {

@@ -8,6 +8,9 @@ namespace BeachBoatStory
         public static BeachBoatSoundscape Instance {get;private set;}
         public AudioClip river,wind,bird,oar,bow,drum,crash,good,bad,hit;
         public AudioClip[] footsteps=new AudioClip[0];
+        AudioClip[] runningFootsteps;
+        public int RunningFootstepsPlayed {get;private set;}
+        public AudioClip LastFootstep {get;private set;}
         [Range(0,1)] public float masterVolume=.8f;
         public bool Muted {get;private set;}
         public int FootstepsPlayed {get;private set;}
@@ -32,6 +35,7 @@ namespace BeachBoatStory
         {
             Application.runInBackground=true;
             savedListenerVolume=AudioListener.volume;
+            runningFootsteps=Resources.LoadAll<AudioClip>("BachDang938/RunSteps");
             foreach(var old in session.player.GetComponentsInChildren<FootstepSound>(true))old.enabled=false;
             previous=session.player.transform.position;
             terrains=Terrain.activeTerrains;
@@ -77,14 +81,21 @@ namespace BeachBoatStory
             else if(moved<60&&session.player.GetComponent<Character_Movement>().IsGrounded)
             {
                 distance+=moved;
-                if(distance>=14&&Time.time>=nextStep){distance=0;nextStep=Time.time+.28f;PlayFootstep();}
+                bool running=session.player.GetComponent<Character_Movement>().IsRunning;
+                if(moved>.001f&&distance>=(running?12:14)&&Time.time>=nextStep){distance=0;nextStep=Time.time+(running?.23f:.42f);PlayFootstep(running);}
             }
             else distance=0;
         }
         void Play(AudioSource source,AudioClip clip,float volume,float pitch=1)
         {if(Muted||source==null||clip==null)return;source.pitch=pitch;source.PlayOneShot(clip,volume*masterVolume);EffectsPlayed++;}
-        public void PlayFootstep(){if(footsteps.Length==0)return;Play(foley,footsteps[footIndex++%footsteps.Length],.6f,Random.Range(.93f,1.06f));FootstepsPlayed++;}
-        public void SetMuted(bool value){Muted=value;AudioListener.volume=value?0:savedListenerVolume;toastUntil=Time.unscaledTime+2.5f;}
+        public void PlayFootstep(bool running=false)
+        {
+            var clips=running&&runningFootsteps!=null&&runningFootsteps.Length>0?runningFootsteps:footsteps;
+            if(clips.Length==0)return;LastFootstep=clips[footIndex++%clips.Length];
+            Play(foley,LastFootstep,running?.8f:.48f,Random.Range(.96f,1.04f));FootstepsPlayed++;
+            if(running)RunningFootstepsPlayed++;
+        }
+        public void SetMuted(bool value){Muted=value;AudioListener.volume=value?0:BachDangPreferences.Volume;toastUntil=Time.unscaledTime+2.5f;}
         public void PlayOar(){Play(foley,oar,.62f,Random.Range(.94f,1.06f));OarsPlayed++;}
         public void PlaySwimStroke(bool moving=true){Play(foley,oar,moving?.48f:.22f,Random.Range(1.10f,1.25f));SwimStrokesPlayed++;}
         public void PlayWaterEntry()=>Play(foley,oar,.72f,.8f);
@@ -129,6 +140,6 @@ namespace BeachBoatStory
             if(Time.unscaledTime>=toastUntil)return;
             GUI.Box(new Rect(Screen.width/2-125,Screen.height-110,250,36),Muted?"Âm thanh: TẮT  [F10]":"Âm thanh: BẬT  [F10]");
         }
-        void OnDestroy(){if(Muted)AudioListener.volume=savedListenerVolume;if(Instance==this)Instance=null;}
+        void OnDestroy(){if(Muted)AudioListener.volume=BachDangPreferences.Volume;if(Instance==this)Instance=null;}
     }
 }

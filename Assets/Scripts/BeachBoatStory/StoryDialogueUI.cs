@@ -181,9 +181,29 @@ public sealed class StoryDialogueUI : MonoBehaviour
         callback?.Invoke();
     }
     public void DismissForCheckpoint(){onDialogueClosed=null;Close();}
+    public BachDangSaveData.Dialogue CaptureSave()=>IsOpen?new BachDangSaveData.Dialogue {
+        active=true,speaker=speakerText.text,line=bodyText.text,action=onDialogueClosed?.Method.Name}:null;
+    public void RestoreSave(BachDangSaveData.Dialogue data)
+    {
+        if(data==null||!data.active)return;
+        var story=BachDangStoryManager.Instance;System.Action callback=null;
+        // Save only known story actions, never deserialize executable delegate data.
+        switch(data.action)
+        {
+            case nameof(BachDangStoryManager.OnTalkToNgoQuyenAct1):callback=story.OnTalkToNgoQuyenAct1;break;
+            case nameof(BachDangStoryManager.OnTrainingComplete):callback=story.OnTrainingComplete;break;
+            case nameof(BachDangStoryManager.OnSupplyPreparationComplete):callback=story.OnSupplyPreparationComplete;break;
+            case nameof(BachDangStoryManager.OnReportToNgoQuyenAct2):callback=story.OnReportToNgoQuyenAct2;break;
+            case nameof(BachDangStoryManager.OnReportStakesComplete):callback=story.OnReportStakesComplete;break;
+            case nameof(BachDangStoryManager.OnTalkToNgoQuyenAct3):callback=story.OnTalkToNgoQuyenAct3;break;
+            case nameof(BachDangStoryManager.OnVictoryReported):callback=story.OnVictoryReported;break;
+        }
+        Show(data.speaker,data.line,callback);
+    }
 
     private void Update()
     {
+        if(BachDangFrontEnd.IsBlocking)return;
         if (IsOpen &&
             !InputConsumedThisFrame &&
             (Input.GetKeyDown(KeyCode.E) ||

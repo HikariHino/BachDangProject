@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -51,14 +52,64 @@ namespace BeachBoatStory
         readonly Dictionary<EnemyDeckGuard,float> enemyAttacks=new Dictionary<EnemyDeckGuard,float>();
         BeachBoatQuestSession session;RiverPlayerCombat archery;RiverFighterPose playerPose;
         EnemyShip deckShip;Transform deckAnchor;Vector3 deckLocal,climbStart,climbLocalStart;float climbTime,nextSlash,nextArrow;
-        TMP_Text hint;bool wasBattle;
+        TMP_Text hint;bool wasBattle;int traversalInputFrame=-1;
+        public bool UsedTraversalThisFrame=>traversalInputFrame==Time.frameCount;
+        public BachDangSaveData.Boarding CaptureSave()
+        {
+            return new BachDangSaveData.Boarding {
+                state=(int)State,sword=SwordDrawn,deckShip=deckShip!=null?deckShip.name:null,climbTime=climbTime,deckLocal=deckLocal,climbLocalStart=climbLocalStart,
+                allies=allies.Select(a=>new BachDangSaveData.Fighter{id=a.go.name,active=a.go.activeSelf,health=a.health,state=a.state,arrows=a.arrows,time=a.travel,start=a.start,local=a.local,target=a.target!=null?BachDangSaveSystem.GuardId(a.target):null,position=a.go.transform.position,rotation=a.go.transform.rotation}).ToArray(),
+                hostiles=hostiles.Select(h=>new BachDangSaveData.Fighter{id=BachDangSaveSystem.GuardId(h.guard),active=h.go.activeSelf,source=h.source!=null?h.source.name:null,boat=h.boat!=null?h.boat.name:null,state=h.state,time=h.time,start=h.start,local=h.local,fromWreck=h.fromWreck,targetPlayer=h.targetPlayer,position=h.go.transform.position,rotation=h.go.transform.rotation}).ToArray(),
+                defenders=defenders.Select(d=>new BachDangSaveData.Fighter{id=d.soldier.GetComponentInParent<AmbientRiverBoat>().name+"/"+d.soldier.name,health=d.health,active=d.soldier.gameObject.activeSelf,position=d.soldier.position,rotation=d.soldier.rotation}).ToArray()};
+        }
+        public void RestoreSave(BachDangSaveData.Boarding data)
+        {
+            if(data==null)return;
+            EnemyDeckGuard Guard(string id)=>archery.guards.FirstOrDefault(g=>BachDangSaveSystem.GuardId(g)==id);
+            EnemyShip Ship(string id)=>EnemyFleetDirector.Instance.enemyShips.FirstOrDefault(s=>s.name==id);
+            Transform Boat(string id)
+            {
+                if(QuestRowboat.Instance.name==id)return QuestRowboat.Instance.transform;
+                var friendly=friendlyBoats.FirstOrDefault(b=>b.name==id);if(friendly!=null)return friendly.transform;
+                return Ship(id)?.transform;
+            }
+            foreach(var saved in data.hostiles??Array.Empty<BachDangSaveData.Fighter>())
+            {
+                var guard=Guard(saved.id);if(guard==null)continue;
+                var h=hostiles.FirstOrDefault(x=>x.guard==guard);
+                if(h==null){h=new Hostile{go=guard.gameObject,guard=guard,pose=enemyPoses[guard]};hostiles.Add(h);}
+                h.source=Ship(saved.source);h.boat=Boat(saved.boat);h.state=saved.state;h.time=saved.time;h.start=saved.start;h.local=saved.local;h.fromWreck=saved.fromWreck;h.targetPlayer=saved.targetPlayer;
+                h.go.SetActive(saved.active);h.go.transform.SetPositionAndRotation(saved.position,saved.rotation);
+                h.pose.FinishTraversal();h.pose.SetSword(h.state==3);
+                if(h.state==1)h.pose.Traversal=RiverFighterPose.Motion.Swim;else if(h.state==2)h.pose.Traversal=RiverFighterPose.Motion.Climb;
+            }
+            foreach(var saved in data.allies??Array.Empty<BachDangSaveData.Fighter>())
+            {
+                var a=allies.FirstOrDefault(x=>x.go.name==saved.id);if(a==null)continue;
+                a.health=saved.health;a.state=saved.state;a.arrows=saved.arrows;a.travel=saved.time;a.start=saved.start;a.local=saved.local;a.target=Guard(saved.target);
+                a.go.SetActive(saved.active);a.go.transform.SetPositionAndRotation(saved.position,saved.rotation);a.pose.FinishTraversal();a.pose.SetSword(a.state==3);
+                if(a.state==1)a.pose.Traversal=RiverFighterPose.Motion.Swim;else if(a.state==2)a.pose.Traversal=RiverFighterPose.Motion.Climb;
+            }
+            foreach(var saved in data.defenders??Array.Empty<BachDangSaveData.Fighter>())
+            {
+                var d=defenders.FirstOrDefault(x=>x.soldier.GetComponentInParent<AmbientRiverBoat>().name+"/"+x.soldier.name==saved.id);if(d==null)continue;
+                d.health=saved.health;d.soldier.gameObject.SetActive(saved.active);d.soldier.SetPositionAndRotation(saved.position,saved.rotation);
+            }
+            State=(PlayerState)data.state;SwordDrawn=data.sword;deckShip=Ship(data.deckShip);deckAnchor=deckShip!=null?deckShip.transform:null;
+            deckLocal=data.deckLocal;climbLocalStart=data.climbLocalStart;climbTime=data.climbTime;
+            playerPose.FinishTraversal();playerPose.SetSword(SwordDrawn);
+            if(State==PlayerState.EnemyDeck&&!SwordDrawn)playerPose.Animator.runtimeAnimatorController=FootController;
+            if(State==PlayerState.Swimming)playerPose.Traversal=RiverFighterPose.Motion.Swim;else if(State==PlayerState.Climbing)playerPose.Traversal=RiverFighterPose.Motion.Climb;
+            wasBattle=BachDangStoryManager.Instance.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress;
+            if(PlayerAway){var camera=session.storyCamera.GetComponent<Camera_Script>();camera.distance=70;camera.heightOffset=27;}
+        }
         void Awake(){Instance=this;session=GetComponent<BeachBoatQuestSession>();archery=GetComponent<RiverPlayerCombat>();}
         void Start()
         {
             FootController=Resources.Load<RuntimeAnimatorController>("Player_Neutral");
             playerPose=session.player.AddComponent<RiverFighterPose>();playerPose.Initialize(session.player.GetComponentInChildren<Animator>(),swordPrefab,swordController,17);
             foreach(var guard in archery.guards)
-            {var pose=guard.gameObject.AddComponent<RiverFighterPose>();pose.Initialize(guard.visual.GetComponentInChildren<Animator>(),swordPrefab,swordController,11);enemyPoses[guard]=pose;enemyAttacks[guard]=0;}
+            {guard.MatchPlayerSize();var pose=guard.gameObject.AddComponent<RiverFighterPose>();pose.Initialize(guard.visual.GetComponentInChildren<Animator>(),swordPrefab,swordController,17);enemyPoses[guard]=pose;enemyAttacks[guard]=0;}
             for(int i=0;i<friendlyBoats.Length*2;i++)
             {
                 var go=Instantiate(allyPrefab,transform);go.name="Linh_Dai_Viet_Tiep_Chien_"+i;
@@ -71,7 +122,7 @@ namespace BeachBoatStory
                 var go=new GameObject("Linh_Nam_Han_Nhay_Tau_"+i);go.transform.SetParent(transform,false);go.SetActive(false);
                 var model=Instantiate(enemyPrefab,go.transform,false);var guard=go.AddComponent<EnemyDeckGuard>();guard.visual=model.transform;guard.ship=EnemyFleetDirector.Instance.enemyShips[i];guard.waveIndex=i/2;guard.IsIndependentBoarder=true;
                 var collider=go.AddComponent<CapsuleCollider>();collider.isTrigger=true;collider.radius=3;collider.height=16;collider.center=Vector3.up*8;
-                var pose=go.AddComponent<RiverFighterPose>();pose.Initialize(model.GetComponentInChildren<Animator>(),swordPrefab,swordController,11);
+                guard.MatchPlayerSize();var pose=go.AddComponent<RiverFighterPose>();pose.Initialize(model.GetComponentInChildren<Animator>(),swordPrefab,swordController,17);
                 hostiles.Add(new Hostile{go=go,guard=guard,pose=pose});enemyPoses[guard]=pose;enemyAttacks[guard]=0;allGuards.Add(guard);
             }
             archery.guards=allGuards.ToArray();
@@ -109,15 +160,23 @@ namespace BeachBoatStory
             if(BeachBoatQuestSession.InputBlocked)return;
             if(Cursor.lockState==CursorLockMode.Locked)
             {
-                if(Input.GetKeyDown(KeyCode.Q))ToggleSword();
-                if(Input.GetKeyDown(KeyCode.F))TryTraverse();
+                if(Input.GetKeyDown(KeyCode.Q))HandleActionKey(KeyCode.Q);
+                if(Input.GetKeyDown(KeyCode.F))HandleActionKey(KeyCode.F);
+                if(Input.GetKeyDown(KeyCode.Space))HandleActionKey(KeyCode.Space);
                 if(SwordDrawn&&Input.GetMouseButtonDown(0))TrySlash();
             }
             StepPlayer(Time.deltaTime);StepAllies(Time.deltaTime);StepHostiles(Time.deltaTime);StepDefenders();StepEnemies(Time.deltaTime);
-            hint.text=State==PlayerState.Swimming?"WASD: BƠI • SHIFT: BƠI NHANH • F: LEO LÊN TÀU GẦN / VỀ THUYỀN":
+            hint.text=State==PlayerState.Swimming?"WASD: BƠI • SHIFT: BƠI NHANH • SPACE: LEO LÊN TÀU GẦN / VỀ THUYỀN":
                 State==PlayerState.Climbing?"ĐANG BÁM MẠN VÀ LEO LÊN BOONG…":
                 SwordDrawn?"KIẾM • CHUỘT TRÁI: CHÉM • CHUỘT PHẢI: ĐỠ • Q: CẤT KIẾM • F: XUỐNG NƯỚC":
-                "Q: RÚT KIẾM • F: XUỐNG NƯỚC / LEO TÀU • ĐỒNG MINH ĐANG TIẾP CHIẾN";
+                "Q: RÚT KIẾM • F: XUỐNG NƯỚC • SPACE: LEO TÀU • ĐỒNG MINH ĐANG TIẾP CHIẾN";
+        }
+        public bool HandleActionKey(KeyCode key)
+        {
+            if(key==KeyCode.Q)return ToggleSword();
+            if(key==KeyCode.Space&&State==PlayerState.Swimming)return TryTraverse();
+            if(key==KeyCode.F&&State!=PlayerState.Swimming)return TryTraverse();
+            return false;
         }
         public bool ToggleSword()
         {
@@ -144,9 +203,11 @@ namespace BeachBoatStory
             if(!archery.BattleActive||BeachBoatQuestSession.InteractionBlocked||State==PlayerState.Climbing)return false;
             if(State==PlayerState.Swimming)
             {
-                if(QuestRowboat.FlatDistance(session.player.transform.position,QuestRowboat.Instance.transform.position)<48)
-                {playerPose.FinishTraversal();playerPose.Animator.runtimeAnimatorController=QuestRowboat.Instance.rowingController;State=PlayerState.Rowboat;deckShip=null;deckAnchor=null;QuestRowboat.Instance.UseSoldierBattleCamera();return true;}
+                traversalInputFrame=Time.frameCount;
                 var nearest=NearestBoard(session.player.transform.position,out var ship,out var anchor,out var local);
+                float ownDistance=QuestRowboat.FlatDistance(session.player.transform.position,QuestRowboat.Instance.transform.position);
+                if(ownDistance<48&&ownDistance<nearest)
+                {playerPose.FinishTraversal();playerPose.Animator.runtimeAnimatorController=QuestRowboat.Instance.rowingController;State=PlayerState.Rowboat;deckShip=null;deckAnchor=null;QuestRowboat.Instance.UseSoldierBattleCamera();return true;}
                 if(nearest>24)return false;deckShip=ship;deckAnchor=anchor;deckLocal=local;climbStart=session.player.transform.position;climbLocalStart=anchor.InverseTransformPoint(climbStart);climbTime=0;State=PlayerState.Climbing;playerPose.Traversal=RiverFighterPose.Motion.Climb;ClimbsStarted++;BeachBoatSoundscape.Instance?.PlayClimbGrip();return true;
             }
             BeginSwim(session.player.transform.position+session.player.transform.right*22);return true;
@@ -183,8 +244,7 @@ namespace BeachBoatStory
             if(State==PlayerState.Swimming)
             {
                 playerPose.SwimMoving=direction.sqrMagnitude>.01f;playerPose.SwimFast=fast;
-                var travel=p-session.player.transform.position;
-                if(travel.sqrMagnitude>.0001f&&Physics.SphereCast(session.player.transform.position+Vector3.up*9,4,travel.normalized,out var hit,travel.magnitude+1,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)&&hit.collider.GetComponentInParent<EnemyShip>()!=null)p=session.player.transform.position;
+                p=RiverHullCollision.Move(session.player.transform.position+Vector3.up*3,p+Vector3.up*3,4)-Vector3.up*3;
                 p.y=TideSystem.CurrentWaterHeight-5+Mathf.Sin(Time.time*3)*.3f;
             }
             else {deckLocal+=deckAnchor.InverseTransformDirection(direction)*26*dt;deckLocal.x=Mathf.Clamp(deckLocal.x,-deckShip.stakeHitDistance*.65f,deckShip.stakeHitDistance*.65f);deckLocal.z=Mathf.Clamp(deckLocal.z,-deckShip.hullHalfLength*.65f,deckShip.hullHalfLength*.65f);p=deckAnchor.TransformPoint(deckLocal);playerPose.Walk(direction.sqrMagnitude>.01f);}
@@ -247,7 +307,7 @@ namespace BeachBoatStory
                         target=source.transform.TransformPoint(new Vector3(side*(source.stakeHitDistance*1.25f+6),0,a.target.transform.localPosition.z));
                     }
                     target.y=TideSystem.CurrentWaterHeight-4;
-                    a.go.transform.position=Vector3.MoveTowards(a.go.transform.position,target,26*dt);
+                    a.go.transform.position=RiverHullCollision.Move(a.go.transform.position,Vector3.MoveTowards(a.go.transform.position,target,26*dt),3.5f,true);
                     if(QuestRowboat.FlatDistance(a.go.transform.position,target)<15){a.state=2;a.travel=0;a.start=a.go.transform.position;a.pose.Traversal=RiverFighterPose.Motion.Climb;ClimbsStarted++;}
                 }
                 else if(a.state==2)
@@ -315,6 +375,9 @@ namespace BeachBoatStory
                     h.boat=QuestRowboat.Instance.transform;float nearest=QuestRowboat.FlatDistance(h.go.transform.position,h.boat.position);
                     foreach(var friendly in friendlyBoats){float d=QuestRowboat.FlatDistance(h.go.transform.position,friendly.transform.position);if(d<nearest){nearest=d;h.boat=friendly.transform;}}
                     if(nearest>310&&!h.source.isDestroyed)continue;
+                    float side=h.source.transform.InverseTransformPoint(h.boat.position).x<0?-1:1;
+                    var entry=h.source.transform.TransformPoint(new Vector3(side*(h.source.stakeHitDistance+16),0,0));
+                    entry.y=TideSystem.CurrentWaterHeight-4;h.go.transform.position=entry;
                     h.state=1;h.pose.SetSword(false);h.pose.Traversal=RiverFighterPose.Motion.Swim;h.guard.SetMelee(true);SwimsStarted++;
                 }
                 if(h.targetPlayer)h.boat=State==PlayerState.EnemyDeck&&deckAnchor!=null?deckAnchor:QuestRowboat.Instance.transform;
@@ -324,7 +387,14 @@ namespace BeachBoatStory
                 {var crew=h.boat.GetComponentInChildren<FleetDeckCrew>();if(crew!=null&&crew.soldiers.Length>0)end=crew.soldiers[0].position+h.boat.forward*8;}
                 if(h.state==1)
                 {
-                    var water=end;water.y=TideSystem.CurrentWaterHeight-4;h.go.transform.position=Vector3.MoveTowards(h.go.transform.position,water,24*dt);
+                    var water=end;
+                    var targetShip=h.boat.GetComponent<EnemyShip>();
+                    if(targetShip!=null&&!targetShip.isDestroyed)
+                    {
+                        float side=targetShip.transform.InverseTransformPoint(h.go.transform.position).x<0?-1:1;
+                        water=targetShip.transform.TransformPoint(new Vector3(side*(targetShip.stakeHitDistance+12),0,0));
+                    }
+                    water.y=TideSystem.CurrentWaterHeight-4;h.go.transform.position=RiverHullCollision.Move(h.go.transform.position,Vector3.MoveTowards(h.go.transform.position,water,24*dt),4,true);
                     if(h.targetPlayer&&State==PlayerState.Swimming)
                     {
                         h.pose.SwimMoving=QuestRowboat.FlatDistance(h.go.transform.position,water)>18;

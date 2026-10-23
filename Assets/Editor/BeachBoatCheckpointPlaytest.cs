@@ -53,6 +53,7 @@ public static class BeachBoatCheckpointPlaytest
             var vitals=session.player.GetComponent<PlayerVitals>();
             if(phase==0)
             {
+                BeachBoatStory.BachDangFrontEnd.Instance?.Play();
                 foreach(var opening in UnityEngine.Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))opening.SkipOpening();BeachBoatStory.StoryDialogueUI.Instance?.Close();
                 story.collectedWood=0;foreach(var item in session.woodItems)item.RestoreCollection(false);
                 story.TransitionTo(Story.StoryState.Act2_CollectWoodInVillage,true);

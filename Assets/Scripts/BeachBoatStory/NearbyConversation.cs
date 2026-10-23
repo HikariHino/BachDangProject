@@ -32,7 +32,7 @@ namespace BeachBoatStory
         }
         public static bool IsPreferred(MonoBehaviour candidate)
         {
-            if(BeachBoatQuestSession.InteractionBlocked)return false;
+            if(BeachBoatQuestSession.InteractionBlocked||CampaignSavePoint.HasNearbyPoint())return false;
             if(frame!=Time.frameCount)
             {
                 frame=Time.frameCount;chosen=null;float nearest=float.PositiveInfinity;
