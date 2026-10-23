@@ -57,11 +57,11 @@ namespace BeachBoatStory
             woodChoices=Box("TimberChoices",work.transform,new Vector2(0,.27f),new Vector2(1,.65f),Color.clear);woodIcons=new VillageWorkIcon[8];woodLabels=new TMP_Text[8];woodButtons=new GameObject[8];
             for(int i=0;i<8;i++)
             {
-                int option=i;float x=(i%4)*.25f,y=i<4?.59f:.20f;
-                var b=Click("Timber"+i,woodChoices.transform,new Vector2(x+.006f,y),new Vector2(x+.244f,y+.38f),"",()=>VillageWorkStall.Active?.SubmitOption(option));woodButtons[i]=b;
+                int option=i;float x=(i%3)/3f,y=i<3?.59f:.20f;
+                var b=Click("Timber"+i,woodChoices.transform,new Vector2(x+.006f,y),new Vector2(x+1f/3-.006f,y+.38f),"",()=>VillageWorkStall.Active?.SubmitOption(option));woodButtons[i]=b;
                 Label("Number",b.transform,new Vector2(.02f,.70f),new Vector2(.16f,.99f),14,Gold).text=(i+1).ToString();
                 woodIcons[i]=Icon(b.transform,0,new Vector2(.20f,.67f),new Vector2(.80f,.98f));
-                woodLabels[i]=Label("Length",b.transform,new Vector2(.02f,.01f),new Vector2(.98f,.70f),14,Color.white);
+                woodLabels[i]=Label("Length",b.transform,new Vector2(.02f,.01f),new Vector2(.98f,.70f),17,Color.white);
             }
             Click("DeliverTimber",woodChoices.transform,new Vector2(.23f,0),new Vector2(.77f,.17f),"GIAO GỖ [ENTER]",()=>VillageWorkStall.Active?.SubmitOption(8));
             foodChoices=Box("Ingredients",work.transform,new Vector2(0,.27f),new Vector2(1,.65f),Color.clear);foodLabels=new TMP_Text[3];
@@ -123,14 +123,14 @@ namespace BeachBoatStory
             woodChoices.SetActive(s.kind==VillageWorkStall.WorkKind.Timber);foodChoices.SetActive(s.kind==VillageWorkStall.WorkKind.Provisions);
             ropeGame.SetActive(s.kind==VillageWorkStall.WorkKind.Rope);riceGame.SetActive(s.kind==VillageWorkStall.WorkKind.Rice);
             task.fontSize=s.kind==VillageWorkStall.WorkKind.Timber?19:24;
-            task.text=s.kind==VillageWorkStall.WorkKind.Timber?$"CHỌN {s.TimberRequiredPieces} THANH • DÀI {s.TimberTarget} THƯỚC"+(s.Difficulty>0?$" • LỰC ≥ {s.TimberStrengthTarget}":"")+(s.Difficulty>1?$" • GIÁ ≤ {s.TimberBudget}":"")+$"\nĐã chọn {s.TimberSelectedPieces}/{s.TimberRequiredPieces} • dài {s.TimberTotal}"+(s.Difficulty>0?$" • lực {s.TimberStrengthTotal}":"")+(s.Difficulty>1?$" • giá {s.TimberCostTotal}":""):
+            task.text=s.kind==VillageWorkStall.WorkKind.Timber?$"CHỌN {s.TimberRequiredPieces} THANH • DÀI {s.TimberTarget} THƯỚC"+(s.TimberNeedsStrength?$" • LỰC ≥ {s.TimberStrengthTarget}":"")+$"\nĐã chọn {s.TimberSelectedPieces}/{s.TimberRequiredPieces} • dài {s.TimberTotal}"+(s.TimberNeedsStrength?$" • lực {s.TimberStrengthTotal}":""):
                 s.kind==VillageWorkStall.WorkKind.Rope?"XOAY Ô ĐỂ NỐI DÂY LIỀN TỪ VÀO ĐẾN RA":
                 s.kind==VillageWorkStall.WorkKind.Rice?$"CẦN {s.RiceTarget} ĐƠN VỊ  •  CÓ {s.RiceLoad}  •  LƯỢT {s.Moves}/{s.MoveLimit}":$"{s.People} NGƯỜI: MỖI NGƯỜI {s.RicePerPerson} GẠO + {s.FishPerPerson} CÁ; CẢ GÓI {s.SaltPerBundle} MUỐI";
             feedback.text=s.Feedback;feedback.color=s.FeedbackVersion==0?Color.white:s.LastCorrect?Green:new Color(1,.5f,.35f);
             for(int i=0;i<8;i++)
             {
                 woodButtons[i].SetActive(i<s.TimberOptions);woodButtons[i].GetComponent<Image>().color=s.TimberUsed(i)?new Color(.15f,.40f,.30f):new Color(.17f,.20f,.20f);
-                woodIcons[i].SetDamaged(!s.IsSoundTimber(i));woodLabels[i].text=$"{s.TimberLength(i)} thước"+(s.Difficulty>0?$" • lực {s.TimberStrength(i)}":"")+(s.Difficulty>1?$"\nGiá {s.TimberCost(i)}":"")+(!s.IsSoundTimber(i)?" • NỨT":s.TimberUsed(i)?" • CHỌN":"");
+                woodIcons[i].SetDamaged(!s.IsSoundTimber(i));woodLabels[i].text=$"{s.TimberLength(i)} thước"+(s.TimberNeedsStrength?$" • lực {s.TimberStrength(i)}":"")+(!s.IsSoundTimber(i)?" • NỨT":s.TimberUsed(i)?" • CHỌN":"");
             }
             for(int i=0;i<9;i++)ropeIcons[i].SetPorts(s.RopePorts(i));
             for(int i=0;i<3;i++)foodLabels[i].text=$"[{i+1}] {VillageWorkStall.IngredientName(i)}: {s.IngredientCount(i)}";

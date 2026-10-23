@@ -26,8 +26,9 @@ namespace BeachBoatStory
         public int RiceTarget {get;private set;}
         public int TimberTarget {get;private set;}
         public int TimberTotal {get;private set;}
-        public int TimberOptions=>Difficulty==0?6:8;
-        public int TimberRequiredPieces=>Difficulty+2;
+        public int TimberOptions=>6;
+        public int TimberRequiredPieces=>Difficulty==2?3:2;
+        public bool TimberNeedsStrength=>Difficulty==2;
         public int TimberSelectedPieces=>timberPieces;
         public int TimberStrengthTarget {get;private set;}
         public int TimberBudget {get;private set;}
@@ -48,9 +49,9 @@ namespace BeachBoatStory
         public Vector3 InteractionPosition=>interactionPoint!=null?interactionPoint.position:transform.position;
         public float TimeLimit=>kind==WorkKind.Timber?(Difficulty==0?100:Difficulty==1?135:180):kind==WorkKind.Rope?(Difficulty==0?100:Difficulty==1?75:55):(Difficulty==0?90:Difficulty==1?70:50);
         public int Goal=>kind==WorkKind.Rope?1:2+Difficulty;
-        public int MistakeLimit=>Difficulty==2?2:3;
+        public int MistakeLimit=>kind==WorkKind.Timber?3:Difficulty==2?2:3;
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);
-        public string Instructions=>kind==WorkKind.Timber?"Dễ: chọn 2 thanh đủ chiều dài. Vừa: chọn 3 thanh, đồng thời đủ sức chịu lực. Khó: chọn 4 thanh đủ chiều dài, đủ sức chịu lực và không vượt ngân sách. Mỗi thanh dùng một lần; loại gỗ nứt. Bấm vào thanh để chọn hoặc bỏ chọn, rồi GIAO GỖ để kiểm tra. Mỗi đơn chỉ có một tổ hợp đúng; câu mới không lặp câu đã chơi.":
+        public string Instructions=>kind==WorkKind.Timber?"Dễ và Vừa: chọn 2 thanh đủ chiều dài. Khó: chọn 3 thanh đủ chiều dài và sức chịu lực. Chọn trong 6 thanh, loại gỗ nứt. Bấm vào thanh để chọn hoặc bỏ chọn, rồi GIAO GỖ để kiểm tra. Các số đều nhỏ để dễ nhẩm. Mỗi đơn chỉ có một tổ hợp đúng; câu mới không lặp câu đã chơi.":
             kind==WorkKind.Rope?"Bấm từng ô để xoay đoạn dây 90 độ. Nối một đường liên tục từ đầu VÀO bên trái hàng giữa sang đầu RA bên phải hàng giữa. Dây không được đứt hoặc tạo vòng kín. Số lượt xoay có hạn.":
             kind==WorkKind.Rice?"Đong đúng lượng gạo yêu cầu bằng hai gáo khác cỡ. Chỉ được thêm một gáo nhỏ, thêm một gáo lớn hoặc bớt một gáo nhỏ. Hãy tính cách đong trong số lượt cho phép rồi đóng túi.":
             "Đọc công thức mỗi đơn hàng: số người, gạo/cá cho mỗi người và muối cho cả gói đều có thể thay đổi. Tính đủ nguyên liệu, sửa bằng Hoàn tác nếu nhầm rồi kiểm tra gói.";
@@ -181,7 +182,7 @@ namespace BeachBoatStory
                 {
                     int mask=0;for(int i=0;i<TimberOptions;i++)if(timberUsed[i])mask|=1<<i;
                     if(TimberSelectionValid(mask)){Score("Đơn gỗ đáp ứng đủ các điều kiện.");return true;}
-                    Fault("Chưa đạt đơn hàng. Kiểm tra số thanh, chiều dài, sức chịu lực và ngân sách; bấm thanh đã chọn để bỏ.");return false;
+                    Fault(TimberNeedsStrength?"Kiểm tra lại số thanh, chiều dài và sức chịu lực. Bấm thanh đã chọn để bỏ.":"Kiểm tra lại số thanh và chiều dài. Bấm thanh đã chọn để bỏ.");return false;
                 }
                 if(option>=TimberOptions)return false;
                 if(!soundTimber[option]){Fault("Gỗ nứt không chịu được tải. Hãy chọn thanh nguyên vẹn.");return false;}
@@ -257,11 +258,11 @@ namespace BeachBoatStory
         }
         public bool TimberSelectionValid(int mask)
         {
-            int count=0,length=0,strength=0,cost=0;
+            int count=0,length=0,strength=0;
             if(mask<0||(mask>>TimberOptions)!=0)return false;
             for(int i=0;i<TimberOptions;i++)if((mask&(1<<i))!=0)
-            {if(!soundTimber[i])return false;count++;length+=timberLengths[i];strength+=timberStrengths[i];cost+=timberCosts[i];}
-            return count==TimberRequiredPieces&&length==TimberTarget&&(Difficulty==0||strength>=TimberStrengthTarget)&&(Difficulty<2||cost<=TimberBudget);
+            {if(!soundTimber[i])return false;count++;length+=timberLengths[i];strength+=timberStrengths[i];}
+            return count==TimberRequiredPieces&&length==TimberTarget&&(!TimberNeedsStrength||strength>=TimberStrengthTarget);
         }
         void GenerateTimber()
         {
@@ -271,28 +272,27 @@ namespace BeachBoatStory
                 for(int i=0;i<8;i++)
                 {
                     timberUsed[i]=false;soundTimber[i]=i<TimberOptions&&i!=bad;
-                    int length;do{length=Random.Range(3,18+Difficulty*10);}while(!lengths.Add(length));
-                    timberLengths[i]=length;timberStrengths[i]=Random.Range(2,8+Difficulty*4);timberCosts[i]=Random.Range(2,9+Difficulty*3);
+                    int length;do{length=Random.Range(3,13+Difficulty*3);}while(!lengths.Add(length));
+                    timberLengths[i]=length;timberStrengths[i]=Random.Range(2,9);timberCosts[i]=0;
                     if(soundTimber[i])good.Add(i);
                 }
                 for(int i=good.Count-1;i>0;i--){int j=Random.Range(0,i+1);int swap=good[i];good[i]=good[j];good[j]=swap;}
                 TimberTarget=TimberStrengthTarget=TimberBudget=0;
-                for(int i=0;i<TimberRequiredPieces;i++){int n=good[i];TimberTarget+=timberLengths[n];TimberStrengthTarget+=timberStrengths[n];TimberBudget+=timberCosts[n];}
-                TimberStrengthTarget=Difficulty==0?0:TimberStrengthTarget-Random.Range(0,3);
-                TimberBudget=Difficulty<2?0:TimberBudget+Random.Range(0,3);
-                int solutions=0,lengthOnly=0,withoutBudget=0;
+                for(int i=0;i<TimberRequiredPieces;i++){int n=good[i];TimberTarget+=timberLengths[n];TimberStrengthTarget+=timberStrengths[n];}
+                TimberStrengthTarget=TimberNeedsStrength?TimberStrengthTarget-Random.Range(0,3):0;
+                int solutions=0,lengthOnly=0;
                 for(int mask=1;mask<(1<<TimberOptions);mask++)
                 {
-                    int count=0,length=0,strength=0;bool sound=true;
-                    for(int i=0;i<TimberOptions;i++)if((mask&(1<<i))!=0){count++;length+=timberLengths[i];strength+=timberStrengths[i];sound&=soundTimber[i];}
-                    if(sound&&count==TimberRequiredPieces&&length==TimberTarget){lengthOnly++;if(strength>=TimberStrengthTarget)withoutBudget++;}
+                    int count=0,length=0;bool sound=true;
+                    for(int i=0;i<TimberOptions;i++)if((mask&(1<<i))!=0){count++;length+=timberLengths[i];sound&=soundTimber[i];}
+                    if(sound&&count==TimberRequiredPieces&&length==TimberTarget)lengthOnly++;
                     if(TimberSelectionValid(mask))solutions++;
                 }
-                // Later levels deliberately contain plausible length-only decoys.
-                if(solutions!=1||(Difficulty>0&&lengthOnly<2)||(Difficulty==2&&withoutBudget<2))continue;
+                // Only hard orders add a load comparison to the length calculation.
+                if(solutions!=1||(TimberNeedsStrength&&lengthOnly<2))continue;
                 string target=$"{Difficulty}:{TimberTarget}:{TimberStrengthTarget}:{TimberBudget}";
                 if(RecentTimberTargets.Contains(target))continue;
-                var cards=new List<string>();for(int i=0;i<TimberOptions;i++)cards.Add($"{soundTimber[i]}:{timberLengths[i]}:{(Difficulty>0?timberStrengths[i]:0)}:{(Difficulty>1?timberCosts[i]:0)}");
+                var cards=new List<string>();for(int i=0;i<TimberOptions;i++)cards.Add($"{soundTimber[i]}:{timberLengths[i]}:{(TimberNeedsStrength?timberStrengths[i]:0)}");
                 cards.Sort(System.StringComparer.Ordinal);string key=target+"|"+string.Join(";",cards);
                 if(!TimberQuestions.Add(key))continue;
                 TimberQuestionKey=key;RecentTimberTargets.Enqueue(target);while(RecentTimberTargets.Count>12)RecentTimberTargets.Dequeue();return;

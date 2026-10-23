@@ -170,14 +170,14 @@ public static class BeachBoatVillageWorkPlaytest
         {
             if(stall.kind==VillageWorkStall.WorkKind.Timber)
             {
-                var cards=Enumerable.Range(0,stall.TimberOptions).Select(i=>$"{stall.IsSoundTimber(i)}:{stall.TimberLength(i)}:{(stall.Difficulty>0?stall.TimberStrength(i):0)}:{(stall.Difficulty>1?stall.TimberCost(i):0)}").OrderBy(v=>v,StringComparer.Ordinal);
+                var cards=Enumerable.Range(0,stall.TimberOptions).Select(i=>$"{stall.IsSoundTimber(i)}:{stall.TimberLength(i)}:{(stall.TimberNeedsStrength?stall.TimberStrength(i):0)}").OrderBy(v=>v,StringComparer.Ordinal);
                 string key=$"{stall.Difficulty}:{stall.TimberTarget}:{stall.TimberStrengthTarget}:{stall.TimberBudget}|"+string.Join(";",cards);
                 if(!timberHistory.Add(key))throw new Exception("A timber question repeated, including reordered cards");uniqueTimberOrders++;
                 bool IndependentSolution(int mask)
                 {
                     var selected=Enumerable.Range(0,stall.TimberOptions).Where(i=>(mask&(1<<i))!=0).ToArray();
                     return selected.Length==stall.TimberRequiredPieces&&selected.All(stall.IsSoundTimber)&&selected.Sum(stall.TimberLength)==stall.TimberTarget&&
-                        (stall.Difficulty==0||selected.Sum(stall.TimberStrength)>=stall.TimberStrengthTarget)&&(stall.Difficulty<2||selected.Sum(stall.TimberCost)<=stall.TimberBudget);
+                        (!stall.TimberNeedsStrength||selected.Sum(stall.TimberStrength)>=stall.TimberStrengthTarget);
                 }
                 var solutions=Enumerable.Range(1,(1<<stall.TimberOptions)-1).Where(IndependentSolution).ToArray();
                 if(solutions.Length!=1)throw new Exception("Timber order does not have exactly one solution");
