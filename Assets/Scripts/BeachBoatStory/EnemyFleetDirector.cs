@@ -48,6 +48,9 @@ namespace BeachBoatStory
             }
         }
         public bool IsConfigured=>isActiveAndEnabled&&ShipCount>0;
+        public int RemainingEnemies=>RiverPlayerCombat.Instance!=null?RiverPlayerCombat.Instance.RemainingEnemies:0;
+        public int ShipsInside {get{int count=0;foreach(var ship in enemyShips)if(ship!=null&&ship.gameObject.activeInHierarchy&&ship.IsHullInsideStakeField)count++;return count;}}
+        public bool AllShipsSunk {get{foreach(var ship in enemyShips)if(ship!=null&&!ship.HasSettled)return false;return ShipCount>0;}}
         public int CommandOpportunityCount=>Mathf.CeilToInt(ShipCount/(float)Mathf.Max(1,shipsPerWave));
         public int PendingCommandWave
         {
@@ -68,6 +71,7 @@ namespace BeachBoatStory
             }
         }
         void Awake(){Instance=this;}
+        void Start()=>RiverFleetLayout.Configure(this);
         void OnDestroy(){if(Instance==this)Instance=null;}
         void OnDisable(){StopBattle();}
         public void StartBattle()
@@ -75,6 +79,7 @@ namespace BeachBoatStory
             if(BattleStarted||!IsConfigured)return;
             var zone=RiverStakeZone.Instance;
             if(zone==null||!zone.IsComplete)return;
+            RiverFleetLayout.Configure(this);
             BattleStarted=true;
             CommandScore=0;
             EbbStarted=false;EbbTriggerShip=null;
@@ -123,7 +128,7 @@ namespace BeachBoatStory
                 // Give the player time to see each invasion group enter the channel.
                 // The old two-second cap spawned all ten ships almost at once, so the battle
                 // could finish off-screen before the player understood what was happening.
-                if(waveEnd<fleet.Count)yield return new WaitForSeconds(Mathf.Clamp(waveDelay,3.5f,8f));
+                if(waveEnd<fleet.Count)yield return new WaitForSeconds(Mathf.Max(10,waveDelay));
             }
 
             watchedFleetIndex=0;
@@ -140,39 +145,28 @@ namespace BeachBoatStory
                     {watchedFleetIndex=i;WatchShip(fleet[i]);}
                 }
                 // Retained wreck meshes are no longer active vessels. Their surviving crew swim.
-                // Keep controls and objective alive until all five counterattacks are ordered.
-                if(!anyActive&&CommandScore>=CommandOpportunityCount){BachDangStoryManager.Instance?.OnBattleVictory();break;}
+                // Surviving crew remain a combat objective after the final hull settles.
+                if(!anyActive&&RemainingEnemies==0){BachDangStoryManager.Instance?.OnBattleVictory();break;}
                 if(IsShowingBattle&&WatchedShip!=null&&Time.unscaledTime>=commandMessageUntil)
                 {
-                    int ready=ReadyWave(fleet,waveSize);
-                    var boat=QuestRowboat.Instance;
-                    var readyShip=ReadyShip(fleet,ready,waveSize);
-                    float range=boat!=null&&readyShip!=null?QuestRowboat.FlatDistance(boat.transform.position,readyShip.transform.position):float.PositiveInfinity;
-                    bool suppressed=RiverPlayerCombat.Instance==null||RiverPlayerCombat.Instance.HasSuppressedWave(ready);
-                    var timeline=BachDangBattleTimeline.Instance;
-                    BattleCaption=!EbbStarted ? "Giữ kín mai phục — nhử thuyền địch tới bãi cọc chìm" :
-                        timeline!=null&&timeline.CurrentMoment<BachDangBattleTimeline.BattleMoment.Ambush
-                        ? "Nước đang rút dần — quan sát đầu cọc, chưa phất cờ sớm" : ready<0
-                        ? $"Thuyền tự mắc cọc khi nước rút • Đã đắm {BachDangStoryManager.Instance?.destroyedEnemyShips ?? 0}/{ShipCount}"
-                        : !suppressed ? $"HẠ XẠ THỦ ĐỢT {ready+1}: giữ chuột phải ngắm, chuột trái bắn"
-                        : range>commandRange
-                            ? $"Chèo tới gần thuyền địch đợt {ready+1} để truyền lệnh • Còn {WorldDistance.Format(range)}"
-                            : $"[SPACE] PHẤT CỜ ĐỢT {ready+1}!  Quân ta đánh dứt điểm xạ thủ còn lại";
+                    BattleCaption=!EbbStarted ? $"Nhử địch vào sâu trận cọc • Đã vào {ShipsInside}/{ShipCount} thuyền" :
+                        $"Thuyền đắm {BachDangStoryManager.Instance?.destroyedEnemyShips ?? 0}/{ShipCount} • Địch còn lại {RemainingEnemies}\nHạ hết địch và đánh chìm toàn bộ thuyền để thắng • Q: kiếm • SPACE: leo tàu";
                 }
                 yield return null;
             }
             battleLoop=null;
             BattleStarted=false;
-            choreography?.EndBattle();
+            choreography?.EndBattle(true);
             EndBattleView();
         }
         IEnumerator WatchStakeField(System.Collections.Generic.List<EnemyShip> fleet)
         {
             while(BattleStarted&&!EbbStarted&&EbbTriggerShip==null)
             {
-                foreach(var ship in fleet)
-                    if(ship!=null&&ship.gameObject.activeInHierarchy&&!ship.isDestroyed&&ship.IsHullInsideStakeField)
-                    {EbbTriggerShip=ship;break;}
+                if(ShipsInside>=ShipCount)
+                    foreach(var ship in fleet)
+                        if(ship!=null&&ship.gameObject.activeInHierarchy&&!ship.isDestroyed&&ship.IsHullInsideStakeField)
+                        {EbbTriggerShip=ship;break;}
                 if(EbbTriggerShip==null)yield return null;
             }
             if(!BattleStarted)yield break;
@@ -227,51 +221,9 @@ namespace BeachBoatStory
             if(!IsShowingBattle)return;
             if(BeachBoatQuestSession.Instance==null||!BeachBoatQuestSession.Instance.storyMode)
             {EndBattleView();return;}
-            if(Input.GetKeyDown(KeyCode.Space)) TrySignalAttack();
         }
-        public bool TrySignalAttack()
-        {
-            if(!IsShowingBattle||!BattleStarted||BeachBoatQuestSession.InputBlocked||
-                (RiverBoardingCombat.Instance!=null&&(RiverBoardingCombat.Instance.PlayerAway||RiverBoardingCombat.Instance.UsedTraversalThisFrame)))return false;
-            {
-                int waveSize=Mathf.Max(1,shipsPerWave);
-                var fleet=new System.Collections.Generic.List<EnemyShip>();
-                var seen=new System.Collections.Generic.HashSet<EnemyShip>();
-                foreach(var ship in enemyShips)if(ship!=null&&seen.Add(ship))fleet.Add(ship);
-                int wave=ReadyWave(fleet,waveSize);
-                if(wave>=0)
-                {
-                    if(RiverPlayerCombat.Instance!=null&&!RiverPlayerCombat.Instance.HasSuppressedWave(wave))
-                    {commandMessageUntil=Time.unscaledTime+1.5f;BattleCaption=$"Hạ ít nhất một xạ thủ đợt {wave+1} để quân ta áp sát phản công";return false;}
-                    var boat=QuestRowboat.Instance;
-                    var readyShip=ReadyShip(fleet,wave,waveSize);
-                    if(boat==null||!boat.IsAboard||readyShip==null||
-                       QuestRowboat.FlatDistance(boat.transform.position,readyShip.transform.position)>commandRange)
-                    {
-                        commandMessageUntil=Time.unscaledTime+1f;
-                        BattleCaption="Chèo thuyền tới gần bãi cọc để truyền lệnh cho quân mai phục";
-                        return false;
-                    }
-                    scoredWaves.Add(wave);CommandScore++;commandMessageUntil=Time.unscaledTime+1.3f;
-                    var released=new System.Collections.Generic.List<EnemyShip>();
-                    for(int i=wave*waveSize;i<Mathf.Min((wave+1)*waveSize,fleet.Count);i++)
-                    {fleet[i].ReleaseForAmbush();released.Add(fleet[i]);}
-                    choreography=GetComponent<RiverBattleChoreography>();
-                    choreography?.FireSignalVolley(released);
-                    BeachBoatSoundscape.Instance?.PlayDrum(1);
-                    var combat=RiverPlayerCombat.Instance;
-                    if(combat!=null)foreach(var guard in combat.guards)if(guard!=null&&guard.waveIndex==wave)guard.DefeatFromVolley();
-                    BattleCaption=$"HẠ LỆNH PHẢN CÔNG!  {CommandScore}/{CommandOpportunityCount} đợt";
-                    BachDangStoryManager.Instance?.UpdateUI();
-                }
-                else
-                {
-                    commandMessageUntil=Time.unscaledTime+.8f;
-                    BattleCaption="Chưa đến lúc: chờ nước rút và thuyền địch vào tầm cọc";
-                }
-                return wave>=0;
-            }
-        }
+        // Retained for old save/tool compatibility. Combat has no flag action.
+        public bool TrySignalAttack()=>false;
         public void EndBattleView()
         {
             if(!IsShowingBattle)return;

@@ -208,7 +208,7 @@ namespace BeachBoatStory
                 float ownDistance=QuestRowboat.FlatDistance(session.player.transform.position,QuestRowboat.Instance.transform.position);
                 if(ownDistance<48&&ownDistance<nearest)
                 {playerPose.FinishTraversal();playerPose.Animator.runtimeAnimatorController=QuestRowboat.Instance.rowingController;State=PlayerState.Rowboat;deckShip=null;deckAnchor=null;QuestRowboat.Instance.UseSoldierBattleCamera();return true;}
-                if(nearest>24)return false;deckShip=ship;deckAnchor=anchor;deckLocal=local;climbStart=session.player.transform.position;climbLocalStart=anchor.InverseTransformPoint(climbStart);climbTime=0;State=PlayerState.Climbing;playerPose.Traversal=RiverFighterPose.Motion.Climb;ClimbsStarted++;BeachBoatSoundscape.Instance?.PlayClimbGrip();return true;
+                if(nearest>(ship!=null&&ship.isDestroyed?52:24))return false;deckShip=ship;deckAnchor=anchor;deckLocal=local;climbStart=session.player.transform.position;climbLocalStart=anchor.InverseTransformPoint(climbStart);climbTime=0;State=PlayerState.Climbing;playerPose.Traversal=RiverFighterPose.Motion.Climb;ClimbsStarted++;BeachBoatSoundscape.Instance?.PlayClimbGrip();return true;
             }
             BeginSwim(session.player.transform.position+session.player.transform.right*22);return true;
         }
@@ -224,11 +224,12 @@ namespace BeachBoatStory
         public void StepPlayer(float dt)
         {
             if(State==PlayerState.Rowboat)return;
-            if(State==PlayerState.EnemyDeck&&(deckAnchor==null||deckShip.isDestroyed&&deckShip.WreckTarget!=deckAnchor)){BeginSwim(session.player.transform.position);return;}
+            if(State==PlayerState.EnemyDeck&&(deckAnchor==null||deckShip==null||!deckShip.gameObject.activeInHierarchy)){BeginSwim(session.player.transform.position);return;}
             if(State==PlayerState.Climbing)
             {
-                if(deckAnchor==null||deckShip.isDestroyed&&deckShip.WreckTarget!=deckAnchor){BeginSwim(session.player.transform.position);return;}
+                if(deckAnchor==null||deckShip==null||!deckShip.gameObject.activeInHierarchy){BeginSwim(session.player.transform.position);return;}
                 climbTime+=dt;var destination=deckAnchor.TransformPoint(deckLocal);float t=Mathf.Clamp01(climbTime/1.8f);
+                if(destination.y<TideSystem.CurrentWaterHeight-2){BeginSwim(session.player.transform.position);return;}
                 var facing=deckAnchor.position-session.player.transform.position;facing.y=0;
                 var from=deckAnchor.TransformPoint(climbLocalStart);var above=from;above.y=destination.y+2;
                 var climb=t<.72f?Vector3.Lerp(from,above,Mathf.SmoothStep(0,1,t/.72f)):Vector3.Lerp(above,destination,Mathf.SmoothStep(0,1,(t-.72f)/.28f));
@@ -247,7 +248,23 @@ namespace BeachBoatStory
                 p=RiverHullCollision.Move(session.player.transform.position+Vector3.up*3,p+Vector3.up*3,4)-Vector3.up*3;
                 p.y=TideSystem.CurrentWaterHeight-5+Mathf.Sin(Time.time*3)*.3f;
             }
-            else {deckLocal+=deckAnchor.InverseTransformDirection(direction)*26*dt;deckLocal.x=Mathf.Clamp(deckLocal.x,-deckShip.stakeHitDistance*.65f,deckShip.stakeHitDistance*.65f);deckLocal.z=Mathf.Clamp(deckLocal.z,-deckShip.hullHalfLength*.65f,deckShip.hullHalfLength*.65f);p=deckAnchor.TransformPoint(deckLocal);playerPose.Walk(direction.sqrMagnitude>.01f);}
+            else
+            {
+                var carried=deckAnchor.TransformPoint(deckLocal);var proposed=carried+direction*26*dt;
+                if(deckShip.isDestroyed)
+                {
+                    if(deckShip.TryWreckSurfaceAt(proposed,out var surface)&&Mathf.Abs(surface.y-carried.y)<16)p=surface;
+                    else if(deckShip.TryWreckSurfaceAt(carried,out surface))p=surface;
+                    else {BeginSwim(carried);return;}
+                    deckLocal=deckAnchor.InverseTransformPoint(p);
+                }
+                else
+                {
+                    deckLocal+=deckAnchor.InverseTransformDirection(direction)*26*dt;
+                    deckLocal.x=Mathf.Clamp(deckLocal.x,-deckShip.stakeHitDistance*.65f,deckShip.stakeHitDistance*.65f);deckLocal.z=Mathf.Clamp(deckLocal.z,-deckShip.hullHalfLength*.65f,deckShip.hullHalfLength*.65f);p=deckAnchor.TransformPoint(deckLocal);
+                }
+                playerPose.Walk(direction.sqrMagnitude>.01f);
+            }
             MovePlayer(p,direction.sqrMagnitude>.01f?Quaternion.LookRotation(direction):session.player.transform.rotation);
         }
         float NearestBoard(Vector3 p,out EnemyShip ship,out Transform anchor,out Vector3 local)
@@ -255,8 +272,14 @@ namespace BeachBoatStory
             ship=null;anchor=null;local=Vector3.zero;float best=float.PositiveInfinity;
             foreach(var candidate in EnemyFleetDirector.Instance.enemyShips)
             {
-                if(candidate.isDestroyed)continue;
-                var target=candidate.isDestroyed?candidate.WreckTarget:candidate.gameObject.activeInHierarchy?candidate.transform:null;if(target==null)continue;
+                if(candidate==null||!candidate.gameObject.activeInHierarchy)continue;
+                var target=candidate.transform;
+                if(candidate.isDestroyed)
+                {
+                    if(candidate.TryWreckBoardingPoint(p,out var surface))
+                    {float distance=QuestRowboat.FlatDistance(p,surface);if(distance<best){best=distance;ship=candidate;anchor=target;local=target.InverseTransformPoint(surface);}}
+                    continue;
+                }
                 foreach(int side in new[]{-1,1})
                 {
                     var boarding=candidate.transform.Find(side<0?"Boarding_Port":"Boarding_Starboard");
@@ -389,7 +412,12 @@ namespace BeachBoatStory
                 {
                     var water=end;
                     var targetShip=h.boat.GetComponent<EnemyShip>();
-                    if(targetShip!=null&&!targetShip.isDestroyed)
+                    if(targetShip!=null&&targetShip.isDestroyed&&targetShip.TryWreckBoardingPoint(h.go.transform.position,out var wreckSurface))
+                    {
+                        end=wreckSurface;var away=h.go.transform.position-wreckSurface;away.y=0;
+                        water=wreckSurface+away.normalized*10;
+                    }
+                    else if(targetShip!=null&&!targetShip.isDestroyed)
                     {
                         float side=targetShip.transform.InverseTransformPoint(h.go.transform.position).x<0?-1:1;
                         water=targetShip.transform.TransformPoint(new Vector3(side*(targetShip.stakeHitDistance+12),0,0));

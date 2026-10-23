@@ -58,7 +58,7 @@ public class NPCDialogue : MonoBehaviour
         if (!isActiveAndEnabled || BeachBoatQuestSession.InteractionBlocked || session == null ||
             StoryDialogueUI.Instance == null || !session.IsPreferredTalker(this)) return false;
         BachDangStoryManager.Instance.SetInteractPrompt(false, owner: this);
-        StoryDialogueUI.Instance.Show(speakerName, dialogueText);
+        StoryDialogueUI.Instance.Show(speakerName, dialogueText,null,transform);
         return true;
     }
 

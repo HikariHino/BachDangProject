@@ -154,17 +154,17 @@ namespace BeachBoatStory
             drumRound = Text("Round", card.transform, new Vector2(.72f, .87f), new Vector2(.95f, .95f), 20, FontStyles.Bold);
             drumRound.alignment = TextAlignmentOptions.Right;
             var rule = Text("Rule", card.transform, new Vector2(.05f, .76f), new Vector2(.95f, .85f), 18);
-            rule.text = "Đánh số đang sáng. Mỗi lượt có nhịp mới; sai nhịp mất 2 giây.";
+            rule.text = "Hai lượt, mỗi lượt 8 nhịp. Đánh số đang sáng; sai mất 1 giây, giữ nhịp đã đúng.";
             rule.color = new Color(.82f, .82f, .77f);
 
             var cue = Text("Cue", card.transform, new Vector2(.35f, .54f), new Vector2(.65f, .76f), 72, FontStyles.Bold);
             expectedBeat = cue; cue.alignment = TextAlignmentOptions.Center; cue.color = Gold;
 
-            beatCards = new Image[12]; beatLabels = new TMP_Text[12];
+            beatCards = new Image[BeachBoatMinigameStation.DrumBeats]; beatLabels = new TMP_Text[BeachBoatMinigameStation.DrumBeats];
             for (int i = 0; i < beatCards.Length; i++)
             {
-                float left = .055f + i * .074f;
-                var beat = Panel("Beat_" + (i + 1), card.transform, new Vector2(left, .43f), new Vector2(left + .059f, .51f), new Color(.24f,.23f,.2f));
+                float slot=.89f/beatCards.Length;float left = .055f + i * slot;
+                var beat = Panel("Beat_" + (i + 1), card.transform, new Vector2(left, .43f), new Vector2(left + slot*.8f, .51f), new Color(.24f,.23f,.2f));
                 beatCards[i] = beat.GetComponent<Image>();
                 beatLabels[i] = Text("Number", beat.transform, Vector2.zero, Vector2.one, 18, FontStyles.Bold);
                 beatLabels[i].alignment = TextAlignmentOptions.Center;

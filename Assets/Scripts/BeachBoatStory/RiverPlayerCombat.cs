@@ -29,15 +29,14 @@ namespace BeachBoatStory
         public bool BattleActive=>EnemyFleetDirector.Instance!=null&&EnemyFleetDirector.Instance.BattleStarted&&
             QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard;
         public int RequiredKills=>EnemyFleetDirector.Instance!=null?EnemyFleetDirector.Instance.CommandOpportunityCount:5;
+        public int RemainingEnemies {get{int count=0;foreach(var guard in guards)if(guard!=null&&guard.IsAlive)count++;return count;}}
         public EnemyDeckGuard AimedGuard {get;private set;}
         public EnemyDeckGuard PriorityGuard
         {
             get
             {
-                int wave=EnemyFleetDirector.Instance!=null?EnemyFleetDirector.Instance.PendingCommandWave:-1;
-                if(wave<0||HasSuppressedWave(wave))return null;
                 EnemyDeckGuard best=null;float distance=float.PositiveInfinity;
-                foreach(var guard in guards)if(guard!=null&&guard.IsAlive&&guard.waveIndex==wave)
+                foreach(var guard in guards)if(guard!=null&&guard.IsAlive)
                 {float d=(guard.transform.position-session.player.transform.position).sqrMagnitude;if(d<distance){best=guard;distance=d;}}
                 return best;
             }
@@ -87,15 +86,15 @@ namespace BeachBoatStory
         public void RegisterKill(EnemyDeckGuard guard)
         {
             Kills++;suppressed.Add(guard.waveIndex);
-            Tell($"ĐÃ HẠ XẠ THỦ ĐỢT {guard.waveIndex+1} • có thể phất cờ khi cọc lộ");
+            Tell($"ĐÃ HẠ ĐỊCH • Còn {RemainingEnemies} lính địch");
             BachDangStoryManager.Instance?.UpdateUI();
         }
-        public void RegisterAlliedKill(EnemyDeckGuard guard){AlliedKills++;suppressed.Add(guard.waveIndex);Tell($"Đồng minh hạ lính đợt {guard.waveIndex+1} • có thể phất cờ khi cọc lộ");}
+        public void RegisterAlliedKill(EnemyDeckGuard guard){AlliedKills++;suppressed.Add(guard.waveIndex);Tell($"Đồng minh hạ địch • Còn {RemainingEnemies} lính địch");BachDangStoryManager.Instance?.UpdateUI();}
         public void BeginBattle()
         {
             ResetForCheckpoint();wasBattle=true;nextThreat=Time.time+4;
             foreach(var guard in guards)if(guard!=null)guard.ResetGuard();
-            Tell("Thuyền tự đắm khi va cọc. Hạ xạ thủ trên tàu hoặc mảnh boong nổi, rồi phất cờ phản công.");
+            Tell("Nhử địch vào sâu bãi cọc. Dùng cung/kiếm phối hợp đồng minh. Thắng khi mọi thuyền đắm và không còn lính địch.");
         }
         public void ResetForCheckpoint()
         {
@@ -241,7 +240,7 @@ namespace BeachBoatStory
         void Tell(string text){message=text;noticeUntil=Time.time+3;}
         void UpdateHUD()
         {
-            caption.text=$"HẠ ĐỊCH {Kills} • ĐỒNG MINH {AlliedKills} • TÊN {Arrows}/6"+(IsReloading?"  •  ĐANG NẠP":"");
+            caption.text=$"ĐỊCH CÒN {RemainingEnemies} • HẠ {Kills} • ĐỒNG MINH {AlliedKills} • TÊN {Arrows}/6"+(IsReloading?"  •  ĐANG NẠP":"");
             targetText.text=IsAiming&&AimedGuard!=null?$"XẠ THỦ ĐỢT {AimedGuard.waveIndex+1}  •  {AimedGuard.Health}/2":"";
             notice.text=threat!=null?"ĐỊCH ĐANG NHẮM! DI CHUYỂN ĐỂ NÉ TÊN":Time.time<noticeUntil?message:
                 RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.SwordDrawn?"Chuột trái: chém • Chuột phải: đỡ • Q: cất kiếm":

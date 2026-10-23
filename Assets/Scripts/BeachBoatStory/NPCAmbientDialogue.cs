@@ -45,7 +45,7 @@ namespace BeachBoatStory
             dailyLife?.PauseForConversation(player);
             var lines=Lines[Mathf.Clamp((int)role,0,Lines.Length-1)];
             string activity=dailyLife!=null&&!string.IsNullOrWhiteSpace(dailyLife.CurrentActivity)?dailyLife.CurrentActivity+". ":"";
-            StoryDialogueUI.Instance?.Show(displayName,activity+lines[lineIndex++%lines.Length]);
+            StoryDialogueUI.Instance?.Show(displayName,activity+lines[lineIndex++%lines.Length],null,transform);
             HidePrompt();return true;
         }
         void HidePrompt(){if(!showingPrompt)return;showingPrompt=false;BachDangStoryManager.Instance?.SetInteractPrompt(false,owner:this);}

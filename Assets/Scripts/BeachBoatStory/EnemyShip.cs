@@ -13,8 +13,9 @@ namespace BeachBoatStory
         public bool SignalReady {get;private set;}
         public bool IsReleasedForAmbush=>attackReleased;
         public Transform WreckTarget=>wreckRaft!=null&&wreckRaft.gameObject.activeSelf?wreckRaft:null;
-        public bool IsHullInsideStakeField=>RiverStakeZone.Instance!=null&&RiverStakeZone.Instance.TryHullContact(
+        public bool IsHullInsideStakeField=>targetPoint!=null&&QuestRowboat.FlatDistance(transform.position,targetPoint.position)<=55&&RiverStakeZone.Instance!=null&&RiverStakeZone.Instance.TryHullContact(
             transform.position,transform.position,transform.forward,hullHalfLength,stakeHitDistance,false,out _);
+        float stakeContactTime;
         bool battleStarted;
         bool attackReleased;
         int routeIndex;
@@ -28,6 +29,32 @@ namespace BeachBoatStory
         Rigidbody[] debrisBodies;
         MeshCollider[] wreckColliders;
         public bool HasSolidWreck=>isDestroyed&&wreckColliders!=null&&System.Array.Exists(wreckColliders,c=>c!=null&&c.enabled);
+        public bool TryWreckSurfaceAt(Vector3 position,out Vector3 surface)
+        {
+            surface=default;if(!HasSolidWreck)return false;bool found=false;float highest=float.NegativeInfinity;
+            var origin=new Vector3(position.x,TideSystem.CurrentWaterHeight+60,position.z);
+            foreach(var collider in wreckColliders)
+            {
+                if(collider==null||!collider.enabled||!collider.gameObject.activeInHierarchy)continue;
+                if(!collider.Raycast(new Ray(origin,Vector3.down),out var hit,65)||hit.normal.y<.4f||
+                    hit.point.y<TideSystem.CurrentWaterHeight-.5f||hit.point.y>TideSystem.CurrentWaterHeight+48)continue;
+                if(hit.point.y<=highest)continue;highest=hit.point.y;surface=hit.point+Vector3.up*1.2f;found=true;
+            }
+            return found;
+        }
+        public bool TryWreckBoardingPoint(Vector3 swimmer,out Vector3 surface)
+        {
+            surface=default;if(!HasSolidWreck||QuestRowboat.FlatDistance(swimmer,transform.position)>hullHalfLength+120)return false;
+            Physics.SyncTransforms();float best=float.PositiveInfinity;
+            for(int x=-3;x<=3;x++)for(int z=-3;z<=3;z++)
+            {
+                var probe=swimmer+new Vector3(x*12,0,z*12);
+                if(!TryWreckSurfaceAt(probe,out var point))continue;
+                float cost=QuestRowboat.FlatDistance(swimmer,point)+Mathf.Abs(point.y-TideSystem.CurrentWaterHeight)*.12f;
+                if(cost>=best)continue;best=cost;surface=point;
+            }
+            return !float.IsPositiveInfinity(best);
+        }
         void ConfigureWreckCollision(bool wreck)
         {
             if(wreckColliders==null)
@@ -50,7 +77,7 @@ namespace BeachBoatStory
         }
         public void Activate()
         {
-            isDestroyed=false;HasSettled=false;destroyedTime=0;battleStarted=true;
+            isDestroyed=false;HasSettled=false;destroyedTime=stakeContactTime=0;battleStarted=true;
             attackReleased=false;SignalReady=false;routeIndex=0;
             var first=routeWaypoints!=null&&routeWaypoints.Length>0?routeWaypoints[0]:targetPoint;
             var direction=first!=null?first.position-transform.position:Vector3.forward;direction.y=0;
@@ -117,17 +144,18 @@ namespace BeachBoatStory
             var direction=end-pos;
             if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-2*dt));
             transform.position=next;
-            CheckStakeHit(pos,next);
+            if(targetPoint!=null&&QuestRowboat.FlatDistance(next,targetPoint.position)<=30)CheckStakeHit(pos,next,dt);
         }
         public void ReleaseForAmbush()
         {
             if(!battleStarted&&!isDestroyed)return;
             attackReleased=true;SignalReady=false;
         }
-        void CheckStakeHit(Vector3 from,Vector3 to)
+        void CheckStakeHit(Vector3 from,Vector3 to,float dt)
         {
             var zone=RiverStakeZone.Instance;if(zone==null)return;
-            if(zone.TryHullContact(from,to,transform.forward,hullHalfLength,stakeHitDistance,true,out var point))TakeDamage(point);
+            if(zone.TryHullContact(from,to,transform.forward,hullHalfLength,stakeHitDistance,true,out var point))
+            {stakeContactTime+=dt;if(stakeContactTime>=ambushDelay)TakeDamage(point);}
         }
         public void TakeDamage()
         { TakeDamage(transform.position+transform.forward*35); }
@@ -136,15 +164,16 @@ namespace BeachBoatStory
             if(!battleStarted||isDestroyed)return;
             isDestroyed=true;destroyedTime=0;sinkStart=transform.position;sinkRotation=transform.rotation;
             SignalReady=true;
-            // Settle the capsized hull on the riverbed and retain its actual mesh.
-            // Tall masts may remain above shallow water, as a visible wreck landmark.
+            // Ground the capsized hull on the stakes and retain its actual mesh.
+            // Upper timber remains visible and can support a boarder.
             float ground=TideSystem.CurrentWaterHeight-85;
             var terrain=Terrain.activeTerrain;if(terrain!=null)ground=terrain.SampleHeight(sinkStart)+terrain.transform.position.y;
             var finalRotation=sinkRotation*Quaternion.Euler(28,0,42);
             float hullBottom=float.PositiveInfinity;
             foreach(float x in new[]{-40f,40f})foreach(float z in new[]{-120f,120f})
                 hullBottom=Mathf.Min(hullBottom,(finalRotation*new Vector3(x,-4,z)).y);
-            sinkDepth=Mathf.Max(18,sinkStart.y-(ground-hullBottom+1));
+            // Grounded on the stakes: keep real upper timber reachable while the hull floods.
+            sinkDepth=Mathf.Clamp(sinkStart.y-(ground-hullBottom+1),18,32);
             ConfigureWreckCollision(true);
             FloatSurvivors();
             LaunchDebris(impactPoint);

@@ -18,11 +18,25 @@ Walking uses the existing light footsteps at a slower cadence. Running uses four
 
 ## Naval controls and wrecks
 
-**Q** still draws/sheathes the sword. **F** enters the water; **Space** climbs from the water onto the nearest reachable ship or back into the player's boat. Climbing cannot also issue an ambush command in the same frame. Space issues the counterattack order while aboard the rowboat. Holding right mouse raises, aims and draws the bow; left click shoots. In sword mode, right mouse remains the block action.
+**Q** still draws/sheathes the sword. **F** enters the water; **Space** climbs from the water onto the nearest reachable ship or wreck, or back into the player's boat. There is no flag/counterattack button. Holding right mouse raises, aims and draws the bow; left click shoots. In sword mode, right mouse remains the block action.
 
 The rowing shaft passes through both palm grips instead of targeting the wrist bones. Switching to the bow hides the paddle. Enemy soldiers, including the runtime boarding pool, match the player's anatomical rig height while keeping their feet on the deck; their hit capsules, bow grips and melee weapons are sized accordingly.
 
-Sinking ships retain mesh colliders on their actual timber hulls, decks and cabin roofs. The large upright navigation box is disabled when a ship sinks. Swimmers sweep against these surfaces; AI swimmers can move around them. The retained mesh moves with the capsizing ship and settles on the riverbed. There is no artificial floating raft under the surviving crew.
+Sinking ships retain mesh colliders on their actual timber hulls, decks and cabin roofs. The large upright navigation box is disabled when a ship sinks. Swimmers sweep against these surfaces; AI swimmers can move around them. The retained mesh moves with the capsizing ship and remains grounded on the stakes. There is no artificial floating raft under the surviving crew.
+
+Quest 3 distributes ships among separate berths across the stake field. The entire formation must reach the interior before the ebb begins; each hull only takes stake damage at its own interior berth. Flooded wrecks remain caught on the stakes with exposed timber surfaces. Space finds a reachable surface on the retained collider, and walking follows that moving surface while the wreck capsizes. A submerged surface cannot support the player.
+
+The battle ends automatically when every ship has settled and no enemy soldier remains. The HUD shows both counters. Surviving crew fight the player/allies, and allied ships withdraw to separate harbor berths after victory, including when loading a victory save.
+
+Quest 1 drum training has two eight-beat rounds, 55 seconds, and a one-second mistake penalty without losing correct beats. Ngô Quyền uses the same close, forward-facing, unobstructed conversation check as nearby villagers. Ambient NPCs walk faster, vary their pace, cover larger free-roaming areas, and scale animation cadence with actual movement speed.
+
+## Dialogue audio
+
+NPC dialogue uses offline Vietnamese male/female recordings under `Assets/Resources/BachDang938/Voices`. Ngô Quyền has a lower register; other speakers use stable individual pitch profiles based on their actor identity, even when their display names match. Female character models and female speaker names select the female recordings. Activity prefixes keep the corresponding spoken village line. Dynamic minigame results have voiced completion messages.
+
+Subtitles reveal progressively with a quiet tick whose tone varies by speaker. E first reveals the full text, then closes the dialogue and triggers its quest action on the next press. Opening another dialogue stops the preceding voice. Esc pauses speech and subtitle reveal; resuming continues them. Global volume/mute applies to both. Saving open dialogue preserves the speaker's voice profile along with its text and pending action.
+
+The clips were generated from the game's authored dialogue using Microsoft Edge TTS, with the user's explicit permission. `Tools/generate_dialogue_voices.py` uses [edge-tts](https://github.com/rany2/edge-tts) as an authoring dependency only; the game does not send dialogue or require a network connection. It stages files outside Assets before import. `BeachBoatDialogueVoiceSetup.ApplyAndExit` configures the imported audio. `BeachBoatDialogueVoicePlaytest.RunAndExit` checks real speech waveforms/playback, different speaker profiles, progressive subtitle sounds, pause/resume, early reveal, stopping, mute and saved voice identity.
 
 ## Verification
 

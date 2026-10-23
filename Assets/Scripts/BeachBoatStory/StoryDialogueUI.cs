@@ -14,6 +14,9 @@ public sealed class StoryDialogueUI : MonoBehaviour
     private TextMeshProUGUI bodyText;
     private System.Action onDialogueClosed;
     private static int lastInputFrame = -1;
+    DialogueVoice voice;
+    float revealElapsed,revealDuration;
+    int revealed;
 
     public static bool InputConsumedThisFrame => lastInputFrame == Time.frameCount;
 
@@ -47,6 +50,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
         }
 
         Instance = this;
+        voice=gameObject.AddComponent<DialogueVoice>();
         BuildUI();
     }
 
@@ -111,7 +115,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
             FontStyles.Italic,
             new Color(0.8f, 0.77f, 0.7f)
         );
-        hint.text = "Nhấn E để tiếp tục";
+        hint.text = "E: hiện hết chữ / tiếp tục";
         hint.alignment = TextAlignmentOptions.Right;
         SetRect(
             hint.rectTransform,
@@ -152,7 +156,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
         rect.offsetMax = Vector2.zero;
     }
 
-    public void Show(string speaker, string line, System.Action onClosed = null)
+    public void Show(string speaker, string line, System.Action onClosed = null,Transform actor=null)
     {
         if (panel == null) BuildUI();
 
@@ -161,13 +165,29 @@ public sealed class StoryDialogueUI : MonoBehaviour
         bodyText.text = line;
         onDialogueClosed = onClosed;
         panel.SetActive(true);
+        StartVoice(speaker,line,DialogueVoice.ActorIdentity(speaker,actor),DialogueVoice.ActorIsFemale(speaker,actor));
         BeachBoatSoundscape.Instance?.PlayInteraction();
+    }
+
+    void StartVoice(string speaker,string line,string identity,bool female)
+    {
+        voice.Play(speaker,line,identity,female);bodyText.maxVisibleCharacters=int.MaxValue;bodyText.ForceMeshUpdate();
+        revealDuration=voice.Duration>0?Mathf.Max(.25f,voice.Duration*.92f):Mathf.Max(.25f,bodyText.textInfo.characterCount/38f);
+        revealElapsed=0;revealed=0;bodyText.maxVisibleCharacters=0;
+    }
+    public bool TryAdvance()
+    {
+        if(!IsOpen||BachDangFrontEnd.IsBlocking)return false;
+        if(bodyText.maxVisibleCharacters<bodyText.textInfo.characterCount)
+        {bodyText.maxVisibleCharacters=int.MaxValue;revealed=bodyText.textInfo.characterCount;revealElapsed=revealDuration;return true;}
+        Close();return true;
     }
 
     public bool IsOpen => panel != null && panel.activeSelf;
 
     public void Close()
     {
+        voice?.Stop();
         if(IsOpen)BeachBoatSoundscape.Instance?.PlayInteraction();
         lastInputFrame = Time.frameCount;
 
@@ -182,7 +202,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
     }
     public void DismissForCheckpoint(){onDialogueClosed=null;Close();}
     public BachDangSaveData.Dialogue CaptureSave()=>IsOpen?new BachDangSaveData.Dialogue {
-        active=true,speaker=speakerText.text,line=bodyText.text,action=onDialogueClosed?.Method.Name}:null;
+        active=true,speaker=speakerText.text,line=bodyText.text,action=onDialogueClosed?.Method.Name,voiceIdentity=voice.Identity,femaleVoice=voice.Female}:null;
     public void RestoreSave(BachDangSaveData.Dialogue data)
     {
         if(data==null||!data.active)return;
@@ -199,20 +219,33 @@ public sealed class StoryDialogueUI : MonoBehaviour
             case nameof(BachDangStoryManager.OnVictoryReported):callback=story.OnVictoryReported;break;
         }
         Show(data.speaker,data.line,callback);
+        if(!string.IsNullOrEmpty(data.voiceIdentity))StartVoice(data.speaker,data.line,data.voiceIdentity,data.femaleVoice);
     }
 
     private void Update()
     {
         if(BachDangFrontEnd.IsBlocking)return;
+        if(IsOpen&&bodyText.maxVisibleCharacters<bodyText.textInfo.characterCount)
+        {
+            revealElapsed+=Time.unscaledDeltaTime;
+            int count=Mathf.Min(bodyText.textInfo.characterCount,Mathf.FloorToInt(bodyText.textInfo.characterCount*revealElapsed/revealDuration));
+            if(count>revealed)
+            {
+                bool audible=false;
+                for(int i=revealed;i<count;i++)if(!char.IsWhiteSpace(bodyText.textInfo.characterInfo[i].character)){audible=true;break;}
+                bodyText.maxVisibleCharacters=count;revealed=count;if(audible)voice.SubtitleTick();
+            }
+        }
         if (IsOpen &&
             !InputConsumedThisFrame &&
             (Input.GetKeyDown(KeyCode.E) ||
              Input.GetKeyDown(KeyCode.Space) ||
              Input.GetKeyDown(KeyCode.Escape)))
         {
-            Close();
+            TryAdvance();
         }
     }
+    void OnDisable()=>voice?.Stop();
 }
 
 }

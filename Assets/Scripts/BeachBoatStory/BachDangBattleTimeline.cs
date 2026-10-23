@@ -91,13 +91,13 @@ namespace BeachBoatStory
 
         public void BeginEbb()
         {
-            SetMoment(BattleMoment.TideFalling, 10f, "Địch đã vào bãi cọc — chờ đầu cọc nhô lên", "TRIỀU RÚT DẦN — chưa phát lệnh sớm");
+            SetMoment(BattleMoment.TideFalling, 10f, "Đội hình địch đã vào sâu trận địa", "TRIỀU RÚT DẦN — quân ta bắt đầu áp sát");
             TideSystem.Instance?.BeginEbb(this, battleEbbDuration);
         }
 
         public void BeginAmbush()
         {
-            SetMoment(BattleMoment.Ambush, 10.67f, "Cọc đã lộ — truyền lệnh cho quân hai bờ phản công", "NƯỚC TIẾP TỤC RÚT — chiến thuyền mắc cọc");
+            SetMoment(BattleMoment.Ambush, 10.67f, "Cọc đã lộ — quân hai bờ tự động phản công", "NƯỚC TIẾP TỤC RÚT — chiến thuyền mắc cọc");
         }
 
         public void MarkVictory()

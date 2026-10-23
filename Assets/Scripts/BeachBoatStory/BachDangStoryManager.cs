@@ -248,24 +248,17 @@ public class BachDangStoryManager : MonoBehaviour
             case StoryState.Act3_BattleInProgress:
                 title = "Hồi 3: Đánh Giặc";
                 var fleetDirector = EnemyFleetDirector.Instance;
-                int issuedOrders = fleetDirector != null ? fleetDirector.CommandScore : 0;
-                int neededOrders = fleetDirector != null ? fleetDirector.CommandOpportunityCount : 5;
                 var moment = BachDangBattleTimeline.Instance != null
                     ? BachDangBattleTimeline.Instance.CurrentMoment
                     : BachDangBattleTimeline.BattleMoment.LureAtHighTide;
-                desc = moment < BachDangBattleTimeline.BattleMoment.TideFalling
-                    ? $"Thuyền địch từ nhánh sông phía bắc đang tiến xuống.\nChèo quan sát, chờ nước rút • Hiệu lệnh: {issuedOrders}/{neededOrders}."
-                    : moment == BachDangBattleTimeline.BattleMoment.TideFalling
-                        ? $"Thủy triều đang rút — giữ kín trận địa!\nChờ địch đến gần cọc rồi phất cờ [SPACE] • {issuedOrders}/{neededOrders}."
-                        : $"Chèo theo chỉ hướng, tới gần thuyền mắc bẫy rồi [SPACE] phất cờ.\nHiệu lệnh: {issuedOrders}/{neededOrders} • Địch chìm: {destroyedEnemyShips}/{totalEnemyShips}.";
-                if(RiverPlayerCombat.Instance!=null)desc=$"Địch đắm: {destroyedEnemyShips}/{totalEnemyShips} • Đợt áp chế: {RiverPlayerCombat.Instance.SuppressedWaveCount}/{RiverPlayerCombat.Instance.RequiredKills} • Cờ: {issuedOrders}/{neededOrders}.\nDùng cung/kiếm, phối hợp đồng minh, rồi [SPACE] phất cờ từng đợt.";
+                desc=$"Thuyền đắm: {destroyedEnemyShips}/{totalEnemyShips} • Lính địch còn: {fleetDirector?.RemainingEnemies ?? 0}.\n"+
+                    (moment<BachDangBattleTimeline.BattleMoment.TideFalling?"Nhử đội hình địch vào sâu bãi cọc, chờ nước rút.":
+                    "Dùng cung/kiếm cùng đồng minh hạ địch. SPACE leo thuyền.\nThắng khi tất cả thuyền đã đắm và không còn địch.");
                 break;
 
             case StoryState.Act3_Victory:
                 title = "CHIẾN THẮNG BẠCH ĐẰNG 938";
-                int commands = EnemyFleetDirector.Instance != null ? EnemyFleetDirector.Instance.CommandScore : 0;
-                int opportunities = EnemyFleetDirector.Instance != null ? EnemyFleetDirector.Instance.CommandOpportunityCount : 0;
-                desc = $"- Thuyền Nam Hán đã mắc cọc và chìm.\n- Hiệu lệnh đúng lúc: {commands}/{opportunities} đợt.\n- Chèo về bến, lên bờ rồi về doanh trại báo tin.";
+                desc = "- Toàn bộ thuyền và lính Nam Hán đã bị đánh bại.\n- Thuyền quân ta đang rút về bến.\n- Trở về doanh trại báo tin chiến thắng.";
                 break;
 
             case StoryState.Act3_Celebration:
@@ -416,8 +409,7 @@ public class BachDangStoryManager : MonoBehaviour
     {
         if (currentState != StoryState.Act3_BattleInProgress) return;
         if(destroyedEnemyShips<totalEnemyShips)return;
-        if(RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.SuppressedWaveCount<RiverPlayerCombat.Instance.RequiredKills)return;
-        if(EnemyFleetDirector.Instance!=null&&EnemyFleetDirector.Instance.CommandScore<EnemyFleetDirector.Instance.CommandOpportunityCount)return;
+        if(EnemyFleetDirector.Instance!=null&&(!EnemyFleetDirector.Instance.AllShipsSunk||EnemyFleetDirector.Instance.RemainingEnemies>0))return;
         TransitionTo(StoryState.Act3_Victory);
         BachDangBattleTimeline.Instance?.MarkVictory();
         Debug.Log("[BachDangStory] DAI THANG BACH DANG 938! Nuoc Nam doc lap tu nay!");

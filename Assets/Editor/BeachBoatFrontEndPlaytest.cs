@@ -182,7 +182,7 @@ public static class BeachBoatFrontEndPlaytest
                 var points=Object.FindObjectsByType<CampaignSavePoint>(FindObjectsSortMode.None);Check(points.Length==3,"Three save tents exist");
                 foreach(var point in points)
                 {
-                    Move(point.transform.position+Vector3.forward*17+Vector3.up*2);
+                    Move(point.transform.position+point.transform.forward*17+Vector3.up*2);
                     Check(point.InRange&&PlayerArrival.IsClear(session.player,session.player.transform.position,Quaternion.identity)&&PlayerArrival.HasExit(session.player,session.player.transform.position,Quaternion.identity),"Save shelter has an accessible entrance: "+point.displayName);
                     Check(point.TryUse(),"Manual save succeeds at "+point.displayName);
                 }

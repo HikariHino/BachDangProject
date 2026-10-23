@@ -21,12 +21,24 @@ namespace BeachBoatStory
         bool ready;
         Transform battleTarget;
         Vector3 checkpointHome;
+        Vector3 returnBerth;
+        public bool IsReturningToHarbor {get;private set;}
+        public bool HasReturnedToHarbor {get;private set;}
+        public Vector3 ReturnBerth=>returnBerth;
         Quaternion checkpointRotation;
         Terrain terrain;
         Vector3 yieldDirection;
         readonly Collider[] yieldHits = new Collider[24];
 
-        public void SetBattleTarget(Transform value) { battleTarget = value; pause = 0; }
+        public void SetBattleTarget(Transform value) { battleTarget = value; pause = 0;if(value!=null){IsReturningToHarbor=HasReturnedToHarbor=false;} }
+        public void ReturnToHarbor(int slot)
+        {
+            battleTarget=null;pause=0;HasReturnedToHarbor=false;IsReturningToHarbor=true;
+            var dock=QuestRowboat.Instance!=null?QuestRowboat.Instance.dockPoint.position:checkpointHome;
+            returnBerth=dock+Vector3.right*(280+(slot%2)*150)+Vector3.forward*((slot/2)*230-200);
+            for(int attempt=0;attempt<12&&!ClearWater(returnBerth,Vector3.forward);attempt++)returnBerth+=Vector3.right*40;
+            returnBerth.y=TideSystem.CurrentWaterHeight+waterlineOffset;SetRowing(true);
+        }
 
         void Start()
         {
@@ -56,7 +68,7 @@ namespace BeachBoatStory
         public void ResetForCheckpoint()
         {
             if(!ready)return;
-            battleTarget=null;pause=0;var position=checkpointHome;position.y=TideSystem.CurrentWaterHeight+waterlineOffset;
+            battleTarget=null;pause=0;IsReturningToHarbor=HasReturnedToHarbor=false;var position=checkpointHome;position.y=TideSystem.CurrentWaterHeight+waterlineOffset;
             transform.SetPositionAndRotation(position,checkpointRotation);target=NearestNextPoint();SetRowing(true);
         }
 
@@ -77,8 +89,23 @@ namespace BeachBoatStory
         public void Step(float dt)
         {
             if (!ready || dt <= 0 || BeachBoatQuestSession.InteractionBlocked) return;
+            var story=BachDangStoryManager.Instance;
+            if(story!=null&&(story.currentState==BachDangStoryManager.StoryState.Act3_Victory||story.currentState==BachDangStoryManager.StoryState.Act3_Celebration)&&!IsReturningToHarbor&&!HasReturnedToHarbor)
+            {
+                var friends=RiverBoardingCombat.Instance?.friendlyBoats;
+                int slot=friends!=null?System.Array.IndexOf(friends,this):-1;
+                if(slot>=0)ReturnToHarbor(slot);
+            }
             dt=Mathf.Min(dt,.05f);
             if (YieldToPlayer(dt)) return;
+            if(HasReturnedToHarbor){FloatOnly();SetRowing(false);return;}
+            if(IsReturningToHarbor)
+            {
+                var home=returnBerth-transform.position;home.y=0;
+                if(home.sqrMagnitude<144){IsReturningToHarbor=false;HasReturnedToHarbor=true;FloatOnly();SetRowing(false);}
+                else MoveAlongBow(home,dt,Mathf.Min(Mathf.Max(20,cruiseSpeed*1.25f),Mathf.Max(.4f,home.magnitude*turnSpeed*Mathf.Deg2Rad*.45f)));
+                return;
+            }
             if (battleTarget != null && battleTarget.gameObject.activeInHierarchy)
             {
                 Vector3 battleDirection = battleTarget.position - transform.position; battleDirection.y = 0;
@@ -126,6 +153,7 @@ namespace BeachBoatStory
                 var direction=Quaternion.Euler(0,i*45,0)*yieldDirection;
                 var candidate=transform.position+direction*30;
                 if(!ClearWater(candidate,bow))continue;
+                if(!ClearWater(transform.position+direction*Mathf.Max(24,cruiseSpeed*1.6f)*dt,bow))continue;
                 float separation=QuestRowboat.FlatDistance(candidate,player.transform.position);
                 if(separation<distance+.5f)continue;
                 float value=separation+Vector3.Dot(direction,yieldDirection)*15;
@@ -138,8 +166,42 @@ namespace BeachBoatStory
                 if(ClearWater(next,bow))transform.position=next;
                 SetRowing(true);
             }
-            else SetRowing(false);
+            else
+            {
+                // A large hull can start in the shallow quay where every full-water probe
+                // fails. Allow a retreat toward deeper water if it also moves away from
+                // the player; otherwise yielding here deadlocks the return to harbor.
+                var escape=IsReturningToHarbor?returnBerth-transform.position:Vector3.zero;escape.y=0;
+                if(terrain!=null&&escape.sqrMagnitude>1)
+                {
+                    var next=transform.position+escape.normalized*Mathf.Max(20,cruiseSpeed)*dt;
+                    float floor=terrain.SampleHeight(transform.position)+terrain.transform.position.y;
+                    float nextFloor=terrain.SampleHeight(next)+terrain.transform.position.y;
+                    if(nextFloor<TideSystem.CurrentWaterHeight-3&&nextFloor<=floor+.05f&&QuestRowboat.FlatDistance(next,player.transform.position)>distance&&EscapeHasNoNewObstacle(next,bow))
+                    {transform.position=next;SetRowing(true);FloatOnly();return true;}
+                }
+                SetRowing(false);
+            }
             FloatOnly();return true;
+        }
+
+        bool EscapeHasNoNewObstacle(Vector3 next,Vector3 bow)
+        {
+            var existing=new System.Collections.Generic.HashSet<Collider>();
+            bool Ignore(Collider c)=>c is TerrainCollider||c.transform.IsChildOf(transform)||c.GetComponentInParent<QuestRowboat>()!=null||c.GetComponentInParent<Animator>()!=null;
+            for(int i=-1;i<=1;i++)
+            {
+                int count=Physics.OverlapSphereNonAlloc(transform.position+bow*(i*46)+Vector3.up*2,16,yieldHits,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+                if(count==yieldHits.Length)return false;
+                for(int n=0;n<count;n++)if(!Ignore(yieldHits[n]))existing.Add(yieldHits[n]);
+            }
+            for(int i=-1;i<=1;i++)
+            {
+                int count=Physics.OverlapSphereNonAlloc(next+bow*(i*46)+Vector3.up*2,16,yieldHits,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+                if(count==yieldHits.Length)return false;
+                for(int n=0;n<count;n++)if(!Ignore(yieldHits[n])&&!existing.Contains(yieldHits[n]))return false;
+            }
+            return true;
         }
 
         bool ClearWater(Vector3 position,Vector3 bow)

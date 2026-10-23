@@ -22,7 +22,7 @@ namespace BeachBoatStory
         public Boarding boarding;
         public Patrol[] patrols;
         public Dialogue dialogue;
-        [Serializable] public sealed class Dialogue {public bool active;public string speaker,line,action;}
+        [Serializable] public sealed class Dialogue {public bool active,femaleVoice;public string speaker,line,action,voiceIdentity;}
         [Serializable] public sealed class Activity {public string name;public bool completed;public float bestTime;public int bestMistakes;}
         [Serializable] public sealed class Tide {public float height,target,start,elapsed,duration,hour;public bool rising,controlled,locked,high;public int moment;}
         [Serializable] public sealed class Fleet {public bool active,ebb;public int commands,kills,alliedKills,arrows,shots,hits;public int[] scored,suppressed;}

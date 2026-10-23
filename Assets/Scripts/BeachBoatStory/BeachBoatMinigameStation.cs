@@ -22,7 +22,8 @@ namespace BeachBoatStory
         public int RhythmLength => rhythm.Length;
         public int ExpectedBeat => progress < rhythm.Length ? rhythm[progress] : 0;
         public float Elapsed => elapsed;
-        public float TimeLimit => kind == ActivityKind.WarDrum ? 38f : 105f;
+        public const int DrumBeats=8;
+        public float TimeLimit => kind == ActivityKind.WarDrum ? 55f : 105f;
         public float TimeRemaining => Mathf.Max(0f, TimeLimit - elapsed);
         public bool Failed { get; private set; }
         public bool IsSelectingCargo => kind == ActivityKind.SupplyRelay && !Failed && selectedCargo == 0 && !returningToWarehouse;
@@ -38,7 +39,7 @@ namespace BeachBoatStory
             progress >= 0 && progress < checkpoints.Length && checkpoints[progress] != null
                 ? QuestRowboat.FlatDistance(player.position, checkpoints[progress].position) : 0f;
 
-        readonly int[] rhythm = new int[12];
+        readonly int[] rhythm = new int[DrumBeats];
         BachDangStoryManager story;
         Transform player;
         int progress, mistakes, round, requestedCargo, selectedCargo;
@@ -144,7 +145,7 @@ namespace BeachBoatStory
             bool correct = pressed == rhythm[progress];
             BeachBoatSoundscape.Instance?.PlayDrum(pressed);
             if (correct) progress++;
-            else { mistakes++; elapsed += 2f; progress = Mathf.Max(0, progress - 1); }
+            else { mistakes++; elapsed += 1f; }
             LastInputCorrect = correct;
             FeedbackVersion++;
             if (elapsed >= TimeLimit) { FailActivity(); return false; }

@@ -100,7 +100,7 @@ namespace BeachBoatStory
                 state == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen ||
                 state == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp;
             if (reporting && questGiver != null && questGiver.isActiveAndEnabled &&
-                (questGiver.transform.position - position).sqrMagnitude <= questGiver.interactDistance * questGiver.interactDistance)
+                questGiver.CanReachPlayer)
                 return false;
             foreach (var gate in gates)
             {
@@ -159,7 +159,7 @@ namespace BeachBoatStory
             {
                 if (EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsShowingBattle)
                 {
-                    controlsText.text = "WASD: chèo/bơi/đi • Q: rút/cất kiếm • F: xuống nước • Chuột trái: đánh • Chuột phải: ngắm/đỡ • Space: leo tàu/phất cờ";
+                    controlsText.text = "WASD: chèo/bơi/đi • Q: rút/cất kiếm • F: xuống nước • Chuột trái: đánh • Chuột phải: ngắm/đỡ • Space: leo tàu";
                 }
                 else if (story != null && story.currentState == BachDangStoryManager.StoryState.Act3_BattleInProgress)
                 {

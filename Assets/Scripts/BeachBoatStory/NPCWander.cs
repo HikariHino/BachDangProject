@@ -35,6 +35,12 @@ namespace BeachBoatStory
         bool hasWalk, hasSit, hasLay, hasPose, walking, sitting;
         RuntimeAnimatorController controller;
         readonly RaycastHit[] hits = new RaycastHit[12];
+        readonly System.Collections.Generic.List<AnimatorClipInfo> currentClips=new System.Collections.Generic.List<AnimatorClipInfo>(4);
+        public float CurrentSpeed=>currentSpeed;
+        public float NominalStrideSpeed {get;private set;}
+        Transform leftFoot,rightFoot;
+        Vector3 previousLeftFoot,previousRightFoot;
+        bool sampledFeet;
 
         public static bool IsEligible(Animator a)
         {
@@ -55,6 +61,12 @@ namespace BeachBoatStory
             if (!IsEligible(animator) || animator.transform != transform) { enabled = false; return; }
             home = transform.position; terrain = Terrain.activeTerrain;
             scale = Mathf.Max(1, BachDangWorldScale.ForScene(gameObject.scene));
+            walkSpeed=Mathf.Clamp(walkSpeed*1.4f,scale*1.15f,scale*2f);
+            acceleration=Mathf.Max(acceleration,scale*2.4f);deceleration=Mathf.Max(deceleration,scale*3.2f);
+            if(autoGenerateWaypoints)wanderRadius=Mathf.Clamp(wanderRadius*2.5f,scale*8,scale*25);
+            minIdleTime=Mathf.Min(minIdleTime,1.5f);maxIdleTime=Mathf.Min(maxIdleTime,5);
+            NominalStrideSpeed=scale*1.3f;
+            leftFoot=animator.GetBoneTransform(HumanBodyBones.LeftFoot);rightFoot=animator.GetBoneTransform(HumanBodyBones.RightFoot);
             // Some guards patrol raised wooden platforms. Preserve that authored height instead of
             // snapping them down to terrain; routes are kept on the same platform by the setup tool.
             groundOffset = terrain != null ? Mathf.Clamp(home.y - Ground(home), 0, scale * 5f) : 0;
@@ -132,7 +144,7 @@ namespace BeachBoatStory
                     var wp=waypoints[targetIndex];
                     if(wp==null)continue;candidate=wp.position;
                 }
-                else {var offset=UnityEngine.Random.insideUnitCircle*Mathf.Max(0,wanderRadius);candidate=home+new Vector3(offset.x,0,offset.y);}
+                else {var offset=UnityEngine.Random.insideUnitCircle.normalized*UnityEngine.Random.Range(wanderRadius*.45f,wanderRadius);candidate=home+new Vector3(offset.x,0,offset.y);}
                 if(!ValidGround(candidate))continue;
                 target=candidate;CurrentActivity="Đang đi làm";return;
             }
@@ -147,7 +159,7 @@ namespace BeachBoatStory
             bool seated=!string.IsNullOrEmpty(activity)&&activity.Contains("ngồi");
             if(sleeping) idleRemaining=Mathf.Max(idleRemaining,UnityEngine.Random.Range(12f,24f));
             if(targetIndex>=0&&waypointWaitSeconds!=null&&targetIndex<waypointWaitSeconds.Length)
-                idleRemaining=Mathf.Max(.1f,waypointWaitSeconds[targetIndex]);
+                idleRemaining=Mathf.Max(.1f,waypointWaitSeconds[targetIndex]*(sleeping?1:.55f));
             IsSleeping=sleeping&&hasLay;
             // Retargeted rest clips need an authored mat or seat. Playing them at a
             // random patrol stop makes armored NPCs float or fold into the ground.
@@ -176,7 +188,7 @@ namespace BeachBoatStory
         }
         void UpdateIdleLook()
         {
-            float dt=Mathf.Min(Time.unscaledDeltaTime,.05f);
+            float dt=Mathf.Min(Time.deltaTime,.1f);
             idleLookRemaining-=dt;
             if(idleLookRemaining<=0)PickIdleFacing();
             transform.rotation=Quaternion.RotateTowards(transform.rotation,idleFacing,turnSpeed*.22f*dt);
@@ -185,7 +197,7 @@ namespace BeachBoatStory
         {
             if(QuestCheckpoint.Instance!=null&&QuestCheckpoint.Instance.IsDefeated)return;
             if (animator == null) return;
-            float dt=Mathf.Min(Time.unscaledDeltaTime,.05f);
+            float dt=Mathf.Min(Time.deltaTime,.1f);
             if(dt<=0)return;
             if (controller != animator.runtimeAnimatorController) CacheParameters();
             // Ambient villagers and guards keep living in the background while a story panel is
@@ -208,7 +220,15 @@ namespace BeachBoatStory
             if(terrain!=null){next.y=Ground(next)+groundOffset;if(Mathf.Abs(next.y-transform.position.y)>scale){Idle();return;}}
             transform.position=next;
             transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(heading),turnSpeed*personalPace*dt);
-            animator.speed=baseAnimatorSpeed*Mathf.Lerp(.88f,1.08f,Mathf.InverseLerp(0,Mathf.Max(.01f,walkSpeed),currentSpeed));
+            animator.GetCurrentAnimatorClipInfo(0,currentClips);
+            foreach(var info in currentClips)
+                if(info.clip!=null&&info.clip.name.IndexOf("walk",StringComparison.OrdinalIgnoreCase)>=0)
+                {
+                    float authored=info.clip.averageSpeed.magnitude*Mathf.Abs(transform.lossyScale.x);
+                    if(authored>scale*.4f&&authored<scale*3)NominalStrideSpeed=authored;
+                    break;
+                }
+            animator.speed=baseAnimatorSpeed*Mathf.Clamp(currentSpeed/Mathf.Max(.1f,NominalStrideSpeed),.15f,1.8f);
             Pose(currentSpeed>.12f,false);
         }
         Vector3 FindClearHeading(Vector3 desired,float step)
@@ -224,6 +244,24 @@ namespace BeachBoatStory
                 if(ValidGround(test)&&!Blocked(candidate,probe))return candidate;
             }
             return Vector3.zero;
+        }
+        void LateUpdate()
+        {
+            // In-place clips have zero averageSpeed. Measure their planted foot's backward
+            // travel in actor space instead, so each avatar's stride sets its own cadence.
+            if(animator==null||leftFoot==null||rightFoot==null||!walking||animator.IsInTransition(0)||Time.deltaTime<=0)
+            {sampledFeet=false;return;}
+            var left=transform.InverseTransformPoint(leftFoot.position);var right=transform.InverseTransformPoint(rightFoot.position);
+            if(sampledFeet)
+            {
+                float units=Mathf.Abs(transform.lossyScale.z),dt=Time.deltaTime*Mathf.Max(.15f,animator.speed);
+                float a=-(left.z-previousLeftFoot.z)*units/dt,b=-(right.z-previousRightFoot.z)*units/dt;
+                float sum=0;int count=0;float tolerance=scale*.05f/Mathf.Max(.01f,Mathf.Abs(transform.lossyScale.y));
+                if(left.y<=right.y+tolerance&&a>scale*.65f&&a<scale*2.4f){sum+=a;count++;}
+                if(right.y<=left.y+tolerance&&b>scale*.65f&&b<scale*2.4f){sum+=b;count++;}
+                if(count>0)NominalStrideSpeed=Mathf.Lerp(NominalStrideSpeed,sum/count,1-Mathf.Exp(-Time.deltaTime*4));
+            }
+            previousLeftFoot=left;previousRightFoot=right;sampledFeet=true;
         }
         bool Blocked(Vector3 heading,float distance)
         {

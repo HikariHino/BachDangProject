@@ -16,6 +16,7 @@ public class NPCQuestGiver : MonoBehaviour
 
     private bool isPlayerNear = false;
     private Transform playerTransform;
+    public bool CanReachPlayer => isActiveAndEnabled&&NearbyConversation.InReach(transform,interactDistance);
 
     private void Start()
     {
@@ -44,7 +45,6 @@ public class NPCQuestGiver : MonoBehaviour
         if (story == null) return;
         if (StoryDialogueUI.InputConsumedThisFrame || (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen)) return;
 
-        float dist = Vector3.Distance(transform.position, playerTransform.position);
         bool canTalk = false;
         string prompt = "";
 
@@ -76,7 +76,7 @@ public class NPCQuestGiver : MonoBehaviour
             prompt = "[E] Báo cáo Đại thắng Bạch Đằng 938";
         }
 
-        if (dist <= interactDistance && canTalk)
+        if (CanReachPlayer && canTalk)
         {
             if (!isPlayerNear)
             {
@@ -107,22 +107,22 @@ public class NPCQuestGiver : MonoBehaviour
     {
         var story = BachDangStoryManager.Instance;
         var player = story?.GetPlayerTransform();
-        if (BeachBoatQuestSession.InteractionBlocked || player == null || Vector3.Distance(transform.position, player.position) > interactDistance) return false;
+        if (BeachBoatQuestSession.InteractionBlocked || player == null || !CanReachPlayer) return false;
                 if (story.currentState == BachDangStoryManager.StoryState.Act1_ExploreCamp)
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Quân Nam Hán đang lăm le xâm phạm bờ cõi. Hãy đến làng ven sông, cùng bà con chuẩn bị gỗ làm cọc. Ta trông cậy vào ngươi.", story.OnTalkToNgoQuyenAct1);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Quân Nam Hán đang lăm le xâm phạm bờ cõi. Hãy đến làng ven sông, cùng bà con chuẩn bị gỗ làm cọc. Ta trông cậy vào ngươi.", story.OnTalkToNgoQuyenAct1,transform);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }
                 else if (story.currentState == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen)
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Tốt lắm. Mang năm cọc này qua cổng ra bến, rồi lên thuyền. Chèo tới năm điểm đánh dấu ngoài sông. Ở mỗi điểm, dừng thuyền và bấm E để cùng quân sĩ dựng một cụm cọc. Làm đủ cả năm cụm rồi chèo về bến báo cáo. Triều rút sẽ lộ cọc, triều lên sẽ giấu kín trận địa. Việc này quyết định thắng bại.", story.OnReportToNgoQuyenAct2);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Tốt lắm. Mang năm cọc này qua cổng ra bến, rồi lên thuyền. Chèo tới năm điểm đánh dấu ngoài sông. Ở mỗi điểm, dừng thuyền và bấm E để cùng quân sĩ dựng một cụm cọc. Làm đủ cả năm cụm rồi chèo về bến báo cáo. Triều rút sẽ lộ cọc, triều lên sẽ giấu kín trận địa. Việc này quyết định thắng bại.", story.OnReportToNgoQuyenAct2,transform);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }
                 else if (story.currentState == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Trận địa cọc đã hoàn thành. Toàn quân hãy giữ kín kế hoạch, chờ thủy triều và thời cơ đánh giặc!", story.OnReportStakesComplete);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Trận địa cọc đã hoàn thành. Toàn quân hãy giữ kín kế hoạch, chờ thủy triều và thời cơ đánh giặc!", story.OnReportStakesComplete,transform);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }
@@ -130,13 +130,13 @@ public class NPCQuestGiver : MonoBehaviour
                          (story.currentState == BachDangStoryManager.StoryState.Act2_Completed ||
                           story.currentState == BachDangStoryManager.StoryState.Act3_PrepareForBattle))
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Quân Nam Hán đã kéo thuyền đến xâm phạm. Trận địa cọc đã sẵn sàng. Hãy lên thuyền chỉ huy, chờ thủy triều rút - bãi cọc sẽ lộ ra đâm thủng thuyền giặc. Ta sẽ đại thắng ngay trên sông Bạch Đằng hôm nay!", story.OnTalkToNgoQuyenAct3);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Quân Nam Hán đã kéo thuyền đến xâm phạm. Trận địa cọc đã sẵn sàng. Hãy lên thuyền chỉ huy, chờ thủy triều rút - bãi cọc sẽ lộ ra đâm thủng thuyền giặc. Ta sẽ đại thắng ngay trên sông Bạch Đằng hôm nay!", story.OnTalkToNgoQuyenAct3,transform);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }
                 else if (story.currentState == BachDangStoryManager.StoryState.Act3_Victory)
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Đại thắng! Quân Nam Hán bị đánh tan trên sông Bạch Đằng. Từ nay, nước Việt ta bước vào thời kỳ độc lập, tự chủ. Toàn quân trở về đại bản doanh báo công!", story.OnVictoryReported);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Đại thắng! Quân Nam Hán bị đánh tan trên sông Bạch Đằng. Từ nay, nước Việt ta bước vào thời kỳ độc lập, tự chủ. Toàn quân trở về đại bản doanh báo công!", story.OnVictoryReported,transform);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }

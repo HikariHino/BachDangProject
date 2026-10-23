@@ -48,10 +48,11 @@ namespace BeachBoatStory
             nextVolley = Time.time + .25f; nextAssignment = 0; volley = 0;
         }
 
-        public void EndBattle()
+        public void EndBattle(bool retreat=false)
         {
             fighting = false;
-            foreach (var boat in friendlyBoats ?? System.Array.Empty<AmbientRiverBoat>()) if (boat != null) boat.SetBattleTarget(null);
+            for(int i=0;i<(friendlyBoats?.Length??0);i++)if(friendlyBoats[i]!=null)
+            {if(retreat)friendlyBoats[i].ReturnToHarbor(i);else friendlyBoats[i].SetBattleTarget(null);}
             if (shots != null) foreach (var shot in shots) if (shot?.gameObject != null) shot.gameObject.SetActive(false);
         }
 

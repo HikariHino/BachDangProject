@@ -40,7 +40,7 @@ namespace BeachBoatStory
             if(villageWork!=null)foreach(var stall in villageWork.stalls)
                 if(stall!=null&&(stall.interactionPoint==destination||stall.transform==destination))return QuestRowboat.FlatDistance(player.position,stall.InteractionPosition)<=stall.interactionDistance;
             foreach(var gate in gates)if(gate!=null&&gate.transform==destination)return gate.IsInRange(player);
-            if(commander!=null&&commander.transform==destination)return Vector3.Distance(player.position,destination.position)<=commander.interactDistance;
+            if(commander!=null&&commander.transform==destination)return commander.CanReachPlayer;
             foreach(var wood in session.woodItems)if(wood!=null&&wood.transform==destination)return Vector3.Distance(player.position,destination.position)<=wood.interactDistance;
             var boat=QuestRowboat.Instance;
             if(boat!=null&&!boat.IsAboard&&boat.boardingPoint==destination)return QuestRowboat.FlatDistance(player.position,destination.position)<=boat.boardingRange;
@@ -83,7 +83,6 @@ namespace BeachBoatStory
                 var fleet = EnemyFleetDirector.Instance;
                 if (fleet != null)
                 {
-                      if(fleet.CommandTarget!=null){title="Chèo lại gần • phất cờ đánh dứt điểm đợt địch";return fleet.CommandTarget;}
                     bool hasReady = false;
                     foreach (var enemy in fleet.enemyShips)
                         if (enemy != null && enemy.gameObject.activeInHierarchy && enemy.SignalReady)
@@ -91,7 +90,7 @@ namespace BeachBoatStory
                     foreach (var enemy in fleet.enemyShips)
                         if (enemy != null && enemy.gameObject.activeInHierarchy && !enemy.isDestroyed &&
                             (!hasReady || enemy.SignalReady))
-                            Consider(enemy.transform, hasReady ? "Chèo lại gần để phất cờ" : "Theo thuyền địch xuống sông",
+                            Consider(enemy.transform, "Theo thuyền địch vào sâu bãi cọc",
                                 ref best, ref distance, ref title);
                 }
                 return best;
@@ -175,7 +174,7 @@ namespace BeachBoatStory
                 {
                     var offset = target.position - session.player.transform.position; offset.y = 0;
                     caption.text = title + "\n" + WorldDistance.Format(offset.magnitude) +
-                        (story.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress?" • Cung/kiếm • SPACE phản công":
+                        (story.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress?" • Cung/kiếm • SPACE leo tàu":
                         InInteractionRange(target)?" • Trong tầm tương tác • Bấm E":" • Đến gần để bấm E");
                 }
             }
