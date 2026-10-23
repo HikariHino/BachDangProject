@@ -1,6 +1,6 @@
 # Bạch Đằng 938: menu and campaign saves
 
-The `beachBoat` scene starts on the title screen. **Play** begins the existing introduction. Space/Enter advances the story; hold Backspace to skip it. **Load Game** restores the latest verified manual save. It is disabled before the first save.
+The `beachBoat` scene starts on the title screen. **Play** begins the existing introduction. **Enter** advances the story; press **P** once to skip it. The intro displays these controls and ignores Space. **Load Game** restores the latest verified manual save. It is disabled before the first save.
 
 During play, **Esc** pauses the world and minigame timers. Settings adjust the global volume and orbit-camera mouse sensitivity immediately and remember both choices through PlayerPrefs. Resume returns the cursor to an open minigame or dialogue when appropriate. X leaves a minigame without a reward; Esc opens the pause menu.
 
@@ -11,6 +11,8 @@ Exit offers three choices: **Yes** verifies and writes a save before quitting; *
 The versioned JSON save is `campaign938.json` under `Application.persistentDataPath`. Its envelope contains a SHA-256 checksum. A temporary file is verified before an atomic replacement; `.bak` retains the preceding save and is read if the main file is damaged. No network service is required.
 
 All four travel gates are available throughout the campaign. Traveling changes the story only when crossing the village gate at the authored departure/return stage. It never grants supplies or completes later quests merely by visiting another region.
+
+The camp has two separate gates in the west palisade, with clear openings and destination signs: **Làng • nhiệm vụ 2** goes to the village wood/supply quests; **Bến sông Bạch Đằng** goes to the stake-field harbor and naval battle. Their interaction circles do not overlap, and only the nearest eligible gate receives E. The HUD routes the current objective through the appropriate gate instead of pointing at any nearby gate.
 
 Walking uses the existing light footsteps at a slower cadence. Running uses four original heavier bootfall clips in `Assets/Resources/BachDang938/RunSteps`, a quicker cadence and greater impact volume. Footsteps stop when the player is still, airborne or swimming.
 
@@ -27,6 +29,8 @@ Sinking ships retain mesh colliders on their actual timber hulls, decks and cabi
 Run `BeachBoatFrontEndPlaytest.RunAndExit` in Unity batch mode, then `BeachBoatFrontEndPlaytest.ColdLoadAndExit` in a separate Unity process. Reports are written under `Logs`; test saves use `Logs/FrontEndSaveQA`, leaving the player's own save untouched. These tests cover title/intro gating, real settings sliders, all shelters and their entrances, pause, cancellation, yes/no exit, failed writes, corrupted-save recovery, free travel, fresh-scene restores and a cold-process battle load.
 
 Settings, Back and New Game are exercised through `EventSystem.RaycastAll` and pointer down/up/click events across rendered frames. A runtime error or exception fails the playtest. Every menu Graphic must have a CanvasRenderer; the decorative ink gradient explicitly requires that component and does not receive pointer raycasts.
+
+`BeachBoatCampGateRoutesPlaytest.RunAndExit` checks P skip, separated gate geometry/signs, open approaches/passages, quest-specific HUD routes, actual trips to both destinations and back, village wood collection, preserved quest progress and overlapping-gate arbitration. `BeachBoatSeparateCampGates.ApplyAndExit` authors the two gates and adjusts the palisade around them.
 
 `BeachBoatFrontEndSetup.ApplyAndExit` authors the three shelters and configures the menu texture/run-clip imports. It replaces only its own `CampaignSaveShelters` root when rerun.
 

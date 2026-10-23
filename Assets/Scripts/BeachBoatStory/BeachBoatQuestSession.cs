@@ -76,6 +76,20 @@ namespace BeachBoatStory
             var frontEnd=Child("BachDangFrontEnd");frontEnd.AddComponent<BachDangFrontEnd>();
         }
 
+        public bool IsPreferredGate(CampGateTransition candidate)
+        {
+            if(player==null||!player.activeInHierarchy)return false;
+            CampGateTransition closest=null;float distance=float.PositiveInfinity;
+            foreach(var gate in gates)
+            {
+                if(gate==null||!gate.isActiveAndEnabled||gate.destinationTarget==null||!gate.IsInRange(player.transform))continue;
+                float current=QuestRowboat.FlatDistance(player.transform.position,gate.transform.position);
+                if(current<distance-.001f||(Mathf.Abs(current-distance)<.001f&&(closest==null||(int)gate.gateType<(int)closest.gateType)))
+                {closest=gate;distance=current;}
+            }
+            return closest==candidate;
+        }
+
         // One nearby NPC owns E. Mission dialogue takes priority in its three report stages.
         public bool IsPreferredTalker(NPCDialogue candidate)
         {

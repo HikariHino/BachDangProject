@@ -64,7 +64,7 @@ namespace BeachBoatStory
                 {
                     var stall=villageWork.NearestUnfinished(session.player.transform.position);
                     title=stall!=null?$"{stall.stallName} • Chuẩn bị {villageWork.CompletedCount}/{villageWork.stalls.Length} sạp":"Vật tư đã đủ";
-                    return stall!=null?(stall.interactionPoint!=null?stall.interactionPoint:stall.transform):null;
+                    return ThroughGate(stall!=null?(stall.interactionPoint!=null?stall.interactionPoint:stall.transform):null,ref title);
                 }
                 var required = state == BachDangStoryManager.StoryState.Act1_Training
                     ? BeachBoatMinigameStation.ActivityKind.WarDrum
@@ -74,7 +74,7 @@ namespace BeachBoatStory
                         Consider(activity.transform, required == BeachBoatMinigameStation.ActivityKind.WarDrum
                             ? "Trống trận • học hiệu lệnh" : "Điểm tập kết cọc và vật tư",
                             ref best, ref distance, ref title);
-                return best;
+                return ThroughGate(best,ref title);
             }
             if (state == BachDangStoryManager.StoryState.Act3_BattleInProgress)
             {
@@ -109,7 +109,9 @@ namespace BeachBoatStory
             if (boat != null && !boat.IsAboard && state == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver)
                 Consider(boat.boardingPoint, "Bến thuyền", ref best, ref distance, ref title);
             foreach (var gate in gates)
-                if (gate != null && gate.isActiveAndEnabled && gate.destinationTarget != null && gate.IsAvailable(state))
+                if (gate != null && gate.isActiveAndEnabled && gate.destinationTarget != null &&
+                    ((state==BachDangStoryManager.StoryState.Act1_GoToCampGate&&gate.gateType==CampGateTransition.GateType.CampGate)||
+                     (state==BachDangStoryManager.StoryState.Act2_ReturnToCampGate&&gate.gateType==CampGateTransition.GateType.VillageGate)))
                     Consider(gate.transform, gate.gateType == CampGateTransition.GateType.CampGate ? "Cổng sang làng ven sông" :
                         gate.gateType == CampGateTransition.GateType.CampRiverGate ? "Cổng ra bãi cọc" : "Cổng về doanh trại",
                         ref best, ref distance, ref title);
@@ -132,7 +134,24 @@ namespace BeachBoatStory
                 if (commander != null) Consider(commander.transform, "Chủ tướng Ngô Quyền", ref best, ref distance, ref title);
             if (state == BachDangStoryManager.StoryState.Act3_WaitForLowTide && boat != null)
                 Consider(boat.boardingPoint, "Bến thuyền chiến đấu", ref best, ref distance, ref title);
-            return best;
+            return ThroughGate(best,ref title);
+        }
+
+        Transform ThroughGate(Transform objective,ref string title)
+        {
+            if(objective==null)return null;
+            float cost=QuestRowboat.FlatDistance(session.player.transform.position,objective.position);var selected=objective;
+            foreach(var gate in gates)
+            {
+                if(gate==null||!gate.isActiveAndEnabled||gate.destinationTarget==null)continue;
+                float route=QuestRowboat.FlatDistance(session.player.transform.position,gate.transform.position)+
+                    QuestRowboat.FlatDistance(gate.destinationTarget.position,objective.position)+25;
+                if(route>=cost-20)continue;
+                cost=route;selected=gate.transform;
+                title=gate.gateType==CampGateTransition.GateType.CampGate?"Cổng đến LÀNG • nhiệm vụ 2":
+                    gate.gateType==CampGateTransition.GateType.CampRiverGate?"Cổng ra BẾN SÔNG":"Cổng về DOANH TRẠI";
+            }
+            return selected;
         }
 
         void Consider(Transform candidate, string name, ref Transform best, ref float distance, ref string title)

@@ -38,6 +38,7 @@ public class CampGateTransition : MonoBehaviour
         if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard) return false;
         if (player == null || !player.gameObject.activeInHierarchy) return false;
         var offset = player.position - transform.position;
+        if(Mathf.Abs(offset.y)>18)return false;
         offset.y = 0;
         return offset.sqrMagnitude <= interactDistance * interactDistance;
     }
@@ -47,7 +48,8 @@ public class CampGateTransition : MonoBehaviour
     {
         var story = BachDangStoryManager.Instance;
         if (!isActiveAndEnabled || BeachBoatQuestSession.InteractionBlocked || destinationTarget == null ||
-            story == null || !IsAvailable(story.currentState) || !IsInRange(story.GetPlayerTransform())) return false;
+            story == null || !IsAvailable(story.currentState) || !IsInRange(story.GetPlayerTransform()) ||
+            !BeachBoatQuestSession.Instance.IsPreferredGate(this)) return false;
         BeachBoatSoundscape.Instance?.PlayInteraction();
         TriggerTransition();
         return true;
@@ -66,8 +68,8 @@ public class CampGateTransition : MonoBehaviour
         Vector3 gateFlat = new Vector3(transform.position.x, 0f, transform.position.z);
         Vector3 playerFlat = new Vector3(player.position.x, 0f, player.position.z);
         float dist = Vector3.Distance(gateFlat, playerFlat);
-        bool canInteract=IsAvailable(story.currentState);
-        string promptMessage=gateType==GateType.CampGate?"[E] Đến làng ven sông":gateType==GateType.CampRiverGate?"[E] Đến bến thuyền":"[E] Về doanh trại";
+        bool canInteract=IsAvailable(story.currentState)&&BeachBoatQuestSession.Instance.IsPreferredGate(this);
+        string promptMessage=gateType==GateType.CampGate?"[E] Đến LÀNG • vật tư nhiệm vụ 2":gateType==GateType.CampRiverGate?"[E] Ra BẾN SÔNG • đóng cọc / xuất chiến":"[E] Về DOANH TRẠI";
         bool canShowPrompt=canInteract;
         if (dist <= interactDistance && canShowPrompt)
         {

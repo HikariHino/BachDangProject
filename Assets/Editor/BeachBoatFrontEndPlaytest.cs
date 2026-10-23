@@ -171,7 +171,9 @@ public static class BeachBoatFrontEndPlaytest
             if(phase==1)
             {
                 Check(Object.FindFirstObjectByType<Intro>().CurrentLine==0&&Intro.IsOpeningActive,"Play enters the existing story intro");
-                Object.FindFirstObjectByType<Intro>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
+                var intro=Object.FindFirstObjectByType<Intro>();
+                Check(intro.storyText.text.Contains("P: bỏ qua")&&!intro.HandleOpeningKey(KeyCode.Space),"Intro shows P to skip and no longer uses Space");
+                Check(intro.HandleOpeningKey(KeyCode.P)&&intro.IsOpeningEnded,"P immediately skips the entire intro");BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 story.TransitionTo(Story.StoryState.Act2_SupplyPreparation,true);story.collectedWood=2;
                 for(int i=0;i<session.woodItems.Length;i++)session.woodItems[i].RestoreCollection(i<2);
                 var stalls=VillagePreparationQuest.Instance.stalls;for(int i=0;i<stalls.Length;i++)stalls[i].RestoreLearningProgress(new[]{1,2,0,3}[i]);

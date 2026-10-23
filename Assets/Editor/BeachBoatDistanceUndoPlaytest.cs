@@ -48,7 +48,7 @@ public static class BeachBoatDistanceUndoPlaytest
             }
             if(phase==1)
             {
-                var text=GameObject.Find("RouteGuide/Destination");if(text==null)text=Object.FindObjectsByType<TMPro.TMP_Text>(FindObjectsSortMode.None).First(t=>t.name=="Destination").gameObject;
+                var text=GameObject.Find("RouteGuide/Destination");
                 var caption=text.GetComponent<TMPro.TMP_Text>().text;
                 nearText=guide.CurrentTarget==drum.transform&&guide.InInteractionRange(drum.transform)&&guide.CurrentDistanceMetres<2&&caption.Contains("Trong tầm")&&!caption.Contains("21 m");
                 if(!nearText)throw new Exception("Nearby drum guide still says approach or reports wrong metres: "+caption);
@@ -56,8 +56,8 @@ public static class BeachBoatDistanceUndoPlaytest
             }
             if(phase==2)
             {
-                var caption=Object.FindObjectsByType<TMPro.TMP_Text>(FindObjectsSortMode.None).First(t=>t.name=="Destination").text;
-                farText=!guide.InInteractionRange(drum.transform)&&caption.Contains("Đến gần");if(!farText)throw new Exception("Guide falsely allows distant interaction");
+                var caption=GameObject.Find("RouteGuide/Destination").GetComponent<TMPro.TMP_Text>().text;
+                farText=!guide.InInteractionRange(drum.transform)&&caption.Contains("Đến gần");if(!farText)throw new Exception("Guide falsely allows distant interaction: "+caption+" / target "+guide.CurrentTarget?.name+" / metres "+guide.CurrentDistanceMetres+" / player "+session.player.transform.position+" / drum "+drum.transform.position);
                 story.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act2_SupplyPreparation,true);
                 undoAll=restoreAll=true;
                 foreach(var stall in VillagePreparationQuest.Instance.stalls)

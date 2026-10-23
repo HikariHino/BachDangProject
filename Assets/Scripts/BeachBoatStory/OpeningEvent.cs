@@ -26,7 +26,7 @@ public class OpeningEvent : MonoBehaviour
     readonly Dictionary<Graphic, bool> hiddenGraphics = new Dictionary<Graphic, bool>();
     Canvas openingCanvas;
     bool advanceRequested, readyToAdvance;
-    float lineReadyAt, skipHeld;
+    float lineReadyAt;
 
     readonly string[] storyLines = {
         "Năm 938.",
@@ -76,7 +76,7 @@ public class OpeningEvent : MonoBehaviour
         for (int i = 0; i < storyLines.Length; i++)
         {
             CurrentLine = i; advanceRequested = false; readyToAdvance = false;
-            storyText.text = storyLines[i] + "\n\n<size=60%><color=#BBBBBB>[Space / Enter: tiếp tục]     [Giữ Backspace: bỏ qua]</color></size>";
+            storyText.text = storyLines[i] + "\n\n<size=60%><color=#BBBBBB>[Enter: tiếp tục]     [P: bỏ qua cốt truyện]</color></size>";
             yield return FadeText(0, 1, .35f);
             lineReadyAt = Time.unscaledTime; readyToAdvance = true;
             float readingTime = Mathf.Max(minimumReadingSeconds, storyLines[i].Length * secondsPerCharacter);
@@ -90,9 +90,15 @@ public class OpeningEvent : MonoBehaviour
     void Update()
     {
         if (BachDangFrontEnd.IsBlocking || !IsOpeningActive || current != this) return;
-        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) AdvanceLine();
-        skipHeld = Input.GetKey(KeyCode.Backspace) ? skipHeld + Time.unscaledDeltaTime : 0;
-        if (skipHeld >= .8f) SkipOpening();
+        if (Input.GetKeyDown(KeyCode.P)) HandleOpeningKey(KeyCode.P);
+        else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) HandleOpeningKey(KeyCode.Return);
+    }
+    public bool HandleOpeningKey(KeyCode key)
+    {
+        if(BachDangFrontEnd.IsBlocking||!IsOpeningActive||current!=this)return false;
+        if(key==KeyCode.P){SkipOpening();return true;}
+        if(key==KeyCode.Return||key==KeyCode.KeypadEnter){AdvanceLine();return true;}
+        return false;
     }
     public void AdvanceLine()
     {
