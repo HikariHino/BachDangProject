@@ -26,6 +26,8 @@ Sinking ships retain mesh colliders on their actual timber hulls, decks and cabi
 
 Run `BeachBoatFrontEndPlaytest.RunAndExit` in Unity batch mode, then `BeachBoatFrontEndPlaytest.ColdLoadAndExit` in a separate Unity process. Reports are written under `Logs`; test saves use `Logs/FrontEndSaveQA`, leaving the player's own save untouched. These tests cover title/intro gating, real settings sliders, all shelters and their entrances, pause, cancellation, yes/no exit, failed writes, corrupted-save recovery, free travel, fresh-scene restores and a cold-process battle load.
 
+Settings, Back and New Game are exercised through `EventSystem.RaycastAll` and pointer down/up/click events across rendered frames. A runtime error or exception fails the playtest. Every menu Graphic must have a CanvasRenderer; the decorative ink gradient explicitly requires that component and does not receive pointer raycasts.
+
 `BeachBoatFrontEndSetup.ApplyAndExit` authors the three shelters and configures the menu texture/run-clip imports. It replaces only its own `CampaignSaveShelters` root when rerun.
 
 ## Menu artwork provenance

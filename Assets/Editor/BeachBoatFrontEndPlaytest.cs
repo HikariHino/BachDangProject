@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using Object=UnityEngine.Object;
 using Story=BeachBoatStory.BachDangStoryManager;
 using Gate=BeachBoatStory.CampGateTransition;
@@ -25,6 +26,7 @@ public static class BeachBoatFrontEndPlaytest
     static BachDangSaveData expected;
     static byte[] previousSave;
     static readonly List<string> checks=new List<string>();
+    static string runtimeError;
     static string DirectoryPath=>Path.GetFullPath("Logs/FrontEndSaveQA");
     public static void RunAndExit(){Start(false);}
     public static void ColdLoadAndExit(){Start(true);}
@@ -33,7 +35,32 @@ public static class BeachBoatFrontEndPlaytest
         EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");SessionState.SetBool(Flag,true);SessionState.SetBool(Cold,cold);
         EditorApplication.isPlaying=true;
     }
-    [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;}
+    [InitializeOnLoadMethod]static void Register()
+    {
+        EditorApplication.update-=Tick;EditorApplication.update+=Tick;
+        Application.logMessageReceived-=RecordError;Application.logMessageReceived+=RecordError;
+    }
+    static void RecordError(string message,string stack,LogType type)
+    {
+        if(SessionState.GetBool(Flag,false)&&EditorApplication.isPlaying&&(type==LogType.Error||type==LogType.Exception||type==LogType.Assert))
+            runtimeError=message+"\n"+stack;
+    }
+    static void PointerClick(string path)
+    {
+        var button=BachDangFrontEnd.Instance.transform.Find(path).GetComponent<Button>();
+        Canvas.ForceUpdateCanvases();var events=EventSystem.current;
+        Check(events!=null&&button.IsInteractable(),"Pointer can interact with "+path);
+        var rect=(RectTransform)button.transform;
+        var pointer=new PointerEventData(events){button=PointerEventData.InputButton.Left,pointerId=-1,
+            position=RectTransformUtility.WorldToScreenPoint(null,rect.TransformPoint(rect.rect.center))};
+        var hits=new List<RaycastResult>();events.RaycastAll(pointer,hits);
+        Check(hits.Count>0&&hits[0].gameObject.GetComponentInParent<Button>()==button,"Actual UI raycast reaches "+path+" (hits: "+string.Join(", ",hits.Take(3).Select(h=>h.gameObject.name))+ ")");
+        pointer.pointerCurrentRaycast=hits[0];
+        ExecuteEvents.ExecuteHierarchy(hits[0].gameObject,pointer,ExecuteEvents.pointerDownHandler);
+        ExecuteEvents.ExecuteHierarchy(hits[0].gameObject,pointer,ExecuteEvents.pointerUpHandler);
+        ExecuteEvents.ExecuteHierarchy(hits[0].gameObject,pointer,ExecuteEvents.pointerClickHandler);
+        if(runtimeError!=null)throw new Exception(runtimeError);
+    }
     static void Check(bool ok,string label){if(!ok)throw new Exception(label);checks.Add(label);}
     static void Move(Vector3 p)
     {
@@ -110,6 +137,7 @@ public static class BeachBoatFrontEndPlaytest
         if(EditorApplication.timeSinceStartup-started>160){Finish("Timeout");return;}
         try
         {
+            if(runtimeError!=null)throw new Exception(runtimeError);
             var session=BeachBoatQuestSession.Instance;var front=BachDangFrontEnd.Instance;var story=Story.Instance;
             if(session==null||front==null)return;
             BachDangSaveSystem.TestDirectory=DirectoryPath;front.SuppressQuitForTests=true;
@@ -119,6 +147,8 @@ public static class BeachBoatFrontEndPlaytest
                 Check(front.Page==BachDangFrontEnd.MenuPage.Home&&Time.timeScale==0,"Game starts paused on title lobby");
                 Check(Object.FindFirstObjectByType<Intro>().CurrentLine==-1,"Intro waits for Play");
                 var art=front.GetComponentInChildren<RawImage>(true);Check(art.texture!=null&&art.texture.width>=1200,"Historical title artwork loaded");
+                Check(front.GetComponentsInChildren<Graphic>(true).All(g=>g.GetComponent<CanvasRenderer>()!=null),"Every menu graphic has a CanvasRenderer");
+                Check(!front.GetComponentInChildren<BachDangMenuGradient>(true).raycastTarget,"Decorative gradient does not intercept clicks");
                 if(SessionState.GetBool(Cold,false))
                 {
                     Check(BachDangSaveSystem.TryRead(out expected),"A separate Unity process reads the disk save");
@@ -128,9 +158,15 @@ public static class BeachBoatFrontEndPlaytest
                 foreach(string suffix in new[]{"",".bak",".tmp"})if(File.Exists(BachDangSaveSystem.SavePath+suffix))File.Delete(BachDangSaveSystem.SavePath+suffix);
                 front.RefreshSaveInfo();Check(!front.transform.Find("Home/LoadGame").GetComponent<Button>().interactable,"Load disabled before first save");
                 Capture("Title");
-                front.OpenSettings();var sliders=front.GetComponentsInChildren<Slider>(true);sliders.First(s=>s.name=="VolumeSlider").value=.43f;sliders.First(s=>s.name=="MouseSlider").value=1.65f;
+                PointerClick("Home/Settings");Check(front.Page==BachDangFrontEnd.MenuPage.Settings,"Settings opens by pointer click");var sliders=front.GetComponentsInChildren<Slider>(true);sliders.First(s=>s.name=="VolumeSlider").value=.43f;sliders.First(s=>s.name=="MouseSlider").value=1.65f;
                 Check(Mathf.Abs(AudioListener.volume-.43f)<.001f&&Mathf.Abs(session.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().mouseXSpeed-3.3f)<.001f,"Both real settings sliders apply immediately");
-                Capture("Settings");front.BackFromSettings();front.Play();phase=1;until=EditorApplication.timeSinceStartup+1;return;
+                Capture("Settings");phase=10;until=EditorApplication.timeSinceStartup+.1;return;
+            }
+            if(phase==10){PointerClick("Settings/Back");phase=11;until=EditorApplication.timeSinceStartup+.1;return;}
+            if(phase==11)
+            {
+                PointerClick("Home/Play");Check(!BachDangFrontEnd.IsBlocking&&Time.timeScale>0,"New Game pointer click resumes time and opens the intro");
+                phase=1;until=EditorApplication.timeSinceStartup+1;return;
             }
             if(phase==1)
             {

@@ -147,7 +147,8 @@ namespace BeachBoatStory
             var art=new GameObject("BachDang938Artwork",typeof(RectTransform),typeof(RawImage),typeof(AspectRatioFitter));art.transform.SetParent(background.transform,false);
             var texture=Resources.Load<Texture2D>("BachDang938/MainMenu");art.GetComponent<RawImage>().texture=texture;art.GetComponent<RawImage>().raycastTarget=false;
             var fit=art.GetComponent<AspectRatioFitter>();fit.aspectMode=AspectRatioFitter.AspectMode.EnvelopeParent;fit.aspectRatio=texture!=null?(float)texture.width/texture.height:16f/9;
-            var gradient=new GameObject("InkGradient",typeof(RectTransform),typeof(BachDangMenuGradient));gradient.transform.SetParent(background.transform,false);Stretch((RectTransform)gradient.transform,Vector2.zero,Vector2.one);
+            var gradient=new GameObject("InkGradient",typeof(RectTransform),typeof(CanvasRenderer),typeof(BachDangMenuGradient));gradient.transform.SetParent(background.transform,false);Stretch((RectTransform)gradient.transform,Vector2.zero,Vector2.one);
+            gradient.GetComponent<BachDangMenuGradient>().raycastTarget=false;
             Box("TopGold",background.transform,new Vector2(.035f,.954f),new Vector2(.965f,.956f),new Color(Gold.r,Gold.g,Gold.b,.35f));
             Label("Era",background.transform,new Vector2(.69f,.91f),new Vector2(.96f,.95f),12,Gold,"GIAO CHÂU • NĂM MẬU TUẤT",TextAlignmentOptions.Right);
             Label("Footer",background.transform,new Vector2(.68f,.04f),new Vector2(.96f,.08f),12,Cream,"ĐỊA HÌNH  /  THỦY TRIỀU  /  MƯU LƯỢC",TextAlignmentOptions.Right);
@@ -210,14 +211,5 @@ namespace BeachBoatStory
         static TMP_Text Label(string name,Transform parent,Vector2 min,Vector2 max,float size,Color color,string text,TextAlignmentOptions alignment=TextAlignmentOptions.MidlineLeft)
         {var go=new GameObject(name,typeof(RectTransform),typeof(TextMeshProUGUI));go.transform.SetParent(parent,false);Stretch((RectTransform)go.transform,min,max);var label=go.GetComponent<TMP_Text>();StoryFont.Apply(label);label.fontSize=size;label.color=color;label.text=text;label.alignment=alignment;return label;}
         void OnDestroy(){if(Instance==this){Instance=null;Time.timeScale=1;}}
-    }
-    sealed class BachDangMenuGradient : MaskableGraphic
-    {
-        protected override void OnPopulateMesh(VertexHelper vh)
-        {
-            vh.Clear();var r=rectTransform.rect;float[] xs={0,.37f,.70f,1},alpha={.87f,.72f,.10f,0};
-            for(int i=0;i<4;i++){var color=new Color(.005f,.02f,.019f,alpha[i]);vh.AddVert(new Vector3(r.xMin+r.width*xs[i],r.yMin),color,Vector2.zero);vh.AddVert(new Vector3(r.xMin+r.width*xs[i],r.yMax),color,Vector2.one);}
-            for(int i=0;i<3;i++){int v=i*2;vh.AddTriangle(v,v+1,v+2);vh.AddTriangle(v+2,v+1,v+3);}
-        }
     }
 }
