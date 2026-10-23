@@ -16,14 +16,15 @@ public static class BeachBoatFrontEndSetup
             if(local.x>=0&&local.z>=0&&local.x<=size.x&&local.z<=size.z)return t.SampleHeight(p)+t.transform.position.y;}
         return float.NegativeInfinity;
     }
-    static Vector3 Place(Vector3 anchor,GameObject player)
+    static Vector3 Place(Vector3 anchor,GameObject player,Quaternion rotation,bool includeAnchor)
     {
-        foreach(float radius in new[]{70f,95f,125f,160f,200f,240f})for(int i=0;i<24;i++)
+        var radii=includeAnchor?new[]{0f,70f,95f,125f,160f,200f,240f}:new[]{70f,95f,125f,160f,200f,240f};
+        foreach(float radius in radii)for(int i=0;i<24;i++)
         {
             var p=anchor+Quaternion.Euler(0,i*15,0)*Vector3.forward*radius;p.y=Ground(p);
             if(float.IsInfinity(p.y)||p.y<Object.FindFirstObjectByType<TideSystem>().highTideY+3)continue;
             if(Mathf.Abs(Ground(p+Vector3.right*20)-p.y)>4||Mathf.Abs(Ground(p+Vector3.forward*29)-p.y)>4)continue;
-            bool blocked=Physics.OverlapBox(p+Vector3.up*15,new Vector3(22,14,31),Quaternion.identity,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)
+            bool blocked=Physics.OverlapBox(p+Vector3.up*15,new Vector3(24,14,34),rotation,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)
                 .Any(c=>!(c is TerrainCollider)&&!c.transform.IsChildOf(player.transform));
             if(blocked)continue;
             bool field=Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None).Any(r=>{
@@ -49,13 +50,15 @@ public static class BeachBoatFrontEndSetup
         var parchment=new Material(Shader.Find("Universal Render Pipeline/Lit")){color=new Color(.80f,.69f,.44f)};
         string materialPath="Assets/Resources/BachDang938/SaveParchment.mat";var existing=AssetDatabase.LoadAssetAtPath<Material>(materialPath);
         if(existing==null)AssetDatabase.CreateAsset(parchment,materialPath);else{Object.DestroyImmediate(parchment);parchment=existing;}
-        var village=Object.FindObjectsByType<BeachBoatStory.CampGateTransition>(FindObjectsSortMode.None).First(g=>g.gateType==BeachBoatStory.CampGateTransition.GateType.CampGate).destinationTarget;
-        var anchors=new[]{session.playerSpawn.position,village.position,Object.FindFirstObjectByType<QuestRowboat>().boardingPoint.position};
+        // Quiet edges of the camp and village, clear of the market and departure lanes.
+        var anchors=new[]{new Vector3(-5650,0,1620),new Vector3(-6870,0,-4370),Object.FindFirstObjectByType<QuestRowboat>().boardingPoint.position};
+        var rotations=new[]{Quaternion.Euler(0,180,0),Quaternion.Euler(0,120,0),Quaternion.identity};
         var labels=new[]{"DOANH TRẠI","LÀNG VEN SÔNG","BẾN TRẬN ĐỊA CỌC"};
         for(int i=0;i<3;i++)
         {
-            Physics.SyncTransforms();var p=Place(anchors[i],session.player);
+            Physics.SyncTransforms();var p=Place(anchors[i],session.player,rotations[i],i<2);
             var tent=new GameObject("Leu_Luu_"+i,typeof(MeshFilter),typeof(MeshRenderer),typeof(MeshCollider));tent.transform.SetParent(root,false);tent.transform.position=p;
+            tent.transform.rotation=rotations[i];
             tent.GetComponent<MeshFilter>().sharedMesh=mesh;tent.GetComponent<MeshRenderer>().sharedMaterial=canvas;tent.GetComponent<MeshCollider>().sharedMesh=mesh;
             Block("Ban_Thu_Bo",tent.transform,new Vector3(0,9,-3),new Vector3(16,1,8),timber,true);
             foreach(float x in new[]{-6f,6f})foreach(float z in new[]{-5f,-1f})Block("Chan_Ban",tent.transform,new Vector3(x,4.5f,z),new Vector3(1.2f,9,1.2f),timber);
