@@ -48,6 +48,7 @@ namespace BeachBoatStory
         {
             Cache();IsOnWreck=false;transform.SetParent(deckParent,false);
             transform.localPosition=deckPosition;transform.localRotation=deckRotation;transform.localScale=deckScale;
+            gameObject.SetActive(true);
         }
         public void DefeatFromVolley()
         {

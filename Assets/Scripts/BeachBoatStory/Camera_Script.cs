@@ -76,9 +76,23 @@ public class Camera_Script : MonoBehaviour
         desired = ResolveObstruction(anchor, desired);
         var smoothed = snap ? desired : Vector3.SmoothDamp(transform.position, desired, ref velocity, Mathf.Max(.01f, positionSmoothTime));
         // Recheck after smoothing so easing away from a wall cannot cut through it.
-        transform.SetPositionAndRotation(ResolveObstruction(anchor, smoothed), rotation);
+        transform.SetPositionAndRotation(KeepAboveWater(ResolveObstruction(anchor, smoothed)), rotation);
         if (snap) velocity = Vector3.zero;
         if (view != null) view.fieldOfView = Mathf.Lerp(view.fieldOfView, IsAiming ? aimFieldOfView : normalFieldOfView, 1 - Mathf.Exp(-12 * Time.deltaTime));
+    }
+    public Vector3 KeepAboveWater(Vector3 position)
+    {
+        if(TideSystem.Instance==null)return position;
+        float surface=TideSystem.CurrentWaterHeight;
+        if(position.y>=surface+2)return position;
+        foreach(var terrain in Terrain.activeTerrains)
+        {
+            var local=position-terrain.transform.position;var size=terrain.terrainData.size;
+            if(local.x<0||local.z<0||local.x>size.x||local.z>size.z)continue;
+            if(terrain.SampleHeight(position)+terrain.transform.position.y>=surface-.5f)return position;
+            position.y=surface+Mathf.Max(2,view!=null?view.nearClipPlane+1:2);velocity.y=0;return position;
+        }
+        return position;
     }
     Vector3 ResolveObstruction(Vector3 anchor, Vector3 destination)
     {

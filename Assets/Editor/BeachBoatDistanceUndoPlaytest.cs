@@ -65,10 +65,10 @@ public static class BeachBoatDistanceUndoPlaytest
                     if(stall.Undo()||stall.RestoreCurrentTask())throw new Exception("Undo is active in instructions");
                     stall.StartAttempt(1);stall.AdvanceTime(1.25f);int people=stall.People,target=stall.RiceTarget,wood=stall.TimberTarget;
                     int[] ports=Enumerable.Range(0,9).Select(stall.RopePorts).ToArray();
-                    int option=stall.kind==VillageWorkStall.WorkKind.Timber?Enumerable.Range(0,4).First(stall.IsSoundTimber):0;
+                    int option=stall.kind==VillageWorkStall.WorkKind.Timber?Enumerable.Range(0,stall.TimberOptions).First(stall.IsSoundTimber):0;
                     stall.SubmitOption(option);float elapsed=stall.Elapsed;int mistakes=stall.Mistakes;
                     if(!stall.Undo()||stall.CanUndo||stall.Elapsed!=elapsed||stall.Mistakes!=mistakes||stall.RiceLoad!=0||stall.TimberTotal!=0||stall.Moves!=0||Enumerable.Range(0,3).Any(i=>stall.IngredientCount(i)!=0)||!ports.SequenceEqual(Enumerable.Range(0,9).Select(stall.RopePorts)))undoAll=false;
-                    stall.SubmitOption(option);stall.SubmitOption(stall.kind==VillageWorkStall.WorkKind.Timber?option:0);
+                    stall.SubmitOption(option);stall.SubmitOption(stall.kind==VillageWorkStall.WorkKind.Timber?Enumerable.Range(0,stall.TimberOptions).First(i=>i!=option&&stall.IsSoundTimber(i)):0);
                     elapsed=stall.Elapsed;mistakes=stall.Mistakes;
                     if(!stall.RestoreCurrentTask()||stall.CanUndo||stall.Elapsed!=elapsed||stall.Mistakes!=mistakes||stall.RiceLoad!=0||stall.TimberTotal!=0||stall.Moves!=0||stall.People!=people||stall.RiceTarget!=target||stall.TimberTarget!=wood||!ports.SequenceEqual(Enumerable.Range(0,9).Select(stall.RopePorts)))restoreAll=false;
                     stall.Close();

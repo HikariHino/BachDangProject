@@ -26,6 +26,14 @@ namespace BeachBoatStory
         public int RiceTarget {get;private set;}
         public int TimberTarget {get;private set;}
         public int TimberTotal {get;private set;}
+        public int TimberOptions=>Difficulty==0?6:8;
+        public int TimberRequiredPieces=>Difficulty+2;
+        public int TimberSelectedPieces=>timberPieces;
+        public int TimberStrengthTarget {get;private set;}
+        public int TimberBudget {get;private set;}
+        public int TimberStrengthTotal {get;private set;}
+        public int TimberCostTotal {get;private set;}
+        public string TimberQuestionKey {get;private set;}
         public int Moves {get;private set;}
         public int RiceSmall {get;private set;}=3;
         public int RiceLarge {get;private set;}=5;
@@ -38,22 +46,26 @@ namespace BeachBoatStory
         public bool LastCorrect {get;private set;}
         public int FeedbackVersion {get;private set;}
         public Vector3 InteractionPosition=>interactionPoint!=null?interactionPoint.position:transform.position;
-        public float TimeLimit=>kind==WorkKind.Rope?(Difficulty==0?100:Difficulty==1?75:55):(Difficulty==0?90:Difficulty==1?70:50);
+        public float TimeLimit=>kind==WorkKind.Timber?(Difficulty==0?100:Difficulty==1?135:180):kind==WorkKind.Rope?(Difficulty==0?100:Difficulty==1?75:55):(Difficulty==0?90:Difficulty==1?70:50);
         public int Goal=>kind==WorkKind.Rope?1:2+Difficulty;
         public int MistakeLimit=>Difficulty==2?2:3;
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);
-        public string Instructions=>kind==WorkKind.Timber?"Chọn HAI thanh gỗ có tổng chiều dài đúng đơn hàng. Mỗi thanh chỉ dùng một lần. Gỗ có vết nứt không dùng được; hãy tính tổng trước khi chọn.":
+        public string Instructions=>kind==WorkKind.Timber?"Dễ: chọn 2 thanh đủ chiều dài. Vừa: chọn 3 thanh, đồng thời đủ sức chịu lực. Khó: chọn 4 thanh đủ chiều dài, đủ sức chịu lực và không vượt ngân sách. Mỗi thanh dùng một lần; loại gỗ nứt. Bấm vào thanh để chọn hoặc bỏ chọn, rồi GIAO GỖ để kiểm tra. Mỗi đơn chỉ có một tổ hợp đúng; câu mới không lặp câu đã chơi.":
             kind==WorkKind.Rope?"Bấm từng ô để xoay đoạn dây 90 độ. Nối một đường liên tục từ đầu VÀO bên trái hàng giữa sang đầu RA bên phải hàng giữa. Dây không được đứt hoặc tạo vòng kín. Số lượt xoay có hạn.":
             kind==WorkKind.Rice?"Đong đúng lượng gạo yêu cầu bằng hai gáo khác cỡ. Chỉ được thêm một gáo nhỏ, thêm một gáo lớn hoặc bớt một gáo nhỏ. Hãy tính cách đong trong số lượt cho phép rồi đóng túi.":
             "Đọc công thức mỗi đơn hàng: số người, gạo/cá cho mỗi người và muối cho cả gói đều có thể thay đổi. Tính đủ nguyên liệu, sửa bằng Hoàn tác nếu nhầm rồi kiểm tra gói.";
         public static string IngredientName(int n)=>n==0?"GẠO":n==1?"CÁ KHÔ":"MUỐI";
-        readonly bool[] soundTimber=new bool[4];
-        readonly int[] timberLengths=new int[4],ropePorts=new int[9],ingredients=new int[3];
-        readonly bool[] timberUsed=new bool[4];
+        readonly bool[] soundTimber=new bool[8];
+        readonly int[] timberLengths=new int[8],timberStrengths=new int[8],timberCosts=new int[8],ropePorts=new int[9],ingredients=new int[3];
+        readonly bool[] timberUsed=new bool[8];
+        static readonly HashSet<string> TimberQuestions=new HashSet<string>();
+        static readonly Queue<string> RecentTimberTargets=new Queue<string>();
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetQuestionHistory(){TimberQuestions.Clear();RecentTimberTargets.Clear();}
         int timberPieces;
         sealed class WorkSnapshot
         {
-            public int rice,moves,total,pieces;
+            public int rice,moves,total,pieces,strength,cost;
             public int[] rope,food;
             public bool[] timber;
         }
@@ -61,12 +73,12 @@ namespace BeachBoatStory
         WorkSnapshot initialWork;
         public bool CanUndo=>Active==this&&Phase==WorkPhase.Playing&&history.Count>0;
         public bool CanRestore=>Active==this&&Phase==WorkPhase.Playing&&initialWork!=null&&history.Count>0;
-        WorkSnapshot CaptureWork()=>new WorkSnapshot{rice=RiceLoad,moves=Moves,total=TimberTotal,pieces=timberPieces,rope=(int[])ropePorts.Clone(),food=(int[])ingredients.Clone(),timber=(bool[])timberUsed.Clone()};
+        WorkSnapshot CaptureWork()=>new WorkSnapshot{rice=RiceLoad,moves=Moves,total=TimberTotal,pieces=timberPieces,strength=TimberStrengthTotal,cost=TimberCostTotal,rope=(int[])ropePorts.Clone(),food=(int[])ingredients.Clone(),timber=(bool[])timberUsed.Clone()};
         void RememberWork(){if(history.Count>=128)history.RemoveAt(0);history.Add(CaptureWork());}
         void RestoreWork(WorkSnapshot saved)
         {
-            RiceLoad=saved.rice;Moves=saved.moves;TimberTotal=saved.total;timberPieces=saved.pieces;
-            System.Array.Copy(saved.rope,ropePorts,9);System.Array.Copy(saved.food,ingredients,3);System.Array.Copy(saved.timber,timberUsed,4);
+            RiceLoad=saved.rice;Moves=saved.moves;TimberTotal=saved.total;timberPieces=saved.pieces;TimberStrengthTotal=saved.strength;TimberCostTotal=saved.cost;
+            System.Array.Copy(saved.rope,ropePorts,9);System.Array.Copy(saved.food,ingredients,3);System.Array.Copy(saved.timber,timberUsed,8);
         }
         public bool Undo()
         {
@@ -95,6 +107,8 @@ namespace BeachBoatStory
                 if(Input.GetKeyDown(KeyCode.Z)){Undo();return;}
                 if(Input.GetKeyDown(KeyCode.C)){RestoreCurrentTask();return;}
                 if(kind==WorkKind.Rope){if(Input.GetKeyDown(KeyCode.Space))SubmitOption(9);}
+                else if(kind==WorkKind.Timber)
+                {for(int i=0;i<TimberOptions;i++)if(Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1+i)))SubmitOption(i);if(Input.GetKeyDown(KeyCode.Return))SubmitOption(8);}
                 else for(int i=0;i<4;i++)if(Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1+i)))SubmitOption(i);
                 return;
             }
@@ -126,8 +140,10 @@ namespace BeachBoatStory
             Elapsed+=Mathf.Max(0,dt);
             if(Elapsed>=TimeLimit)Lose("Hết giờ. Vật tư chưa chuẩn bị đủ.");
         }
-        public bool IsSoundTimber(int index)=>index>=0&&index<4&&soundTimber[index];
+        public bool IsSoundTimber(int index)=>index>=0&&index<TimberOptions&&soundTimber[index];
         public int TimberLength(int i)=>timberLengths[i];
+        public int TimberStrength(int i)=>timberStrengths[i];
+        public int TimberCost(int i)=>timberCosts[i];
         public bool TimberUsed(int i)=>timberUsed[i];
         public int RopePorts(int i)=>ropePorts[i];
         public int IngredientCount(int i)=>ingredients[i];
@@ -152,7 +168,7 @@ namespace BeachBoatStory
         }
         public bool SubmitOption(int option)
         {
-            if(Active!=this||Phase!=WorkPhase.Playing||option<0||option>(kind==WorkKind.Rope?9:3))return false;
+            if(Active!=this||Phase!=WorkPhase.Playing||option<0||option>(kind==WorkKind.Rope?9:kind==WorkKind.Timber?8:3))return false;
             if(kind==WorkKind.Rope)
             {
                 if(option<9){RememberWork();ropePorts[option]=RotatePorts(ropePorts[option]);Moves++;if(Moves>MoveLimit)Lose("Đã hết lượt xoay. Quan sát đường dây rồi thử lại.");return true;}
@@ -161,12 +177,16 @@ namespace BeachBoatStory
             }
             if(kind==WorkKind.Timber)
             {
-                if(timberUsed[option])return false;
-                if(!soundTimber[option]){Fault("Thanh này bị nứt. Hãy chọn hai thanh liền thân.");return false;}
-                RememberWork();timberUsed[option]=true;TimberTotal+=timberLengths[option];timberPieces++;
-                if(timberPieces==2&&TimberTotal==TimberTarget){Score("Hai thanh vừa đúng chiều dài đơn hàng.");return true;}
-                if(TimberTotal>=TimberTarget||timberPieces>=2)
-                {Fault("Tổng chiều dài không đúng. Tính lại cặp gỗ rồi chọn lại.");for(int i=0;i<4;i++)timberUsed[i]=false;TimberTotal=timberPieces=0;return false;}
+                if(option==8)
+                {
+                    int mask=0;for(int i=0;i<TimberOptions;i++)if(timberUsed[i])mask|=1<<i;
+                    if(TimberSelectionValid(mask)){Score("Đơn gỗ đáp ứng đủ các điều kiện.");return true;}
+                    Fault("Chưa đạt đơn hàng. Kiểm tra số thanh, chiều dài, sức chịu lực và ngân sách; bấm thanh đã chọn để bỏ.");return false;
+                }
+                if(option>=TimberOptions)return false;
+                if(!soundTimber[option]){Fault("Gỗ nứt không chịu được tải. Hãy chọn thanh nguyên vẹn.");return false;}
+                RememberWork();int sign=timberUsed[option]?-1:1;timberUsed[option]=!timberUsed[option];
+                TimberTotal+=sign*timberLengths[option];TimberStrengthTotal+=sign*timberStrengths[option];TimberCostTotal+=sign*timberCosts[option];timberPieces+=sign;
                 return true;
             }
             if(kind==WorkKind.Rice)
@@ -205,12 +225,10 @@ namespace BeachBoatStory
         }
         void NewTask()
         {
-            Moves=TimberTotal=timberPieces=RiceLoad=0;
+            Moves=TimberTotal=timberPieces=RiceLoad=TimberStrengthTotal=TimberCostTotal=0;
             if(kind==WorkKind.Timber)
             {
-                int bad=Random.Range(0,4);var good=new int[3];int next=0;
-                for(int i=0;i<4;i++){soundTimber[i]=i!=bad;timberUsed[i]=false;timberLengths[i]=Random.Range(2,9+Difficulty*5);if(i!=bad)good[next++]=i;}
-                int excluded=Random.Range(0,3);TimberTarget=0;for(int i=0;i<3;i++)if(i!=excluded)TimberTarget+=timberLengths[good[i]];
+                GenerateTimber();
             }
             else if(kind==WorkKind.Rope)
             {
@@ -236,6 +254,50 @@ namespace BeachBoatStory
             }
             else {People=Random.Range(1+Difficulty,3+Difficulty);RicePerPerson=Random.Range(1,3+Difficulty);FishPerPerson=Random.Range(1,2+Difficulty);SaltPerBundle=Random.Range(1,3);for(int i=0;i<3;i++)ingredients[i]=0;}
             history.Clear();initialWork=CaptureWork();
+        }
+        public bool TimberSelectionValid(int mask)
+        {
+            int count=0,length=0,strength=0,cost=0;
+            if(mask<0||(mask>>TimberOptions)!=0)return false;
+            for(int i=0;i<TimberOptions;i++)if((mask&(1<<i))!=0)
+            {if(!soundTimber[i])return false;count++;length+=timberLengths[i];strength+=timberStrengths[i];cost+=timberCosts[i];}
+            return count==TimberRequiredPieces&&length==TimberTarget&&(Difficulty==0||strength>=TimberStrengthTarget)&&(Difficulty<2||cost<=TimberBudget);
+        }
+        void GenerateTimber()
+        {
+            for(int attempt=0;attempt<4096;attempt++)
+            {
+                int bad=Random.Range(0,TimberOptions);var good=new List<int>();var lengths=new HashSet<int>();
+                for(int i=0;i<8;i++)
+                {
+                    timberUsed[i]=false;soundTimber[i]=i<TimberOptions&&i!=bad;
+                    int length;do{length=Random.Range(3,18+Difficulty*10);}while(!lengths.Add(length));
+                    timberLengths[i]=length;timberStrengths[i]=Random.Range(2,8+Difficulty*4);timberCosts[i]=Random.Range(2,9+Difficulty*3);
+                    if(soundTimber[i])good.Add(i);
+                }
+                for(int i=good.Count-1;i>0;i--){int j=Random.Range(0,i+1);int swap=good[i];good[i]=good[j];good[j]=swap;}
+                TimberTarget=TimberStrengthTarget=TimberBudget=0;
+                for(int i=0;i<TimberRequiredPieces;i++){int n=good[i];TimberTarget+=timberLengths[n];TimberStrengthTarget+=timberStrengths[n];TimberBudget+=timberCosts[n];}
+                TimberStrengthTarget=Difficulty==0?0:TimberStrengthTarget-Random.Range(0,3);
+                TimberBudget=Difficulty<2?0:TimberBudget+Random.Range(0,3);
+                int solutions=0,lengthOnly=0,withoutBudget=0;
+                for(int mask=1;mask<(1<<TimberOptions);mask++)
+                {
+                    int count=0,length=0,strength=0;bool sound=true;
+                    for(int i=0;i<TimberOptions;i++)if((mask&(1<<i))!=0){count++;length+=timberLengths[i];strength+=timberStrengths[i];sound&=soundTimber[i];}
+                    if(sound&&count==TimberRequiredPieces&&length==TimberTarget){lengthOnly++;if(strength>=TimberStrengthTarget)withoutBudget++;}
+                    if(TimberSelectionValid(mask))solutions++;
+                }
+                // Later levels deliberately contain plausible length-only decoys.
+                if(solutions!=1||(Difficulty>0&&lengthOnly<2)||(Difficulty==2&&withoutBudget<2))continue;
+                string target=$"{Difficulty}:{TimberTarget}:{TimberStrengthTarget}:{TimberBudget}";
+                if(RecentTimberTargets.Contains(target))continue;
+                var cards=new List<string>();for(int i=0;i<TimberOptions;i++)cards.Add($"{soundTimber[i]}:{timberLengths[i]}:{(Difficulty>0?timberStrengths[i]:0)}:{(Difficulty>1?timberCosts[i]:0)}");
+                cards.Sort(System.StringComparer.Ordinal);string key=target+"|"+string.Join(";",cards);
+                if(!TimberQuestions.Add(key))continue;
+                TimberQuestionKey=key;RecentTimberTargets.Enqueue(target);while(RecentTimberTargets.Count>12)RecentTimberTargets.Dequeue();return;
+            }
+            throw new System.InvalidOperationException("Could not generate a fresh, uniquely solvable timber order.");
         }
         static void BuildRopePaths(int cell,List<int> path,int visited,List<int[]> result)
         {

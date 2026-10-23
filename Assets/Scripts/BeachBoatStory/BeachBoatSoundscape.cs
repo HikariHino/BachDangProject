@@ -12,6 +12,7 @@ namespace BeachBoatStory
         public bool Muted {get;private set;}
         public int FootstepsPlayed {get;private set;}
         public int OarsPlayed {get;private set;}
+        public int SwimStrokesPlayed {get;private set;}
         public int EffectsPlayed {get;private set;}
         public int InteractionsPlayed {get;private set;}
         public float DistanceToWater {get;private set;}=float.PositiveInfinity;
@@ -66,6 +67,7 @@ namespace BeachBoatStory
             if(Time.time>=nextBird){nextBird=Time.time+Random.Range(8,15);birds.panStereo=Random.Range(-.6f,.6f);Play(birds,bird,.22f,Random.Range(.94f,1.08f));}
             if(BeachBoatQuestSession.InputBlocked)return;
             bool aboard=QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard;
+            if(RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.PlayerAway){distance=0;return;}
             if(aboard)
             {
                 distance=0;var boat=QuestRowboat.Instance;
@@ -84,6 +86,9 @@ namespace BeachBoatStory
         public void PlayFootstep(){if(footsteps.Length==0)return;Play(foley,footsteps[footIndex++%footsteps.Length],.6f,Random.Range(.93f,1.06f));FootstepsPlayed++;}
         public void SetMuted(bool value){Muted=value;AudioListener.volume=value?0:savedListenerVolume;toastUntil=Time.unscaledTime+2.5f;}
         public void PlayOar(){Play(foley,oar,.62f,Random.Range(.94f,1.06f));OarsPlayed++;}
+        public void PlaySwimStroke(bool moving=true){Play(foley,oar,moving?.48f:.22f,Random.Range(1.10f,1.25f));SwimStrokesPlayed++;}
+        public void PlayWaterEntry()=>Play(foley,oar,.72f,.8f);
+        public void PlayClimbGrip()=>Play(foley,footsteps.Length>0?footsteps[0]:oar,.38f,.92f);
         public void PlayBow(bool hostile=false)=>Play(effects,bow,hostile ? .25f : .65f,Random.Range(.95f,1.05f));
         public void PlayDrum(int beat)=>Play(effects,drum,.8f,.8f+beat*.13f);
         public void PlayCrash()=>Play(effects,crash,.85f);

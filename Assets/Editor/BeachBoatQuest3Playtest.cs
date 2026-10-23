@@ -30,7 +30,7 @@ public static class BeachBoatQuest3Playtest
     static float holdUntil,ebbAt=-1,lastWater=float.PositiveInfinity;
     static bool midShot,impactShot;
     static bool automaticWrecksBeforeOrder,survivorsAvailable;
-    static bool fullySubmerged,survivorShot;
+    static bool wrecksRetained,survivorShot;
     static float firstImpactAt=-1;
     static EnemyShip impactShip;
     static string failure;
@@ -64,7 +64,9 @@ public static class BeachBoatQuest3Playtest
             success,failure,heldForPlayer=wasHeld,rangeBlockedAtDock=rangeBlocked,
             delayedFleetHeldHigh,hiddenUntilEntry,ebbAtField,gradualEbb,sankDuringEbb,ambushBeforeLow,
             automaticWrecksBeforeOrder,survivorsAvailable,fieldStakes=BeachBoatStory.RiverStakeZone.Instance?.RequiredCount,
-            fullySubmerged,
+            wrecksRetained,
+            shipwreckSurvivors=RiverBoardingCombat.Instance?.ShipwreckSurvivors,shipwreckDeaths=RiverBoardingCombat.Instance?.ShipwreckDeaths,
+            toPlayer=RiverBoardingCombat.Instance?.SurvivorsTargetingPlayer,toAllies=RiverBoardingCombat.Instance?.SurvivorsTargetingAllies,
             vitalsBarsUpdated,minimapLowerRight,rowingControllerApplied,
             healthWidthBefore,healthWidthAfter,staminaWidthBefore,staminaWidthAfter,
             healthAnchorAfter,staminaAnchorAfter,orders=director?.CommandScore,
@@ -196,8 +198,8 @@ public static class BeachBoatQuest3Playtest
         if(story.destroyedEnemyShips==director.ShipCount&&director.IsShowingBattle)
         {
             automaticWrecksBeforeOrder|=director.CommandScore==0&&RiverPlayerCombat.Instance.Kills==0;
-            fullySubmerged=director.enemyShips.All(s=>s.GetComponentsInChildren<MeshFilter>(true).All(f=>MeshBelowWater(f)));
-            if(!fullySubmerged){failure="A disabled ship still has visible geometry above water";Finish(false,director,story);return;}
+            wrecksRetained=director.enemyShips.All(s=>s.HasSettled&&s.gameObject.activeSelf&&s.WreckTarget!=null&&s.WreckTarget.childCount==0&&s.GetComponentsInChildren<MeshFilter>(true).Length>0);
+            if(!wrecksRetained){failure="A settled wreck disappeared or generated a floating platform";Finish(false,director,story);return;}
             if(!survivorShot){survivorShot=true;CaptureBattle("Survivors",director.enemyShips[0]);}
             var ready=director.enemyShips.FirstOrDefault(s=>s!=null&&s.SignalReady);
             if(ready!=null)
@@ -207,7 +209,7 @@ public static class BeachBoatQuest3Playtest
                 if(combat!=null&&!combat.HasSuppressedWave(wave))
                 {
                     var guard=combat.guards.First(g=>g.waveIndex==wave&&g.IsAlive);
-                    survivorsAvailable|=guard.IsOnWreck&&guard.transform.up.y>.99f&&Mathf.Abs(guard.transform.position.y-TideSystem.CurrentWaterHeight)<4;
+                    survivorsAvailable|=guard.IsIndependentBoarder;
                     // Aim from the open channel; the western bank occludes the lower waves.
                     var origin=guard.AimPoint+Vector3.right*200;origin.y=TideSystem.CurrentWaterHeight+14;
                     boat.transform.position=new Vector3(origin.x,TideSystem.CurrentWaterHeight,origin.z);
@@ -231,7 +233,7 @@ public static class BeachBoatQuest3Playtest
         {
             bool success=wasHeld&&rangeBlocked&&vitalsBarsUpdated&&minimapLowerRight&&rowingControllerApplied&&
                 delayedFleetHeldHigh&&hiddenUntilEntry&&ebbAtField&&gradualEbb&&sankDuringEbb&&ambushBeforeLow&&
-                automaticWrecksBeforeOrder&&(survivorsAvailable||RiverPlayerCombat.Instance.AlliedKills>0)&&fullySubmerged&&director.CommandScore==5&&story.destroyedEnemyShips==10&&
+                automaticWrecksBeforeOrder&&(survivorsAvailable||RiverPlayerCombat.Instance.AlliedKills>0)&&wrecksRetained&&director.CommandScore==5&&story.destroyedEnemyShips==10&&
                 director.enemyShips[0].transform.position.z<initialShipZ-600;
             if(!success)failure=$"Battle/HUD check failed: bars={vitalsBarsUpdated}, minimap={minimapLowerRight}, " +
                     $"rowing={rowingControllerApplied}, orders={director.CommandScore}, wrecks={story.destroyedEnemyShips}, " +

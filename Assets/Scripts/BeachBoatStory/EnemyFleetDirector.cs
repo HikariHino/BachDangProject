@@ -122,12 +122,12 @@ namespace BeachBoatStory
                 bool anyActive=false;
                 for(int i=0;i<fleet.Count;i++)
                 {
-                    if(!fleet[i].gameObject.activeSelf)continue;
+                    if(!fleet[i].gameObject.activeSelf||fleet[i].HasSettled)continue;
                     anyActive=true;
                     if(WatchedShip==null||!WatchedShip.gameObject.activeSelf)
                     {watchedFleetIndex=i;WatchShip(fleet[i]);}
                 }
-                // Sinking is automatic; surviving archers remain on broken deck rafts.
+                // Retained wreck meshes are no longer active vessels. Their surviving crew swim.
                 // Keep controls and objective alive until all five counterattacks are ordered.
                 if(!anyActive&&CommandScore>=CommandOpportunityCount){BachDangStoryManager.Instance?.OnBattleVictory();break;}
                 if(IsShowingBattle&&WatchedShip!=null&&Time.unscaledTime>=commandMessageUntil)

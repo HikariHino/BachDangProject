@@ -84,7 +84,7 @@ public static class BeachBoatRiverCombatPlaytest
                 if(!strongHit)throw new Exception("Charged arrow did not kill/suppress the wave");
                 foreach(var guard in combat.guards.Where(g=>g.ship==target.ship))guard.DefeatFromVolley();
                 target.ship.TakeDamage();target.ship.Step(8);
-                deadCrewCommand=target.ship.WreckTarget!=null&&combat.guards.Where(g=>g.ship==target.ship&&!g.IsIndependentBoarder).All(g=>g.Health==0&&g.IsOnWreck);
+                deadCrewCommand=target.ship.WreckTarget!=null&&target.ship.WreckTarget.childCount==0&&combat.guards.Where(g=>g.ship==target.ship&&!g.IsIndependentBoarder).All(g=>g.Health==0&&g.transform.IsChildOf(target.ship.transform));
                 if(!deadCrewCommand)throw new Exception("Defeating the entire crew lost the wreck command point or revived an archer");
                 BachDangBattleTimeline.Instance.BeginAmbush();if(!fleet.TrySignalAttack()||fleet.CommandScore!=1)throw new Exception("Combat did not unlock flag order");
                 if(!combat.Reload()||!combat.IsReloading||Shoot(1))throw new Exception("Reload gate failed");

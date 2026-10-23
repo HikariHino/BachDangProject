@@ -7,7 +7,23 @@ namespace BeachBoatStory
     public sealed class RiverFighterPose : MonoBehaviour
     {
         public enum Motion { Idle, Swim, Climb }
-        public Motion Traversal {get;set;}
+        Motion traversal;
+        public Motion Traversal
+        {
+            get=>traversal;
+            set
+            {
+                if(value==traversal)return;
+                if(traversal==Motion.Idle&&value!=Motion.Idle)BeginTraversalRig();
+                if(value==Motion.Idle)RestoreTraversalRig();
+                traversal=value;motionTime=0;lastStroke=-1;
+            }
+        }
+        public bool SwimMoving {get;set;}=true;
+        public bool SwimFast {get;set;}
+        public float ClimbProgress {get;set;}
+        public Vector3 ClimbRail {get;set;}
+        public int SwimStrokes {get;private set;}
         public Animator Animator {get;private set;}
         public bool SwordVisible {get;private set;}
         public RuntimeAnimatorController swordController;
@@ -26,6 +42,14 @@ namespace BeachBoatStory
         Quaternion modelRotation;
         RuntimeAnimatorController previousController;
         bool usingSword;
+        Transform hips,neck,head,leftFoot,rightFoot;
+        Transform[] traversalBones;
+        Quaternion[] traversalRotations;
+        Vector3[] traversalPositions;
+        RuntimeAnimatorController traversalController;
+        bool traversalAnimatorEnabled;
+        float motionTime;
+        int lastStroke=-1;
         public void Initialize(Animator animator,GameObject sword,RuntimeAnimatorController controller,float length)
         {
             Animator=animator;swordController=controller;modelRotation=animator.transform.localRotation;actorHeight=length*1.6f;
@@ -44,6 +68,8 @@ namespace BeachBoatStory
             leftHand=animator.GetBoneTransform(HumanBodyBones.LeftHand);rightHand=animator.GetBoneTransform(HumanBodyBones.RightHand);
             indexKnuckle=animator.GetBoneTransform(HumanBodyBones.RightIndexProximal);littleKnuckle=animator.GetBoneTransform(HumanBodyBones.RightLittleProximal);
             indexMiddle=animator.GetBoneTransform(HumanBodyBones.RightIndexIntermediate);littleMiddle=animator.GetBoneTransform(HumanBodyBones.RightLittleIntermediate);
+            hips=animator.GetBoneTransform(HumanBodyBones.Hips);neck=animator.GetBoneTransform(HumanBodyBones.Neck);head=animator.GetBoneTransform(HumanBodyBones.Head);
+            leftFoot=animator.GetBoneTransform(HumanBodyBones.LeftFoot);rightFoot=animator.GetBoneTransform(HumanBodyBones.RightFoot);
         }
         public void SetSword(bool value)
         {
@@ -58,7 +84,6 @@ namespace BeachBoatStory
         public void Restore()
         {
             Traversal=Motion.Idle;SetRanged(false);SetSword(false);
-            if(Animator!=null)Animator.transform.localRotation=modelRotation;
         }
         void LateUpdate()
         {
@@ -74,21 +99,79 @@ namespace BeachBoatStory
                 }
                 return;
             }
-            float phase=Time.time*(Traversal==Motion.Swim?5:4);
-            Animator.transform.localRotation=modelRotation*(Traversal==Motion.Swim?Quaternion.Euler(72,0,0):Quaternion.identity);
-            for(int i=0;i<bones.Length;i++)
+            EvaluateTraversal(Time.deltaTime);
+        }
+        void BeginTraversalRig()
+        {
+            if(Animator==null)return;
+            traversalController=Animator.runtimeAnimatorController;traversalAnimatorEnabled=Animator.enabled;
+            Animator.enabled=true;Animator.runtimeAnimatorController=Resources.Load<RuntimeAnimatorController>("Player_Neutral");Animator.Update(0);
+            var list=new System.Collections.Generic.List<Transform>();
+            for(int i=0;i<(int)HumanBodyBones.LastBone;i++){var bone=Animator.GetBoneTransform((HumanBodyBones)i);if(bone!=null)list.Add(bone);}
+            traversalBones=list.ToArray();traversalRotations=new Quaternion[list.Count];traversalPositions=new Vector3[list.Count];
+            for(int i=0;i<list.Count;i++){traversalRotations[i]=list[i].localRotation;traversalPositions[i]=list[i].localPosition;}
+            Animator.enabled=false;SwimMoving=true;ClimbProgress=0;
+        }
+        void RestoreTraversalRig()
+        {
+            if(traversalBones==null)return;
+            ResetTraversalBones();Animator.runtimeAnimatorController=traversalController;Animator.enabled=traversalAnimatorEnabled;
+            traversalBones=null;
+        }
+        void ResetTraversalBones()
+        {
+            for(int i=0;i<traversalBones.Length;i++)
+            {traversalBones[i].localPosition=traversalPositions[i];traversalBones[i].localRotation=traversalRotations[i];}
+        }
+        public void EvaluateTraversal(float dt)
+        {
+            if(Traversal==Motion.Idle||traversalBones==null)return;
+            ResetTraversalBones();motionTime+=Mathf.Max(0,dt);
+            var forward=transform.forward;forward.y=0;forward.Normalize();var right=Vector3.Cross(Vector3.up,forward);float h=actorHeight;
+            if(Traversal==Motion.Swim)
             {
-                float side=i%2==0?1:-1;
-                var q=Traversal==Motion.Swim?
-                    Quaternion.Euler(i<2?Mathf.Sin(phase+side*Mathf.PI*.5f)*85:i<4?-25:Mathf.Sin(phase*1.6f+side*Mathf.PI*.5f)*24,0,i<2?side*25:0):
-                    Quaternion.Euler(i<2?-105+Mathf.Sin(phase+side*Mathf.PI*.5f)*24:i<4?-48:i<6?-35+Mathf.Sin(phase+side*Mathf.PI*.5f)*30:50,0,0);
-                if(bones[i]!=null)bones[i].localRotation=rotations[i]*q;
+                float rate=SwimMoving?(SwimFast?1.05f:.72f):.48f,cycle=motionTime*rate,t=cycle-Mathf.Floor(cycle);
+                var axis=(head.position-hips.position).normalized;
+                var desired=SwimMoving?(forward*.96f+Vector3.up*.28f).normalized:(forward*.20f+Vector3.up*.98f).normalized;
+                hips.rotation=Quaternion.Slerp(Quaternion.identity,Quaternion.FromToRotation(axis,desired),Mathf.SmoothStep(0,1,motionTime/.25f))*hips.rotation;
+                var p=hips.position;p.y=TideSystem.CurrentWaterHeight-(SwimMoving?.06f:.30f)*h+Mathf.Sin(t*Mathf.PI*2)*h*.012f;hips.position=p;
+                if(neck!=null&&head!=null)neck.rotation=Quaternion.FromToRotation(head.position-neck.position,(forward*.38f+Vector3.up*.92f).normalized)*neck.rotation;
+                float reach,sweep,depth;
+                if(t<.25f){float u=t/.25f;reach=Mathf.Lerp(.12f,.34f,u);sweep=Mathf.Lerp(.11f,.13f,u);depth=-.025f;}
+                else if(t<.65f){float u=(t-.25f)/.4f;reach=Mathf.Lerp(.34f,-.14f,u);sweep=.13f+Mathf.Sin(u*Mathf.PI)*.20f;depth=-.025f-Mathf.Sin(u*Mathf.PI)*.10f;}
+                else{float u=(t-.65f)/.35f;reach=Mathf.Lerp(-.14f,.12f,u);sweep=Mathf.Lerp(.16f,.11f,u);depth=Mathf.Lerp(-.07f,-.025f,u);}
+                if(!SwimMoving){reach=.15f+Mathf.Sin(t*Mathf.PI*2)*.05f;sweep=.23f;depth=-.07f;}
+                for(int side=0;side<2;side++)
+                {
+                    float sign=side==0?-1:1;var shoulder=bones[side].position;
+                    var grip=shoulder+forward*(reach*h)+right*(sign*sweep*h)+Vector3.up*(depth*h);
+                    QuestRowboat.SolveArm(bones[side],bones[side+2],side==0?leftHand:rightHand,grip,shoulder+right*(sign*h*.4f)-Vector3.up*h*.15f);
+                    float kick=SwimMoving?Mathf.Max(0,Mathf.Sin((t-.5f)*Mathf.PI*2)):Mathf.Sin(t*Mathf.PI*2+side*Mathf.PI)*.35f;
+                    var foot=SwimMoving?hips.position-forward*(h*(.40f-.18f*kick))+right*(sign*h*(.08f+.13f*kick))-Vector3.up*h*(.03f+.10f*kick):hips.position-Vector3.up*h*.42f+right*(sign*h*.12f)+forward*(kick*h*.14f);
+                    QuestRowboat.SolveArm(bones[side+4],bones[side+6],side==0?leftFoot:rightFoot,foot,hips.position+right*(sign*h*.3f)-forward*h*.15f);
+                }
+                int stroke=Mathf.FloorToInt(cycle+.35f);
+                if(stroke>lastStroke)
+                {
+                    if(lastStroke>=0){SwimStrokes++;if(BeachBoatQuestSession.Instance!=null&&gameObject==BeachBoatQuestSession.Instance.player)BeachBoatSoundscape.Instance?.PlaySwimStroke(SwimMoving);}
+                    lastStroke=stroke;
+                }
             }
-            if(Traversal==Motion.Climb)
+            else
             {
-                var grip=transform.position+Vector3.up*(actorHeight*.94f)+transform.forward*(actorHeight*.35f);
-                QuestRowboat.SolveArm(bones[0],bones[2],leftHand,grip-transform.right*(actorHeight*.18f)+Vector3.up*(Mathf.Sin(phase)*actorHeight*.07f),bones[0].position-transform.right*actorHeight*.4f);
-                QuestRowboat.SolveArm(bones[1],bones[3],rightHand,grip+transform.right*(actorHeight*.18f)-Vector3.up*(Mathf.Sin(phase)*actorHeight*.07f),bones[1].position+transform.right*actorHeight*.4f);
+                float t=Mathf.Clamp01(ClimbProgress),pull=Mathf.SmoothStep(0,1,Mathf.InverseLerp(.32f,.78f,t));
+                var rail=ClimbRail.sqrMagnitude>.1f?ClimbRail:transform.position+forward*h*.28f+Vector3.up*h*.8f;
+                var axis=(head.position-hips.position).normalized;var desired=(Vector3.up+forward*Mathf.Lerp(.05f,.45f,pull)).normalized;
+                hips.rotation=Quaternion.FromToRotation(axis,desired)*hips.rotation;
+                for(int side=0;side<2;side++)
+                {
+                    float sign=side==0?-1:1;
+                    var grip=rail+right*(sign*h*.17f)+forward*(Mathf.SmoothStep(0,1,Mathf.InverseLerp(.72f,1,t))*h*.18f);
+                    QuestRowboat.SolveArm(bones[side],bones[side+2],side==0?leftHand:rightHand,grip,bones[side].position+right*(sign*h*.35f));
+                    var kneeLift=side==0?Mathf.Sin(Mathf.Clamp01(t/.7f)*Mathf.PI):Mathf.Sin(Mathf.Clamp01((t-.2f)/.8f)*Mathf.PI);
+                    var foot=transform.position+right*(sign*h*.12f)+forward*(h*.2f*kneeLift)+Vector3.up*(h*.25f*kneeLift);
+                    QuestRowboat.SolveArm(bones[side+4],bones[side+6],side==0?leftFoot:rightFoot,foot,hips.position+right*(sign*h*.2f)+forward*h*.4f);
+                }
             }
         }
         public void FitSwordToGrip()
@@ -106,7 +189,7 @@ namespace BeachBoatStory
             var rotation=Quaternion.LookRotation(normal,BladeDirection);
             weapon.SetPositionAndRotation(GripPosition-rotation*(gripInMesh*swordScale),rotation);
         }
-        public void FinishTraversal(){Traversal=Motion.Idle;if(Animator!=null)Animator.transform.localRotation=modelRotation;}
+        public void FinishTraversal(){Traversal=Motion.Idle;ClimbProgress=0;ClimbRail=Vector3.zero;}
         public void SetRanged(bool value)
         {
             ranged=value;

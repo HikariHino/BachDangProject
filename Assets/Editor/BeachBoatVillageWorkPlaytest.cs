@@ -17,6 +17,8 @@ public static class BeachBoatVillageWorkPlaytest
     static int phase,index;
     static bool timeoutChecked,wrongChecked,retryChecked,difficultyChecked,drumChecked;
     static int randomizedAttempts;
+    static int uniqueTimberOrders,hardRiceOrders,exhaustiveRiceCases;
+    static readonly HashSet<string> timberHistory=new HashSet<string>();
     static bool layoutSpread,interactionClear,treesClear;
     static string failure;
     static readonly List<object> Results=new List<object>();
@@ -26,7 +28,7 @@ public static class BeachBoatVillageWorkPlaytest
     {var player=BeachBoatQuestSession.Instance.player;player.transform.position=p;var body=player.GetComponent<Rigidbody>();body.position=p;body.linearVelocity=Vector3.zero;Physics.SyncTransforms();}
     static void Finish()
     {
-        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/VillageWorkPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,timeoutChecked,wrongChecked,retryChecked,difficultyChecked,drumChecked,randomizedAttempts,layoutSpread,interactionClear,treesClear,results=Results,story=Story.Instance?.currentState.ToString()},Formatting.Indented));
+        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/VillageWorkPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,timeoutChecked,wrongChecked,retryChecked,difficultyChecked,drumChecked,randomizedAttempts,uniqueTimberOrders,hardRiceOrders,exhaustiveRiceCases,layoutSpread,interactionClear,treesClear,results=Results,story=Story.Instance?.currentState.ToString()},Formatting.Indented));
         SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(failure==null?0:1);
     }
     static void Tick()
@@ -80,7 +82,7 @@ public static class BeachBoatVillageWorkPlaytest
                 retryChecked=stall.Phase==VillageWorkStall.WorkPhase.Playing&&stall.Elapsed==0&&stall.Progress==0;
                 if(!timeoutChecked||!retryChecked||!difficultyChecked)throw new Exception("Timeout/retry/difficulty rules failed");
                 if(stall.kind==VillageWorkStall.WorkKind.Timber)
-                {int bad=Enumerable.Range(0,4).First(i=>!stall.IsSoundTimber(i));wrongChecked=!stall.SubmitOption(bad)&&stall.Mistakes==1&&!stall.Completed;}
+                {int bad=Enumerable.Range(0,stall.TimberOptions).First(i=>!stall.IsSoundTimber(i));wrongChecked=!stall.SubmitOption(bad)&&stall.Mistakes==1&&!stall.Completed;}
                 else if(stall.kind==VillageWorkStall.WorkKind.Provisions)wrongChecked&=!stall.SubmitOption(3)&&stall.Mistakes==1;
                 else if(stall.kind==VillageWorkStall.WorkKind.Rope)wrongChecked&=!stall.SubmitOption(9)&&stall.Mistakes==1;
                 phase=2;waitUntil=EditorApplication.timeSinceStartup+.3;return;
@@ -122,8 +124,14 @@ public static class BeachBoatVillageWorkPlaytest
                             if(trade.Phase!=VillageWorkStall.WorkPhase.Won||trade.Mistakes!=0)throw new Exception("Unsolvable randomized order: "+trade.kind+" level "+level+" seed "+seed);
                             randomizedAttempts++;
                         }
+                        if(trade.kind==VillageWorkStall.WorkKind.Timber)
+                        for(int n=0;n<20;n++){UnityEngine.Random.InitState(938);trade.StartAttempt(2);SolveAttempt(trade);randomizedAttempts++;}
                         trade.Close();
                     }
+                    var minimum=typeof(VillageWorkStall).GetMethod("MinimumScoops",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic);
+                    foreach(var pair in new[]{new[]{2,3},new[]{3,5},new[]{4,7},new[]{5,8}})
+                    for(int amount=9;amount<23;amount++)
+                    {int expected=SolveRice(amount,pair[0],pair[1]).Length,actual=(int)minimum.Invoke(null,new object[]{amount,pair[0],pair[1]});if(actual!=expected)throw new Exception("Hard rice move limit is not solvable at minimum moves");exhaustiveRiceCases++;}
                     UnityEngine.Random.state=randomState;
                     if(!wrongChecked||!drumChecked)throw new Exception("Input or drum regression check failed");Finish();
                 }
@@ -162,9 +170,19 @@ public static class BeachBoatVillageWorkPlaytest
         {
             if(stall.kind==VillageWorkStall.WorkKind.Timber)
             {
-                var pair=(from a in Enumerable.Range(0,4) from b in Enumerable.Range(a+1,3-a)
-                    where stall.IsSoundTimber(a)&&stall.IsSoundTimber(b)&&stall.TimberLength(a)+stall.TimberLength(b)==stall.TimberTarget select new[]{a,b}).First();
-                stall.SubmitOption(pair[0]);stall.SubmitOption(pair[1]);
+                var cards=Enumerable.Range(0,stall.TimberOptions).Select(i=>$"{stall.IsSoundTimber(i)}:{stall.TimberLength(i)}:{(stall.Difficulty>0?stall.TimberStrength(i):0)}:{(stall.Difficulty>1?stall.TimberCost(i):0)}").OrderBy(v=>v,StringComparer.Ordinal);
+                string key=$"{stall.Difficulty}:{stall.TimberTarget}:{stall.TimberStrengthTarget}:{stall.TimberBudget}|"+string.Join(";",cards);
+                if(!timberHistory.Add(key))throw new Exception("A timber question repeated, including reordered cards");uniqueTimberOrders++;
+                bool IndependentSolution(int mask)
+                {
+                    var selected=Enumerable.Range(0,stall.TimberOptions).Where(i=>(mask&(1<<i))!=0).ToArray();
+                    return selected.Length==stall.TimberRequiredPieces&&selected.All(stall.IsSoundTimber)&&selected.Sum(stall.TimberLength)==stall.TimberTarget&&
+                        (stall.Difficulty==0||selected.Sum(stall.TimberStrength)>=stall.TimberStrengthTarget)&&(stall.Difficulty<2||selected.Sum(stall.TimberCost)<=stall.TimberBudget);
+                }
+                var solutions=Enumerable.Range(1,(1<<stall.TimberOptions)-1).Where(IndependentSolution).ToArray();
+                if(solutions.Length!=1)throw new Exception("Timber order does not have exactly one solution");
+                for(int i=0;i<stall.TimberOptions;i++)if((solutions[0]&(1<<i))!=0)stall.SubmitOption(i);
+                stall.SubmitOption(8);
             }
             else if(stall.kind==VillageWorkStall.WorkKind.Rope)
             {
@@ -173,7 +191,7 @@ public static class BeachBoatVillageWorkPlaytest
                 if(!stall.RopeConnected())throw new Exception("Rope solution did not form a connected path");stall.SubmitOption(9);
             }
             else if(stall.kind==VillageWorkStall.WorkKind.Rice)
-            {foreach(int action in SolveRice(stall.RiceTarget,stall.RiceSmall,stall.RiceLarge))stall.SubmitOption(action);stall.SubmitOption(3);}
+            {var steps=SolveRice(stall.RiceTarget,stall.RiceSmall,stall.RiceLarge);if(stall.Difficulty==2){if(steps.Length!=stall.MoveLimit)throw new Exception("Hard rice budget disagrees with independently solved shortest route");hardRiceOrders++;}foreach(int action in steps)stall.SubmitOption(action);stall.SubmitOption(3);}
             else
             {for(int i=0;i<3;i++)for(int n=0;n<stall.RequiredIngredient(i);n++)stall.SubmitOption(i);stall.SubmitOption(3);}
         }

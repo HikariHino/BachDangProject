@@ -2,6 +2,8 @@ Shader "OptiWater/Water Surface"
 {
     Properties
     {
+        [Enum(UnityEngine.Rendering.CullMode)] _Cull("Surface Faces", Float) = 2
+        _CurrentVelocity("River Current (world X/Z per second)", Vector) = (0, 0, 0, 0)
         _WaterColor("Water Color", Color) = (0.2, 0.5, 0.8, 0.6)
         _DeepWaterColor("Deep Water Color", Color) = (0.05, 0.2, 0.4, 1)
         _ShallowDeepBlendDepth("Shallow to Deep Blend Depth (m)", Range(0.5, 50.0)) = 8.0
@@ -121,7 +123,7 @@ Shader "OptiWater/Water Surface"
 
             Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off
-            Cull Back
+            Cull [_Cull]
 
             Stencil
             {
@@ -179,6 +181,7 @@ Shader "OptiWater/Water Surface"
             CBUFFER_START(UnityPerMaterial)
             float4 _WaterColor;
             float4 _DeepWaterColor;
+            float4 _CurrentVelocity;
             float _ShallowDeepBlendDepth;
             float _AlphaClearDepth, _AlphaFullDepth, _AlphaFalloffPower;
             float _AlphaEdgeWidth;
@@ -330,8 +333,12 @@ Shader "OptiWater/Water Surface"
                 return OUT;
             }
 
-            float4 WaterFragment(Varyings IN) : SV_Target
+            float4 WaterFragment(Varyings IN, FRONT_FACE_TYPE facing : FRONT_FACE_SEMANTIC) : SV_Target
             {
+                // A low orbit can cross the flat surface. The underside must remain water,
+                // rather than exposing the dry terrain underneath a back-culled plane.
+                if(IS_FRONT_VFACE(facing, false, true))
+                    return float4(lerp(_DeepWaterColor.rgb,_WaterColor.rgb,.25),.94);
                 float2 screenUV = IN.screenPos.xy / IN.screenPos.w;
                 float sceneRawDepth = SampleSceneDepth(screenUV);
 
@@ -402,7 +409,8 @@ if (_GerstnerWave > 0.5) {
                 float fresnel = _FresnelBias + (1.0 - _FresnelBias) * pow(1.0 - NdotV, _FresnelPower);
 
 if (_NormalPerturb > 0.5) {
-                float2 worldUV = IN.worldPos.xz / _NormalWorldScale;
+                float2 advectedXZ = IN.worldPos.xz - _Time.y * _CurrentVelocity.xy;
+                float2 worldUV = advectedXZ / _NormalWorldScale;
                 float nt = _Time.y;
                 float2 nuvA = worldUV + float2(nt * 0.008, nt * 0.003);
                 float2 nuvB = worldUV + float2(nt * -0.005, nt * 0.006);
@@ -415,7 +423,7 @@ if (_NormalPerturb > 0.5) {
                 litNormal = BlendNormalsWhiteout(litNormal, normalDetail * _NormalBlend);
                 flowXY += detailFlow;
 
-                float2 fineUV = IN.worldPos.xz / max(_NormalWorldScale * 0.2, 0.05);
+                float2 fineUV = advectedXZ / max(_NormalWorldScale * 0.2, 0.05);
                 float2 fnuvA = fineUV + float2(nt * 0.021, nt * 0.014);
                 float2 fnuvB = fineUV + float2(nt * -0.017, nt * 0.023);
                 float3 fnA = UnpackNormal(SAMPLE_TEXTURE2D_LOD(_NormalMap, sampler_NormalMap, fnuvA, 0));
