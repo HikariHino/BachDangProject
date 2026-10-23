@@ -23,15 +23,13 @@ namespace BeachBoatStory
         }
         public bool TryUse()
         {
-            if(!InRange||BeachBoatQuestSession.InteractionBlocked||BeachBoatMinigameStation.Active!=null||(QuestRowboat.Instance?.IsAboard??false))return false;
+            if(!InRange||BeachBoatQuestSession.InteractionBlocked||BeachBoatMinigameStation.Active!=null||(QuestRowboat.Instance?.BlocksGroundInteractions??false))return false;
             BeachBoatSoundscape.Instance?.PlayInteraction();
-            bool saved=BachDangSaveSystem.Save(displayName);
-            BachDangFrontEnd.Instance.Notify(saved?"ĐÃ LƯU HÀNH TRÌNH • "+displayName:BachDangSaveSystem.LastError);
-            BachDangFrontEnd.Instance.RefreshSaveInfo();return saved;
+            return BachDangFrontEnd.Instance.OpenSaveSlots(displayName);
         }
         void Update()
         {
-            bool near=InRange&&!BeachBoatQuestSession.InputBlocked&&!(QuestRowboat.Instance?.IsAboard??false);
+            bool near=InRange&&!BeachBoatQuestSession.InputBlocked&&!(QuestRowboat.Instance?.BlocksGroundInteractions??false);
             var story=BachDangStoryManager.Instance;if(story==null)return;
             if(near){story.SetInteractPrompt(true,"[E] Lưu hành trình • "+displayName,this);showing=true;
                 if(Input.GetKeyDown(KeyCode.E)&&StoryDialogueUI.TryConsumeInput())TryUse();}

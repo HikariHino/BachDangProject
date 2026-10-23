@@ -91,7 +91,8 @@ namespace BeachBoatStory
         public bool Hit(int damage,bool creditPlayer=true)
         {
             if(!IsAlive||damage<=0)return false;
-            Health=Mathf.Max(0,Health-damage);
+            int previous=Health;Health=Mathf.Max(0,Health-damage);
+            if(creditPlayer)CombatDamageNumbers.Show(AimPoint,previous-Health);
             BeachBoatSoundscape.Instance?.PlayHit();
             if(Health==0)
             {

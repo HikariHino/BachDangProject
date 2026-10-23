@@ -109,7 +109,7 @@ namespace BeachBoatStory
             if (battleTarget != null && battleTarget.gameObject.activeInHierarchy)
             {
                 Vector3 battleDirection = battleTarget.position - transform.position; battleDirection.y = 0;
-                if (battleDirection.sqrMagnitude > 155f * 155f) MoveAlongBow(battleDirection, dt, cruiseSpeed * 1.28f);
+                if (battleDirection.sqrMagnitude > 245f * 245f) MoveAlongBow(battleDirection, dt, cruiseSpeed * 1.28f);
                 else
                 {
                     Quaternion broadside = Quaternion.LookRotation(battleDirection.normalized, Vector3.up) * Quaternion.Euler(0, -visualForwardYaw - 18f, 0);
@@ -122,7 +122,7 @@ namespace BeachBoatStory
             var point = route[target];
             if (point == null) { target = (target + 1) % route.Length; return; }
             Vector3 direction = point.position - transform.position; direction.y = 0;
-            if (direction.sqrMagnitude < 36f)
+            if (direction.sqrMagnitude < 35f*35f)
             {
                 target = (target + 1) % route.Length; pause = pauseAtPoint; SetRowing(false); FloatOnly(); return;
             }
@@ -171,7 +171,7 @@ namespace BeachBoatStory
                 // A large hull can start in the shallow quay where every full-water probe
                 // fails. Allow a retreat toward deeper water if it also moves away from
                 // the player; otherwise yielding here deadlocks the return to harbor.
-                var escape=IsReturningToHarbor?returnBerth-transform.position:Vector3.zero;escape.y=0;
+                var escape=(IsReturningToHarbor?returnBerth:route[target].position)-transform.position;escape.y=0;
                 if(terrain!=null&&escape.sqrMagnitude>1)
                 {
                     var next=transform.position+escape.normalized*Mathf.Max(20,cruiseSpeed)*dt;
@@ -227,12 +227,45 @@ namespace BeachBoatStory
 
         void MoveAlongBow(Vector3 direction, float dt, float speed)
         {
-            Quaternion facing = Quaternion.LookRotation(direction.normalized, Vector3.up) * Quaternion.Euler(0, -visualForwardYaw, 0);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, facing, turnSpeed * dt);
-            Vector3 bow = transform.rotation * Quaternion.Euler(0, visualForwardYaw, 0) * Vector3.forward;
-            Vector3 position = transform.position + bow * speed * dt;
-            position.y = tide.transform.position.y + waterlineOffset + Mathf.Sin(Time.time * 1.45f + phase) * bobAmplitude;
-            transform.position = position; SetRowing(true);
+            var desired=direction.normalized;
+            var origin=transform.position;
+            Vector3 best=Vector3.zero;float bestScore=float.NegativeInfinity;
+            // Check the next turn and a short look-ahead, not just the waypoint.
+            for(int step=0;step<9;step++)
+            {
+                float angle=step==0?0:((step+1)/2)*25*(step%2==1?1:-1);
+                var heading=Quaternion.Euler(0,angle,0)*desired;
+                var rotation=Quaternion.LookRotation(heading)*Quaternion.Euler(0,-visualForwardYaw,0);
+                rotation=Quaternion.RotateTowards(transform.rotation,rotation,turnSpeed*dt);
+                var bow=rotation*Quaternion.Euler(0,visualForwardYaw,0)*Vector3.forward;
+                var next=origin+bow*speed*dt;
+                if(!NavigableWater(next,bow)||!NavigableWater(next+bow*45,bow))continue;
+                float score=Vector3.Dot(bow,desired)*100;
+                foreach(var friendly in RiverBoardingCombat.Instance?.friendlyBoats??System.Array.Empty<AmbientRiverBoat>())
+                {
+                    if(friendly==this||friendly==null)continue;
+                    float separation=QuestRowboat.FlatDistance(next,friendly.transform.position);
+                    float old=QuestRowboat.FlatDistance(origin,friendly.transform.position);
+                    if(separation<195&&separation<old)score-=400+(195-separation)*4;
+                }
+                if(score>bestScore){bestScore=score;best=bow;}
+            }
+            if(best==Vector3.zero){FloatOnly();SetRowing(false);return;}
+            var facing=Quaternion.LookRotation(best)*Quaternion.Euler(0,-visualForwardYaw,0);
+            transform.rotation=facing;
+            Vector3 position=origin+best*speed*dt;
+            position.y=tide.transform.position.y+waterlineOffset+Mathf.Sin(Time.time*1.45f+phase)*bobAmplitude;
+            transform.position=position;SetRowing(true);
+        }
+        bool NavigableWater(Vector3 position,Vector3 bow)
+        {
+            if(terrain==null)return false;
+            for(int i=-1;i<=1;i++)
+            {
+                var p=position+bow*(i*90);var local=p-terrain.transform.position;var size=terrain.terrainData.size;
+                if(local.x<0||local.z<0||local.x>size.x||local.z>size.z||terrain.SampleHeight(p)+terrain.transform.position.y>TideSystem.CurrentWaterHeight-14)return false;
+            }
+            return true;
         }
 
         void FloatOnly()

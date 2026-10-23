@@ -7,19 +7,19 @@
       "variants": [
         {
           "profile": "villager_m",
-          "path": "BachDang938/Voices/Cast/5c92deea6264c90bbef7_villager_m"
+          "path": "BachDang938/Voices/NativeCast/38b70817fd7a8c39eea1_villager_m"
         },
         {
           "profile": "villager_f",
-          "path": "BachDang938/Voices/Cast/320b73b11315d35bd38c_villager_f"
+          "path": "BachDang938/Voices/NativeCast/26f8a3fef460cd8a0893_villager_f"
         },
         {
           "profile": "villager_alt_m",
-          "path": "BachDang938/Voices/Cast/3e34a08ae3db0757ff9f_villager_alt_m"
+          "path": "BachDang938/Voices/NativeCast/b33263b43a1553ed45e6_villager_alt_m"
         },
         {
           "profile": "villager_alt_f",
-          "path": "BachDang938/Voices/Cast/0b36613822e0660c4808_villager_alt_f"
+          "path": "BachDang938/Voices/NativeCast/918b2e0d9de199b3d382_villager_alt_f"
         }
       ]
     },
@@ -30,11 +30,11 @@
       "variants": [
         {
           "profile": "smith_m",
-          "path": "BachDang938/Voices/Cast/b58e6671fa9443e2f539_smith_m"
+          "path": "BachDang938/Voices/NativeCast/73db3e00ed944ad1b288_smith_m"
         },
         {
           "profile": "smith_f",
-          "path": "BachDang938/Voices/Cast/3f842c7547949fff49fb_smith_f"
+          "path": "BachDang938/Voices/NativeCast/a07bb88ff2c5905cf310_smith_f"
         }
       ]
     },
@@ -45,11 +45,11 @@
       "variants": [
         {
           "profile": "soldier",
-          "path": "BachDang938/Voices/Cast/f85d3591b87dfeb464d2_soldier"
+          "path": "BachDang938/Voices/NativeCast/406f8ef5650ff667b257_soldier"
         },
         {
           "profile": "veteran",
-          "path": "BachDang938/Voices/Cast/4017d5f13755c3620d6b_veteran"
+          "path": "BachDang938/Voices/NativeCast/a32bfd0692013bfcac60_veteran"
         }
       ]
     },
@@ -60,11 +60,11 @@
       "variants": [
         {
           "profile": "merchant_m",
-          "path": "BachDang938/Voices/Cast/db0116fba5ac7788d91a_merchant_m"
+          "path": "BachDang938/Voices/NativeCast/18172805643a9a09b06a_merchant_m"
         },
         {
           "profile": "merchant_f",
-          "path": "BachDang938/Voices/Cast/8872236a0f0271eecf61_merchant_f"
+          "path": "BachDang938/Voices/NativeCast/783ff3126f6cf80e0ca6_merchant_f"
         }
       ]
     },
@@ -75,11 +75,11 @@
       "variants": [
         {
           "profile": "soldier",
-          "path": "BachDang938/Voices/Cast/1a45aa465719d4c0cc30_soldier"
+          "path": "BachDang938/Voices/NativeCast/5a4eb0948ba8bca660b6_soldier"
         },
         {
           "profile": "veteran",
-          "path": "BachDang938/Voices/Cast/9c0e5d577f63ff3e202f_veteran"
+          "path": "BachDang938/Voices/NativeCast/fc0d69adabe874cfb928_veteran"
         }
       ]
     },
@@ -90,19 +90,19 @@
       "variants": [
         {
           "profile": "villager_m",
-          "path": "BachDang938/Voices/Cast/c040b48a4628c68f6c43_villager_m"
+          "path": "BachDang938/Voices/NativeCast/ff0efbe9bb2c91d4d7be_villager_m"
         },
         {
           "profile": "villager_f",
-          "path": "BachDang938/Voices/Cast/0d648fd7014f4b31f7ee_villager_f"
+          "path": "BachDang938/Voices/NativeCast/0b3a4fb11ced351b3228_villager_f"
         },
         {
           "profile": "villager_alt_m",
-          "path": "BachDang938/Voices/Cast/9a55a334cb5e81017106_villager_alt_m"
+          "path": "BachDang938/Voices/NativeCast/66569e620c601064b44d_villager_alt_m"
         },
         {
           "profile": "villager_alt_f",
-          "path": "BachDang938/Voices/Cast/20ede07a5ee44d8c20f0_villager_alt_f"
+          "path": "BachDang938/Voices/NativeCast/5409aad6cac66cd6099c_villager_alt_f"
         }
       ]
     },
@@ -113,11 +113,11 @@
       "variants": [
         {
           "profile": "soldier",
-          "path": "BachDang938/Voices/Cast/d8e7ff9adf5596a95693_soldier"
+          "path": "BachDang938/Voices/NativeCast/876d288344b69f6e81b5_soldier"
         },
         {
           "profile": "veteran",
-          "path": "BachDang938/Voices/Cast/fd3ab5bb327ca1796266_veteran"
+          "path": "BachDang938/Voices/NativeCast/a96b899b97ac7e35c93c_veteran"
         }
       ]
     },
@@ -128,19 +128,19 @@
       "variants": [
         {
           "profile": "villager_m",
-          "path": "BachDang938/Voices/Cast/d39469a724c1308ad783_villager_m"
+          "path": "BachDang938/Voices/NativeCast/881f060a821b3fd90cda_villager_m"
         },
         {
           "profile": "villager_f",
-          "path": "BachDang938/Voices/Cast/7fa2cb080c2774e55538_villager_f"
+          "path": "BachDang938/Voices/NativeCast/47eeccc92c66489f13c4_villager_f"
         },
         {
           "profile": "villager_alt_m",
-          "path": "BachDang938/Voices/Cast/7986c81e927f001fe835_villager_alt_m"
+          "path": "BachDang938/Voices/NativeCast/383d771e4d9a38a6e8d7_villager_alt_m"
         },
         {
           "profile": "villager_alt_f",
-          "path": "BachDang938/Voices/Cast/a4ae4edd1e2d8295de7a_villager_alt_f"
+          "path": "BachDang938/Voices/NativeCast/dad32c4875a3a621799d_villager_alt_f"
         }
       ]
     },
@@ -151,11 +151,11 @@
       "variants": [
         {
           "profile": "merchant_m",
-          "path": "BachDang938/Voices/Cast/76452da761639ad15869_merchant_m"
+          "path": "BachDang938/Voices/NativeCast/34eddc43d1fed9602c76_merchant_m"
         },
         {
           "profile": "merchant_f",
-          "path": "BachDang938/Voices/Cast/491b4f3ef6fafc3ca525_merchant_f"
+          "path": "BachDang938/Voices/NativeCast/96cd3554efacd6e86a64_merchant_f"
         }
       ]
     },
@@ -166,19 +166,19 @@
       "variants": [
         {
           "profile": "villager_m",
-          "path": "BachDang938/Voices/Cast/a8e583e899ea7e9bc3ae_villager_m"
+          "path": "BachDang938/Voices/NativeCast/bdd9cadab14970a3f434_villager_m"
         },
         {
           "profile": "villager_f",
-          "path": "BachDang938/Voices/Cast/5535645e90ed06cc07ac_villager_f"
+          "path": "BachDang938/Voices/NativeCast/9b61887ea7f0d1d17221_villager_f"
         },
         {
           "profile": "villager_alt_m",
-          "path": "BachDang938/Voices/Cast/f6c36cfb3aaf1779d807_villager_alt_m"
+          "path": "BachDang938/Voices/NativeCast/1bf827c4055efe8b14b3_villager_alt_m"
         },
         {
           "profile": "villager_alt_f",
-          "path": "BachDang938/Voices/Cast/a814820d86dbaa4d7ff9_villager_alt_f"
+          "path": "BachDang938/Voices/NativeCast/e2cb5f061372a380cd61_villager_alt_f"
         }
       ]
     },
@@ -189,11 +189,11 @@
       "variants": [
         {
           "profile": "soldier",
-          "path": "BachDang938/Voices/Cast/04fe5d5c82a30d1521c1_soldier"
+          "path": "BachDang938/Voices/NativeCast/39009862711a718e9b20_soldier"
         },
         {
           "profile": "veteran",
-          "path": "BachDang938/Voices/Cast/715ed159f852e235a155_veteran"
+          "path": "BachDang938/Voices/NativeCast/675779601aaa35531aa0_veteran"
         }
       ]
     },
@@ -204,11 +204,11 @@
       "variants": [
         {
           "profile": "porter_m",
-          "path": "BachDang938/Voices/Cast/634d75d2bfc1ae16c658_porter_m"
+          "path": "BachDang938/Voices/NativeCast/6b18ca8d4a46af2f0a8d_porter_m"
         },
         {
           "profile": "porter_f",
-          "path": "BachDang938/Voices/Cast/a9ed90239da799b28c2a_porter_f"
+          "path": "BachDang938/Voices/NativeCast/b8a6acf5bb11889f75e8_porter_f"
         }
       ]
     },
@@ -219,11 +219,11 @@
       "variants": [
         {
           "profile": "fisher_m",
-          "path": "BachDang938/Voices/Cast/618aba2c013c6e44bd7d_fisher_m"
+          "path": "BachDang938/Voices/NativeCast/1f11ec9e494249ab1036_fisher_m"
         },
         {
           "profile": "fisher_f",
-          "path": "BachDang938/Voices/Cast/177e7d0ec4aee7d11764_fisher_f"
+          "path": "BachDang938/Voices/NativeCast/d13d7e86cb32cdb9dc2e_fisher_f"
         }
       ]
     },
@@ -234,19 +234,19 @@
       "variants": [
         {
           "profile": "villager_m",
-          "path": "BachDang938/Voices/Cast/9d2336740a4f67f56c64_villager_m"
+          "path": "BachDang938/Voices/NativeCast/437ec6afaad0edb28cac_villager_m"
         },
         {
           "profile": "villager_f",
-          "path": "BachDang938/Voices/Cast/27c317d6dfab4e4b53d7_villager_f"
+          "path": "BachDang938/Voices/NativeCast/beb99172a1cec1c34a6c_villager_f"
         },
         {
           "profile": "villager_alt_m",
-          "path": "BachDang938/Voices/Cast/63ac04ed6efc581796f0_villager_alt_m"
+          "path": "BachDang938/Voices/NativeCast/f4f74fe172657a20df62_villager_alt_m"
         },
         {
           "profile": "villager_alt_f",
-          "path": "BachDang938/Voices/Cast/00bfdf2e512347428aaa_villager_alt_f"
+          "path": "BachDang938/Voices/NativeCast/d510291898bc8d181b54_villager_alt_f"
         }
       ]
     },
@@ -257,11 +257,11 @@
       "variants": [
         {
           "profile": "smith_m",
-          "path": "BachDang938/Voices/Cast/db9482942cab4ce7c2bd_smith_m"
+          "path": "BachDang938/Voices/NativeCast/80b26da42e89b768f679_smith_m"
         },
         {
           "profile": "smith_f",
-          "path": "BachDang938/Voices/Cast/946b84d44234bb55d6b6_smith_f"
+          "path": "BachDang938/Voices/NativeCast/d25e27ada16a076058c4_smith_f"
         }
       ]
     },
@@ -272,19 +272,19 @@
       "variants": [
         {
           "profile": "villager_m",
-          "path": "BachDang938/Voices/Cast/2798b7d95e641197c4de_villager_m"
+          "path": "BachDang938/Voices/NativeCast/228fe2fdc387a724c76a_villager_m"
         },
         {
           "profile": "villager_f",
-          "path": "BachDang938/Voices/Cast/4dcbae9c8a371c017361_villager_f"
+          "path": "BachDang938/Voices/NativeCast/b9b223cc3425b69fff28_villager_f"
         },
         {
           "profile": "villager_alt_m",
-          "path": "BachDang938/Voices/Cast/16e237b7db5f6e0d586d_villager_alt_m"
+          "path": "BachDang938/Voices/NativeCast/b2a8fd9254a37507f141_villager_alt_m"
         },
         {
           "profile": "villager_alt_f",
-          "path": "BachDang938/Voices/Cast/bef25f9f412632a73f83_villager_alt_f"
+          "path": "BachDang938/Voices/NativeCast/de2cdab8fbddc8ba54a5_villager_alt_f"
         }
       ]
     },
@@ -295,11 +295,11 @@
       "variants": [
         {
           "profile": "soldier",
-          "path": "BachDang938/Voices/Cast/a150dae4eef4656ae099_soldier"
+          "path": "BachDang938/Voices/NativeCast/1f1a50795d74968f62af_soldier"
         },
         {
           "profile": "veteran",
-          "path": "BachDang938/Voices/Cast/d20c95d2fcf761f7ffca_veteran"
+          "path": "BachDang938/Voices/NativeCast/99ce5fd86902bc5d8953_veteran"
         }
       ]
     },
@@ -310,11 +310,11 @@
       "variants": [
         {
           "profile": "soldier",
-          "path": "BachDang938/Voices/Cast/a0fd4edce70484c31672_soldier"
+          "path": "BachDang938/Voices/NativeCast/6cad95f0add1daf014ec_soldier"
         },
         {
           "profile": "veteran",
-          "path": "BachDang938/Voices/Cast/8aaf9e414be7cd5c0995_veteran"
+          "path": "BachDang938/Voices/NativeCast/9fef14a4273a8c123a06_veteran"
         }
       ]
     },
@@ -325,11 +325,11 @@
       "variants": [
         {
           "profile": "soldier",
-          "path": "BachDang938/Voices/Cast/307e6f5397d48c72ec92_soldier"
+          "path": "BachDang938/Voices/NativeCast/6392728fa96ebf17a852_soldier"
         },
         {
           "profile": "veteran",
-          "path": "BachDang938/Voices/Cast/013febad81ac60fde98c_veteran"
+          "path": "BachDang938/Voices/NativeCast/511cfa1769b7f6db2a74_veteran"
         }
       ]
     },
@@ -340,19 +340,19 @@
       "variants": [
         {
           "profile": "villager_m",
-          "path": "BachDang938/Voices/Cast/cb92e4a90379eae4d21c_villager_m"
+          "path": "BachDang938/Voices/NativeCast/56aa580ddf6420acf5b3_villager_m"
         },
         {
           "profile": "villager_f",
-          "path": "BachDang938/Voices/Cast/8342c6dd1d21e05dbb53_villager_f"
+          "path": "BachDang938/Voices/NativeCast/cf2870a779bc4938e7d5_villager_f"
         },
         {
           "profile": "villager_alt_m",
-          "path": "BachDang938/Voices/Cast/311ce2109ca90077a118_villager_alt_m"
+          "path": "BachDang938/Voices/NativeCast/e94e4a81c3cdb25cfa1e_villager_alt_m"
         },
         {
           "profile": "villager_alt_f",
-          "path": "BachDang938/Voices/Cast/c8d1af249f55d04d59fb_villager_alt_f"
+          "path": "BachDang938/Voices/NativeCast/cda6d2e6368c6f0e726f_villager_alt_f"
         }
       ]
     },
@@ -363,11 +363,11 @@
       "variants": [
         {
           "profile": "farmer_m",
-          "path": "BachDang938/Voices/Cast/ea95daa2c65bda0d91b5_farmer_m"
+          "path": "BachDang938/Voices/NativeCast/ca025dc0ab5637486699_farmer_m"
         },
         {
           "profile": "farmer_f",
-          "path": "BachDang938/Voices/Cast/8458ab7c94856dd49ca7_farmer_f"
+          "path": "BachDang938/Voices/NativeCast/96ebea29d7cd1dd6bd73_farmer_f"
         }
       ]
     },
@@ -378,19 +378,19 @@
       "variants": [
         {
           "profile": "villager_m",
-          "path": "BachDang938/Voices/Cast/811e9c5278af7767231d_villager_m"
+          "path": "BachDang938/Voices/NativeCast/23814100c372109c2098_villager_m"
         },
         {
           "profile": "villager_f",
-          "path": "BachDang938/Voices/Cast/813d24a849da3790e8da_villager_f"
+          "path": "BachDang938/Voices/NativeCast/e475efe69ee6df2ca83a_villager_f"
         },
         {
           "profile": "villager_alt_m",
-          "path": "BachDang938/Voices/Cast/c9bcc81ae4fa312d54ce_villager_alt_m"
+          "path": "BachDang938/Voices/NativeCast/11e1c2b72f0ae26abaa7_villager_alt_m"
         },
         {
           "profile": "villager_alt_f",
-          "path": "BachDang938/Voices/Cast/f95697ece81097054d53_villager_alt_f"
+          "path": "BachDang938/Voices/NativeCast/e9612362cffa4accc70f_villager_alt_f"
         }
       ]
     },
@@ -401,11 +401,11 @@
       "variants": [
         {
           "profile": "soldier",
-          "path": "BachDang938/Voices/Cast/f8298622686dc1f8489d_soldier"
+          "path": "BachDang938/Voices/NativeCast/5d375e444fd6149ac86f_soldier"
         },
         {
           "profile": "veteran",
-          "path": "BachDang938/Voices/Cast/94280869d2739eed8473_veteran"
+          "path": "BachDang938/Voices/NativeCast/ffe421c76264c022a01d_veteran"
         }
       ]
     },
@@ -416,7 +416,7 @@
       "variants": [
         {
           "profile": "commander",
-          "path": "BachDang938/Voices/Cast/3b83aabcee6c345eb6eb_commander"
+          "path": "BachDang938/Voices/NativeCast/df5d00944d6e3f02b11c_commander"
         }
       ]
     },
@@ -427,7 +427,7 @@
       "variants": [
         {
           "profile": "commander",
-          "path": "BachDang938/Voices/Cast/066663ee186851d1bd55_commander"
+          "path": "BachDang938/Voices/NativeCast/4c5a3c4f0571b0e27e81_commander"
         }
       ]
     },
@@ -438,11 +438,11 @@
       "variants": [
         {
           "profile": "farmer_m",
-          "path": "BachDang938/Voices/Cast/b92c31b3e7d626d30319_farmer_m"
+          "path": "BachDang938/Voices/NativeCast/7595a4b62580275b2532_farmer_m"
         },
         {
           "profile": "farmer_f",
-          "path": "BachDang938/Voices/Cast/cd0236b19fe784206542_farmer_f"
+          "path": "BachDang938/Voices/NativeCast/c7b7a24194910453af83_farmer_f"
         }
       ]
     },
@@ -453,11 +453,11 @@
       "variants": [
         {
           "profile": "fisher_m",
-          "path": "BachDang938/Voices/Cast/db394c369f527689e545_fisher_m"
+          "path": "BachDang938/Voices/NativeCast/ac8b044ed4da4dd96481_fisher_m"
         },
         {
           "profile": "fisher_f",
-          "path": "BachDang938/Voices/Cast/c6ba7cd6cdb0e51a8a1e_fisher_f"
+          "path": "BachDang938/Voices/NativeCast/09b4f0e9ee2ad8f1a255_fisher_f"
         }
       ]
     },
@@ -468,7 +468,7 @@
       "variants": [
         {
           "profile": "commander",
-          "path": "BachDang938/Voices/Cast/0ceca56678781a68fece_commander"
+          "path": "BachDang938/Voices/NativeCast/fd4e06fcedf5d34752b8_commander"
         }
       ]
     },
@@ -479,11 +479,11 @@
       "variants": [
         {
           "profile": "porter_m",
-          "path": "BachDang938/Voices/Cast/1a64087c07febe5648a8_porter_m"
+          "path": "BachDang938/Voices/NativeCast/9d6f6ea28cc1577f7e31_porter_m"
         },
         {
           "profile": "porter_f",
-          "path": "BachDang938/Voices/Cast/fe34f15d9b28f17d9bd3_porter_f"
+          "path": "BachDang938/Voices/NativeCast/95a7c7f949a0152fbb87_porter_f"
         }
       ]
     },
@@ -494,11 +494,11 @@
       "variants": [
         {
           "profile": "fisher_m",
-          "path": "BachDang938/Voices/Cast/de88d22319dfc1c61a27_fisher_m"
+          "path": "BachDang938/Voices/NativeCast/8bb087791322ceccf0e5_fisher_m"
         },
         {
           "profile": "fisher_f",
-          "path": "BachDang938/Voices/Cast/84ecbb3fdc8f35530d72_fisher_f"
+          "path": "BachDang938/Voices/NativeCast/61fb9797b577e1e40258_fisher_f"
         }
       ]
     },
@@ -509,11 +509,11 @@
       "variants": [
         {
           "profile": "merchant_m",
-          "path": "BachDang938/Voices/Cast/8c5a5468fab0404cdbd1_merchant_m"
+          "path": "BachDang938/Voices/NativeCast/3a4df8f30d84be603767_merchant_m"
         },
         {
           "profile": "merchant_f",
-          "path": "BachDang938/Voices/Cast/deec6dc68957ae39f60e_merchant_f"
+          "path": "BachDang938/Voices/NativeCast/6fbaebc5daddf17c5b49_merchant_f"
         }
       ]
     },
@@ -524,11 +524,11 @@
       "variants": [
         {
           "profile": "farmer_m",
-          "path": "BachDang938/Voices/Cast/5ddade81a39271dfec4b_farmer_m"
+          "path": "BachDang938/Voices/NativeCast/82e2f9c10f5ea58935bf_farmer_m"
         },
         {
           "profile": "farmer_f",
-          "path": "BachDang938/Voices/Cast/24dc9957af2ad712d77e_farmer_f"
+          "path": "BachDang938/Voices/NativeCast/f9c91da36dbd01268bf9_farmer_f"
         }
       ]
     },
@@ -539,11 +539,11 @@
       "variants": [
         {
           "profile": "soldier",
-          "path": "BachDang938/Voices/Cast/1abf6ecf97fef6ba0548_soldier"
+          "path": "BachDang938/Voices/NativeCast/a99dbaea9c80c171e5c9_soldier"
         },
         {
           "profile": "veteran",
-          "path": "BachDang938/Voices/Cast/8d1b6810c4b11e06c0c5_veteran"
+          "path": "BachDang938/Voices/NativeCast/b183ee3d52a66a74fab4_veteran"
         }
       ]
     },
@@ -554,11 +554,11 @@
       "variants": [
         {
           "profile": "smith_m",
-          "path": "BachDang938/Voices/Cast/05e4bba7c01acded226e_smith_m"
+          "path": "BachDang938/Voices/NativeCast/32a1a2184fa2ad7234db_smith_m"
         },
         {
           "profile": "smith_f",
-          "path": "BachDang938/Voices/Cast/abd28726cf7c77024d1e_smith_f"
+          "path": "BachDang938/Voices/NativeCast/232578c3e3f8cdf9384a_smith_f"
         }
       ]
     },
@@ -569,7 +569,7 @@
       "variants": [
         {
           "profile": "commander",
-          "path": "BachDang938/Voices/Cast/788c024caf9bf081f0f4_commander"
+          "path": "BachDang938/Voices/NativeCast/5a6bb51dceaaf8a36072_commander"
         }
       ]
     },
@@ -580,19 +580,19 @@
       "variants": [
         {
           "profile": "villager_m",
-          "path": "BachDang938/Voices/Cast/5014b74a66497da744c4_villager_m"
+          "path": "BachDang938/Voices/NativeCast/61a9b6a7e3465cc7a4ea_villager_m"
         },
         {
           "profile": "villager_f",
-          "path": "BachDang938/Voices/Cast/70d67678cd7a905fe548_villager_f"
+          "path": "BachDang938/Voices/NativeCast/b37b1cda7607d9a68cef_villager_f"
         },
         {
           "profile": "villager_alt_m",
-          "path": "BachDang938/Voices/Cast/49798581a9c535fd76ca_villager_alt_m"
+          "path": "BachDang938/Voices/NativeCast/8bd7cad1f0c31904f8a1_villager_alt_m"
         },
         {
           "profile": "villager_alt_f",
-          "path": "BachDang938/Voices/Cast/b7f0ec335ac2483e7e3c_villager_alt_f"
+          "path": "BachDang938/Voices/NativeCast/bc317e6275d889ee1f37_villager_alt_f"
         }
       ]
     },
@@ -603,11 +603,11 @@
       "variants": [
         {
           "profile": "soldier",
-          "path": "BachDang938/Voices/Cast/e8c1df8410dcfaa70ef8_soldier"
+          "path": "BachDang938/Voices/NativeCast/763b533e34c87b4519c4_soldier"
         },
         {
           "profile": "veteran",
-          "path": "BachDang938/Voices/Cast/7f3bed9f08a64cc8a234_veteran"
+          "path": "BachDang938/Voices/NativeCast/6bf3f274b48fae0bc52a_veteran"
         }
       ]
     },
@@ -618,11 +618,11 @@
       "variants": [
         {
           "profile": "porter_m",
-          "path": "BachDang938/Voices/Cast/4892b9680252550a2815_porter_m"
+          "path": "BachDang938/Voices/NativeCast/4cade747129240a9d795_porter_m"
         },
         {
           "profile": "porter_f",
-          "path": "BachDang938/Voices/Cast/ba23ce3bf770d4d2dad6_porter_f"
+          "path": "BachDang938/Voices/NativeCast/f661c1f7b659f387d1ce_porter_f"
         }
       ]
     },
@@ -633,7 +633,7 @@
       "variants": [
         {
           "profile": "commander",
-          "path": "BachDang938/Voices/Cast/e84593456cd257f29fae_commander"
+          "path": "BachDang938/Voices/NativeCast/f20cc385f57876a41a39_commander"
         }
       ]
     },
@@ -644,19 +644,107 @@
       "variants": [
         {
           "profile": "villager_m",
-          "path": "BachDang938/Voices/Cast/2f8013f90434a3a259ae_villager_m"
+          "path": "BachDang938/Voices/NativeCast/349c3aff4e5213f07b97_villager_m"
         },
         {
           "profile": "villager_f",
-          "path": "BachDang938/Voices/Cast/80961753d2f76de4e5de_villager_f"
+          "path": "BachDang938/Voices/NativeCast/114e358b59bf7c3095f4_villager_f"
         },
         {
           "profile": "villager_alt_m",
-          "path": "BachDang938/Voices/Cast/74a73e437a843a57f6e8_villager_alt_m"
+          "path": "BachDang938/Voices/NativeCast/f1dd20b5680e0554a026_villager_alt_m"
         },
         {
           "profile": "villager_alt_f",
-          "path": "BachDang938/Voices/Cast/7b5d31650c7ab0a3ff59_villager_alt_f"
+          "path": "BachDang938/Voices/NativeCast/b6dac6236cb3f3ee9dd0_villager_alt_f"
+        }
+      ]
+    },
+    {
+      "line": "Năm 938.",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "narrator",
+          "path": "BachDang938/Voices/NativeCast/d8b2ce56f179a3d95269_narrator"
+        }
+      ]
+    },
+    {
+      "line": "Sau nhiều năm đất nước chìm trong thời kỳ Bắc thuộc, vùng đất Giao Châu vẫn đang đứng trước những biến động lớn.",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "narrator",
+          "path": "BachDang938/Voices/NativeCast/a9a271a93913a57bed53_narrator"
+        }
+      ]
+    },
+    {
+      "line": "Nhà Nam Hán ở phương Bắc đang tìm cách đưa quân tiến xuống Giao Châu, với ý định giành lại quyền kiểm soát vùng đất này.",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "narrator",
+          "path": "BachDang938/Voices/NativeCast/57f2a5b1843b69ca86dc_narrator"
+        }
+      ]
+    },
+    {
+      "line": "Trước nguy cơ xâm lược, Ngô Quyền tập hợp lực lượng, chuẩn bị chống lại quân Nam Hán.",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "narrator",
+          "path": "BachDang938/Voices/NativeCast/18d0a68da1643a51ebf5_narrator"
+        }
+      ]
+    },
+    {
+      "line": "Ngô Quyền lựa chọn sông Bạch Đằng làm nơi quyết chiến.",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "narrator",
+          "path": "BachDang938/Voices/NativeCast/ef912f7dca51dbfff5d8_narrator"
+        }
+      ]
+    },
+    {
+      "line": "Tại đây, quân ta chuẩn bị một kế sách dựa vào địa hình và thủy triều của dòng sông.",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "narrator",
+          "path": "BachDang938/Voices/NativeCast/7491e8bdbf026b0b1799_narrator"
+        }
+      ]
+    },
+    {
+      "line": "Những cọc gỗ được đẽo nhọn và bố trí dưới lòng sông, chờ thời cơ thích hợp.",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "narrator",
+          "path": "BachDang938/Voices/NativeCast/5248b89b4683ab82fca1_narrator"
+        }
+      ]
+    },
+    {
+      "line": "Nhưng trước khi trận chiến bắt đầu...",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "narrator",
+          "path": "BachDang938/Voices/NativeCast/5a0f7ade92aa28ead575_narrator"
         }
       ]
     }
@@ -664,122 +752,93 @@
   "profiles": [
     {
       "id": "commander",
-      "label": "Ngô Quyền",
-      "voice": "vi-VN-NamMinhNeural",
-      "rate": "-8%",
-      "pitch": "-12Hz"
+      "voice": "VieNeu/Minh Đức",
+      "tempo": 1.14
+    },
+    {
+      "id": "narrator",
+      "voice": "VieNeu/Thanh Bình",
+      "tempo": 1.13
     },
     {
       "id": "soldier",
-      "label": "Lính trẻ",
-      "voice": "en-US-AndrewMultilingualNeural",
-      "rate": "+2%",
-      "pitch": "-3Hz"
+      "voice": "VieNeu/Quốc Tuấn",
+      "tempo": 1.14
     },
     {
       "id": "veteran",
-      "label": "Quản quân / lính lâu năm",
-      "voice": "vi-VN-NamMinhNeural",
-      "rate": "-2%",
-      "pitch": "-5Hz"
+      "voice": "VieNeu/Hải Đăng",
+      "tempo": 1.12
     },
     {
       "id": "villager_m",
-      "label": "Nam dân làng",
-      "voice": "vi-VN-NamMinhNeural",
-      "rate": "+5%",
-      "pitch": "+3Hz"
+      "voice": "VieNeu/Phạm Tuyên",
+      "tempo": 1.1
     },
     {
       "id": "villager_f",
-      "label": "Nữ dân làng",
-      "voice": "vi-VN-HoaiMyNeural",
-      "rate": "+1%",
-      "pitch": "-2Hz"
+      "voice": "VieNeu/Trúc Ly",
+      "tempo": 1.1
     },
     {
       "id": "farmer_m",
-      "label": "Nông dân nam",
-      "voice": "vi-VN-NamMinhNeural",
-      "rate": "-1%",
-      "pitch": "-3Hz"
+      "voice": "VieNeu/Xuân Vĩnh",
+      "tempo": 1.12
     },
     {
       "id": "farmer_f",
-      "label": "Nông dân nữ",
-      "voice": "vi-VN-HoaiMyNeural",
-      "rate": "-3%",
-      "pitch": "-5Hz"
+      "voice": "VieNeu/Đoan Trang",
+      "tempo": 1.11
     },
     {
       "id": "fisher_m",
-      "label": "Ngư dân nam",
-      "voice": "en-US-BrianMultilingualNeural",
-      "rate": "+2%",
-      "pitch": "+0Hz"
+      "voice": "VieNeu/Quang Sơn",
+      "tempo": 1.1
     },
     {
       "id": "fisher_f",
-      "label": "Ngư dân nữ",
-      "voice": "vi-VN-HoaiMyNeural",
-      "rate": "+3%",
-      "pitch": "+1Hz"
+      "voice": "VieNeu/Ngọc Trân",
+      "tempo": 1.1
     },
     {
       "id": "merchant_m",
-      "label": "Người buôn nam",
-      "voice": "en-US-AndrewMultilingualNeural",
-      "rate": "+6%",
-      "pitch": "+3Hz"
+      "voice": "VieNeu/Minh Triết",
+      "tempo": 1.12
     },
     {
       "id": "merchant_f",
-      "label": "Người buôn nữ",
-      "voice": "en-US-EmmaMultilingualNeural",
-      "rate": "+3%",
-      "pitch": "+0Hz"
+      "voice": "VieNeu/Ngọc Huyền",
+      "tempo": 1.12
     },
     {
       "id": "porter_m",
-      "label": "Người khuân vác nam",
-      "voice": "vi-VN-NamMinhNeural",
-      "rate": "+4%",
-      "pitch": "-4Hz"
+      "voice": "VieNeu/Thái Sơn",
+      "tempo": 1.12
     },
     {
       "id": "porter_f",
-      "label": "Người khuân vác nữ",
-      "voice": "vi-VN-HoaiMyNeural",
-      "rate": "+4%",
-      "pitch": "-3Hz"
+      "voice": "VieNeu/Thùy Dung",
+      "tempo": 1.12
     },
     {
       "id": "smith_m",
-      "label": "Thợ rèn nam",
-      "voice": "en-US-BrianMultilingualNeural",
-      "rate": "-1%",
-      "pitch": "-6Hz"
+      "voice": "VieNeu/Đức Trí",
+      "tempo": 1.11
     },
     {
       "id": "smith_f",
-      "label": "Thợ rèn nữ",
-      "voice": "en-US-EmmaMultilingualNeural",
-      "rate": "-1%",
-      "pitch": "-4Hz"
+      "voice": "VieNeu/Kim Thanh",
+      "tempo": 1.11
     },
     {
       "id": "villager_alt_m",
-      "label": "Nam dân làng khác",
-      "voice": "en-US-AndrewMultilingualNeural",
-      "rate": "+1%",
-      "pitch": "+2Hz"
+      "voice": "VieNeu/Adam",
+      "tempo": 1.12
     },
     {
       "id": "villager_alt_f",
-      "label": "Nữ dân làng khác",
-      "voice": "en-US-EmmaMultilingualNeural",
-      "rate": "+0%",
-      "pitch": "+2Hz"
+      "voice": "VieNeu/Thục Đoan",
+      "tempo": 1.11
     }
   ]
 }

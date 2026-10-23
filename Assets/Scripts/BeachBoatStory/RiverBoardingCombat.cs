@@ -10,7 +10,7 @@ namespace BeachBoatStory
     [DefaultExecutionOrder(400)]
     public sealed class RiverBoardingCombat : MonoBehaviour
     {
-        public enum PlayerState { Rowboat, Swimming, Climbing, EnemyDeck }
+        public enum PlayerState { Rowboat, Swimming, Climbing, EnemyDeck, Land }
         public static RiverBoardingCombat Instance {get;private set;}
         public GameObject swordPrefab,allyPrefab,enemyPrefab;
         public RuntimeAnimatorController swordController;
@@ -80,7 +80,7 @@ namespace BeachBoatStory
                 if(h==null){h=new Hostile{go=guard.gameObject,guard=guard,pose=enemyPoses[guard]};hostiles.Add(h);}
                 h.source=Ship(saved.source);h.boat=Boat(saved.boat);h.state=saved.state;h.time=saved.time;h.start=saved.start;h.local=saved.local;h.fromWreck=saved.fromWreck;h.targetPlayer=saved.targetPlayer;
                 h.go.SetActive(saved.active);h.go.transform.SetPositionAndRotation(saved.position,saved.rotation);
-                h.pose.FinishTraversal();h.pose.SetSword(h.state==3);if(h.state==3)h.guard.FitStandingOnDeck();
+                h.pose.FinishTraversal();h.pose.SetSword(h.state==3||h.state==4);if(h.state==3||h.state==4)h.guard.FitStandingOnDeck();
                 if(h.state==1)h.pose.Traversal=RiverFighterPose.Motion.Swim;else if(h.state==2)h.pose.Traversal=RiverFighterPose.Motion.Climb;
             }
             foreach(var saved in data.allies??Array.Empty<BachDangSaveData.Fighter>())
@@ -98,8 +98,10 @@ namespace BeachBoatStory
             State=(PlayerState)data.state;SwordDrawn=data.sword;deckShip=Ship(data.deckShip);deckAnchor=deckShip!=null?deckShip.transform:null;
             deckLocal=data.deckLocal;climbLocalStart=data.climbLocalStart;climbTime=data.climbTime;
             playerPose.FinishTraversal();playerPose.SetSword(SwordDrawn);
-            if(State==PlayerState.EnemyDeck&&!SwordDrawn)playerPose.Animator.runtimeAnimatorController=FootController;
+            if((State==PlayerState.EnemyDeck||State==PlayerState.Land)&&!SwordDrawn)playerPose.Animator.runtimeAnimatorController=FootController;
             if(State==PlayerState.Swimming)playerPose.Traversal=RiverFighterPose.Motion.Swim;else if(State==PlayerState.Climbing)playerPose.Traversal=RiverFighterPose.Motion.Climb;
+            QuestRowboat.Instance.SetShoreWalking(State==PlayerState.Land);
+            if(State==PlayerState.Land&&SwordDrawn)playerPose.Animator.runtimeAnimatorController=swordController;
             wasBattle=BachDangStoryManager.Instance.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress;
             if(PlayerAway){var camera=session.storyCamera.GetComponent<Camera_Script>();camera.distance=70;camera.heightOffset=27;}
         }
@@ -139,7 +141,9 @@ namespace BeachBoatStory
         }
         public void ResetBattle(bool preserveWrecks=false)
         {
-            if(playerPose!=null){playerPose.Restore();if(QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard)playerPose.Animator.runtimeAnimatorController=QuestRowboat.Instance.rowingController;}SwordDrawn=false;State=PlayerState.Rowboat;deckShip=null;deckAnchor=null;
+            bool keepLand=preserveWrecks&&State==PlayerState.Land;
+            if(QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard)QuestRowboat.Instance.SetShoreWalking(keepLand);
+            if(playerPose!=null){playerPose.Restore();if(QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard)playerPose.Animator.runtimeAnimatorController=QuestRowboat.Instance.rowingController;}SwordDrawn=false;State=keepLand?PlayerState.Land:PlayerState.Rowboat;if(keepLand)playerPose.Animator.runtimeAnimatorController=FootController;deckShip=null;deckAnchor=null;
             foreach(var a in allies){a.go.SetActive(false);a.health=6;a.state=0;a.pose.Restore();}
             foreach(var d in defenders){d.pose.Restore();d.health=4;d.fighting=false;d.soldier.gameObject.SetActive(true);d.pose.Animator.enabled=true;d.pose.Animator.Update(0);d.pose.Animator.enabled=false;}
             DefenderHits=DefenderDamageTaken=0;
@@ -151,7 +155,7 @@ namespace BeachBoatStory
         void Update()
         {
             bool battle=archery!=null&&archery.BattleActive;
-            if(!battle){if(wasBattle)ResetBattle(true);return;}
+            if(!battle){if(wasBattle)ResetBattle(true);if(State==PlayerState.Land&&!BeachBoatQuestSession.InputBlocked)StepPlayer(Time.deltaTime);return;}
             if(!wasBattle)
             {
                 wasBattle=true;foreach(var a in allies){a.health=6;a.state=0;a.arrows=2;a.shot=Time.time+2;a.go.SetActive(true);a.pose.SetSword(true);}nextArrow=Time.time+3;
@@ -166,7 +170,7 @@ namespace BeachBoatStory
                 if(SwordDrawn&&Input.GetMouseButtonDown(0))TrySlash();
             }
             StepPlayer(Time.deltaTime);StepAllies(Time.deltaTime);StepHostiles(Time.deltaTime);StepDefenders();StepEnemies(Time.deltaTime);
-            hint.text=State==PlayerState.Swimming?"WASD: BƠI • SHIFT: BƠI NHANH • SPACE: LEO LÊN TÀU GẦN / VỀ THUYỀN":
+            hint.text=State==PlayerState.Land?"À BỜ • WASD: ĐI BỘ • SHIFT: CHẠY • Q: KIẾM • CHUỘT PHẢI: NGẮM / ĐỠ":State==PlayerState.Swimming?"WASD: BƠI • SHIFT: BƠI NHANH • SPACE: LEO LÊN TÀU GẦN / VỀ THUYỀN":
                 State==PlayerState.Climbing?"ĐANG BÁM MẠN VÀ LEO LÊN BOONG…":
                 SwordDrawn?"KIẾM • CHUỘT TRÁI: CHÉM • CHUỘT PHẢI: ĐỠ • Q: CẤT KIẾM • F: XUỐNG NƯỚC":
                 "Q: RÚT KIẾM • F: XUỐNG NƯỚC • SPACE: LEO TÀU • ĐỒNG MINH ĐANG TIẾP CHIẾN";
@@ -182,7 +186,7 @@ namespace BeachBoatStory
         {
             if(!archery.BattleActive||BeachBoatQuestSession.InteractionBlocked||IsTraversing)return false;
             archery.SetAim(false);SwordDrawn=!SwordDrawn;playerPose.SetSword(SwordDrawn);
-            if(!SwordDrawn&&State==PlayerState.EnemyDeck)playerPose.Animator.runtimeAnimatorController=FootController;return true;
+            if(!SwordDrawn&&(State==PlayerState.EnemyDeck||State==PlayerState.Land))playerPose.Animator.runtimeAnimatorController=FootController;return true;
         }
         public bool TrySlash()
         {
@@ -210,20 +214,55 @@ namespace BeachBoatStory
                 {playerPose.FinishTraversal();playerPose.Animator.runtimeAnimatorController=QuestRowboat.Instance.rowingController;State=PlayerState.Rowboat;deckShip=null;deckAnchor=null;QuestRowboat.Instance.UseSoldierBattleCamera();return true;}
                 if(nearest>(ship!=null&&ship.isDestroyed?52:24))return false;deckShip=ship;deckAnchor=anchor;deckLocal=local;climbStart=session.player.transform.position;climbLocalStart=anchor.InverseTransformPoint(climbStart);climbTime=0;State=PlayerState.Climbing;playerPose.Traversal=RiverFighterPose.Motion.Climb;ClimbsStarted++;BeachBoatSoundscape.Instance?.PlayClimbGrip();return true;
             }
+            if(State==PlayerState.Land)return false;
             BeginSwim(session.player.transform.position+session.player.transform.right*22);return true;
         }
         void BeginSwim(Vector3 p)
         {
-            archery.SetAim(false);playerPose.SetSword(false);SwordDrawn=false;
+            archery.SetAim(false);playerPose.SetSword(false);SwordDrawn=false;QuestRowboat.Instance.SetShoreWalking(false);
             p.y=TideSystem.CurrentWaterHeight-5;MovePlayer(p,session.player.transform.rotation);State=PlayerState.Swimming;playerPose.Traversal=RiverFighterPose.Motion.Swim;SwimsStarted++;
             BeachBoatSoundscape.Instance?.PlayWaterEntry();
             var camera=session.storyCamera.GetComponent<Camera_Script>();camera.distance=70;camera.heightOffset=27;camera.SnapToTarget();
+        }
+        static bool GroundAt(Vector3 point,out float height)
+        {
+            foreach(var terrain in Terrain.activeTerrains)
+            {
+                var p=point-terrain.transform.position;var size=terrain.terrainData.size;
+                if(p.x>=0&&p.z>=0&&p.x<=size.x&&p.z<=size.z)
+                {height=terrain.SampleHeight(point)+terrain.transform.position.y;return true;}
+            }
+            height=0;return false;
+        }
+        float FeetOffset()
+        {
+            var c=session.player.GetComponent<CapsuleCollider>();
+            return (c.center.y-c.height*.5f)*session.player.transform.lossyScale.y;
+        }
+        public bool TryWalkAshore(Vector3 point)
+        {
+            if(State!=PlayerState.Swimming||!GroundAt(point,out float floor)||floor<TideSystem.CurrentWaterHeight-1||floor>TideSystem.CurrentWaterHeight+12)return false;
+            var capsule=session.player.GetComponent<CapsuleCollider>();
+            var landing=point;landing.y=floor-FeetOffset()+.5f;
+            float radius=capsule.radius*Mathf.Max(session.player.transform.lossyScale.x,session.player.transform.lossyScale.z)*.88f;
+            float height=capsule.height*session.player.transform.lossyScale.y;
+            var hits=Physics.OverlapCapsule(new Vector3(point.x,floor+radius+1,point.z),new Vector3(point.x,floor+height-radius,point.z),radius,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+            foreach(var hit in hits)if(!(hit is TerrainCollider)&&!hit.transform.IsChildOf(session.player.transform))return false;
+            playerPose.FinishTraversal();State=PlayerState.Land;deckShip=null;deckAnchor=null;
+            MovePlayer(landing,Quaternion.Euler(0,session.player.transform.eulerAngles.y,0));
+            QuestRowboat.Instance.SetShoreWalking(true);Physics.SyncTransforms();return true;
         }
         void MovePlayer(Vector3 p,Quaternion rotation)
         {session.player.transform.SetPositionAndRotation(p,rotation);var body=session.player.GetComponent<Rigidbody>();body.position=p;body.rotation=rotation;}
         public void StepPlayer(float dt)
         {
             if(State==PlayerState.Rowboat)return;
+            if(State==PlayerState.Land)
+            {
+                var at=session.player.transform.position;
+                if(GroundAt(at,out float floor)&&floor<TideSystem.CurrentWaterHeight-5&&at.y+FeetOffset()<TideSystem.CurrentWaterHeight-1)BeginSwim(at);
+                return;
+            }
             if(State==PlayerState.EnemyDeck&&(deckAnchor==null||deckShip==null||!deckShip.gameObject.activeInHierarchy)){BeginSwim(session.player.transform.position);return;}
             if(State==PlayerState.Climbing)
             {
@@ -247,6 +286,7 @@ namespace BeachBoatStory
                 playerPose.SwimMoving=direction.sqrMagnitude>.01f;playerPose.SwimFast=fast;
                 p=RiverHullCollision.Move(session.player.transform.position+Vector3.up*3,p+Vector3.up*3,4)-Vector3.up*3;
                 p.y=TideSystem.CurrentWaterHeight-5+Mathf.Sin(Time.time*3)*.3f;
+                if(TryWalkAshore(p))return;
             }
             else
             {
@@ -294,7 +334,10 @@ namespace BeachBoatStory
         EnemyDeckGuard TargetFor(Ally ally)
         {
             EnemyDeckGuard best=null;float d=float.PositiveInfinity;
-            foreach(var guard in archery.guards)if(guard.IsAlive){float distance=(guard.transform.position-ally.go.transform.position).sqrMagnitude;if(distance<d){d=distance;best=guard;}}
+            foreach(var guard in archery.guards)if(guard.IsAlive){float distance=(guard.transform.position-ally.go.transform.position).sqrMagnitude;
+                int slot=Array.IndexOf(friendlyBoats,ally.home);var ships=EnemyFleetDirector.Instance.enemyShips;
+                if(slot>=0&&ships.Length>0&&guard.ship!=ships[slot%ships.Length])distance+=1800*1800;
+                if(distance<d){d=distance;best=guard;}}
             return best;
         }
         public void StepAllies(float dt)
@@ -356,7 +399,7 @@ namespace BeachBoatStory
             foreach(var guard in archery.guards)
             {
                 if(!guard.IsAlive){if(enemyPoses.TryGetValue(guard,out var deadPose))deadPose.SetSword(false);continue;}
-                if(guard.IsIndependentBoarder&&hostiles.Exists(h=>h.guard==guard&&h.state!=3)){guard.SetMelee(hostiles.Exists(h=>h.guard==guard&&h.state!=0));continue;}
+                if(guard.IsIndependentBoarder&&hostiles.Exists(h=>h.guard==guard&&h.state!=3&&h.state!=4)){guard.SetMelee(hostiles.Exists(h=>h.guard==guard&&h.state!=0));continue;}
                 Transform target=null;Ally opponent=null;Defender defender=null;float nearest=(PlayerAway||guard.IsIndependentBoarder)&&!IsTraversing?Vector3.Distance(session.player.transform.position,guard.transform.position):float.PositiveInfinity;
                 if(nearest<50)target=session.player.transform;
                 foreach(var a in allies)if(a.health>0&&a.state==3&&a.go.activeSelf)
@@ -408,6 +451,15 @@ namespace BeachBoatStory
                 var end=h.targetPlayer&&PlayerAway?session.player.transform.position:h.boat.position+h.boat.right*(h.boat==QuestRowboat.Instance.transform?4:10)+Vector3.up*(h.boat==QuestRowboat.Instance.transform?10:24);
                 if(h.boat!=QuestRowboat.Instance.transform&&h.boat.GetComponent<AmbientRiverBoat>()!=null)
                 {var crew=h.boat.GetComponentInChildren<FleetDeckCrew>();if(crew!=null&&crew.soldiers.Length>0)end=crew.soldiers[0].position+h.boat.forward*8;}
+                if(h.state==4)
+                {
+                    if(GroundAt(h.go.transform.position,out float ground))
+                    {
+                        var position=h.go.transform.position;position.y=ground+.4f;h.go.transform.position=position;
+                        if(ground<TideSystem.CurrentWaterHeight-3){h.state=1;h.pose.SetSword(false);h.pose.Traversal=RiverFighterPose.Motion.Swim;}
+                    }
+                    continue;
+                }
                 if(h.state==1)
                 {
                     var water=end;
@@ -423,6 +475,13 @@ namespace BeachBoatStory
                         water=targetShip.transform.TransformPoint(new Vector3(side*(targetShip.stakeHitDistance+12),0,0));
                     }
                     water.y=TideSystem.CurrentWaterHeight-4;h.go.transform.position=RiverHullCollision.Move(h.go.transform.position,Vector3.MoveTowards(h.go.transform.position,water,24*dt),4,true);
+                    if(h.targetPlayer&&State==PlayerState.Land)
+                    {
+                        if(GroundAt(h.go.transform.position,out float ground)&&ground>=TideSystem.CurrentWaterHeight-1)
+                        {var pos=h.go.transform.position;pos.y=ground+.4f;h.go.transform.position=pos;h.state=4;h.pose.FinishTraversal();h.pose.SetSword(true);h.pose.Animator.Update(0);h.guard.FitStandingOnDeck();}
+                        var face=end-h.go.transform.position;face.y=0;if(face.sqrMagnitude>.1f)h.go.transform.rotation=Quaternion.LookRotation(face);
+                        continue;
+                    }
                     if(h.targetPlayer&&State==PlayerState.Swimming)
                     {
                         h.pose.SwimMoving=QuestRowboat.FlatDistance(h.go.transform.position,water)>18;

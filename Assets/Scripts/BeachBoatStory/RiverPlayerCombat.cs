@@ -135,7 +135,7 @@ namespace BeachBoatStory
             IsAiming=value;
             if(animator!=null&&QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard)
             {animator.runtimeAnimatorController=value&&bowController!=null?bowController:
-                RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.EnemyDeck?
+                RiverBoardingCombat.Instance!=null&&(RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.EnemyDeck||RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.Land)?
                 RiverBoardingCombat.Instance.FootController:QuestRowboat.Instance.rowingController;animator.speed=1;}
             if(bow!=null)bow.gameObject.SetActive(value);
         }

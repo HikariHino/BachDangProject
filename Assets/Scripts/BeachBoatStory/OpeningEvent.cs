@@ -25,6 +25,7 @@ public class OpeningEvent : MonoBehaviour
     readonly Dictionary<SaBanHUD, bool> hiddenHUDs = new Dictionary<SaBanHUD, bool>();
     readonly Dictionary<Graphic, bool> hiddenGraphics = new Dictionary<Graphic, bool>();
     Canvas openingCanvas;
+    DialogueVoice narrator;
     bool advanceRequested, readyToAdvance;
     float lineReadyAt;
 
@@ -54,6 +55,7 @@ public class OpeningEvent : MonoBehaviour
             IsOpeningEnded = true; enabled = false; return;
         }
         current = this;
+        narrator=gameObject.AddComponent<DialogueVoice>();
         if (player == null) player = FindPlayerInScene();
         openingCanvas.enabled = true;
         openingCanvas.sortingOrder = 9999;
@@ -75,11 +77,12 @@ public class OpeningEvent : MonoBehaviour
         Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
         for (int i = 0; i < storyLines.Length; i++)
         {
+            narrator.Play("Dẫn truyện",storyLines[i],"Narrator938",false,"narrator");
             CurrentLine = i; advanceRequested = false; readyToAdvance = false;
             storyText.text = storyLines[i] + "\n\n<size=60%><color=#BBBBBB>[Enter: tiếp tục]     [P: bỏ qua cốt truyện]</color></size>";
             yield return FadeText(0, 1, .35f);
             lineReadyAt = Time.unscaledTime; readyToAdvance = true;
-            float readingTime = Mathf.Max(minimumReadingSeconds, storyLines[i].Length * secondsPerCharacter);
+            float readingTime = Mathf.Max(minimumReadingSeconds,narrator.Duration+.4f);
             while (!advanceRequested && (!autoAdvance || Time.unscaledTime - lineReadyAt < readingTime)) yield return null;
             readyToAdvance = false;
             yield return FadeText(1, 0, .25f);
@@ -151,6 +154,7 @@ public class OpeningEvent : MonoBehaviour
     {
         if (IsOpeningEnded) return;
         IsOpeningEnded = true;
+        narrator?.Stop();
         RestoreUI();
         if (player == null) player = FindPlayerInScene();
         if (player != null)
@@ -174,7 +178,7 @@ public class OpeningEvent : MonoBehaviour
     void OnDisable()
     {
         if (current != this) return;
-        StopAllCoroutines(); RestoreUI(); current = null;
+        StopAllCoroutines(); narrator?.Stop();RestoreUI(); current = null;
     }
 
     public static GameObject FindPlayerInScene()

@@ -41,7 +41,7 @@ namespace BeachBoatStory
         {
             return isActiveAndEnabled && session.storyMode && !BeachBoatQuestSession.InteractionBlocked &&
                    BeachBoatMinigameStation.Active == null &&
-                   (QuestRowboat.Instance == null || !QuestRowboat.Instance.IsAboard) &&
+                   (QuestRowboat.Instance == null || !QuestRowboat.Instance.BlocksGroundInteractions) &&
                    story.currentState != BachDangStoryManager.StoryState.Act3_BattleInProgress;
         }
 

@@ -16,15 +16,34 @@ namespace BeachBoatStory
 #if UNITY_EDITOR
         public static string TestDirectory;
 #endif
-        public static string SavePath
+        public const int SlotCount=10;
+        public static int ActiveSlot {get;private set;}=1;
+        public static string SlotPath(int slot)
         {
-            get
-            {
+            if(slot<1||slot>SlotCount)throw new ArgumentOutOfRangeException(nameof(slot));
+            string directory=Application.persistentDataPath;
 #if UNITY_EDITOR
-                if(!string.IsNullOrEmpty(TestDirectory))return Path.Combine(TestDirectory,"campaign938.json");
+            if(!string.IsNullOrEmpty(TestDirectory))directory=TestDirectory;
 #endif
-                return Path.Combine(Application.persistentDataPath,"campaign938.json");
-            }
+            // Slot one retains the original path, so existing journeys remain available.
+            return Path.Combine(directory,slot==1?"campaign938.json":$"campaign938-{slot:00}.json");
+        }
+        public static string SavePath=>SlotPath(ActiveSlot);
+        public static bool HasData(int slot)=>File.Exists(SlotPath(slot))||File.Exists(SlotPath(slot)+".bak");
+        public static void SelectSlot(int slot){SlotPath(slot);ActiveSlot=slot;}
+        public static bool TryRead(int slot,out BachDangSaveData data)
+        {
+            LastError="";string path=SlotPath(slot);
+            if(ReadFile(path,out data))return true;
+            if(ReadFile(path+".bak",out data)){LastError="Đang dùng bản lưu dự phòng gần nhất.";return true;}
+            LastError=HasData(slot)?"Ô lưu bị lỗi. Tiến trình hiện tại chưa bị thay đổi.":"Ô lưu trống.";return false;
+        }
+        public static bool TryReadLatest(out BachDangSaveData data)
+        {
+            data=null;
+            for(int slot=1;slot<=SlotCount;slot++)
+                if(TryRead(slot,out var candidate)&&(data==null||string.CompareOrdinal(candidate.savedAt,data.savedAt)>0))data=candidate;
+            return data!=null;
         }
         public static string LastError {get;private set;}
         public static string GuardId(EnemyDeckGuard guard)=>guard.name.StartsWith("Linh_Nam_Han_Nhay_Tau_",StringComparison.Ordinal)?"pool/"+guard.name:guard.ship.name+"/"+guard.name;
@@ -48,11 +67,12 @@ namespace BeachBoatStory
             }
             catch(Exception e) when(e is IOException||e is UnauthorizedAccessException||e is ArgumentException){return false;}
         }
-        public static bool TryRead(out BachDangSaveData data)
+        public static bool TryRead(out BachDangSaveData data)=>TryRead(ActiveSlot,out data);
+        public static bool Save(int slot,string location)
         {
-            LastError="";if(ReadFile(SavePath,out data))return true;
-            if(ReadFile(SavePath+".bak",out data)){LastError="Đang dùng bản lưu dự phòng gần nhất.";return true;}
-            LastError=File.Exists(SavePath)?"Không đọc được bản lưu. Tiến trình hiện tại chưa bị thay đổi.":"Chưa có bản lưu. Hãy lưu tại lều hoặc trong menu Esc.";return false;
+            int previous=ActiveSlot;SelectSlot(slot);
+            if(Save(location))return true;
+            ActiveSlot=previous;return false;
         }
         public static bool CanSave=>BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
             !(QuestCheckpoint.Instance?.IsDefeated??false)&&!(ScreenFader.Instance?.IsTransitioning??false);

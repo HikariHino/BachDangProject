@@ -40,6 +40,7 @@ namespace BeachBoatStory
 
         public void BeginAmbush(IEnumerable<EnemyShip> fleet)
         {
+            SynchronizeFriendlyFleet();
             enemies.Clear();
             foreach (var ship in fleet) if (ship != null && !enemies.Contains(ship)) enemies.Add(ship);
             if (friendlyBoats == null || friendlyBoats.Length == 0)
@@ -50,10 +51,17 @@ namespace BeachBoatStory
 
         public void EndBattle(bool retreat=false)
         {
+            SynchronizeFriendlyFleet();
             fighting = false;
             for(int i=0;i<(friendlyBoats?.Length??0);i++)if(friendlyBoats[i]!=null)
             {if(retreat)friendlyBoats[i].ReturnToHarbor(i);else friendlyBoats[i].SetBattleTarget(null);}
             if (shots != null) foreach (var shot in shots) if (shot?.gameObject != null) shot.gameObject.SetActive(false);
+        }
+
+        void SynchronizeFriendlyFleet()
+        {
+            var registered=RiverBoardingCombat.Instance?.friendlyBoats;
+            if(registered!=null&&registered.Length>0)friendlyBoats=registered;
         }
 
         void Update()

@@ -192,7 +192,7 @@ public static class BeachBoatVillageWorkPlaytest
                 if(!stall.RopeConnected())throw new Exception("Rope solution did not form a connected path");stall.SubmitOption(9);
             }
             else if(stall.kind==VillageWorkStall.WorkKind.Rice)
-            {var steps=SolveRice(stall.RiceTarget,stall.RiceSmall,stall.RiceLarge);if(stall.Difficulty==2){if(steps.Length!=stall.MoveLimit)throw new Exception("Hard rice budget disagrees with independently solved shortest route");hardRiceOrders++;}foreach(int action in steps)stall.SubmitOption(action);stall.SubmitOption(3);}
+            {var steps=SolveRice(stall.RiceTarget,stall.RiceSmall,stall.RiceLarge);if(stall.Difficulty==2){if(steps.Length>4||stall.MoveLimit<steps.Length+2)throw new Exception("Hard rice budget disagrees with independently solved shortest route");hardRiceOrders++;}foreach(int action in steps)stall.SubmitOption(action);stall.SubmitOption(3);}
             else
             {for(int i=0;i<3;i++)for(int n=0;n<stall.RequiredIngredient(i);n++)stall.SubmitOption(i);stall.SubmitOption(3);}
         }

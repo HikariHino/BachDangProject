@@ -12,7 +12,7 @@ namespace BeachBoatStory
     [DefaultExecutionOrder(-900)]
     public sealed class BachDangFrontEnd : MonoBehaviour
     {
-        public enum MenuPage { None, Home, Pause, Settings, ConfirmExit, Loading }
+        public enum MenuPage { None, Home, Pause, Settings, ConfirmExit, Loading, Slots, ConfirmOverwrite }
         public static BachDangFrontEnd Instance {get;private set;}
         public static bool IsBlocking=>Instance!=null&&Instance.Page!=MenuPage.None;
         public static bool AtTitle=>Instance!=null&&!Instance.GameStarted;
@@ -22,7 +22,14 @@ namespace BeachBoatStory
 #if UNITY_EDITOR
         public bool SuppressQuitForTests;
 #endif
-        GameObject background,home,pause,settings,confirm,loading,toast;
+        GameObject background,home,pause,settings,confirm,loading,toast,slots,overwrite;
+        TMP_Text slotsTitle,overwriteText;
+        readonly Button[] slotButtons=new Button[BachDangSaveSystem.SlotCount];
+        readonly TMP_Text[] slotLabels=new TMP_Text[BachDangSaveSystem.SlotCount];
+        MenuPage slotsReturn;
+        bool choosingLoad,quitAfterSave;
+        int overwriteSlot;
+        string saveLocation="Lưu nhanh";
         TMP_Text saveInfo,volumeValue,mouseValue,notice,confirmText;
         Button loadButton,confirmSave;
         Slider volumeSlider,mouseSlider;
@@ -53,10 +60,12 @@ namespace BeachBoatStory
         void Update()
         {
             if(toast!=null)toast.SetActive(Time.unscaledTime<toastUntil);
-            if(GameStarted&&Input.GetKeyDown(KeyCode.Escape)&&!(QuestCheckpoint.Instance?.IsDefeated??false)&&!(ScreenFader.Instance?.IsTransitioning??false))
+            if((GameStarted||Page==MenuPage.Slots||Page==MenuPage.ConfirmOverwrite)&&Input.GetKeyDown(KeyCode.Escape)&&!(QuestCheckpoint.Instance?.IsDefeated??false)&&!(ScreenFader.Instance?.IsTransitioning??false))
             {
                 if(Page==MenuPage.None)SetPage(MenuPage.Pause);
                 else if(Page==MenuPage.Settings)SetPage(settingsReturn);
+                else if(Page==MenuPage.ConfirmOverwrite)CancelOverwrite();
+                else if(Page==MenuPage.Slots)CancelSlots();
                 else if(Page==MenuPage.ConfirmExit)SetPage(MenuPage.Pause);
                 else if(Page==MenuPage.Pause)Resume();
             }
@@ -71,15 +80,58 @@ namespace BeachBoatStory
         public void OpenSettings(){settingsReturn=GameStarted?MenuPage.Pause:MenuPage.Home;SetPage(MenuPage.Settings);}
         public void BackFromSettings(){SetPage(settingsReturn);}
         public void OpenPause(){if(GameStarted)SetPage(MenuPage.Pause);}
-        public bool SaveNow()
+        public bool SaveNow()=>OpenSaveSlots("Lưu nhanh");
+        public bool OpenSaveSlots(string location,bool exitAfter=false)
         {
-            bool saved=BachDangSaveSystem.Save("Lưu nhanh");Notify(saved?"ĐÃ LƯU • vị trí và tiến trình hiện tại":BachDangSaveSystem.LastError);RefreshSaveInfo();return saved;
+            if(!GameStarted||!BachDangSaveSystem.CanSave){Notify("Hãy kết thúc thao tác đang làm trước khi lưu.");return false;}
+            saveLocation=location;choosingLoad=false;quitAfterSave=exitAfter;
+            slotsReturn=exitAfter?MenuPage.ConfirmExit:Page==MenuPage.None?MenuPage.None:MenuPage.Pause;
+            ShowSlots();return true;
         }
         public bool LoadGame()
         {
-            if(!BachDangSaveSystem.TryRead(out var saved)){Notify(BachDangSaveSystem.LastError);RefreshSaveInfo();return false;}
-            BachDangSaveSystem.PendingLoad=saved;SetPage(MenuPage.Loading);
-            Time.timeScale=1;SceneManager.LoadScene(saved.scene);return true;
+            if(!BachDangSaveSystem.TryReadLatest(out _)){Notify("Chưa có tiến trình đã lưu.");RefreshSaveInfo();return false;}
+            choosingLoad=true;quitAfterSave=false;slotsReturn=GameStarted?MenuPage.Pause:MenuPage.Home;
+            ShowSlots();return true;
+        }
+        void ShowSlots()
+        {
+            slotsTitle.text=choosingLoad?"CHỌN Ô TẢI HÀNH TRÌNH":"CHỌN Ô LƯU HÀNH TRÌNH";
+            for(int slot=1;slot<=BachDangSaveSystem.SlotCount;slot++)
+            {
+                bool readable=BachDangSaveSystem.TryRead(slot,out var data);
+                slotButtons[slot-1].interactable=!choosingLoad||readable;
+                slotLabels[slot-1].text=$"Ô {slot:00}  •  "+(readable?BachDangSaveSystem.Chapter(data.storyState)+"\n"+data.savedAt+"  •  "+data.location:BachDangSaveSystem.HasData(slot)?"BẢN LƯU LỖI • CÓ THỂ GHI ĐÈ":"TRỐNG • Lưu hành trình tại đây");
+            }
+            SetPage(MenuPage.Slots);
+        }
+        public bool ChooseSlot(int slot)
+        {
+            if(Page!=MenuPage.Slots||slot<1||slot>BachDangSaveSystem.SlotCount)return false;
+            if(choosingLoad)
+            {
+                if(!BachDangSaveSystem.TryRead(slot,out var data)){Notify(BachDangSaveSystem.LastError);return false;}
+                BachDangSaveSystem.SelectSlot(slot);BachDangSaveSystem.PendingLoad=data;SetPage(MenuPage.Loading);
+                Time.timeScale=1;SceneManager.LoadScene(data.scene);return true;
+            }
+            if(BachDangSaveSystem.HasData(slot))
+            {
+                overwriteSlot=slot;
+                BachDangSaveSystem.TryRead(slot,out var old);
+                overwriteText.text=$"Ô {slot:00} đã có tiến trình.\n"+(old!=null?old.savedAt+" • "+old.location+"\n\n":"\n")+"Bạn có muốn ghi đè tiến trình này?";
+                SetPage(MenuPage.ConfirmOverwrite);return true;
+            }
+            return WriteSlot(slot);
+        }
+        public bool ConfirmOverwrite()=>Page==MenuPage.ConfirmOverwrite&&WriteSlot(overwriteSlot);
+        public void CancelOverwrite(){if(Page==MenuPage.ConfirmOverwrite)ShowSlots();}
+        public void CancelSlots(){quitAfterSave=false;SetPage(slotsReturn);}
+        bool WriteSlot(int slot)
+        {
+            if(!BachDangSaveSystem.Save(slot,saveLocation)){Notify(BachDangSaveSystem.LastError);return false;}
+            RefreshSaveInfo();Notify($"ĐÃ LƯU VÀO Ô {slot:00} • vị trí và tiến trình hiện tại");
+            if(quitAfterSave)Quit();else SetPage(slotsReturn);
+            return true;
         }
         public void AskExit()
         {
@@ -90,8 +142,7 @@ namespace BeachBoatStory
         public bool ExitWithSave()
         {
             if(Page!=MenuPage.ConfirmExit)return false;
-            if(!BachDangSaveSystem.Save("Lưu khi thoát")){Notify(BachDangSaveSystem.LastError);return false;}
-            Quit();return true;
+            return OpenSaveSlots("Lưu khi thoát",true);
         }
         public void ExitWithoutSave(){if(Page==MenuPage.ConfirmExit)Quit();}
         public void CancelExit(){SetPage(MenuPage.Pause);}
@@ -107,7 +158,7 @@ namespace BeachBoatStory
         public void Notify(string message){notice.text=message;toastUntil=Time.unscaledTime+3.5f;toast.SetActive(true);}
         public void RefreshSaveInfo()
         {
-            bool exists=BachDangSaveSystem.TryRead(out var saved);loadButton.interactable=exists;
+            bool exists=BachDangSaveSystem.TryReadLatest(out var saved);loadButton.interactable=exists;
             saveInfo.text=exists?BachDangSaveSystem.Chapter(saved.storyState)+"\n"+saved.savedAt+" • "+saved.location:"CHƯA CÓ BẢN LƯU\nBắt đầu hành trình để viết tiếp lịch sử.";
         }
         public void ReleaseHiddenUI()
@@ -135,7 +186,7 @@ namespace BeachBoatStory
                 Cursor.lockState=modal?CursorLockMode.None:CursorLockMode.Locked;Cursor.visible=modal;
                 StoryDialogueUI.TryConsumeInput();
             }
-            background.SetActive(blocking);home.SetActive(next==MenuPage.Home);pause.SetActive(next==MenuPage.Pause);settings.SetActive(next==MenuPage.Settings);confirm.SetActive(next==MenuPage.ConfirmExit);loading.SetActive(next==MenuPage.Loading);
+            background.SetActive(blocking);home.SetActive(next==MenuPage.Home);pause.SetActive(next==MenuPage.Pause);settings.SetActive(next==MenuPage.Settings);confirm.SetActive(next==MenuPage.ConfirmExit);loading.SetActive(next==MenuPage.Loading);slots.SetActive(next==MenuPage.Slots);overwrite.SetActive(next==MenuPage.ConfirmOverwrite);
             if(next==MenuPage.Settings){volumeSlider.SetValueWithoutNotify(BachDangPreferences.Volume);mouseSlider.SetValueWithoutNotify(BachDangPreferences.Sensitivity);RefreshSettingsLabels();}
         }
         void RefreshSettingsLabels(){volumeValue.text=Mathf.RoundToInt(BachDangPreferences.Volume*100)+"%";mouseValue.text=BachDangPreferences.Sensitivity.ToString("0.00")+"×";}
@@ -181,6 +232,21 @@ namespace BeachBoatStory
             confirmSave=Click("Yes",confirm.transform,new Vector2(.10f,.29f),new Vector2(.90f,.39f),"YES  /  LƯU VÀ THOÁT",()=>ExitWithSave(),true);
             Click("No",confirm.transform,new Vector2(.10f,.16f),new Vector2(.90f,.26f),"NO  /  THOÁT KHÔNG LƯU",ExitWithoutSave);
             Click("Cancel",confirm.transform,new Vector2(.28f,.03f),new Vector2(.72f,.12f),"HỦY",CancelExit);
+            slots=Box("SaveSlots",transform,new Vector2(.12f,.10f),new Vector2(.88f,.90f),Ink);
+            Box("TopBorder",slots.transform,new Vector2(0,.995f),Vector2.one,Gold);
+            slotsTitle=Label("Heading",slots.transform,new Vector2(.04f,.87f),new Vector2(.96f,.98f),28,Gold,"",TextAlignmentOptions.Center);
+            for(int i=0;i<BachDangSaveSystem.SlotCount;i++)
+            {
+                int slot=i+1,column=i%2,row=i/2;float x=.035f+column*.485f,y=.725f-row*.137f;
+                slotButtons[i]=Click("Slot"+slot,slots.transform,new Vector2(x,y),new Vector2(x+.445f,y+.118f),"",()=>ChooseSlot(slot));
+                slotLabels[i]=slotButtons[i].transform.Find("Label").GetComponent<TMP_Text>();slotLabels[i].fontSize=16;
+                slotLabels[i].enableAutoSizing=true;slotLabels[i].fontSizeMin=12;slotLabels[i].fontSizeMax=16;
+            }
+            Click("Cancel",slots.transform,new Vector2(.32f,.025f),new Vector2(.68f,.10f),"QUAY LẠI  [ESC]",CancelSlots);
+            overwrite=Card("ConfirmOverwrite","GHI ĐÈ TIẾN TRÌNH?");
+            overwriteText=Label("Message",overwrite.transform,new Vector2(.08f,.38f),new Vector2(.92f,.79f),22,Cream,"",TextAlignmentOptions.Center);
+            Click("Yes",overwrite.transform,new Vector2(.10f,.22f),new Vector2(.90f,.34f),"CÓ • GHI ĐÈ",()=>ConfirmOverwrite(),true);
+            Click("No",overwrite.transform,new Vector2(.10f,.07f),new Vector2(.90f,.19f),"KHÔNG • CHỌN Ô KHÁC",CancelOverwrite);
             loading=Box("Loading",transform,new Vector2(.3f,.4f),new Vector2(.7f,.6f),Ink);Label("Label",loading.transform,Vector2.zero,Vector2.one,25,Gold,"ĐANG TẢI HÀNH TRÌNH…",TextAlignmentOptions.Center);
             toast=Box("SaveNotice",transform,new Vector2(.25f,.02f),new Vector2(.75f,.10f),Ink);notice=Label("Text",toast.transform,new Vector2(.03f,.05f),new Vector2(.97f,.95f),17,Cream,"",TextAlignmentOptions.Center);toast.SetActive(false);
         }

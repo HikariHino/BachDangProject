@@ -22,6 +22,7 @@ namespace BeachBoatStory
         public int Progress {get;private set;}
         public int Mistakes {get;private set;}
         public float Elapsed {get;private set;}
+        readonly Queue<string> recentRice=new Queue<string>();
         public int RiceLoad {get;private set;}
         public int RiceTarget {get;private set;}
         public int TimberTarget {get;private set;}
@@ -47,9 +48,9 @@ namespace BeachBoatStory
         public bool LastCorrect {get;private set;}
         public int FeedbackVersion {get;private set;}
         public Vector3 InteractionPosition=>interactionPoint!=null?interactionPoint.position:transform.position;
-        public float TimeLimit=>kind==WorkKind.Timber?(Difficulty==0?100:Difficulty==1?135:180):kind==WorkKind.Rope?(Difficulty==0?100:Difficulty==1?75:55):(Difficulty==0?90:Difficulty==1?70:50);
-        public int Goal=>kind==WorkKind.Rope?1:2+Difficulty;
-        public int MistakeLimit=>kind==WorkKind.Timber?3:Difficulty==2?2:3;
+        public float TimeLimit=>kind==WorkKind.Rice?(Difficulty==0?100:Difficulty==1?100:110):kind==WorkKind.Timber?(Difficulty==0?100:Difficulty==1?135:180):kind==WorkKind.Rope?(Difficulty==0?100:Difficulty==1?75:55):(Difficulty==0?90:Difficulty==1?70:50);
+        public int Goal=>kind==WorkKind.Rope?1:kind==WorkKind.Rice?Mathf.Min(3,2+Difficulty):2+Difficulty;
+        public int MistakeLimit=>kind==WorkKind.Timber||kind==WorkKind.Rice?3:Difficulty==2?2:3;
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);
         public string Instructions=>kind==WorkKind.Timber?"Dễ và Vừa: chọn 2 thanh đủ chiều dài. Khó: chọn 3 thanh đủ chiều dài và sức chịu lực. Chọn trong 6 thanh, loại gỗ nứt. Bấm vào thanh để chọn hoặc bỏ chọn, rồi GIAO GỖ để kiểm tra. Các số đều nhỏ để dễ nhẩm. Mỗi đơn chỉ có một tổ hợp đúng; câu mới không lặp câu đã chơi.":
             kind==WorkKind.Rope?"Bấm từng ô để xoay đoạn dây 90 độ. Nối một đường liên tục từ đầu VÀO bên trái hàng giữa sang đầu RA bên phải hàng giữa. Dây không được đứt hoặc tạo vòng kín. Số lượt xoay có hạn.":
@@ -249,10 +250,19 @@ namespace BeachBoatStory
             }
             else if(kind==WorkKind.Rice)
             {
-                int[,] pairs={{2,3},{3,5},{4,7},{5,8}};int choice=Random.Range(0,Difficulty==0?2:4);
+                int[,] pairs={{2,3},{3,5},{4,7}};int choice=Random.Range(0,Difficulty==0?2:3);
                 RiceSmall=pairs[choice,0];RiceLarge=pairs[choice,1];
-                RiceTarget=Difficulty==2?Random.Range(9,23):Random.Range(6,16);
-                MoveLimit=MinimumScoops(RiceTarget,RiceSmall,RiceLarge)+(Difficulty==0?2:Difficulty==1?1:0);
+                var targets=new List<int>();
+                for(int amount=6;amount<=(Difficulty==2?18:14);amount++)
+                {
+                    int steps=MinimumScoops(amount,RiceSmall,RiceLarge);
+                    string key=$"{RiceSmall}/{RiceLarge}/{amount}";
+                    if(steps>=2&&steps<=(Difficulty==2?4:3)&&!recentRice.Contains(key))targets.Add(amount);
+                }
+                if(targets.Count==0){recentRice.Clear();for(int amount=6;amount<=14;amount++)if(MinimumScoops(amount,RiceSmall,RiceLarge)<=4)targets.Add(amount);}
+                RiceTarget=targets[Random.Range(0,targets.Count)];
+                recentRice.Enqueue($"{RiceSmall}/{RiceLarge}/{RiceTarget}");if(recentRice.Count>12)recentRice.Dequeue();
+                MoveLimit=MinimumScoops(RiceTarget,RiceSmall,RiceLarge)+3;
             }
             else {People=Random.Range(1+Difficulty,3+Difficulty);RicePerPerson=Random.Range(1,3+Difficulty);FishPerPerson=Random.Range(1,2+Difficulty);SaltPerBundle=Random.Range(1,3);for(int i=0;i<3;i++)ingredients[i]=0;}
             history.Clear();initialWork=CaptureWork();

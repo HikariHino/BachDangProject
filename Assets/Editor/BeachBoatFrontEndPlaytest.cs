@@ -45,6 +45,31 @@ public static class BeachBoatFrontEndPlaytest
         if(SessionState.GetBool(Flag,false)&&EditorApplication.isPlaying&&(type==LogType.Error||type==LogType.Exception||type==LogType.Assert))
             runtimeError=message+"\n"+stack;
     }
+    static bool CompleteSlot(BachDangFrontEnd menu,int slot)
+    {
+        if(!menu.ChooseSlot(slot))return false;
+        return menu.Page!=BachDangFrontEnd.MenuPage.ConfirmOverwrite||menu.ConfirmOverwrite();
+    }
+    static bool SaveOne(BachDangFrontEnd menu)=>menu.SaveNow()&&CompleteSlot(menu,1);
+    static bool LoadOne(BachDangFrontEnd menu)=>menu.LoadGame()&&menu.ChooseSlot(1);
+    static bool ExitOne(BachDangFrontEnd menu)=>menu.ExitWithSave()&&CompleteSlot(menu,1);
+    static void CheckTenSlots(BachDangFrontEnd menu)
+    {
+        for(int slot=1;slot<=10;slot++)
+        {
+            Check(menu.OpenSaveSlots("QA ô "+slot)&&CompleteSlot(menu,slot),"Write selectable slot "+slot);
+            Check(BachDangSaveSystem.TryRead(slot,out var data)&&data.location=="QA ô "+slot,"Read independent progress in slot "+slot);
+        }
+        var before=Enumerable.Range(1,10).Select(i=>File.ReadAllBytes(BachDangSaveSystem.SlotPath(i))).ToArray();
+        menu.OpenSaveSlots("Thay thế ô 7");menu.ChooseSlot(7);
+        Check(menu.Page==BachDangFrontEnd.MenuPage.ConfirmOverwrite,"Full slots require explicit overwrite confirmation");
+        menu.CancelOverwrite();menu.CancelSlots();
+        Check(Enumerable.Range(1,10).All(i=>before[i-1].SequenceEqual(File.ReadAllBytes(BachDangSaveSystem.SlotPath(i)))),"Cancel overwrite leaves all ten saves untouched");
+        menu.OpenSaveSlots("Thay thế ô 7");menu.ChooseSlot(7);Check(menu.ConfirmOverwrite(),"Confirm overwrite succeeds");
+        Check(BachDangSaveSystem.TryRead(7,out var replaced)&&replaced.location=="Thay thế ô 7","Chosen slot receives replacement progress");
+        Check(Enumerable.Range(1,10).Where(i=>i!=7).All(i=>before[i-1].SequenceEqual(File.ReadAllBytes(BachDangSaveSystem.SlotPath(i)))),"Other nine slots remain byte-identical after overwrite");
+        BachDangSaveSystem.SelectSlot(1);
+    }
     static void PointerClick(string path)
     {
         var button=BachDangFrontEnd.Instance.transform.Find(path).GetComponent<Button>();
@@ -112,6 +137,7 @@ public static class BeachBoatFrontEndPlaytest
         Check(v.CompletedTrainingLevels==saved.trainingLevels&&Mathf.Abs(v.maxStamina-saved.maxStamina)<.01f&&Mathf.Abs(v.Health-saved.health)<.01f,"Loaded health and permanent stamina training");
         Check(session.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().mouseXSpeed==2*BachDangPreferences.Sensitivity,"Sensitivity survives scene reload");
         Check(session.GetComponentsInChildren<Canvas>(true).Single(c=>c.name=="BeachStoryHUD").enabled,"Gameplay HUD restored after load");
+        if(!saved.aboard)Check(session.player.GetComponent<BeachBoatStory.Character_Movement>().enabled&&!session.player.GetComponent<Rigidbody>().isKinematic&&session.player.GetComponent<CapsuleCollider>().enabled,"A foot save restores walking and physical collisions");
         if(saved.dialogue!=null&&saved.dialogue.active)Check(BeachBoatStory.StoryDialogueUI.Instance.IsOpen&&(BeachBoatStory.StoryDialogueUI.Instance.CaptureSave().action??"")==(saved.dialogue.action??""),"Pending quest dialogue and its action survive loading");
         if(saved.fleet.active)
         {
@@ -141,6 +167,10 @@ public static class BeachBoatFrontEndPlaytest
             var session=BeachBoatQuestSession.Instance;var front=BachDangFrontEnd.Instance;var story=Story.Instance;
             if(session==null||front==null)return;
             BachDangSaveSystem.TestDirectory=DirectoryPath;front.SuppressQuitForTests=true;
+            // Never perform the corrupt-file/write-failure tests against real player saves.
+            if(!DirectoryPath.StartsWith(Path.GetFullPath("Logs")+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase)||
+                !string.Equals(Path.GetDirectoryName(Path.GetFullPath(BachDangSaveSystem.SavePath)),DirectoryPath,StringComparison.OrdinalIgnoreCase))
+                throw new Exception("QA save directory is not isolated");
             if(phase==0)
             {
                 volume=BachDangPreferences.Volume;sensitivity=BachDangPreferences.Sensitivity;preferencesCaptured=true;
@@ -151,11 +181,11 @@ public static class BeachBoatFrontEndPlaytest
                 Check(!front.GetComponentInChildren<BachDangMenuGradient>(true).raycastTarget,"Decorative gradient does not intercept clicks");
                 if(SessionState.GetBool(Cold,false))
                 {
-                    Check(BachDangSaveSystem.TryRead(out expected),"A separate Unity process reads the disk save");
-                    Check(front.LoadGame(),"Cold title Load Game accepts save");phase=90;return;
+                    Check(BachDangSaveSystem.TryRead(7,out expected),"A separate Unity process reads slot seven from disk");
+                    Check(front.LoadGame()&&front.ChooseSlot(7),"Cold title Load Game loads the selected non-default slot");phase=90;return;
                 }
                 Directory.CreateDirectory(DirectoryPath);
-                foreach(string suffix in new[]{"",".bak",".tmp"})if(File.Exists(BachDangSaveSystem.SavePath+suffix))File.Delete(BachDangSaveSystem.SavePath+suffix);
+                for(int slot=1;slot<=10;slot++)foreach(string suffix in new[]{"",".bak",".tmp"}){string file=BachDangSaveSystem.SlotPath(slot)+suffix;if(!Path.GetFullPath(file).StartsWith(DirectoryPath+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))throw new Exception("Unsafe QA path");if(File.Exists(file))File.Delete(file);}
                 front.RefreshSaveInfo();Check(!front.transform.Find("Home/LoadGame").GetComponent<Button>().interactable,"Load disabled before first save");
                 Capture("Title");
                 PointerClick("Home/Settings");Check(front.Page==BachDangFrontEnd.MenuPage.Settings,"Settings opens by pointer click");var sliders=front.GetComponentsInChildren<Slider>(true);sliders.First(s=>s.name=="VolumeSlider").value=.43f;sliders.First(s=>s.name=="MouseSlider").value=1.65f;
@@ -184,20 +214,21 @@ public static class BeachBoatFrontEndPlaytest
                 {
                     Move(point.transform.position+point.transform.forward*17+Vector3.up*2);
                     Check(point.InRange&&PlayerArrival.IsClear(session.player,session.player.transform.position,Quaternion.identity)&&PlayerArrival.HasExit(session.player,session.player.transform.position,Quaternion.identity),"Save shelter has an accessible entrance: "+point.displayName);
-                    Check(point.TryUse(),"Manual save succeeds at "+point.displayName);
+                    Check(point.TryUse()&&CompleteSlot(front,1),"Save shelter opens slot picker and saves at "+point.displayName);
                 }
                 BeachBoatStory.StoryDialogueUI.Instance.Show("QA","Đơn hàng đã chuẩn bị; xác nhận để báo cáo.",story.OnSupplyPreparationComplete);
-                Check(front.SaveNow(),"Can save while a quest handoff dialogue is pending");
+                Check(SaveOne(front),"Can save while a quest handoff dialogue is pending");
+                CheckTenSlots(front);Check(SaveOne(front),"Restore dialogue fixture to slot one");
                 expected=BachDangSaveSystem.Capture("QA");previousSave=File.ReadAllBytes(BachDangSaveSystem.SavePath);
                 front.OpenPause();Check(Time.timeScale==0&&BeachBoatQuestSession.InputBlocked,"Pause blocks movement and world time");
                 front.AskExit();Capture("ExitConfirmation");front.CancelExit();Check(front.Page==BachDangFrontEnd.MenuPage.Pause&&!front.QuitRequested&&previousSave.SequenceEqual(File.ReadAllBytes(BachDangSaveSystem.SavePath)),"Exit Cancel preserves game and save");
                 front.AskExit();front.ExitWithoutSave();Check(front.QuitRequested&&previousSave.SequenceEqual(File.ReadAllBytes(BachDangSaveSystem.SavePath)),"Exit No does not overwrite save");
                 front.Resume();
                 string temp=BachDangSaveSystem.SavePath+".tmp";Directory.CreateDirectory(temp);
-                Check(!front.SaveNow()&&previousSave.SequenceEqual(File.ReadAllBytes(BachDangSaveSystem.SavePath)),"Failed write preserves previous save");Directory.Delete(temp);
+                Check(!SaveOne(front)&&previousSave.SequenceEqual(File.ReadAllBytes(BachDangSaveSystem.SavePath)),"Failed write preserves previous save");Directory.Delete(temp);
                 File.WriteAllText(BachDangSaveSystem.SavePath,"corrupt");Check(BachDangSaveSystem.TryRead(out _),"Corrupt primary falls back to verified backup");File.WriteAllBytes(BachDangSaveSystem.SavePath,previousSave);
                 story.collectedWood=0;foreach(var w in session.woodItems)w.RestoreCollection(false);foreach(var stall in stalls)stall.RestoreLearningProgress(0);
-                front.LoadGame();phase=2;return;
+                LoadOne(front);phase=2;return;
             }
             if(phase==2)
             {
@@ -231,16 +262,17 @@ public static class BeachBoatFrontEndPlaytest
             {
                 var fleet=EnemyFleetDirector.Instance;var ship=fleet.enemyShips.First(s=>s.gameObject.activeSelf);ship.TakeDamage();ship.Step(7.1f);
                 Check(RiverBoardingCombat.Instance.TryTraverse(),"Begin swimming before save");
-                front.OpenPause();front.AskExit();Check(front.ExitWithSave(),"Exit Yes saves before quitting");
+                front.OpenPause();front.AskExit();Check(ExitOne(front),"Exit Yes saves before quitting");
                 Check(BachDangSaveSystem.TryRead(out expected)&&expected.fleet.active&&expected.ships.Any(s=>s.destroyed)&&expected.boarding.state==1,"Disk save contains battle, wreck and swimming state");
-                Check(front.LoadGame(),"Load fresh scene during active battle");phase=6;return;
+                Check(LoadOne(front),"Load fresh scene during active battle");phase=6;return;
             }
             if(phase==6||phase==90)
             {
                 if(BachDangFrontEnd.IsBlocking)return;Compare(expected);
                 phase=95;until=EditorApplication.timeSinceStartup+.3;return;
             }
-            if(phase==95){VerifyFootsteps();front.OpenPause();phase=99;until=EditorApplication.timeSinceStartup+.8;return;}
+            if(phase==95){BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();phase=96;until=EditorApplication.timeSinceStartup+.2;return;}
+            if(phase==96){VerifyFootsteps();front.OpenPause();phase=99;until=EditorApplication.timeSinceStartup+.8;return;}
             if(phase==99){Capture("Pause");Finish(null);}
         }
         catch(Exception error){Finish(error.ToString());}

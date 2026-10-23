@@ -35,7 +35,7 @@ public class CampGateTransition : MonoBehaviour
 
     public bool IsInRange(Transform player)
     {
-        if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard) return false;
+        if (QuestRowboat.Instance != null && QuestRowboat.Instance.BlocksGroundInteractions) return false;
         if (player == null || !player.gameObject.activeInHierarchy) return false;
         var offset = player.position - transform.position;
         if(Mathf.Abs(offset.y)>18)return false;
@@ -58,7 +58,7 @@ public class CampGateTransition : MonoBehaviour
     private void Update()
     {
         if (BeachBoatQuestSession.InputBlocked) return;
-        if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard) return;
+        if (QuestRowboat.Instance != null && QuestRowboat.Instance.BlocksGroundInteractions) return;
         var story = BachDangStoryManager.Instance;
         if (story == null) return;
 

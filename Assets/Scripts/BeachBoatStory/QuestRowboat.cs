@@ -20,6 +20,7 @@ namespace BeachBoatStory
         [Header("Hull clearance")]
         public float hullProbeSpacing = 26, hullProbeRadius = 11;
         public bool IsAboard { get; private set; }
+        public bool BlocksGroundInteractions=>IsAboard&&RiverBoardingCombat.Instance?.State!=RiverBoardingCombat.PlayerState.Land;
         public float Speed { get; private set; }
         public bool IsBoosting { get; private set; }
         public float RowingRate => animator != null && IsAboard ? animator.speed : 0;
@@ -64,7 +65,7 @@ namespace BeachBoatStory
         {
             // Resize only the hull and its footprint: scaling the boat root would also
             // scale attachments and visiting soldiers. The player keeps their own scale.
-            const float footprint=.82f;
+            const float footprint=.65f;
             var hull=transform.Find("Thuyen_Go_Song");
             if(hull!=null)hull.localScale=Vector3.Scale(hull.localScale,new Vector3(footprint,1,footprint));
             if(seat!=null)seat.localPosition=Vector3.Scale(seat.localPosition,new Vector3(footprint,1,footprint));
@@ -214,8 +215,8 @@ namespace BeachBoatStory
             // Keep the boat's docked heading. Rotating an 80 m hull instantly toward
             // the fleet while it still overlaps the pier swings it through the quay.
             // The player can steer out normally with A/D and look around with the mouse.
-            orbit.distance = 48f;
-            orbit.heightOffset = 20f;
+            orbit.distance = 62f;
+            orbit.heightOffset = 25f;
             orbit.rightOffset = 7f;
             orbit.enableShoulderAim = false;
             orbit.enabled = true;
@@ -230,6 +231,18 @@ namespace BeachBoatStory
              RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsComplete) ||
             state == BachDangStoryManager.StoryState.Act3_BattleInProgress || state == BachDangStoryManager.StoryState.Act3_Victory;
 
+        // Preserve the logical boat session while the player walks and fights on shore.
+        public void SetShoreWalking(bool walking)
+        {
+            if(!IsAboard)return;
+            motor.enabled=false;
+            if(!playerBody.isKinematic){playerBody.linearVelocity=Vector3.zero;playerBody.angularVelocity=Vector3.zero;}
+            playerBody.isKinematic=!walking;playerCollider.enabled=walking;
+            playerBody.interpolation=walking?originalInterpolation:RigidbodyInterpolation.None;
+            animator.speed=1;animator.applyRootMotion=false;
+            if(walking)animator.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;
+            motor.enabled=walking&&session.storyMode;
+        }
         void RestorePlayer()
         {
             IsAboard = false; Speed = 0; IsBoosting = false;

@@ -70,8 +70,8 @@ namespace BeachBoatStory
             if(Muted||dead||!session.storyMode)return;
             if(Time.time>=nextBird){nextBird=Time.time+Random.Range(8,15);birds.panStereo=Random.Range(-.6f,.6f);Play(birds,bird,.22f,Random.Range(.94f,1.08f));}
             if(BeachBoatQuestSession.InputBlocked)return;
-            bool aboard=QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard;
-            if(RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.PlayerAway){distance=0;return;}
+            bool aboard=QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard&&!(RiverBoardingCombat.Instance?.State==RiverBoardingCombat.PlayerState.Land);
+            if(RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.PlayerAway&&RiverBoardingCombat.Instance.State!=RiverBoardingCombat.PlayerState.Land){distance=0;return;}
             if(aboard)
             {
                 distance=0;var boat=QuestRowboat.Instance;
@@ -92,7 +92,7 @@ namespace BeachBoatStory
         {
             var clips=running&&runningFootsteps!=null&&runningFootsteps.Length>0?runningFootsteps:footsteps;
             if(clips.Length==0)return;LastFootstep=clips[footIndex++%clips.Length];
-            Play(foley,LastFootstep,running?.8f:.48f,Random.Range(.96f,1.04f));FootstepsPlayed++;
+            Play(foley,LastFootstep,running?.30f:.38f,Random.Range(.96f,1.04f));FootstepsPlayed++;
             if(running)RunningFootstepsPlayed++;
         }
         public void SetMuted(bool value){Muted=value;AudioListener.volume=value?0:BachDangPreferences.Volume;toastUntil=Time.unscaledTime+2.5f;}

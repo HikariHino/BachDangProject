@@ -14,7 +14,6 @@ import shutil
 import sys
 
 sys.path.insert(0, str(Path('.utmp/voice-tools').resolve()))
-import edge_tts
 
 ROOT = Path('Assets/Resources/BachDang938/Voices')
 STAGING = Path('.utmp/dialogue-cast')
@@ -56,6 +55,7 @@ def assignments(entries):
 
 
 async def main():
+    import edge_tts
     parser = argparse.ArgumentParser()
     parser.add_argument('--only', default='', help='Generate one profile only.')
     parser.add_argument('--exclude', default='', help='Skip one profile while auditioning.')
