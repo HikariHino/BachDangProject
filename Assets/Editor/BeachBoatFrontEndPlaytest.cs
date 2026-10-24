@@ -260,7 +260,7 @@ public static class BeachBoatFrontEndPlaytest
             }
             if(phase==5)
             {
-                var fleet=EnemyFleetDirector.Instance;var ship=fleet.enemyShips.First(s=>s.gameObject.activeSelf);ship.TakeDamage();ship.Step(7.1f);
+                var fleet=EnemyFleetDirector.Instance;var ship=fleet.enemyShips.FirstOrDefault(s=>s.gameObject.activeSelf);if(ship==null)return;ship.TakeDamage();ship.Step(7.1f);
                 Check(RiverBoardingCombat.Instance.TryTraverse(),"Begin swimming before save");
                 front.OpenPause();front.AskExit();Check(ExitOne(front),"Exit Yes saves before quitting");
                 Check(BachDangSaveSystem.TryRead(out expected)&&expected.fleet.active&&expected.ships.Any(s=>s.destroyed)&&expected.boarding.state==1,"Disk save contains battle, wreck and swimming state");

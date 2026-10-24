@@ -60,6 +60,7 @@ namespace BeachBoatStory
             if (animator == null) animator = GetComponent<Animator>();
             // Reject group roots/buildings accidentally selected by the old name-based tool.
             if (!IsEligible(animator) || animator.transform != transform) { enabled = false; return; }
+            ActorSolidBody.Ensure(gameObject,animator);
             home = transform.position; terrain = Terrain.activeTerrain;
             scale = Mathf.Max(1, BachDangWorldScale.ForScene(gameObject.scene));
             // The characters are twice the terrain's reference scale. Use the actual
@@ -294,11 +295,13 @@ namespace BeachBoatStory
         }
         bool Blocked(Vector3 heading,float distance)
         {
-            int count=Physics.SphereCastNonAlloc(transform.position+Vector3.up*scale,.25f*scale,heading,hits,
+            int count=Physics.CapsuleCastNonAlloc(transform.position+Vector3.up*(scale*.65f),transform.position+Vector3.up*(NominalStrideSpeed/.85f),scale*.40f,heading,hits,
                 distance,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+            if(count==hits.Length)return true;
             for(int i=0;i<count;i++)
             {
-                var hit=hits[i];if(hit.collider==null||hit.collider is TerrainCollider)continue;
+                var hit=hits[i];if(hit.collider==null)continue;
+                if(hit.normal.y>.65f&&hit.point.y<=transform.position.y+scale*.5f)continue;
                 // Animator often lives below the character's capsule. Ignore both descendants and
                 // ancestors of this NPC; otherwise it detects its own parent collider every frame.
                 if(hit.transform.IsChildOf(transform)||transform.IsChildOf(hit.transform))continue;

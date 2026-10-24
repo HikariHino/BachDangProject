@@ -92,7 +92,7 @@ namespace BeachBoatStory
         {
             var clips=running&&runningFootsteps!=null&&runningFootsteps.Length>0?runningFootsteps:footsteps;
             if(clips.Length==0)return;LastFootstep=clips[footIndex++%clips.Length];
-            Play(foley,LastFootstep,running?.30f:.38f,Random.Range(.96f,1.04f));FootstepsPlayed++;
+            Play(foley,LastFootstep,running?.55f:.38f,Random.Range(.96f,1.04f));FootstepsPlayed++;
             if(running)RunningFootstepsPlayed++;
         }
         public void SetMuted(bool value){Muted=value;AudioListener.volume=value?0:BachDangPreferences.Volume;toastUntil=Time.unscaledTime+2.5f;}

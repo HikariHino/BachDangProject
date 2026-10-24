@@ -127,7 +127,7 @@ namespace BeachBoatStory
             foreach(var activity in data.activities??Array.Empty<BachDangSaveData.Activity>())
                 foreach(var station in UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsInactive.Include,FindObjectsSortMode.None))if(station.name==activity.name)station.RestoreSave(activity);
             foreach(var patrol in UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None))
-            {var saved=(data.patrols??Array.Empty<BachDangSaveData.Patrol>()).FirstOrDefault(p=>p.name==patrol.name);if(saved!=null)patrol.transform.SetPositionAndRotation(saved.position,saved.rotation);}
+            {var saved=(data.patrols??Array.Empty<BachDangSaveData.Patrol>()).FirstOrDefault(p=>p.name==patrol.name);if(saved!=null)patrol.RestorePosition(saved.position,saved.rotation);}
             if(data.tide!=null){BachDangBattleTimeline.Instance.RestoreSave(data.tide);TideSystem.Instance.RestoreSave(data.tide);}
             boat.RestoreSave(data.aboard,data.boatPosition,data.boatRotation);
             foreach(var saved in data.ships??Array.Empty<BachDangSaveData.Ship>()){var ship=EnemyFleetDirector.Instance.enemyShips.FirstOrDefault(s=>s.name==saved.name);ship?.RestoreSave(saved);}

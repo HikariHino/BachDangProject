@@ -19,6 +19,8 @@ namespace BeachBoatStory
         bool battleStarted;
         bool attackReleased;
         int routeIndex;
+        Transform yieldThreat;
+        float yieldTime;
         float destroyedTime;
         float sinkDepth;
         public bool HasSettled {get;private set;}
@@ -80,6 +82,8 @@ namespace BeachBoatStory
             isDestroyed=false;HasSettled=false;destroyedTime=stakeContactTime=0;battleStarted=true;
             attackReleased=false;SignalReady=false;routeIndex=0;
             var first=routeWaypoints!=null&&routeWaypoints.Length>0?routeWaypoints[0]:targetPoint;
+            if(routeWaypoints!=null)foreach(var waypoint in routeWaypoints)
+                if(waypoint!=null&&QuestRowboat.FlatDistance(waypoint.position,transform.position)>9){first=waypoint;break;}
             var direction=first!=null?first.position-transform.position:Vector3.forward;direction.y=0;
             transform.rotation=direction.sqrMagnitude>.001f?Quaternion.LookRotation(direction):Quaternion.identity;
             gameObject.SetActive(true);
@@ -98,6 +102,7 @@ namespace BeachBoatStory
             }
             EnsureDebrisPool();
             ConfigureWreckCollision(false);
+            BoatHullCollision.Get(transform).Initialize();
         }
         void Update()=>Step(Time.deltaTime);
         public void Step(float dt)
@@ -121,6 +126,18 @@ namespace BeachBoatStory
             }
             var pos=transform.position;pos.y=TideSystem.CurrentWaterHeight;transform.position=pos;
             if(targetPoint==null)return;
+            if(yieldTime>0&&yieldThreat!=null&&QuestRowboat.FlatDistance(pos,yieldThreat.position)<420)
+            {
+                yieldTime-=dt;var away=pos-yieldThreat.position;away.y=0;
+                for(int option=0;option<8;option++)
+                {
+                    float turn=option==0?0:((option+1)/2)*35*(option%2==1?1:-1);
+                    var retreat=pos+Quaternion.Euler(0,turn,0)*away.normalized*Mathf.Max(18,moveSpeed*.65f)*Mathf.Min(dt,.05f);
+                    if(QuestRowboat.FlatDistance(retreat,yieldThreat.position)<=away.magnitude||!BoatHullCollision.Get(transform).CanMove(pos,transform.rotation,retreat,transform.rotation,false))continue;
+                    transform.position=retreat;return;
+                }
+                return;
+            }
             Transform destination=targetPoint;
             if(routeWaypoints!=null)
                 while(routeIndex<routeWaypoints.Length)
@@ -142,9 +159,16 @@ namespace BeachBoatStory
             var next=Vector3.MoveTowards(pos,end,step);
             if(finalLeg&&!attackReleased&&Vector3.Distance(next,end)<=holdDistance+.5f)SignalReady=true;
             var direction=end-pos;
-            if(direction.sqrMagnitude>.001f)transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-2*dt));
-            transform.position=next;
-            if(targetPoint!=null&&QuestRowboat.FlatDistance(next,targetPoint.position)<=30)CheckStakeHit(pos,next,dt);
+            var rotation=direction.sqrMagnitude>.001f?Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-2*dt)):transform.rotation;
+            if(BoatHullCollision.Get(transform).CanMove(pos,transform.rotation,next,rotation,false))transform.SetPositionAndRotation(next,rotation);
+            else
+            {
+                next=pos;var blocker=BoatHullCollision.Get(transform).LastBlocker;
+                var ally=blocker!=null?blocker.GetComponentInParent<AmbientRiverBoat>():null;if(ally!=null)ally.YieldTo(transform);
+                var other=blocker!=null?blocker.GetComponentInParent<EnemyShip>():null;
+                if(other!=null&&System.Array.IndexOf(EnemyFleetDirector.Instance.enemyShips,this)>System.Array.IndexOf(EnemyFleetDirector.Instance.enemyShips,other)){yieldThreat=other.transform;yieldTime=4;}
+            }
+            if(targetPoint!=null&&QuestRowboat.FlatDistance(next,targetPoint.position)<=55)CheckStakeHit(pos,next,dt);
         }
         public void ReleaseForAmbush()
         {
@@ -203,7 +227,7 @@ namespace BeachBoatStory
         }
         public BachDangSaveData.Ship CaptureSave()=>new BachDangSaveData.Ship {
             name=name,active=gameObject.activeSelf,started=battleStarted,destroyed=isDestroyed,settled=HasSettled,released=attackReleased,
-            signal=SignalReady,route=routeIndex,destroyedTime=destroyedTime,sinkDepth=sinkDepth,
+            signal=SignalReady,route=routeIndex,routeCount=routeWaypoints.Length,destroyedTime=destroyedTime,sinkDepth=sinkDepth,
             position=transform.position,rotation=transform.rotation,sinkStart=sinkStart,sinkRotation=sinkRotation};
         public void RestoreSave(BachDangSaveData.Ship data)
         {
@@ -214,7 +238,16 @@ namespace BeachBoatStory
             if(data.active)Activate();
             if(deckGuards==null)deckGuards=GetComponentsInChildren<EnemyDeckGuard>(true);
             battleStarted=data.started;isDestroyed=data.destroyed;HasSettled=data.settled;attackReleased=data.released;
-            SignalReady=data.signal;routeIndex=data.route;destroyedTime=data.destroyedTime;sinkDepth=data.sinkDepth;
+            SignalReady=data.signal;routeIndex=data.route;
+            // Older saves refer to the former two-point route. Resume at the closest
+            // forward segment of the new physical approach instead of sailing back.
+            if(!data.destroyed&&data.routeCount!=routeWaypoints.Length)
+            {
+                routeIndex=routeWaypoints.Length;float best=QuestRowboat.FlatDistance(data.position,targetPoint.position);
+                for(int i=0;i<routeWaypoints.Length;i++)
+                {var p=routeWaypoints[i].position;if(p.z>data.position.z+12)continue;float d=QuestRowboat.FlatDistance(data.position,p);if(d<best){best=d;routeIndex=i;}}
+            }
+            destroyedTime=data.destroyedTime;sinkDepth=data.sinkDepth;
             sinkStart=data.sinkStart;sinkRotation=data.sinkRotation;transform.SetPositionAndRotation(data.position,data.rotation);
             if(isDestroyed)
             {

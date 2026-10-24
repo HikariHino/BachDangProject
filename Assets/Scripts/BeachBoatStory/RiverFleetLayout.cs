@@ -7,9 +7,9 @@ namespace BeachBoatStory
     /// <summary>Distinct water lanes and grounded wreck sites inside the full stake field.</summary>
     public static class RiverFleetLayout
     {
-        public static void Configure(EnemyFleetDirector fleet)
+        public static void Configure(EnemyFleetDirector fleet,RiverStakeZone authoredZone=null)
         {
-            var zone=RiverStakeZone.Instance;
+            var zone=authoredZone!=null?authoredZone:RiverStakeZone.Instance;
             if(zone==null||zone.fieldStakes.Length==0||fleet.transform.Find("Battle_Lanes_938")!=null)return;
             var root=new GameObject("Battle_Lanes_938").transform;root.SetParent(fleet.transform,false);
             var points=new List<Vector3>();Bounds bounds=default;
@@ -19,12 +19,14 @@ namespace BeachBoatStory
                 var renderer=stake.GetComponentInChildren<Renderer>(true);var p=renderer!=null?renderer.bounds.center:stake.position;
                 if(points.Count==0)bounds=new Bounds(p,Vector3.zero);else bounds.Encapsulate(p);points.Add(p);
             }
-            var assigned=new List<Vector3>();int columns=3,rows=Mathf.CeilToInt(fleet.ShipCount/(float)columns);
+            var assigned=new List<Vector3>();int columns=4,rows=Mathf.CeilToInt(fleet.ShipCount/(float)columns);
             Transform Marker(string name,Vector3 p){var t=new GameObject(name).transform;t.SetParent(root,false);t.position=p;return t;}
             for(int i=0;i<fleet.enemyShips.Length;i++)
             {
                 var ship=fleet.enemyShips[i];if(ship==null)continue;
-                float side=ship.stakeHitDistance+28,depth=ship.hullHalfLength+45;
+                var hull=BoatHullCollision.Get(ship.transform);var size=Vector3.Scale(hull.SolidHull.size,hull.transform.lossyScale);
+                ship.stakeHitDistance=Mathf.Max(ship.stakeHitDistance,Mathf.Abs(size.x)*.5f);ship.hullHalfLength=Mathf.Max(ship.hullHalfLength,Mathf.Abs(size.z)*.5f);
+                float side=ship.stakeHitDistance+35,depth=ship.hullHalfLength+55;
                 float x=Mathf.Lerp(bounds.min.x+side,bounds.max.x-side,(i%columns)/(float)(columns-1));
                 float z=Mathf.Lerp(bounds.min.z+depth,bounds.max.z-depth,(i/columns)/(float)Mathf.Max(1,rows-1));
                 var desired=new Vector3(x,TideSystem.CurrentWaterHeight,z);var goal=desired;float best=float.PositiveInfinity;

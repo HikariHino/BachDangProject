@@ -72,6 +72,7 @@ namespace BeachBoatStory
             foreach(var box in GetComponents<BoxCollider>())
             {box.size=Vector3.Scale(box.size,new Vector3(footprint,1,footprint));box.center=Vector3.Scale(box.center,new Vector3(footprint,1,footprint));}
             hullProbeSpacing*=footprint;hullProbeRadius*=footprint;
+            BoatHullCollision.Get(transform).Initialize();
             session = BeachBoatQuestSession.Instance;
             if (session == null || boardingPoint == null || dockPoint == null || seat == null || rowingController == null)
             { Debug.LogError("Quest rowboat bindings incomplete.", this); enabled = false; return; }
@@ -304,19 +305,15 @@ namespace BeachBoatStory
                 acceleration * (IsBoosting ? 1.55f : 1f) * dt);
             var rotation = transform.rotation * Quaternion.Euler(0, Mathf.Clamp(steering, -1, 1) * turnSpeed * dt, 0);
             var next = position + rotation * Vector3.forward * (speed * dt);
-            if (TryCanOccupy(next, rotation, out var obstacle)) { transform.SetPositionAndRotation(next, rotation); Speed = speed; wedgedAtDockSeconds = 0; }
+            bool clear=TryCanOccupy(next,rotation,out var obstacle)&&BoatHullCollision.Get(transform).CanMove(position,transform.rotation,next,rotation,false);
+            if (clear) { transform.SetPositionAndRotation(next, rotation); Speed = speed; wedgedAtDockSeconds = 0; }
             else
             {
-                var state = BachDangStoryManager.Instance != null ? BachDangStoryManager.Instance.currentState : BachDangStoryManager.StoryState.Act1_ExploreCamp;
-                bool nearQuay = AtDock || (boardingPoint != null && FlatDistance(position, boardingPoint.position) <= dockingRange + hullProbeRadius * 2);
-                bool wedged = nearQuay && !CanOccupy(position, transform.rotation) &&
-                    (state == BachDangStoryManager.StoryState.Act3_WaitForLowTide || state == BachDangStoryManager.StoryState.Act3_BattleInProgress);
-                if (wedged && Mathf.Abs(throttle) > .1f)
-                {
-                    wedgedAtDockSeconds += dt;
-                    if (wedgedAtDockSeconds >= .75f) PrepareForBattle();
-                }
-                bool knockedOut = !wedged && HandleImpact(obstacle, Mathf.Max(Mathf.Abs(Speed), Mathf.Abs(speed)));
+                // Colliding while afloat never teleports the boat through the quay.
+                // Safe launch/old-save placement happens before rowing begins.
+                if(obstacle==BoatObstacleKind.None)
+                {var blocker=BoatHullCollision.Get(transform).LastBlocker;obstacle=blocker!=null?ClassifyObstacle(blocker):BoatObstacleKind.Structure;}
+                bool knockedOut = HandleImpact(obstacle, Mathf.Max(Mathf.Abs(Speed), Mathf.Abs(speed)));
                 Speed = 0; IsBoosting = false;
                 if (knockedOut) return;
             }
@@ -328,7 +325,7 @@ namespace BeachBoatStory
             AttachPlayer();
         }
 
-        public bool CanOccupy(Vector3 position, Quaternion rotation) => TryCanOccupy(position, rotation, out _);
+        public bool CanOccupy(Vector3 position, Quaternion rotation) => TryCanOccupy(position, rotation, out _)&&BoatHullCollision.Get(transform).CanOccupy(position,rotation,false);
 
         float ShipClearance(Vector3 position, Quaternion rotation, Vector3 ship, float radius)
         {

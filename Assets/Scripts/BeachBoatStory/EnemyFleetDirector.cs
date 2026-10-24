@@ -120,7 +120,15 @@ namespace BeachBoatStory
                     if(resume&&(ship.gameObject.activeSelf||ship.isDestroyed))continue;
                     var spawn=(spawnPoints!=null&&i<spawnPoints.Length&&spawnPoints[i]!=null)?spawnPoints[i].position:ship.spawnPoint;
                     spawn.y=TideSystem.CurrentWaterHeight;
+                    var approach=ship.targetPoint.position-spawn;
+                    foreach(var waypoint in ship.routeWaypoints)if(waypoint!=null&&QuestRowboat.FlatDistance(waypoint.position,spawn)>9){approach=waypoint.position-spawn;break;}
+                    approach.y=0;var heading=approach.sqrMagnitude>.01f?Quaternion.LookRotation(approach):Quaternion.identity;
+                    while(BattleStarted&&!BoatHullCollision.Get(ship.transform).CanOccupy(spawn,heading,false))yield return new WaitForSeconds(.5f);
+                    if(!BattleStarted)yield break;
                     ship.transform.position=spawn;ship.Activate();
+                    // Release vessels separately so long hulls can clear crossing
+                    // northern approaches before the next vessel turns into them.
+                    if(!resume&&i+1<waveEnd)yield return new WaitForSeconds(6);
                 }
                 watchedFleetIndex=waveStart;
                 if(IsShowingBattle)WatchShip(fleet[watchedFleetIndex]);

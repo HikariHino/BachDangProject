@@ -20,8 +20,13 @@ public static class BeachBoatBoardingPlaytest
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;}
     static void Finish(string failure)
     {
-        var game=RiverBoardingCombat.Instance;Directory.CreateDirectory("Logs");File.WriteAllText("Logs/BoardingPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,stallsClear,scaleCorrect,swam,climbed,swordHit,enemyHit,alliedHit,hostileBoarded,checkpoint,game?.PlayerSwordHits,game?.AlliedSwordHits,game?.AlliedArrowHits,game?.EnemySwordHits,game?.SwimsStarted,game?.ClimbsStarted,game?.HostileBoardings},Formatting.Indented));
+        var game=RiverBoardingCombat.Instance;Directory.CreateDirectory("Logs");File.WriteAllText("Logs/BoardingPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,stallsClear,scaleCorrect,swam,climbed,swordHit,enemyHit,alliedHit,hostileBoarded,checkpoint,game?.PlayerSwordHits,game?.AlliedSwordHits,game?.AlliedArrowHits,game?.EnemySwordHits,game?.SwimsStarted,game?.ClimbsStarted,game?.HostileBoardings,allies=game?.CaptureSave().allies.Select(a=>new{a.id,a.state,a.active,a.health,a.target,position=a.position.ToString(),up=Contacts(a.id,Vector3.up,8),forward=Contacts(a.id,Vector3.right,4)}),hostiles=game?.CaptureSave().hostiles.Select(a=>new{a.id,a.state,a.active,a.boat,position=a.position.ToString(),up=Contacts(a.id,Vector3.up,4),forward=Contacts(a.id,Vector3.left,0)})},Formatting.Indented));
         SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(failure==null?0:1);
+    }
+    static object[] Contacts(string id,Vector3 direction,float offset)
+    {
+        var actor=Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).FirstOrDefault(t=>t.name==id||id.EndsWith("/"+t.name));if(actor==null)return null;
+        return Physics.SphereCastAll(actor.position+Vector3.up*offset,3.5f,direction,10,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore).Where(h=>!h.transform.IsChildOf(actor)&&!(h.collider is TerrainCollider)).Take(4).Select(h=>(object)new{h.collider.name,parent=h.collider.transform.parent?.name,distance=h.distance,normal=h.normal.ToString(),bounds=h.collider.bounds.ToString()}).ToArray();
     }
     static void MovePlayer(Vector3 p,Quaternion q)
     {var player=BeachBoatQuestSession.Instance.player;player.transform.SetPositionAndRotation(p,q);var body=player.GetComponent<Rigidbody>();body.position=p;body.rotation=q;Physics.SyncTransforms();}
@@ -60,10 +65,14 @@ public static class BeachBoatBoardingPlaytest
             }
             if(phase==1)
             {
+                // Wait for the real wave coroutine, then freeze the encounter fixture.
+                // Real-time editor delays need not equal two seconds of game time.
+                if(!ship.gameObject.activeSelf)return;fleet.StopAllCoroutines();
                 // Keep the fixture still while screenshots render; a zero throttle does not
                 // stop EnemyShip steering, which can rotate the ladder away between phases.
                 game.enabled=false;foreach(var vessel in fleet.enemyShips){vessel.moveSpeed=0;vessel.enabled=false;}
-                if(!ship.gameObject.activeSelf)ship.Activate();ship.transform.position=boat.transform.position+Vector3.forward*170;ship.transform.rotation=Quaternion.identity;
+                boat.transform.SetPositionAndRotation(new Vector3(-2600,TideSystem.CurrentWaterHeight,1930),Quaternion.identity);var fixtureBody=boat.GetComponent<Rigidbody>();fixtureBody.position=boat.transform.position;fixtureBody.rotation=boat.transform.rotation;
+                ship.transform.position=boat.transform.position+Vector3.forward*170;ship.transform.rotation=Quaternion.identity;Physics.SyncTransforms();
                 var animator=session.player.GetComponentInChildren<Animator>();
                 float reference=EnemyDeckGuard.RigHeight(animator);
                 if(archery.guards.Any(g=>Mathf.Abs(EnemyDeckGuard.RigHeight(g.visual.GetComponentInChildren<Animator>())/reference-1)>.05f))throw new Exception("Enemy soldier size differs from the player");
@@ -111,7 +120,12 @@ public static class BeachBoatBoardingPlaytest
                 var grip=pose.Weapon.TransformPoint(new Vector3(b.center.x,b.min.y+b.size.y*.105f,b.center.z));
                 if(Vector3.Distance(grip,pose.GripPosition)>.15f||Vector3.Dot(pose.Weapon.up,pose.BladeDirection)<.99f)throw new Exception("Sword hilt does not track palm or blade points the wrong way");
                 var p=session.player.transform.position;Capture("Boarding_Sword_Duel",p+new Vector3(-45,38,-55),p+Vector3.up*13);
-                for(int i=0;i<game.friendlyBoats.Length;i++)game.friendlyBoats[i].transform.position=ship.transform.position+new Vector3(-140-i*20,0,i*22);
+                for(int i=0;i<game.friendlyBoats.Length;i++)
+                {int lane=i/2;float along=lane==0?0:((lane+1)/2)*(lane%2==1?1:-1)*300;game.friendlyBoats[i].enabled=false;game.friendlyBoats[i].transform.SetPositionAndRotation(ship.transform.position+new Vector3(-160-(i%2)*250,0,along),Quaternion.identity);}
+                phase=31;until=EditorApplication.timeSinceStartup+2.5;return;
+            }
+            if(phase==31)
+            {
                 for(int n=0;n<450;n++){game.StepAllies(.1f);game.StepHostiles(.1f);game.StepEnemies(.1f);}
                 alliedHit=game.AlliedSwordHits>0;hostileBoarded=game.HostileBoardings>0;
                 if(!alliedHit||game.AlliedArrowHits<=0||!hostileBoarded||game.SwimsStarted<3||game.ClimbsStarted<3)throw new Exception("NPCs did not shoot, swim, climb and engage in two-sided boarding combat");

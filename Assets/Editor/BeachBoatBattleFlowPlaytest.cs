@@ -16,7 +16,7 @@ public static class BeachBoatBattleFlowPlaytest
     const string Flag="BattleFlow938QA";
     static readonly List<string> checks=new List<string>();
     static double started,until;
-    static int phase;
+    static int phase,returnTicks;
     static string runtimeError;
     static EnemyShip wreck;
     static readonly HashSet<EnemyShip> observed=new HashSet<EnemyShip>();
@@ -29,7 +29,7 @@ public static class BeachBoatBattleFlowPlaytest
     {
         Time.timeScale=1;Directory.CreateDirectory("Logs");
         var fleet=EnemyFleetDirector.Instance;
-        File.WriteAllText("Logs/BattleFlowPlaytest.json",JsonConvert.SerializeObject(new{success=error==null,failure=error,phase,checks,ships=fleet?.enemyShips.Select(s=>new{s.name,target=s.targetPoint.position.ToString(),position=s.transform.position.ToString(),s.isDestroyed,s.HasSettled}),remaining=fleet?.RemainingEnemies},Formatting.Indented));
+        File.WriteAllText("Logs/BattleFlowPlaytest.json",JsonConvert.SerializeObject(new{success=error==null,failure=error,phase,checks,ships=fleet?.enemyShips.Select(s=>new{s.name,target=s.targetPoint.position.ToString(),position=s.transform.position.ToString(),s.isDestroyed,s.HasSettled,blocker=s.GetComponent<BoatHullCollision>()?.LastBlocker?.name,blockerBoat=s.GetComponent<BoatHullCollision>()?.LastBlocker?.GetComponentInParent<BoatHullCollision>()?.name}),allies=RiverBoardingCombat.Instance?.friendlyBoats.Select(b=>new{b.name,position=b.transform.position.ToString(),berth=b.ReturnBerth.ToString(),b.HasNavigableRoute,b.HasReturnedToHarbor,blocker=b.GetComponent<BoatHullCollision>()?.LastBlocker?.name,boat=b.GetComponent<BoatHullCollision>()?.LastBlocker?.GetComponentInParent<BoatHullCollision>()?.name}),remaining=fleet?.RemainingEnemies},Formatting.Indented));
         SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(error==null?0:1);
     }
     static void Capture(string path,Vector3 position,Vector3 focus)
@@ -42,7 +42,7 @@ public static class BeachBoatBattleFlowPlaytest
         if(!SessionState.GetBool(Flag,false)||!EditorApplication.isPlaying)return;
         if(started==0)started=EditorApplication.timeSinceStartup;
         if(EditorApplication.timeSinceStartup-started<4||EditorApplication.timeSinceStartup<until)return;
-        if(EditorApplication.timeSinceStartup-started>170){Finish("Timeout at phase "+phase);return;}
+        if(EditorApplication.timeSinceStartup-started>300){Finish("Timeout at phase "+phase);return;}
         try
         {
             if(runtimeError!=null)throw new Exception(runtimeError);
@@ -81,7 +81,7 @@ public static class BeachBoatBattleFlowPlaytest
                     var a=fleet.enemyShips[i];var b=fleet.enemyShips[j];var delta=a.targetPoint.position-b.targetPoint.position;
                     Check(Mathf.Abs(delta.x)>=a.stakeHitDistance+b.stakeHitDistance+29||Mathf.Abs(delta.z)>=a.hullHalfLength+b.hullHalfLength+29,"Separate full hull berths: "+i+" / "+j);
                 }
-                phase=1;until=EditorApplication.timeSinceStartup+2;return;
+                phase=1;until=EditorApplication.timeSinceStartup+5;return;
             }
             if(phase==1)
             {
@@ -132,12 +132,16 @@ public static class BeachBoatBattleFlowPlaytest
                 if(story.currentState!=Story.StoryState.Act3_Victory)return;
                 Time.timeScale=1;Check(fleet.CommandScore==0&&fleet.RemainingEnemies==0,"Quest 3 wins automatically without a single flag order");
                 var friends=boarding.friendlyBoats;Check(friends.All(b=>b.IsReturningToHarbor||b.HasReturnedToHarbor),"All allied ships receive the return-to-harbor order");
-                var friendly=friends[0];float before=QuestRowboat.FlatDistance(friendly.transform.position,friendly.ReturnBerth);
-                for(int i=0;i<600;i++)friendly.Step(.05f);
-                Check(QuestRowboat.FlatDistance(friendly.transform.position,friendly.ReturnBerth)<before-80,"Allied ship visibly travels back toward its harbor berth");
+                phase=6;started=EditorApplication.timeSinceStartup;return;
+            }
+            if(phase==6)
+            {
+                var friends=boarding.friendlyBoats;
+                for(int tick=0;tick<40&&friends.Any(a=>!a.HasReturnedToHarbor)&&returnTicks<8000;tick++,returnTicks++)foreach(var moving in friends)moving.Step(.05f);
+                File.WriteAllText("Logs/SolidReturnProgress.json",JsonConvert.SerializeObject(new{returnTicks,allies=friends.Select(b=>new{b.name,pos=b.transform.position.ToString(),berth=b.ReturnBerth.ToString(),b.HasReturnedToHarbor,b.HasNavigableRoute,blocker=b.GetComponent<BoatHullCollision>()?.LastBlocker?.name,owner=b.GetComponent<BoatHullCollision>()?.LastBlocker?.GetComponentInParent<BoatHullCollision>()?.name})},Formatting.Indented));
+                if(returnTicks<8000&&friends.Any(a=>!a.HasReturnedToHarbor))return;
                 foreach(var ally in friends)
                 {
-                    for(int i=0;i<12000&&!ally.HasReturnedToHarbor;i++)ally.Step(.05f);
                     Check(ally.HasReturnedToHarbor&&QuestRowboat.FlatDistance(ally.transform.position,ally.ReturnBerth)<13,"Ally reaches and stops at its harbor berth: "+ally.name+" / pos "+ally.transform.position+" / berth "+ally.ReturnBerth+" / dist "+QuestRowboat.FlatDistance(ally.transform.position,ally.ReturnBerth)+" / returning "+ally.IsReturningToHarbor+" / blocked "+BeachBoatQuestSession.InteractionBlocked+" / boat "+boat.transform.position);
                 }
                 Check(!story.objectiveDescText.text.Contains("phất")&&story.objectiveDescText.text.Contains("rút về"),"Victory HUD explains the result and returning fleet");Finish(null);

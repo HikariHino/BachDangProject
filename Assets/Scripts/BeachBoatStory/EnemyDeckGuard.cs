@@ -28,7 +28,7 @@ namespace BeachBoatStory
         }
         public void MatchPlayerSize()
         {
-            Cache();var player=BeachBoatQuestSession.Instance.player;var reference=player.GetComponentInChildren<Animator>();
+            Cache();ActorSolidBody.Ensure(gameObject,animator);var player=BeachBoatQuestSession.Instance.player;var reference=player.GetComponentInChildren<Animator>();
             float oldFeet=Mathf.Min(animator.GetBoneTransform(HumanBodyBones.LeftFoot).position.y,animator.GetBoneTransform(HumanBodyBones.RightFoot).position.y);
             visual.localScale*=RigHeight(reference)/Mathf.Max(.01f,RigHeight(animator));
             float newFeet=Mathf.Min(animator.GetBoneTransform(HumanBodyBones.LeftFoot).position.y,animator.GetBoneTransform(HumanBodyBones.RightFoot).position.y);

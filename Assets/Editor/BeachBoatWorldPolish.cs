@@ -89,7 +89,7 @@ public static class BeachBoatWorldPolish
         }
         bool success = root != null && streamer != null && streamer.zones.Length == 43 &&
             streamer.zones.All(z => z != null && z.content != null && z.content.activeSelf && z.visibleDistance >= 1000) &&
-            missingMaterials == 0 && unsupportedMaterials == 0 && activeDecorativeColliders == 0 &&
+            missingMaterials == 0 && unsupportedMaterials == 0 && activeDecorativeColliders > 0 &&
             Terrain.activeTerrain != null && Terrain.activeTerrain.terrainData.treeInstanceCount == 49547 && Terrain.activeTerrain.treeDistance <= 1400;
         Directory.CreateDirectory("Logs");
         File.WriteAllText("Logs/WorldPolishValidation.json", JsonConvert.SerializeObject(new {
@@ -252,22 +252,14 @@ public static class BeachBoatWorldPolish
         foreach (string name in decorativeRoots)
         {
             var group = settlement != null ? settlement.Find(name) : null; if (group == null) continue;
-            foreach (var collider in group.GetComponentsInChildren<Collider>(true))
-            { if (!collider.enabled) continue; Undo.RecordObject(collider, "Disable decorative collider"); collider.enabled = false; collidersDisabled++; }
+            // Solid scenery stays collidable; visual optimization must not remove contact.
             foreach (var renderer in group.GetComponentsInChildren<Renderer>(true))
             {
                 if (renderer is SkinnedMeshRenderer || renderer.shadowCastingMode == ShadowCastingMode.Off) continue;
                 Undo.RecordObject(renderer, "Disable small scenery shadow"); renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = false; shadowsDisabled++;
             }
         }
-        // Decorative supply props do not need physics. Preserve the bridge deck, buildings, walls and gates.
-        var landing = settlement != null ? settlement.Find("08_Ben_Ca_Dan_Sinh") : null;
-        if (landing != null) foreach (Transform child in landing)
-        {
-            if (child.name.StartsWith("Cau_Go") || child.name.StartsWith("Loi_Xuong")) continue;
-            foreach (var collider in child.GetComponentsInChildren<Collider>(true))
-            { if (!collider.enabled) continue; Undo.RecordObject(collider, "Disable dock prop collider"); collider.enabled = false; collidersDisabled++; }
-        }
+        // Dock props keep their physical contact surfaces as well.
         foreach (var light in Object.FindObjectsByType<Light>(FindObjectsInactive.Include))
         {
             if (light.gameObject.scene != scene || light.type == LightType.Directional || light.shadows == LightShadows.None) continue;
