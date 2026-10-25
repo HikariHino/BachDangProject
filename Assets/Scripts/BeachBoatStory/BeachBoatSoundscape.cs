@@ -26,6 +26,7 @@ namespace BeachBoatStory
         Vector3 previous;
         float distance,nextStep,nextOar,nextBird,toastUntil;
         int footIndex;
+        int runStepIndex;
         float savedListenerVolume=1;
         Terrain[] terrains;
         float nextShoreCheck;
@@ -36,6 +37,7 @@ namespace BeachBoatStory
             Application.runInBackground=true;
             savedListenerVolume=AudioListener.volume;
             runningFootsteps=Resources.LoadAll<AudioClip>("BachDang938/RunSteps");
+            System.Array.Sort(runningFootsteps,(a,b)=>string.CompareOrdinal(a.name,b.name));
             foreach(var old in session.player.GetComponentsInChildren<FootstepSound>(true))old.enabled=false;
             previous=session.player.transform.position;
             terrains=Terrain.activeTerrains;
@@ -91,8 +93,11 @@ namespace BeachBoatStory
         public void PlayFootstep(bool running=false)
         {
             var clips=running&&runningFootsteps!=null&&runningFootsteps.Length>0?runningFootsteps:footsteps;
-            if(clips.Length==0)return;LastFootstep=clips[footIndex++%clips.Length];
-            Play(foley,LastFootstep,running?.55f:.38f,Random.Range(.96f,1.04f));FootstepsPlayed++;
+            if(clips.Length==0)return;
+            // Recorded pairs alternate left/right, with varied takes of each foot.
+            int index=running?(runStepIndex++%2)+2*Random.Range(0,Mathf.Max(1,clips.Length/2)):footIndex++%clips.Length;
+            LastFootstep=clips[Mathf.Min(index,clips.Length-1)];
+            Play(foley,LastFootstep,running?.60f:.38f,Random.Range(.98f,1.02f));FootstepsPlayed++;
             if(running)RunningFootstepsPlayed++;
         }
         public void SetMuted(bool value){Muted=value;AudioListener.volume=value?0:BachDangPreferences.Volume;toastUntil=Time.unscaledTime+2.5f;}

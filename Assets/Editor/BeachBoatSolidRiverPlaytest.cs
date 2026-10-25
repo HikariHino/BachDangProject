@@ -56,7 +56,7 @@ public static class BeachBoatSolidRiverPlaytest
             var rowboat=QuestRowboat.Instance;var story=BeachBoatStory.BachDangStoryManager.Instance;story.collectedWood=story.totalWoodRequired;story.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act3_WaitForLowTide,true);
             var player=BeachBoatQuestSession.Instance.player;player.transform.position=rowboat.boardingPoint.position;player.GetComponent<Rigidbody>().position=player.transform.position;
             Check(rowboat.TryBoard(),"Player can board a clear launch with full-hull checks");var from=rowboat.transform.position;for(int i=0;i<40;i++)rowboat.Step(1,0,.05f);Check(QuestRowboat.FlatDistance(from,rowboat.transform.position)>15,"Player can actually row away from the dock with solid bodies enabled");
-            var clips=Resources.LoadAll<AudioClip>("BachDang938/RunSteps");Check(clips.Length==8,"Eight original running footfalls are bundled");
+            var clips=Resources.LoadAll<AudioClip>("BachDang938/RunSteps");Check(clips.Length==6,"Six recorded running footfalls are bundled");
             var signatures=new HashSet<string>();
             foreach(var clip in clips)
             {

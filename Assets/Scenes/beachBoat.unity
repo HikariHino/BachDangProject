@@ -11590,7 +11590,7 @@ Transform:
   m_GameObject: {fileID: 11170125}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5482.651, y: 156.25076, z: 1538.1338}
+  m_LocalPosition: {x: -5461.8174, y: 125.6565, z: 1530}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -21333,7 +21333,7 @@ Transform:
   m_GameObject: {fileID: 20712639}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5564, y: 122.529434, z: 1168}
+  m_LocalPosition: {x: -5580, y: 125.549385, z: 1280}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -79133,7 +79133,7 @@ Transform:
   m_GameObject: {fileID: 78584031}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5533.23, y: 155.1641, z: 1536.9807}
+  m_LocalPosition: {x: -5550, y: 125.5633, z: 1440}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -151519,7 +151519,7 @@ Transform:
   m_GameObject: {fileID: 155299960}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -5570, y: 122.549385, z: 1190}
+  m_LocalPosition: {x: -5550, y: 125.549385, z: 1190}
   m_LocalScale: {x: 14, y: 14, z: 14}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -151628,12 +151628,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 023df92a3f29f4a43a090f6f56ae46d2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCWander
   wanderRadius: 35
   walkSpeed: 5.2
-  minIdleTime: 4
-  maxIdleTime: 12
+  minIdleTime: 0.3
+  maxIdleTime: 1.8
   acceleration: 5.5
   deceleration: 8
   turnSpeed: 150
@@ -151648,13 +151648,17 @@ MonoBehaviour:
   - {fileID: 995033089}
   - {fileID: 20712640}
   - {fileID: 161824200}
-  followWaypointsInOrder: 0
-  waypointWaitSeconds: []
+  followWaypointsInOrder: 1
+  waypointWaitSeconds:
+  - 1.4
+  - 0.6
+  - 2
+  - 0.6
   activityLabels:
-  - "\u0110ang tr\u1EF1c c\u1ED5ng"
-  - "\u0110ang tu\u1EA7n tra h\xE0ng r\xE0o"
-  - "\u0110ang ki\u1EC3m tra kho l\u01B0\u01A1ng"
-  - "\u0110ang tr\u1EDF v\u1EC1 v\u1ECB tr\xED g\xE1c"
+  - "\u0110ang quan s\xE1t doanh tr\u1EA1i"
+  - "\u0110ang tu\u1EA7n tra"
+  - "\u0110ang ki\u1EC3m tra l\u1ED1i \u0111i"
+  - "\u0110ang \u0111\u1ED5i ca g\xE1c"
   autoGenerateWaypoints: 0
   animator: {fileID: 155299963}
   walkParam: isWalking
@@ -159159,7 +159163,7 @@ Transform:
   m_GameObject: {fileID: 161824199}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5580, y: 122.51359, z: 1178}
+  m_LocalPosition: {x: -5580, y: 125.543526, z: 1190}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -212359,7 +212363,7 @@ Transform:
   m_GameObject: {fileID: 215324651}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5522.906, y: 155.37448, z: 1583.8341}
+  m_LocalPosition: {x: -5523, y: 155.54478, z: 1562}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -218130,7 +218134,7 @@ Transform:
   m_GameObject: {fileID: 222338168}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5537.1445, y: 155.1641, z: 1536.1584}
+  m_LocalPosition: {x: -5580, y: 125.549385, z: 1500}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -456026,7 +456030,7 @@ Transform:
   m_GameObject: {fileID: 475422682}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5533.23, y: 155.1641, z: 1536.9807}
+  m_LocalPosition: {x: -5550, y: 125.5633, z: 1440}
   m_LocalScale: {x: 14, y: 14, z: 14}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -456135,12 +456139,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 023df92a3f29f4a43a090f6f56ae46d2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCWander
   wanderRadius: 6
   walkSpeed: 5.2
-  minIdleTime: 4
-  maxIdleTime: 12
+  minIdleTime: 0.3
+  maxIdleTime: 1.8
   acceleration: 5.5
   deceleration: 8
   turnSpeed: 150
@@ -456155,13 +456159,17 @@ MonoBehaviour:
   - {fileID: 2060088102}
   - {fileID: 222338169}
   - {fileID: 697458231}
-  followWaypointsInOrder: 0
-  waypointWaitSeconds: []
+  followWaypointsInOrder: 1
+  waypointWaitSeconds:
+  - 1.4
+  - 0.6
+  - 2
+  - 0.6
   activityLabels:
-  - "\u0110ang quan s\xE1t c\u1ED5ng tr\u1EA1i"
-  - "\u0110ang tu\u1EA7n tra tr\xEAn b\u1EE5c"
-  - "\u0110ang \u0111\u1ED5i v\u1ECB tr\xED g\xE1c"
-  - "\u0110ang ki\u1EC3m tra doanh tr\u1EA1i"
+  - "\u0110ang quan s\xE1t doanh tr\u1EA1i"
+  - "\u0110ang tu\u1EA7n tra"
+  - "\u0110ang ki\u1EC3m tra l\u1ED1i \u0111i"
+  - "\u0110ang \u0111\u1ED5i ca g\xE1c"
   autoGenerateWaypoints: 0
   animator: {fileID: 475422685}
   walkParam: isWalking
@@ -475578,7 +475586,7 @@ Transform:
   m_GameObject: {fileID: 494405134}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -5470, y: 122.56715, z: 1185}
+  m_LocalPosition: {x: -5445, y: 125.61347, z: 1185}
   m_LocalScale: {x: 14, y: 14, z: 14}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -475687,12 +475695,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 023df92a3f29f4a43a090f6f56ae46d2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCWander
   wanderRadius: 35
   walkSpeed: 5.2
-  minIdleTime: 4
-  maxIdleTime: 12
+  minIdleTime: 0.3
+  maxIdleTime: 1.8
   acceleration: 5.5
   deceleration: 8
   turnSpeed: 150
@@ -475707,13 +475715,17 @@ MonoBehaviour:
   - {fileID: 1598606837}
   - {fileID: 1316680277}
   - {fileID: 2014956952}
-  followWaypointsInOrder: 0
-  waypointWaitSeconds: []
+  followWaypointsInOrder: 1
+  waypointWaitSeconds:
+  - 1.4
+  - 0.6
+  - 2
+  - 0.6
   activityLabels:
-  - "\u0110ang tr\u1EF1c c\u1ED5ng"
-  - "\u0110ang tu\u1EA7n tra h\xE0ng r\xE0o"
-  - "\u0110ang ki\u1EC3m tra kho l\u01B0\u01A1ng"
-  - "\u0110ang tr\u1EDF v\u1EC1 v\u1ECB tr\xED g\xE1c"
+  - "\u0110ang quan s\xE1t doanh tr\u1EA1i"
+  - "\u0110ang tu\u1EA7n tra"
+  - "\u0110ang ki\u1EC3m tra l\u1ED1i \u0111i"
+  - "\u0110ang \u0111\u1ED5i ca g\xE1c"
   autoGenerateWaypoints: 0
   animator: {fileID: 494405137}
   walkParam: isWalking
@@ -595626,7 +595638,7 @@ Transform:
   m_GameObject: {fileID: 621280627}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5526.8203, y: 155.37448, z: 1583.0117}
+  m_LocalPosition: {x: -5523, y: 155.37526, z: 1586}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -627953,7 +627965,7 @@ Transform:
   m_GameObject: {fileID: 656653645}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5483.2676, y: 156.25076, z: 1541.0697}
+  m_LocalPosition: {x: -5470, y: 125.61347, z: 1475}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -669497,7 +669509,7 @@ Transform:
   m_GameObject: {fileID: 697458230}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5532.6133, y: 155.1641, z: 1534.0448}
+  m_LocalPosition: {x: -5580, y: 125.549385, z: 1440}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -961248,7 +961260,7 @@ Transform:
   m_GameObject: {fileID: 995033088}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5556, y: 122.549385, z: 1183}
+  m_LocalPosition: {x: -5550, y: 125.549385, z: 1280}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1075517,7 +1075529,7 @@ Transform:
   m_GameObject: {fileID: 1114022758}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5493.547, y: 156.09906, z: 1590.0017}
+  m_LocalPosition: {x: -5500, y: 157.35983, z: 1586}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1229127,7 +1229139,7 @@ Transform:
   m_GameObject: {fileID: 1273538796}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5570, y: 122.549385, z: 1190}
+  m_LocalPosition: {x: -5550, y: 125.549385, z: 1190}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1269767,7 +1269779,7 @@ Transform:
   m_GameObject: {fileID: 1316680276}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5464, y: 122.5859, z: 1163}
+  m_LocalPosition: {x: -5410, y: 125.61347, z: 1260}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1472842,7 +1472854,7 @@ Transform:
   m_GameObject: {fileID: 1515853769}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5470, y: 122.56715, z: 1185}
+  m_LocalPosition: {x: -5445, y: 125.61347, z: 1185}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1472873,7 +1472885,7 @@ Transform:
   m_GameObject: {fileID: 1515866477}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5484.09, y: 156.25076, z: 1544.9843}
+  m_LocalPosition: {x: -5435, y: 125.67268, z: 1475}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1555201,7 +1555213,7 @@ Transform:
   m_GameObject: {fileID: 1598606836}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5456, y: 122.6109, z: 1178}
+  m_LocalPosition: {x: -5445, y: 125.61347, z: 1260}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1659735,7 +1659747,7 @@ Transform:
   m_GameObject: {fileID: 1714964957}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5494.369, y: 156.09906, z: 1593.9163}
+  m_LocalPosition: {x: -5500, y: 156.44412, z: 1575}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1748087,7 +1748099,7 @@ Transform:
   m_GameObject: {fileID: 1811007511}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5493.547, y: 156.09906, z: 1590.0017}
+  m_LocalPosition: {x: -5500, y: 157.35983, z: 1586}
   m_LocalScale: {x: 14, y: 14, z: 14}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1748196,12 +1748208,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 023df92a3f29f4a43a090f6f56ae46d2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCWander
   wanderRadius: 6
   walkSpeed: 5.2
-  minIdleTime: 4
-  maxIdleTime: 12
+  minIdleTime: 0.3
+  maxIdleTime: 1.8
   acceleration: 5.5
   deceleration: 8
   turnSpeed: 150
@@ -1748216,13 +1748228,17 @@ MonoBehaviour:
   - {fileID: 1714964958}
   - {fileID: 1817636802}
   - {fileID: 1978182630}
-  followWaypointsInOrder: 0
-  waypointWaitSeconds: []
+  followWaypointsInOrder: 1
+  waypointWaitSeconds:
+  - 1.4
+  - 0.6
+  - 2
+  - 0.6
   activityLabels:
-  - "\u0110ang quan s\xE1t c\u1ED5ng tr\u1EA1i"
-  - "\u0110ang tu\u1EA7n tra tr\xEAn b\u1EE5c"
-  - "\u0110ang \u0111\u1ED5i v\u1ECB tr\xED g\xE1c"
-  - "\u0110ang ki\u1EC3m tra doanh tr\u1EA1i"
+  - "\u0110ang quan s\xE1t doanh tr\u1EA1i"
+  - "\u0110ang tu\u1EA7n tra"
+  - "\u0110ang ki\u1EC3m tra l\u1ED1i \u0111i"
+  - "\u0110ang \u0111\u1ED5i ca g\xE1c"
   autoGenerateWaypoints: 0
   animator: {fileID: 1811007514}
   walkParam: isWalking
@@ -1754777,7 +1754793,7 @@ Transform:
   m_GameObject: {fileID: 1817636801}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5497.4614, y: 156.09906, z: 1589.1793}
+  m_LocalPosition: {x: -5500, y: 155.87697, z: 1565}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1780485,7 +1780501,7 @@ Transform:
   m_GameObject: {fileID: 1842313731}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5522.289, y: 155.37448, z: 1580.8982}
+  m_LocalPosition: {x: -5523, y: 155.41544, z: 1574}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1781799,7 +1781815,7 @@ Transform:
   m_GameObject: {fileID: 1844171168}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5522.906, y: 155.37448, z: 1583.8341}
+  m_LocalPosition: {x: -5523, y: 155.54478, z: 1562}
   m_LocalScale: {x: 14, y: 14, z: 14}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1781908,12 +1781924,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 023df92a3f29f4a43a090f6f56ae46d2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCWander
   wanderRadius: 6
   walkSpeed: 5.2
-  minIdleTime: 4
-  maxIdleTime: 12
+  minIdleTime: 0.3
+  maxIdleTime: 1.8
   acceleration: 5.5
   deceleration: 8
   turnSpeed: 150
@@ -1781928,13 +1781944,17 @@ MonoBehaviour:
   - {fileID: 2014337538}
   - {fileID: 621280628}
   - {fileID: 1842313732}
-  followWaypointsInOrder: 0
-  waypointWaitSeconds: []
+  followWaypointsInOrder: 1
+  waypointWaitSeconds:
+  - 1.4
+  - 0.6
+  - 2
+  - 0.6
   activityLabels:
-  - "\u0110ang quan s\xE1t c\u1ED5ng tr\u1EA1i"
-  - "\u0110ang tu\u1EA7n tra tr\xEAn b\u1EE5c"
-  - "\u0110ang \u0111\u1ED5i v\u1ECB tr\xED g\xE1c"
-  - "\u0110ang ki\u1EC3m tra doanh tr\u1EA1i"
+  - "\u0110ang quan s\xE1t doanh tr\u1EA1i"
+  - "\u0110ang tu\u1EA7n tra"
+  - "\u0110ang ki\u1EC3m tra l\u1ED1i \u0111i"
+  - "\u0110ang \u0111\u1ED5i ca g\xE1c"
   autoGenerateWaypoints: 0
   animator: {fileID: 1844171171}
   walkParam: isWalking
@@ -1899086,7 +1899106,7 @@ Transform:
   m_GameObject: {fileID: 1978182629}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5492.93, y: 156.09906, z: 1587.0658}
+  m_LocalPosition: {x: -5500, y: 156.44412, z: 1575}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1920739,7 +1920759,7 @@ Transform:
   m_GameObject: {fileID: 1999658771}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5483.2676, y: 156.25076, z: 1541.0697}
+  m_LocalPosition: {x: -5470, y: 125.61347, z: 1475}
   m_LocalScale: {x: 14, y: 14, z: 14}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1920848,12 +1920868,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 023df92a3f29f4a43a090f6f56ae46d2, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.NPCWander
   wanderRadius: 6
   walkSpeed: 5.2
-  minIdleTime: 4
-  maxIdleTime: 12
+  minIdleTime: 0.3
+  maxIdleTime: 1.8
   acceleration: 5.5
   deceleration: 8
   turnSpeed: 150
@@ -1920868,13 +1920888,17 @@ MonoBehaviour:
   - {fileID: 1515866478}
   - {fileID: 2047927052}
   - {fileID: 11170126}
-  followWaypointsInOrder: 0
-  waypointWaitSeconds: []
+  followWaypointsInOrder: 1
+  waypointWaitSeconds:
+  - 1.4
+  - 0.6
+  - 2
+  - 0.6
   activityLabels:
-  - "\u0110ang quan s\xE1t c\u1ED5ng tr\u1EA1i"
-  - "\u0110ang tu\u1EA7n tra tr\xEAn b\u1EE5c"
-  - "\u0110ang \u0111\u1ED5i v\u1ECB tr\xED g\xE1c"
-  - "\u0110ang ki\u1EC3m tra doanh tr\u1EA1i"
+  - "\u0110ang quan s\xE1t doanh tr\u1EA1i"
+  - "\u0110ang tu\u1EA7n tra"
+  - "\u0110ang ki\u1EC3m tra l\u1ED1i \u0111i"
+  - "\u0110ang \u0111\u1ED5i ca g\xE1c"
   autoGenerateWaypoints: 0
   animator: {fileID: 1999658774}
   walkParam: isWalking
@@ -1934821,7 +1934845,7 @@ Transform:
   m_GameObject: {fileID: 2014337537}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5523.7285, y: 155.37448, z: 1587.7487}
+  m_LocalPosition: {x: -5523, y: 155.41544, z: 1574}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1935577,7 +1935601,7 @@ Transform:
   m_GameObject: {fileID: 2014956951}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5480, y: 122.54969, z: 1173}
+  m_LocalPosition: {x: -5410, y: 125.61347, z: 1185}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1972892,7 +1972916,7 @@ Transform:
   m_GameObject: {fileID: 2047927051}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5487.182, y: 156.25076, z: 1540.2473}
+  m_LocalPosition: {x: -5435, y: 125.67757, z: 1530}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1985021,7 +1985045,7 @@ Transform:
   m_GameObject: {fileID: 2060088101}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.77639735, z: -0, w: 0.63024366}
-  m_LocalPosition: {x: -5534.0527, y: 155.1641, z: 1540.8953}
+  m_LocalPosition: {x: -5550, y: 125.57319, z: 1500}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

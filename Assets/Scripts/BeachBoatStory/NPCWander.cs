@@ -42,6 +42,11 @@ namespace BeachBoatStory
         bool raisedPatrol;
         public float CurrentSpeed=>currentSpeed;
         public float NominalStrideSpeed {get;private set;}
+        NPCWalkNavigation navigation;
+        readonly System.Collections.Generic.List<Vector3> route=new System.Collections.Generic.List<Vector3>();
+        int routePoint;
+        float blockedTime,nextReplan;
+        public int RoutesPlanned {get;private set;}
 
         public static bool IsEligible(Animator a)
         {
@@ -75,6 +80,8 @@ namespace BeachBoatStory
             // snapping them down to terrain; routes are kept on the same platform by the setup tool.
             groundOffset = terrain != null ? Mathf.Clamp(home.y - Ground(home), 0, scale * 5f) : 0;
             raisedPatrol=groundOffset>scale*1.5f;
+            navigation=new NPCWalkNavigation(this,terrain,scale,raisedPatrol);
+            if(navigation.FindSpawn(home,out var spawn)){transform.position=home=spawn;}
             animator.applyRootMotion = false;
             baseAnimatorSpeed = 1;
             personalPace = UnityEngine.Random.Range(Mathf.Min(minimumPace,maximumPace),Mathf.Max(minimumPace,maximumPace));
@@ -131,7 +138,7 @@ namespace BeachBoatStory
         }
         void PickTarget()
         {
-            IsSleeping=false;Pose(false,false); target = home;
+            IsSleeping=false;Pose(false,false); target = home;route.Clear();routePoint=0;blockedTime=0;
             // Alternate jobs with longer trips along clear village/camp lanes. Platform
             // sentries retain their authored route and never step off their guard post.
             if(!raisedPatrol&&UnityEngine.Random.value<.65f&&TryNeighbourhoodTrip())return;
@@ -160,7 +167,8 @@ namespace BeachBoatStory
                 }
                 else {var offset=UnityEngine.Random.insideUnitCircle.normalized*UnityEngine.Random.Range(wanderRadius*.45f,wanderRadius);candidate=home+new Vector3(offset.x,0,offset.y);}
                 if(!ValidGround(candidate)||QuestRowboat.FlatDistance(candidate,transform.position)<scale*.5f)continue;
-                target=candidate;CurrentActivity="Đang đi làm";return;
+                if(!SetDestination(candidate))continue;
+                CurrentActivity="Đang đi làm";return;
             }
             Idle();
         }
@@ -199,9 +207,15 @@ namespace BeachBoatStory
                     clear=false;break;
                 }
                 if(!clear)continue;
-                target=candidate;targetIndex=-1;CurrentActivity="Đang đi qua làng / tuần tra";return true;
+                if(!SetDestination(candidate))continue;
+                targetIndex=-1;CurrentActivity="Đang đi qua làng / tuần tra";return true;
             }
             return false;
+        }
+        bool SetDestination(Vector3 destination)
+        {
+            if(!navigation.Route(transform.position,destination,route))return false;
+            target=route[route.Count-1];routePoint=0;RoutesPlanned++;return true;
         }
         void Idle()
         {
@@ -227,7 +241,7 @@ namespace BeachBoatStory
         }
         public void PauseForConversation(Transform visitor)
         {
-            IsSleeping=false;target=transform.position;idleRemaining=Mathf.Max(idleRemaining,5);currentSpeed=0;Pose(false,false);CurrentActivity="Đang trò chuyện";
+            IsSleeping=false;target=transform.position;route.Clear();idleRemaining=Mathf.Max(idleRemaining,5);currentSpeed=0;Pose(false,false);CurrentActivity="Đang trò chuyện";
             if(visitor!=null){var direction=visitor.position-transform.position;direction.y=0;if(direction.sqrMagnitude>.1f)idleFacing=Quaternion.LookRotation(direction);}
         }
         void PickIdleFacing()
@@ -257,23 +271,30 @@ namespace BeachBoatStory
             // open. Only the NPC being spoken to is paused by PauseForConversation; globally
             // freezing everyone made the settlement look staged and mechanical.
             if (idleRemaining > 0) { idleRemaining-=dt;if(!IsSleeping)UpdateIdleLook();if(idleRemaining<=0)PickTarget();return; }
-            var direction=target-transform.position;direction.y=0;
+            if(route.Count==0){PickTarget();return;}
+            while(routePoint<route.Count-1&&QuestRowboat.FlatDistance(transform.position,route[routePoint])<Mathf.Max(.5f,navigation.Radius*.35f))routePoint++;
+            var direction=route[routePoint]-transform.position;direction.y=0;
             float remaining=direction.magnitude;
-            if(remaining<Mathf.Max(1,scale*.2f)){Idle();return;}
+            if(remaining<Mathf.Max(.5f,scale*.12f)&&routePoint==route.Count-1){Idle();return;}
             float desiredSpeed=Mathf.Max(0,walkSpeed)*personalPace*Mathf.Clamp01(remaining/Mathf.Max(1,scale*.35f));
             currentSpeed=Mathf.MoveTowards(currentSpeed,desiredSpeed,(desiredSpeed>currentSpeed?acceleration:deceleration)*dt);
             var heading=FindClearHeading(direction/remaining,currentSpeed*dt);
             if(heading.sqrMagnitude<.5f)
             {
-                currentSpeed=0;idleRemaining=UnityEngine.Random.Range(.2f,.5f);Pose(false,false);
-                CurrentActivity="Đang tránh vật cản";PickIdleFacing();return;
+                currentSpeed=0;blockedTime+=dt;Pose(false,false);CurrentActivity="Đang tránh vật cản";
+                if(blockedTime>.8f&&Time.time>=nextReplan)
+                {nextReplan=Time.time+UnityEngine.Random.Range(.8f,1.4f);blockedTime=0;if(!SetDestination(target))PickTarget();}
+                return;
             }
-            var next=transform.position+heading*currentSpeed*dt;
-            if(!ValidGround(next)){Idle();return;}
-            if(terrain!=null){next.y=Ground(next)+groundOffset;if(Mathf.Abs(next.y-transform.position.y)>scale){Idle();return;}}
+            var next=transform.position+heading*Mathf.Min(remaining,currentSpeed*dt);
+            if(!navigation.Project(next,out next)||!navigation.Clear(transform.position,next,true)){currentSpeed=0;Pose(false,false);return;}
+            blockedTime=0;
             DistanceTravelled+=Vector3.Distance(transform.position,next);
             transform.position=next;
             transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(heading),turnSpeed*personalPace*dt);
+            // AutoSyncTransforms is disabled in this project. Publish the moved
+            // capsule now so the next walker sees this actor's actual position.
+            Physics.SyncTransforms();
             // Keep the walk cycle at normal cadence through acceleration and stopping.
             // Slowing the entire Animator to 0.15 also slowed idle and exit transitions.
             animator.speed=Mathf.Clamp(walkSpeed*personalPace/NominalStrideSpeed,.95f,1.3f);
@@ -282,32 +303,21 @@ namespace BeachBoatStory
         Vector3 FindClearHeading(Vector3 desired,float step)
         {
             if(AmbientPopulationBudget.Instance!=null)desired=AmbientPopulationBudget.Instance.Separate(this,desired);
-            float probe=Mathf.Max(step+.3f*scale,Mathf.Min(obstacleProbeDistance,1.0f)*scale);
+            float probe=Mathf.Max(step+.12f*scale,.3f*scale);
             if(!Blocked(desired,probe))return desired;
-            for(int option=0;option<4;option++)
+            for(int option=0;option<8;option++)
             {
-                float turn=avoidanceAngle*(option<2?1:1.8f)*(option%2==0?1:-1);
+                float turn=Mathf.Min(170,avoidanceAngle*(1+option/2))*(option%2==0?1:-1);
                 var candidate=Quaternion.Euler(0,turn,0)*desired;
                 var test=transform.position+candidate*Mathf.Max(step,.35f*scale);
-                if(ValidGround(test)&&!Blocked(candidate,probe))return candidate;
+                if(navigation.Project(test,out _)&&!Blocked(candidate,probe))return candidate;
             }
             return Vector3.zero;
         }
         bool Blocked(Vector3 heading,float distance)
         {
-            int count=Physics.CapsuleCastNonAlloc(transform.position+Vector3.up*(scale*.65f),transform.position+Vector3.up*(NominalStrideSpeed/.85f),scale*.40f,heading,hits,
-                distance,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
-            if(count==hits.Length)return true;
-            for(int i=0;i<count;i++)
-            {
-                var hit=hits[i];if(hit.collider==null)continue;
-                if(hit.normal.y>.65f&&hit.point.y<=transform.position.y+scale*.5f)continue;
-                // Animator often lives below the character's capsule. Ignore both descendants and
-                // ancestors of this NPC; otherwise it detects its own parent collider every frame.
-                if(hit.transform.IsChildOf(transform)||transform.IsChildOf(hit.transform))continue;
-                return true;
-            }
-            return false;
+            var end=transform.position+heading*distance;
+            return !navigation.Project(end,out end)||!navigation.Clear(transform.position,end,true);
         }
         void OnDisable(){currentSpeed=0;if(animator!=null){animator.speed=baseAnimatorSpeed;Pose(false,false);}}
         void OnDrawGizmosSelected(){Gizmos.color=Color.green;Gizmos.DrawWireSphere(Application.isPlaying?home:transform.position,wanderRadius);}
