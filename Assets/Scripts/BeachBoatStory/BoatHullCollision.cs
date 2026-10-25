@@ -120,6 +120,35 @@ namespace BeachBoatStory
             if(boarding!=null&&boarding.PlayerDeckCarrier==transform&&session!=null&&collider.transform.IsChildOf(session.player.transform))return true;
             return GetComponent<QuestRowboat>()!=null&&session!=null&&QuestRowboat.Instance.IsAboard&&(boarding==null||!boarding.PlayerAway)&&collider.transform.IsChildOf(session.player.transform);
         }
+        /// <summary>F leaves from an actual gunwale, even on a large warship or a raised stern.</summary>
+        public bool TryWaterExit(Vector3 from,float radius,Transform actor,out Vector3 exit)
+        {
+            var local=transform.InverseTransformPoint(from);var scale=Abs(transform.lossyScale);
+            float preferred=local.x<solidHull.center.x?-1:1;
+            foreach(float side in new[]{preferred,-preferred})
+            for(int offset=0;offset<9;offset++)
+            {
+                float along=offset==0?0:((offset+1)/2)*(offset%2==0?-1:1)*16/scale.z;
+                var point=solidHull.center;
+                point.x+=side*(solidHull.size.x*.5f+(radius+5)/scale.x);
+                point.z=Mathf.Clamp(local.z+along,point.z-solidHull.size.z*.45f,point.z+solidHull.size.z*.45f);
+                exit=transform.TransformPoint(point);exit.y=TideSystem.CurrentWaterHeight-2;
+                if(RiverHullCollision.ClearAt(exit,radius,actor)){exit.y-=3;return true;}
+            }
+            exit=from;return false;
+        }
+        public bool TryClearDeckLanding(Vector3 near,float radius,Transform actor,out Vector3 floor)
+        {
+            var at=transform.InverseTransformPoint(near);var scale=Abs(transform.lossyScale);
+            for(int ring=0;ring<5;ring++)for(int angle=0;angle<(ring==0?1:8);angle++)
+            {
+                var p=at+new Vector3(Mathf.Cos(angle*Mathf.PI*.25f)*ring*12/scale.x,0,Mathf.Sin(angle*Mathf.PI*.25f)*ring*12/scale.z);
+                p.x=Mathf.Clamp(p.x,solidHull.center.x-solidHull.size.x*.5f+(radius+4)/scale.x,solidHull.center.x+solidHull.size.x*.5f-(radius+4)/scale.x);
+                p.z=Mathf.Clamp(p.z,solidHull.center.z-solidHull.size.z*.5f+(radius+4)/scale.z,solidHull.center.z+solidHull.size.z*.5f-(radius+4)/scale.z);
+                if(TryDeckSurface(transform.TransformPoint(p),out floor)&&RiverHullCollision.ClearAt(floor+Vector3.up*8,radius,actor,this))return true;
+            }
+            floor=default;return false;
+        }
         public bool CanMove(Vector3 from,Quaternion fromRotation,Vector3 to,Quaternion toRotation,bool reserveStakes=true)
         {
             using var sample=SweepMarker.Auto();

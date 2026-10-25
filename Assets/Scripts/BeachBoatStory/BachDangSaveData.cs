@@ -13,6 +13,7 @@ namespace BeachBoatStory
         public Quaternion playerRotation=Quaternion.identity,boatRotation=Quaternion.identity;
         public bool aboard;
         public bool[] woods,stakes;
+        public string[] woodIds;public Vector3[] woodPositions;public Quaternion[] woodRotations;
         public int[] stallLevels;
         public Activity[] activities;
         public Tide tide;
@@ -28,6 +29,7 @@ namespace BeachBoatStory
         {
             public float seconds,stakeSeconds;public int completedMask,visitedMask,defeats,casualties,friendlyBoardings,enemyCount=64,finalScore,rankRulesVersion;
             public bool stakeStarted,stakeFinished,finished,historyIncomplete;public string finalRank;
+            public bool woodStarted,woodFinished;public float woodSeconds,woodTargetSeconds;
             public MiniRecord[] minigames=Array.Empty<MiniRecord>();public string[] kills=Array.Empty<string>();
         }
         [Serializable] public sealed class Dialogue {public bool active,femaleVoice;public string speaker,line,action,voiceIdentity,voiceProfile;}

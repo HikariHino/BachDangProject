@@ -35,7 +35,7 @@ public static class BeachBoatMarineJournalPlaytest
     {
         var p=CampaignProgress.Instance;var empty=p.Capture();
         Check(CampaignProgress.MiniTarget(0,3)==22&&CampaignProgress.MiniTarget(0,2)==33&&CampaignProgress.MiniTarget(0,1)==44,"Drum S/A/B deadlines are the explicit 22/33/44 seconds shown to the player");
-        SeedPerfect();Check(p.EarnedRank=="S"&&p.ConditionsFor(3).Length==8&&p.ConditionsFor(3).All(c=>c.met),"S requires every timed activity plus stakes, kills and campaign time");
+        SeedPerfect();Check(p.EarnedRank=="S"&&p.ConditionsFor(3).Length==9&&p.ConditionsFor(3).All(c=>c.met),"S requires every timed activity plus wood search, stakes, kills and campaign time");
         float before=p.MiniRecord(1).seconds;p.RecordMinigame("village:0:0",90,100);Check(p.MiniRecord(1).seconds==before,"Slower replays cannot erase a valid minigame record");
         var drum=p.MiniRecord(0);drum.seconds=22;Check(p.EarnedRank=="S","Exact drum S deadline is accepted");drum.seconds=22.1f;Check(p.EarnedRank=="A","One slow drum performance blocks S even when every other result is excellent");drum.seconds=33.1f;Check(p.EarnedRank=="B","A drum finish beyond A falls to B");drum.seconds=44.1f;Check(p.EarnedRank=="C","A drum finish beyond B blocks every higher campaign rank");SeedPerfect();
         for(int index=1;index<13;index++)
@@ -90,6 +90,7 @@ public static class BeachBoatMarineJournalPlaytest
     static void SeedPerfect()
     {
         var p=CampaignProgress.Instance;p.Restore(new BachDangSaveData.Campaign(),11);p.Transition(0,11);p.Record.seconds=30*60;p.Record.stakeStarted=true;p.Record.stakeFinished=true;p.Record.stakeSeconds=p.StakeTargetSeconds;
+        p.Record.woodStarted=p.Record.woodFinished=true;p.Record.woodTargetSeconds=VillageWoodHunt.Instance.TargetSeconds;p.Record.woodSeconds=p.WoodTarget(3);
         p.Record.completedMask|=1<<(int)Story.StoryState.Act3_Victory;
         for(int i=0;i<13;i++)p.RecordMinigame(CampaignProgress.MiniId(i),CampaignProgress.MiniLimit(i)*.35f,CampaignProgress.MiniLimit(i));
         p.Record.kills=Enumerable.Range(0,p.KillTarget).Select(i=>"QA:"+i).ToArray();

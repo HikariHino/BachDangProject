@@ -20,10 +20,10 @@
   victory-report dialogue advances to celebration; closing the celebration
   dialogue opens the results. Results can be stored in any of the ten slots.
 
-## Timed ranks (rules version 2)
+## Timed ranks (rules version 3)
 
-A rank requires **all eight conditions**: drum, three levels at each of the
-four trades, all five stake clusters, personal kills, and campaign time.
+A rank requires **all nine conditions**: drum, three levels at each of the
+four trades, the five-log village search, all five stake clusters, personal kills, and campaign time.
 The ending awards the highest rank satisfying every condition; otherwise C.
 Fast results in another activity cannot compensate for a missing or slow one.
 The old weighted score is no longer used or displayed.
@@ -33,6 +33,7 @@ The old weighted score is no longer used or displayed.
 | Drum, two full rounds | ≤22 s | ≤33 s | ≤44 s |
 | Each individual trade level | ≤60% of its timeout | ≤80% | ≤95% |
 | Stake operation | ≤reference | ≤1.5×reference | ≤2×reference |
+| Find all five village logs | ≤search reference | ≤1.5×reference | ≤2×reference |
 | Personal kills | ≥target | ≥ceil(0.75×target) | ≥ceil(0.5×target) |
 | Campaign time, reported victory | ≤40 min | ≤60 min | ≤90 min |
 
@@ -57,9 +58,24 @@ the victory report; it cannot change by leaving the results open.
 Old save-file version-1 slots remain supported. Previous task checks use the
 explicit story order. Missing historical timing is shown as **Chưa ghi**;
 there is no assumed passing achievement. Endings saved under the old point
-rules are re-evaluated from real records and marked with rankRulesVersion=2.
+rules are re-evaluated from real records and marked with rankRulesVersion=3.
 Missing historical data remains **Tạm tính**. The legacy finalScore field is
 retained for file compatibility but is no longer used to determine rank.
+
+The village now chooses five clear positions around inhabitants and market
+approaches per new journey, with random offsets and yaw. Pickups have no
+floating wood labels or distant route marker. Only the closest log within
+10 world units offers `[E] Nhặt`. Save slots retain each log's identity,
+position, rotation, collection state, search duration and target. Existing
+seven-log saves retain already collected identities when reduced to five.
+
+Search reference = max(180 seconds, exact shortest order through the five
+positions from the village arrival / walking speed ×1.8 +100 seconds).
+The 1.8 factor permits walking around buildings; 100 seconds permits visual
+search without markers. Timing begins on entry to the wood-search quest and
+stops on the fifth pickup. Pause, Tab, dialogue and screen transitions are
+excluded. Leaving and returning does not reset it. A historical save without
+a measured search time cannot receive an invented timed search achievement.
 
 ## Nested missions and optional training
 
@@ -168,3 +184,27 @@ checks for mandatory drum cancellation, completed drum replay, all four trade
 stalls (instructions, completed replays, win and loss), optional stamina
 training (unclaimed and claimed rewards), journal priority and Pause/settings
 back behavior. The test does not write player save slots.
+
+## Traversal and combat correction
+
+Returning to the rowboat from a bank or the water uses its current hull, with
+E or Space, and restores the rowing controller, motor, collider and body mode.
+Leaving a warship with F chooses a clear water point beyond an actual gunwale.
+Space can immediately climb back. Deck walking and visual support use the
+same animated sole offset; broad hull boxes do not block melee between actors
+on the same deck. Boarders retain their landed carrier when the player changes
+ships, and seek separate landing spaces instead of stacking on one crewman.
+
+Swimmers use bounded local paths around stakes while every executed movement
+still sweeps solid colliders. An existing overlap from an old save is separated
+before subsequent motion. Planning is limited to two actors per rendered frame.
+The dedicated River_Sword_Combat controller uses a standing idle with fitted
+arms and a palm-aligned handle, and requires running input to enter its run
+state. Entering shore walking clears seated humanoid animation state.
+
+`BeachBoatTraversalWoodPlaytest.RunInEditor()` covers wood layout/pickup/save
+compatibility, search rank boundaries, a full swimming/shore/rowing round trip,
+solid-pole detours and embedded-pole recovery, allied-deck movement, F/Space
+exit/reclimb, and actual enemy movement and melee damage aboard an allied ship.
+Reports are under `Logs/TraversalWoodPlaytest.json` and
+`Logs/MarineJournalPlaytest.json`; test save files remain under ignored Logs.

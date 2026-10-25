@@ -80,7 +80,7 @@ public sealed class StoryLandmarkMarker : MonoBehaviour
         var story = BachDangStoryManager.Instance;
         if (story == null) return;
 
-        bool visible = !BeachBoatQuestSession.InputBlocked && IsCurrentTarget(story.currentState);
+        bool visible = target!=Target.Wood && !BeachBoatQuestSession.InputBlocked && IsCurrentTarget(story.currentState);
         if (visible && target == Target.Wood)
         {
             var player = story.GetPlayerTransform();

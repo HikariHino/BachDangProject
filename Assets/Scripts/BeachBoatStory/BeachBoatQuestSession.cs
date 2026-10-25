@@ -74,6 +74,7 @@ namespace BeachBoatStory
             SetStoryMode(true);
             BuildIntro();
             gameObject.AddComponent<QuestCheckpoint>();
+            gameObject.AddComponent<VillageWoodHunt>();
             gameObject.AddComponent<CampaignProgress>();
             var frontEnd=Child("BachDangFrontEnd");frontEnd.AddComponent<BachDangFrontEnd>();
         }

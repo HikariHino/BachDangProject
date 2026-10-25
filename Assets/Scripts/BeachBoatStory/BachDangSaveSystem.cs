@@ -103,6 +103,7 @@ namespace BeachBoatStory
                 boatPosition=boat!=null?boat.transform.position:Vector3.zero,boatRotation=boat!=null?boat.transform.rotation:Quaternion.identity,
                 health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,
                 woods=session.woodItems.Select(w=>w!=null&&w.IsCollected).ToArray(),stakes=RiverStakeZone.Instance?.CaptureCheckpoint()??Array.Empty<bool>(),
+                woodIds=session.woodItems.Select(w=>w.name).ToArray(),woodPositions=session.woodItems.Select(w=>w.transform.position).ToArray(),woodRotations=session.woodItems.Select(w=>w.transform.rotation).ToArray(),
                 stallLevels=VillagePreparationQuest.Instance.stalls.Select(s=>s.CompletedLevels).ToArray(),
                 activities=UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsSortMode.None).Select(s=>new BachDangSaveData.Activity{name=s.name,completed=s.HasCompleted,bestTime=s.BestTime,bestMistakes=s.BestMistakes}).ToArray(),
                 tide=TideSystem.Instance?.CaptureSave(),fleet=EnemyFleetDirector.Instance?.CaptureSave(),
@@ -120,7 +121,7 @@ namespace BeachBoatStory
             BachDangFrontEnd.Instance?.ReleaseHiddenUI();
             foreach(var intro in UnityEngine.Object.FindObjectsByType<OpeningEvent>(FindObjectsInactive.Include,FindObjectsSortMode.None))intro.SkipOpening();
             StoryDialogueUI.Instance?.DismissForCheckpoint();EnemyFleetDirector.Instance.ResetForCheckpoint();
-            for(int i=0;i<session.woodItems.Length;i++)session.woodItems[i]?.RestoreCollection(i<data.woods.Length&&data.woods[i]);
+            VillageWoodHunt.Instance.Restore(data);
             RiverStakeZone.Instance.RestoreCheckpoint(data.stakes);
             story.collectedWood=data.woodCount;story.destroyedEnemyShips=data.destroyedCount;
             story.TransitionTo((BachDangStoryManager.StoryState)data.storyState,true);

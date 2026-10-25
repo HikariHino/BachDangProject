@@ -242,8 +242,20 @@ namespace BeachBoatStory
             playerBody.isKinematic=!walking;playerCollider.enabled=walking;
             playerBody.interpolation=walking?originalInterpolation:RigidbodyInterpolation.None;
             animator.speed=1;animator.applyRootMotion=false;
-            if(walking)animator.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;
+            if(walking)
+            {
+                animator.enabled=true;animator.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;
+                // Leaving a procedural swim must discard the seated controller's
+                // cached humanoid muscles before standing/weapon clips evaluate.
+                animator.Rebind();animator.Update(0);
+            }
             motor.enabled=walking&&session.storyMode;
+        }
+        public void ResumeRowing()
+        {
+            if(!IsAboard)return;
+            SetShoreWalking(false);animator.enabled=true;animator.runtimeAnimatorController=rowingController;animator.speed=0;
+            Speed=0;IsBoosting=false;AttachPlayer();Physics.SyncTransforms();
         }
         void RestorePlayer()
         {
@@ -277,6 +289,16 @@ namespace BeachBoatStory
             bool boost = input && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
             Step(input ? Input.GetAxisRaw("Vertical") : 0, input ? Input.GetAxisRaw("Horizontal") : 0, Time.deltaTime, boost);
             if (story == null || session == null || BeachBoatQuestSession.InteractionBlocked) return;
+            var traversal=RiverBoardingCombat.Instance;
+            if(IsAboard&&traversal!=null&&traversal.PlayerAway)
+            {
+                if(traversal.NearRowboat)
+                {
+                    story.SetInteractPrompt(true,"[E / SPACE] Lên thuyền chèo",this);
+                    if(Input.GetKeyDown(KeyCode.E)&&StoryDialogueUI.TryConsumeInput())traversal.TryReturnToRowboat();
+                }
+                return;
+            }
             bool prompt = IsAboard ? AtDock && Mathf.Abs(Speed) <= 5 :
                 CanBoardForState(story.currentState) && AtDock &&
                 FlatDistance(session.player.transform.position, boardingPoint.position) <= boardingRange;

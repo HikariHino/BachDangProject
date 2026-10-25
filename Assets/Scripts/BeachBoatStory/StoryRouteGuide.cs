@@ -126,8 +126,8 @@ namespace BeachBoatStory
             }
             if (state == BachDangStoryManager.StoryState.Act2_CollectWoodInVillage)
                 foreach (var wood in session.woodItems)
-                    if (wood != null && wood.isActiveAndEnabled)
-                        Consider(wood.transform, "Cọc gỗ trong làng", ref best, ref distance, ref title);
+                    if (wood != null && wood.isActiveAndEnabled && QuestRowboat.FlatDistance(session.player.transform.position,wood.transform.position)<=wood.interactDistance)
+                        Consider(wood.transform, "[E] Nhặt", ref best, ref distance, ref title);
             if (state == BachDangStoryManager.StoryState.Act2_Completed || state == BachDangStoryManager.StoryState.Act3_PrepareForBattle ||
                 state == BachDangStoryManager.StoryState.Act3_Victory)
                 if (commander != null) Consider(commander.transform, "Chủ tướng Ngô Quyền", ref best, ref distance, ref title);

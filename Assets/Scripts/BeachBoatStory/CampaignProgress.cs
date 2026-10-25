@@ -12,7 +12,7 @@ namespace BeachBoatStory
         public static readonly int[] StoryOrder={0,12,1,2,13,3,4,5,6,7,8,9,10,11,14};
         public static readonly string[] MissionTitles={"Nhận lệnh Ngô Quyền","Luyện hiệu lệnh trống trận","Rời doanh trại tới làng","Thu gom cọc gỗ","Chuẩn bị đủ bốn loại vật tư","Trở về doanh trại","Báo cáo vật tư với Ngô Quyền","Dựng đủ năm cụm cọc","Báo cáo hoàn thành trận địa","Chờ lệnh xuất chiến","Nhận lệnh đánh giặc","Xuất chiến trên sông","Đánh chìm hạm đội và hạ hết địch","Báo công với Ngô Quyền","Hoàn thành chiến dịch Bạch Đằng"};
         public const int ScoredMinigames=13; // Drum plus four village trades at three difficulties.
-        public const int RankRulesVersion=2;
+        public const int RankRulesVersion=3;
         public static readonly string[] WorkNames={"Sạp gỗ","Nối dây","Hàng gạo","Gói lương khô"};
         public static readonly string[] DifficultyNames={"Dễ","Vừa","Khó"};
         float stakeTarget;
@@ -23,6 +23,7 @@ namespace BeachBoatStory
             if(Record.finished||Time.timeScale<=0||!(BachDangFrontEnd.Instance?.GameStarted??false)||OpeningEvent.IsOpeningActive||StoryDialogueUI.Instance.IsOpen||QuestCheckpoint.Instance.IsDefeated)return;
             float dt=Mathf.Max(0,Time.unscaledDeltaTime);Record.seconds+=dt;
             if(Record.stakeStarted&&!Record.stakeFinished)Record.stakeSeconds+=dt;
+            if(Record.woodStarted&&!Record.woodFinished&&BachDangStoryManager.Instance.currentState==BachDangStoryManager.StoryState.Act2_CollectWoodInVillage&&!(ScreenFader.Instance?.IsTransitioning??false))Record.woodSeconds+=dt;
         }
         public void Visit(int state){Record.visitedMask|=1<<state;}
         public void Transition(int previous,int next)
@@ -30,6 +31,9 @@ namespace BeachBoatStory
             int from=Array.IndexOf(StoryOrder,previous),to=Array.IndexOf(StoryOrder,next);
             if(to>from&&from>=0)for(int i=from;i<to;i++)Record.completedMask|=1<<StoryOrder[i];Visit(next);
             if(next==(int)BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp)Record.stakeFinished=true;
+            if(next==(int)BachDangStoryManager.StoryState.Act2_CollectWoodInVillage&&!Record.woodStarted&&BachDangStoryManager.Instance.collectedWood==0)
+            {Record.woodStarted=true;Record.woodTargetSeconds=VillageWoodHunt.Instance?.TargetSeconds??180;}
+            if(previous==(int)BachDangStoryManager.StoryState.Act2_CollectWoodInVillage&&next==(int)BachDangStoryManager.StoryState.Act2_SupplyPreparation&&Record.woodStarted)Record.woodFinished=true;
             if(next==(int)BachDangStoryManager.StoryState.Act3_Celebration)Finish();
         }
         public bool MissionDone(int index)
@@ -77,6 +81,11 @@ namespace BeachBoatStory
         public static float MiniTarget(int index,int tier)=>Mathf.Round(MiniLimit(index)*(index==0?(tier==3?.4f:tier==2?.6f:.8f):(tier==3?.6f:tier==2?.8f:.95f))*100)/100;
         public static float CampaignTarget(int tier)=>(tier==3?40:tier==2?60:90)*60;
         public float StakeTarget(int tier)=>StakeTargetSeconds*(tier==3?1:tier==2?1.5f:2);
+        public float WoodTarget(int tier)=>Mathf.Max(180,Record.woodTargetSeconds>0?Record.woodTargetSeconds:VillageWoodHunt.Instance?.TargetSeconds??180)*(tier==3?1:tier==2?1.5f:2);
+        public bool WoodTimeKnown=>Record.woodStarted&&Record.woodFinished&&FinitePositive(Record.woodTargetSeconds)&&!float.IsNaN(Record.woodSeconds)&&!float.IsInfinity(Record.woodSeconds)&&Record.woodSeconds>=0;
+        public int WoodRank{get{if(WoodTimeKnown)for(int tier=3;tier>=1;tier--)if(Record.woodSeconds<=WoodTarget(tier))return tier;return 0;}}
+        public string WoodBands=>$"S ≤ {Clock(WoodTarget(3))}  •  A ≤ {Clock(WoodTarget(2))}  •  B ≤ {Clock(WoodTarget(1))}";
+        public string WoodResult=>WoodTimeKnown?$"Đủ 5 khúc: {Clock(Record.woodSeconds)} • Hạng {RankName(WoodRank)}":Record.woodStarted?"Đang tìm: "+Clock(Record.woodSeconds):"Chưa ghi thời gian tìm gỗ";
         public int KillRequirement(int tier)=>Mathf.Max(1,Mathf.CeilToInt(KillTarget*(tier==3?1:tier==2?.75f:.5f)));
         static bool FinitePositive(float n)=>!float.IsNaN(n)&&!float.IsInfinity(n)&&n>0;
         public BachDangSaveData.MiniRecord MiniRecord(int index)=>Record.minigames.FirstOrDefault(m=>m!=null&&m.id==MiniId(index)&&!float.IsNaN(m.seconds)&&!float.IsInfinity(m.seconds)&&m.seconds>=0&&m.seconds<MiniLimit(index));
@@ -92,7 +101,7 @@ namespace BeachBoatStory
         }
         public RankCondition[] ConditionsFor(int tier)
         {
-            var conditions=new RankCondition[8];
+            var conditions=new RankCondition[9];
             conditions[0]=new RankCondition("Trống trận",TimingResult(0)+$" / cần ≤ {Clock(MiniTarget(0,tier))}",MeetsMini(0,tier));
             for(int work=0;work<4;work++)
             {
@@ -106,6 +115,7 @@ namespace BeachBoatStory
             conditions[6]=new RankCondition("Tự hạ địch quest 3",$"{Record.kills.Length}/{KillRequirement(tier)} địch • tính cả cung và kiếm",Record.kills.Length>=KillRequirement(tier));
             bool reported=Record.finished||(Record.completedMask&(1<<(int)BachDangStoryManager.StoryState.Act3_Victory))!=0;
             conditions[7]=new RankCondition("Thời gian chiến dịch",(Record.historyIncomplete?"Thiếu thời gian cũ":(reported?"":"Đang chơi ")+Duration(Record.seconds))+$" / hoàn thành ≤ {Duration(CampaignTarget(tier))}",reported&&!Record.historyIncomplete&&!float.IsNaN(Record.seconds)&&!float.IsInfinity(Record.seconds)&&Record.seconds>=0&&Record.seconds<=CampaignTarget(tier));
+            conditions[8]=new RankCondition("Tìm đủ 5 khúc gỗ trong làng",WoodResult+$" / cần ≤ {Clock(WoodTarget(tier))}",WoodTimeKnown&&Record.woodSeconds<=WoodTarget(tier));
             return conditions;
         }
         public bool EligibleFor(int tier)=>tier>=1&&tier<=3&&ConditionsFor(tier).All(c=>c.met);
@@ -119,6 +129,7 @@ namespace BeachBoatStory
         public void Restore(BachDangSaveData.Campaign data,int state)
         {
             Record=data??new BachDangSaveData.Campaign{historyIncomplete=true};Record.minigames=Record.minigames??Array.Empty<BachDangSaveData.MiniRecord>();Record.kills=Record.kills??Array.Empty<string>();
+            if(state!=(int)BachDangStoryManager.StoryState.Act2_CollectWoodInVillage&&(Record.completedMask&(1<<2))!=0&&!WoodTimeKnown)Record.historyIncomplete=true;
             if(data==null)
             {
                 int index=Array.IndexOf(StoryOrder,state);for(int i=0;i<index;i++)Record.completedMask|=1<<StoryOrder[i];
@@ -139,14 +150,15 @@ namespace BeachBoatStory
         {
             get
             {
-                var text=new System.Text.StringBuilder("HẠNG THEO THÀNH TÍCH • ĐỦ TẤT CẢ ĐIỀU KIỆN\nMỗi hạng cần đạt đồng thời 8 điều kiện dưới đây. Lấy hạng cao nhất đủ điều kiện; nếu chưa đủ hạng B thì nhận C sau khi hoàn thành cốt truyện.\n\n");
+                var text=new System.Text.StringBuilder("HẠNG THEO THÀNH TÍCH • ĐỦ TẤT CẢ ĐIỀU KIỆN\nMỗi hạng cần đạt đồng thời 9 điều kiện dưới đây. Lấy hạng cao nhất đủ điều kiện; nếu chưa đủ hạng B thì nhận C sau khi hoàn thành cốt truyện.\n\n");
                 for(int tier=3;tier>=1;tier--)
                 {
-                    var conditions=ConditionsFor(tier);text.Append($"<color=#F0C26D>HẠNG {RankName(tier)} — {conditions.Count(c=>c.met)}/8 ĐIỀU KIỆN</color>\n");
+                    var conditions=ConditionsFor(tier);text.Append($"<color=#F0C26D>HẠNG {RankName(tier)} — {conditions.Count(c=>c.met)}/{conditions.Length} ĐIỀU KIỆN</color>\n");
                     foreach(var c in conditions)text.Append(c.met?"<color=#79E9AC>ĐẠT</color> ":"<color=#C0AAA0>CHƯA ĐẠT</color> ").Append(c.name).Append("\n").Append(c.detail).Append("\n");
                     text.Append("\n");
                 }
                 text.Append("CÁCH TÍNH THỜI GIAN\nTrống trận và từng mức tại bốn sạp: lấy lần thắng nhanh nhất, gồm thời gian phạt lỗi. Mốc trống S/A/B là 40%/60%/80% giới hạn; vật tư là 60%/80%/95% giới hạn của chính mức đó. Thắng đủ Dễ → Vừa → Khó ở mỗi sạp và nhận vật tư để hoàn thành nhiệm vụ.\n\nĐóng cọc: từ bắt đầu cụm đầu đến xong cả năm, gồm chèo và vớt cọc. Mốc S tính theo tuyến đi, tốc độ thuyền, thời gian thao tác và 90 giây dự phòng; tối thiểu 3 phút. A/B cho phép 1,5/2 lần mốc S.\n\nHạ địch: mỗi mã địch chỉ tính một lần. Mốc S là 25% quân địch đầu trận; A/B là 75%/50% mốc S, làm tròn lên. Quân ta hạ không cộng vào số bạn tự hạ.\n\nToàn chiến dịch: gồm thời gian chơi, minigame, chèo và chiến đấu; bỏ qua sảnh, tạm dừng, bảng Tab, dẫn truyện, thoại và màn hình thất bại. Lưu/tải giữ nguyên đồng hồ.\n\nLUYỆN THỂ LỰC — TÙY CHỌN\nBa cấp, mỗi cấp tăng 20 thể lực tối đa, tổng +60. Có thể bỏ qua hoàn toàn; không khóa nhiệm vụ chính và không tham gia xét hạng.\n\nHạng chốt khi thắng và báo công với Ngô Quyền. Có thể chơi lại trống và các sạp để cải thiện kỷ lục trước khi kết thúc; đồng hồ chiến dịch vẫn chạy. Save cũ thiếu thời gian ghi CHƯA GHI, kết quả TẠM TÍNH; thành tích thời gian chỉ được xác nhận bằng kỷ lục thật.");
+                text.Append("\n\nTÌM GỖ TRONG LÀNG\nMỗi hành trình có đúng 5 khúc ở vị trí ngẫu nhiên. Đồng hồ từ lúc nhận nhiệm vụ ở làng đến lúc nhặt khúc thứ năm; tạm dừng, Tab, thoại và chuyển cảnh không tính. Mốc S dùng thứ tự ghé 5 khúc ngắn nhất, tốc độ đi bộ, hệ số đi vòng nhà 1,8 và 100 giây tìm kiếm; tối thiểu 3 phút. A/B cho phép 1,5/2 lần mốc S. Lưu/tải giữ vị trí, gỗ đã nhặt và thời gian, không bốc lại để tìm nhanh hơn. Save cũ không có thời gian tìm gỗ không được tự gán thành tích.");
                 return text.ToString();
             }
         }
