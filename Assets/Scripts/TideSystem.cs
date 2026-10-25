@@ -44,6 +44,8 @@ public class TideSystem : MonoBehaviour
     private bool controlledEbb;
     private float ebbElapsed, ebbDuration, ebbStartY;
     public bool IsControlledEbb => controlledEbb;
+    public float EbbProgress=>controlledEbb?Mathf.Clamp01(ebbElapsed/Mathf.Max(1,ebbDuration)):IsLowTideLocked?1:0;
+    public float EbbSecondsRemaining=>controlledEbb?Mathf.Max(0,ebbDuration-ebbElapsed):0;
     public bool IsLowTideLocked => tideOwner != null && !heldHigh;
     public bool IsTideLocked => tideOwner != null;
 

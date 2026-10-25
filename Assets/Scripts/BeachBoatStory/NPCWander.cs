@@ -65,6 +65,7 @@ namespace BeachBoatStory
             if (animator == null) animator = GetComponent<Animator>();
             // Reject group roots/buildings accidentally selected by the old name-based tool.
             if (!IsEligible(animator) || animator.transform != transform) { enabled = false; return; }
+            CivilianMovementProfile.Apply(animator);
             ActorSolidBody.Ensure(gameObject,animator);
             home = transform.position; terrain = Terrain.activeTerrain;
             scale = Mathf.Max(1, BachDangWorldScale.ForScene(gameObject.scene));
@@ -289,12 +290,16 @@ namespace BeachBoatStory
                 {nextReplan=Time.time+UnityEngine.Random.Range(.8f,1.4f);blockedTime=0;if(!SetDestination(target))PickTarget();}
                 return;
             }
-            var next=transform.position+heading*Mathf.Min(remaining,currentSpeed*dt);
+            // Turn before translating. A near-180-degree avoidance heading used
+            // to move the body backward while the walk animation still faced forward.
+            transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(heading),turnSpeed*personalPace*dt);
+            if(Vector3.Angle(transform.forward,heading)>38){currentSpeed=0;Pose(false,false);return;}
+            var facing=transform.forward;facing.y=0;facing.Normalize();
+            var next=transform.position+facing*Mathf.Min(remaining,currentSpeed*dt);
             if(!navigation.Project(next,out next)||!navigation.Clear(transform.position,next,true)){currentSpeed=0;Pose(false,false);return;}
             blockedTime=0;
             DistanceTravelled+=Vector3.Distance(transform.position,next);
             transform.position=next;
-            transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(heading),turnSpeed*personalPace*dt);
             // AutoSyncTransforms is disabled in this project. Publish the moved
             // capsule now so the next walker sees this actor's actual position.
             Physics.SyncTransforms();

@@ -52,7 +52,7 @@ namespace BeachBoatStory
         readonly Dictionary<EnemyDeckGuard,float> enemyAttacks=new Dictionary<EnemyDeckGuard,float>();
         BeachBoatQuestSession session;RiverPlayerCombat archery;RiverFighterPose playerPose;
         EnemyShip deckShip;Transform deckAnchor;Vector3 deckLocal,climbStart,climbLocalStart;float climbTime,nextSlash,nextArrow;
-        TMP_Text hint;bool wasBattle;int traversalInputFrame=-1;
+        bool wasBattle;int traversalInputFrame=-1;
         public bool UsedTraversalThisFrame=>traversalInputFrame==Time.frameCount;
         public BachDangSaveData.Boarding CaptureSave()
         {
@@ -135,10 +135,6 @@ namespace BeachBoatStory
                 foreach(var soldier in crew.soldiers)
                 {ActorSolidBody.Ensure(soldier.gameObject,soldier.GetComponentInChildren<Animator>());var pose=soldier.gameObject.AddComponent<RiverFighterPose>();pose.Initialize(soldier.GetComponentInChildren<Animator>(),swordPrefab,swordController,11);defenders.Add(new Defender{soldier=soldier,pose=pose});}
             }
-            var canvas=new GameObject("BoardingCombatHUD",typeof(Canvas),typeof(CanvasScaler));canvas.transform.SetParent(transform,false);canvas.GetComponent<Canvas>().renderMode=RenderMode.ScreenSpaceOverlay;canvas.GetComponent<Canvas>().sortingOrder=112;
-            var scale=canvas.GetComponent<CanvasScaler>();scale.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scale.referenceResolution=new Vector2(1280,720);
-            var text=new GameObject("BoardingHint",typeof(RectTransform),typeof(TextMeshProUGUI));text.transform.SetParent(canvas.transform,false);var rect=(RectTransform)text.transform;rect.anchorMin=new Vector2(.23f,.30f);rect.anchorMax=new Vector2(.79f,.36f);rect.offsetMin=rect.offsetMax=Vector2.zero;
-            hint=text.GetComponent<TMP_Text>();StoryFont.Apply(hint);hint.fontSize=18;hint.color=new Color(1,.84f,.48f);hint.alignment=TextAlignmentOptions.Center;
         }
         public void ResetBattle(bool preserveWrecks=false)
         {
@@ -151,7 +147,7 @@ namespace BeachBoatStory
             foreach(var h in hostiles){h.pose.Restore();if(h.fromWreck&&!preserveWrecks){h.guard.IsIndependentBoarder=false;h.guard.RestoreDeck();h.guard.ResetGuard();}else h.go.SetActive(false);h.state=0;h.source=null;}
             hostiles.RemoveAll(h=>h.fromWreck);if(!preserveWrecks)ShipwreckSurvivors=ShipwreckDeaths=SurvivorsTargetingPlayer=SurvivorsTargetingAllies=0;
             foreach(var pair in enemyPoses){pair.Value.Restore();pair.Key.SetMelee(false);}
-            wasBattle=false;if(hint!=null)hint.text="";
+            wasBattle=false;
         }
         void Update()
         {
@@ -171,10 +167,6 @@ namespace BeachBoatStory
                 if(SwordDrawn&&Input.GetMouseButtonDown(0))TrySlash();
             }
             StepPlayer(Time.deltaTime);StepAllies(Time.deltaTime);StepHostiles(Time.deltaTime);StepDefenders();StepEnemies(Time.deltaTime);
-            hint.text=State==PlayerState.Land?"À BỜ • WASD: ĐI BỘ • SHIFT: CHẠY • Q: KIẾM • CHUỘT PHẢI: NGẮM / ĐỠ":State==PlayerState.Swimming?"WASD: BƠI • SHIFT: BƠI NHANH • SPACE: LEO LÊN TÀU GẦN / VỀ THUYỀN":
-                State==PlayerState.Climbing?"ĐANG BÁM MẠN VÀ LEO LÊN BOONG…":
-                SwordDrawn?"KIẾM • CHUỘT TRÁI: CHÉM • CHUỘT PHẢI: ĐỠ • Q: CẤT KIẾM • F: XUỐNG NƯỚC":
-                "Q: RÚT KIẾM • F: XUỐNG NƯỚC • SPACE: LEO TÀU • ĐỒNG MINH ĐANG TIẾP CHIẾN";
         }
         public bool HandleActionKey(KeyCode key)
         {
@@ -361,7 +353,10 @@ namespace BeachBoatStory
                     if(a.target!=null){a.home.SetBattleTarget(a.target.transform);var aim=a.target.transform.position-home;aim.y=0;if(aim.sqrMagnitude>.01f)a.go.transform.rotation=Quaternion.LookRotation(aim);}
                     if(a.target!=null&&a.side<0&&a.arrows>0&&Time.time>=a.shot&&Vector3.Distance(home,a.target.transform.position)<340)
                     {a.shot=Time.time+8;a.arrows--;if(a.target.Hit(1,false))AlliedArrowHits++;BeachBoatSoundscape.Instance?.PlayBow();}
-                    if(a.target!=null&&(QuestRowboat.FlatDistance(home,a.target.transform.position)<230||(a.home.IsAtBattleStation&&QuestRowboat.FlatDistance(home,a.target.transform.position)<1400))){a.state=4;a.travel=0;a.local=a.home.transform.InverseTransformPoint(home);a.pose.SetRanged(false);a.pose.Traversal=RiverFighterPose.Motion.Climb;}
+                    // Keep the lure lanes clear until every enemy hull is caught.
+                    // Solid swimmers launched early could stop the whole fleet and
+                    // prevent the all-ships-inside condition from ever starting ebb.
+                    if(EnemyFleetDirector.Instance.AmbushStarted&&a.target!=null&&(QuestRowboat.FlatDistance(home,a.target.transform.position)<230||(a.home.IsAtBattleStation&&QuestRowboat.FlatDistance(home,a.target.transform.position)<1400))){a.state=4;a.travel=0;a.local=a.home.transform.InverseTransformPoint(home);a.pose.SetRanged(false);a.pose.Traversal=RiverFighterPose.Motion.Climb;}
                     continue;
                 }
                 if(a.target==null)continue;

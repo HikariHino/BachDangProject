@@ -13,6 +13,8 @@ namespace BeachBoatStory
         TMP_Text[] difficultyLabels,woodLabels,foodLabels,riceLabels;
         Button[] difficultyButtons;
         GameObject[] woodButtons;
+        GameObject[] woodSelectedTags;
+        Outline[] woodSelectionBorders;
         TMP_Text ropeMoves;
         RectTransform clockFill,progressFill,riceFill;
         VillageWorkIcon[] woodIcons,ropeIcons;
@@ -55,13 +57,18 @@ namespace BeachBoatStory
             restoreButton=Click("RestoreTask",work.transform,new Vector2(.52f,.17f),new Vector2(1,.25f),"LÀM LẠI PHẦN NÀY  [C]",()=>VillageWorkStall.Active?.RestoreCurrentTask()).GetComponent<Button>();
             var progress=Box("Progress",work.transform,new Vector2(0,.045f),new Vector2(1,.075f),new Color(.2f,.2f,.2f));progressFill=Box("Fill",progress.transform,Vector2.zero,Vector2.one,Green).GetComponent<RectTransform>();
             woodChoices=Box("TimberChoices",work.transform,new Vector2(0,.27f),new Vector2(1,.65f),Color.clear);woodIcons=new VillageWorkIcon[8];woodLabels=new TMP_Text[8];woodButtons=new GameObject[8];
+            woodSelectedTags=new GameObject[8];woodSelectionBorders=new Outline[8];
             for(int i=0;i<8;i++)
             {
                 int option=i;float x=(i%3)/3f,y=i<3?.59f:.20f;
                 var b=Click("Timber"+i,woodChoices.transform,new Vector2(x+.006f,y),new Vector2(x+1f/3-.006f,y+.38f),"",()=>VillageWorkStall.Active?.SubmitOption(option));woodButtons[i]=b;
                 Label("Number",b.transform,new Vector2(.02f,.70f),new Vector2(.16f,.99f),14,Gold).text=(i+1).ToString();
                 woodIcons[i]=Icon(b.transform,0,new Vector2(.20f,.67f),new Vector2(.80f,.98f));
-                woodLabels[i]=Label("Length",b.transform,new Vector2(.02f,.01f),new Vector2(.98f,.70f),17,Color.white);
+                woodLabels[i]=Label("Length",b.transform,new Vector2(.02f,.24f),new Vector2(.98f,.70f),17,Color.white);
+                var border=b.AddComponent<Outline>();border.effectColor=new Color(.46f,1,.72f);border.effectDistance=new Vector2(2,-2);border.enabled=false;woodSelectionBorders[i]=border;
+                var tag=Box("SelectedTag",b.transform,new Vector2(.04f,.025f),new Vector2(.96f,.23f),new Color(.10f,.55f,.36f));
+                tag.GetComponent<Image>().raycastTarget=false;var chosen=Label("SelectedLabel",tag.transform,Vector2.zero,Vector2.one,12,Color.white);chosen.text="ĐÃ CHỌN • BẤM ĐỂ BỎ";chosen.raycastTarget=false;
+                tag.SetActive(false);woodSelectedTags[i]=tag;
             }
             Click("DeliverTimber",woodChoices.transform,new Vector2(.23f,0),new Vector2(.77f,.17f),"GIAO GỖ [ENTER]",()=>VillageWorkStall.Active?.SubmitOption(8));
             foodChoices=Box("Ingredients",work.transform,new Vector2(0,.27f),new Vector2(1,.65f),Color.clear);foodLabels=new TMP_Text[3];
@@ -123,13 +130,15 @@ namespace BeachBoatStory
             woodChoices.SetActive(s.kind==VillageWorkStall.WorkKind.Timber);foodChoices.SetActive(s.kind==VillageWorkStall.WorkKind.Provisions);
             ropeGame.SetActive(s.kind==VillageWorkStall.WorkKind.Rope);riceGame.SetActive(s.kind==VillageWorkStall.WorkKind.Rice);
             task.fontSize=s.kind==VillageWorkStall.WorkKind.Timber?19:24;
-            task.text=s.kind==VillageWorkStall.WorkKind.Timber?$"CHỌN {s.TimberRequiredPieces} THANH • DÀI {s.TimberTarget} THƯỚC"+(s.TimberNeedsStrength?$" • LỰC ≥ {s.TimberStrengthTarget}":"")+$"\nĐã chọn {s.TimberSelectedPieces}/{s.TimberRequiredPieces} • dài {s.TimberTotal}"+(s.TimberNeedsStrength?$" • lực {s.TimberStrengthTotal}":""):
+            string selectionColor=s.TimberSelectedPieces==0?"B7C5C1":s.TimberSelectedPieces==s.TimberRequiredPieces?"FFE29B":"8CF0BD";
+            task.text=s.kind==VillageWorkStall.WorkKind.Timber?$"CHỌN {s.TimberRequiredPieces} THANH • DÀI {s.TimberTarget} THƯỚC"+(s.TimberNeedsStrength?$" • LỰC ≥ {s.TimberStrengthTarget}":"")+$"\n<color=#{selectionColor}><b>ĐÃ CHỌN {s.TimberSelectedPieces}/{s.TimberRequiredPieces}</b> • dài {s.TimberTotal}"+(s.TimberNeedsStrength?$" • lực {s.TimberStrengthTotal}":"")+"</color>":
                 s.kind==VillageWorkStall.WorkKind.Rope?"XOAY Ô ĐỂ NỐI DÂY LIỀN TỪ VÀO ĐẾN RA":
                 s.kind==VillageWorkStall.WorkKind.Rice?$"CẦN {s.RiceTarget} ĐƠN VỊ  •  CÓ {s.RiceLoad}  •  LƯỢT {s.Moves}/{s.MoveLimit}":$"{s.People} NGƯỜI: MỖI NGƯỜI {s.RicePerPerson} GẠO + {s.FishPerPerson} CÁ; CẢ GÓI {s.SaltPerBundle} MUỐI";
             feedback.text=s.Feedback;feedback.color=s.FeedbackVersion==0?Color.white:s.LastCorrect?Green:new Color(1,.5f,.35f);
             for(int i=0;i<8;i++)
             {
-                woodButtons[i].SetActive(i<s.TimberOptions);woodButtons[i].GetComponent<Image>().color=s.TimberUsed(i)?new Color(.15f,.40f,.30f):new Color(.17f,.20f,.20f);
+                bool selected=s.TimberUsed(i);woodButtons[i].SetActive(i<s.TimberOptions);woodButtons[i].GetComponent<Image>().color=selected?new Color(.10f,.36f,.27f):new Color(.17f,.20f,.20f);
+                woodSelectedTags[i].SetActive(selected);woodSelectionBorders[i].enabled=selected;
                 woodIcons[i].SetDamaged(!s.IsSoundTimber(i));woodLabels[i].text=$"{s.TimberLength(i)} thước"+(s.TimberNeedsStrength?$" • lực {s.TimberStrength(i)}":"")+(!s.IsSoundTimber(i)?" • NỨT":s.TimberUsed(i)?" • CHỌN":"");
             }
             for(int i=0;i<9;i++)ropeIcons[i].SetPorts(s.RopePorts(i));

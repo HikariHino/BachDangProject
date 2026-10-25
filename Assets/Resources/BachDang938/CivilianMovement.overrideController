@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: CivilianMovement
+  m_Controller: {fileID: 9100000, guid: 0ecf6c35c068efb4893ba7b36c40d8a6, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: -203655887218126122, guid: 20d60eb318cde7c46ab58488749bc476, type: 3}
+    m_OverrideClip: {fileID: 7395424083734099073, guid: 7bf2b378ac0440a42a879bfb329037d1, type: 3}
+  - m_OriginalClip: {fileID: -203655887218126122, guid: 64b5d410d4176714f989e4445aca229e, type: 3}
+    m_OverrideClip: {fileID: 0}
+  - m_OriginalClip: {fileID: -203655887218126122, guid: b91f3893dd1b7c24a98530e26f459419, type: 3}
+    m_OverrideClip: {fileID: 0}
+  - m_OriginalClip: {fileID: -203655887218126122, guid: ad9833de3e4a8c94dae9152ffa828bee, type: 3}
+    m_OverrideClip: {fileID: 0}
+  - m_OriginalClip: {fileID: -203655887218126122, guid: 024707a0ccac3dd48badf95c17a2c237, type: 3}
+    m_OverrideClip: {fileID: 0}

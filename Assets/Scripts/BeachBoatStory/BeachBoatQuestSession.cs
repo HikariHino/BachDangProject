@@ -152,7 +152,7 @@ namespace BeachBoatStory
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen);
             if (story != null && story.objectiveUIPanel != null)
                 story.objectiveUIPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
-            if (controlsPanel != null) controlsPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
+            if (controlsPanel != null) controlsPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive && !(RiverPlayerCombat.Instance?.BattleActive??false));
             if (vitalsPanel != null) vitalsPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
             if (impactText != null) impactText.gameObject.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
             if (controlsText != null)

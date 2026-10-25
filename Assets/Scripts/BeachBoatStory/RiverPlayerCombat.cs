@@ -61,7 +61,7 @@ namespace BeachBoatStory
         Transform leftFoot,rightFoot;
         LineRenderer bowString;
         GameObject hud;
-        TMP_Text caption,targetText,notice;
+        CompactRiverCombatHUD compactHUD;
         Image chargeFill,reticle;
         float charge,nextShot,reloadUntil,nextThreat,threatUntil,noticeUntil,hitUntil;
         EnemyDeckGuard threat;
@@ -240,14 +240,10 @@ namespace BeachBoatStory
         void Tell(string text){message=text;noticeUntil=Time.time+3;}
         void UpdateHUD()
         {
-            caption.text=$"ĐỊCH CÒN {RemainingEnemies} • HẠ {Kills} • ĐỒNG MINH {AlliedKills} • TÊN {Arrows}/6"+(IsReloading?"  •  ĐANG NẠP":"");
-            targetText.text=IsAiming&&AimedGuard!=null?$"XẠ THỦ NAM HÁN  •  {AimedGuard.Health}/2":"";
-            notice.text=threat!=null?"ĐỊCH ĐANG NHẮM! DI CHUYỂN ĐỂ NÉ TÊN":Time.time<noticeUntil?message:
-                RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.SwordDrawn?"Chuột trái: chém • Chuột phải: đỡ • Q: cất kiếm":
-                "Giữ chuột phải: giương/ngắm • Chuột trái: bắn • R: nạp tên • Q: kiếm";
-            notice.color=threat!=null?new Color(1,.42f,.28f):Color.white;
+            compactHUD.Refresh(threat!=null?"Địch đang nhắm! Di chuyển để né tên.":Time.time<noticeUntil?message:"",threat!=null);
             reticle.gameObject.SetActive(IsAiming);reticle.color=Time.time<hitUntil?Color.white:AimedGuard!=null?new Color(1,.25f,.2f):new Color(1,.83f,.4f);
             chargeFill.rectTransform.anchorMax=new Vector2(IsAiming?charge/1.1f:0,1);
+            chargeFill.transform.parent.gameObject.SetActive(IsAiming);
         }
         void BuildArrows()
         {
@@ -271,12 +267,9 @@ namespace BeachBoatStory
             var go=new GameObject("RiverPlayerCombatHUD",typeof(Canvas),typeof(CanvasScaler));go.transform.SetParent(transform,false);var canvas=go.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.sortingOrder=110;
             var scaler=go.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1280,720);scaler.matchWidthOrHeight=.5f;
             hud=go;
-            var panel=Box("CombatStatus",go.transform,new Vector2(.27f,.19f),new Vector2(.76f,.29f),new Color(.025f,.035f,.04f,.88f));
-            caption=Text("AmmoAndKills",panel.transform,new Vector2(.03f,.53f),new Vector2(.97f,.97f),19);
-            notice=Text("Notice",panel.transform,new Vector2(.03f,.05f),new Vector2(.97f,.49f),15);
-            targetText=Text("Target",go.transform,new Vector2(.37f,.39f),new Vector2(.63f,.44f),17);
+            compactHUD=go.AddComponent<CompactRiverCombatHUD>();compactHUD.Initialize(this);
             reticle=Box("AimReticle",go.transform,new Vector2(.497f,.495f),new Vector2(.503f,.505f),Color.white).GetComponent<Image>();
-            var bar=Box("DrawTrack",go.transform,new Vector2(.45f,.365f),new Vector2(.55f,.373f),new Color(.13f,.14f,.14f));
+            var bar=Box("DrawTrack",go.transform,new Vector2(.47f,.47f),new Vector2(.53f,.474f),new Color(.13f,.14f,.14f));
             chargeFill=Box("DrawPower",bar.transform,Vector2.zero,Vector2.one,new Color(1,.8f,.32f)).GetComponent<Image>();hud.SetActive(false);
         }
         static GameObject Box(string name,Transform parent,Vector2 min,Vector2 max,Color color)
