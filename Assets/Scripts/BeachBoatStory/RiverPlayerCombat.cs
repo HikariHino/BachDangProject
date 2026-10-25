@@ -227,7 +227,10 @@ namespace BeachBoatStory
             var direction=camera.transform.forward;
             var flat=direction;flat.y=0;
             if(flat.sqrMagnitude>.01f)session.player.transform.rotation=Quaternion.LookRotation(flat);
-            if(leftFoot!=null&&rightFoot!=null)
+            // Only the rowboat stance needs a water-relative height. On shore
+            // or another deck, gravity/the boarding surface already supports us.
+            var boarding=RiverBoardingCombat.Instance;
+            if(leftFoot!=null&&rightFoot!=null&&(boarding==null||boarding.State==RiverBoardingCombat.PlayerState.Rowboat))
             {
                 var position=session.player.transform.position;
                 position.y+=TideSystem.CurrentWaterHeight+5-Mathf.Min(leftFoot.position.y,rightFoot.position.y);
