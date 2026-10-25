@@ -13,8 +13,7 @@ namespace BeachBoatStory
         public bool SignalReady {get;private set;}
         public bool IsReleasedForAmbush=>attackReleased;
         public Transform WreckTarget=>wreckRaft!=null&&wreckRaft.gameObject.activeSelf?wreckRaft:null;
-        public bool IsHullInsideStakeField=>targetPoint!=null&&QuestRowboat.FlatDistance(transform.position,targetPoint.position)<=55&&RiverStakeZone.Instance!=null&&RiverStakeZone.Instance.TryHullContact(
-            transform.position,transform.position,transform.forward,hullHalfLength,stakeHitDistance,false,out _);
+        public bool IsHullInsideStakeField=>RiverStakeZone.Instance!=null&&RiverStakeZone.Instance.ContainsHull(BoatHullCollision.Get(transform));
         float stakeContactTime;
         bool battleStarted;
         bool attackReleased;
@@ -81,7 +80,7 @@ namespace BeachBoatStory
         {
             isDestroyed=false;HasSettled=false;destroyedTime=stakeContactTime=0;battleStarted=true;
             attackReleased=false;SignalReady=false;routeIndex=0;
-            var first=routeWaypoints!=null&&routeWaypoints.Length>0?routeWaypoints[0]:targetPoint;
+            var first=targetPoint;
             if(routeWaypoints!=null)foreach(var waypoint in routeWaypoints)
                 if(waypoint!=null&&QuestRowboat.FlatDistance(waypoint.position,transform.position)>9){first=waypoint;break;}
             var direction=first!=null?first.position-transform.position:Vector3.forward;direction.y=0;
@@ -178,6 +177,8 @@ namespace BeachBoatStory
         void CheckStakeHit(Vector3 from,Vector3 to,float dt)
         {
             var zone=RiverStakeZone.Instance;if(zone==null)return;
+            var fleet=EnemyFleetDirector.Instance;
+            if(fleet!=null&&fleet.BattleStarted&&!fleet.AmbushStarted)return;
             if(zone.TryHullContact(from,to,transform.forward,hullHalfLength,stakeHitDistance,true,out var point))
             {stakeContactTime+=dt;if(stakeContactTime>=ambushDelay)TakeDamage(point);}
         }

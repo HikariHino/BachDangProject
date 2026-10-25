@@ -10,7 +10,8 @@ namespace BeachBoatStory
         public static void Configure(EnemyFleetDirector fleet,RiverStakeZone authoredZone=null)
         {
             var zone=authoredZone!=null?authoredZone:RiverStakeZone.Instance;
-            if(zone==null||zone.fieldStakes.Length==0||fleet.transform.Find("Battle_Lanes_938")!=null)return;
+            if(zone==null||zone.fieldStakes.Length==0)return;
+            if(fleet.transform.Find("Battle_Lanes_938")!=null){ConfigureConcurrentEntry(fleet,zone);return;}
             var root=new GameObject("Battle_Lanes_938").transform;root.SetParent(fleet.transform,false);
             var points=new List<Vector3>();Bounds bounds=default;
             foreach(var stake in zone.fieldStakes)
@@ -46,6 +47,26 @@ namespace BeachBoatStory
                 ship.moveSpeed=Mathf.Max(34,ship.moveSpeed);ship.ambushDelay=(i%3)*.6f;
             }
             fleet.waveDelay=Mathf.Max(10,fleet.waveDelay);
+            ConfigureConcurrentEntry(fleet,zone);
+        }
+        static void ConfigureConcurrentEntry(EnemyFleetDirector fleet,RiverStakeZone zone)
+        {
+            if(fleet.transform.Find("Concurrent_Fleet_938")!=null)return;
+            var root=new GameObject("Concurrent_Fleet_938").transform;root.SetParent(fleet.transform,false);
+            var bounds=zone.fieldStakes[0].GetComponentInChildren<Renderer>(true).bounds;
+            foreach(var stake in zone.fieldStakes)if(stake!=null)bounds.Encapsulate(stake.GetComponentInChildren<Renderer>(true).bounds);
+            float longest=0;foreach(var ship in fleet.enemyShips)if(ship!=null)longest=Mathf.Max(longest,ship.hullHalfLength);
+            var spawns=new Transform[fleet.enemyShips.Length];
+            for(int i=0;i<fleet.enemyShips.Length;i++)
+            {
+                var ship=fleet.enemyShips[i];if(ship==null)continue;
+                // Preserve every dispersed wreck berth. Front ranks sail farther;
+                // rear ranks have their own clear space and stop in shallower berths.
+                var p=new Vector3(ship.targetPoint.position.x,TideSystem.CurrentWaterHeight,bounds.max.z+longest+240+(i/4)*(longest*2+120));
+                var entry=new GameObject("Concurrent_Entry_"+i).transform;entry.SetParent(root,false);entry.position=p;
+                spawns[i]=entry;ship.spawnPoint=p;ship.routeWaypoints=new[]{entry};ship.moveSpeed=34;ship.ambushDelay=0;
+            }
+            fleet.spawnPoints=spawns;
         }
     }
 }

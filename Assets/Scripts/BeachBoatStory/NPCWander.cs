@@ -82,6 +82,7 @@ namespace BeachBoatStory
             raisedPatrol=groundOffset>scale*1.5f;
             navigation=new NPCWalkNavigation(this,terrain,scale,raisedPatrol);
             if(navigation.FindSpawn(home,out var spawn)){transform.position=home=spawn;}
+            Physics.SyncTransforms();
             animator.applyRootMotion = false;
             baseAnimatorSpeed = 1;
             personalPace = UnityEngine.Random.Range(Mathf.Min(minimumPace,maximumPace),Mathf.Max(minimumPace,maximumPace));
@@ -266,6 +267,8 @@ namespace BeachBoatStory
             if (animator == null) return;
             float dt=Mathf.Min(Time.deltaTime,.1f);
             if(dt<=0)return;
+            if(navigation.SeparateActors(walkSpeed*dt,out var separated))
+            {DistanceTravelled+=Vector3.Distance(transform.position,separated);transform.position=separated;Physics.SyncTransforms();idleRemaining=Mathf.Min(idleRemaining,.2f);}
             if (controller != animator.runtimeAnimatorController) CacheParameters();
             // Ambient villagers and guards keep living in the background while a story panel is
             // open. Only the NPC being spoken to is paused by PauseForConversation; globally

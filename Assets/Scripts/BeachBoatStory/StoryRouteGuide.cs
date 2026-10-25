@@ -79,7 +79,7 @@ namespace BeachBoatStory
             if (state == BachDangStoryManager.StoryState.Act3_BattleInProgress)
             {
                 var guard=RiverPlayerCombat.Instance!=null?RiverPlayerCombat.Instance.PriorityGuard:null;
-                if(guard!=null){title=$"Lính địch đợt {guard.waveIndex+1} • Dùng cung hoặc kiếm";return guard.transform;}
+                if(guard!=null){title="Lính Nam Hán • Dùng cung hoặc kiếm";return guard.transform;}
                 var fleet = EnemyFleetDirector.Instance;
                 if (fleet != null)
                 {

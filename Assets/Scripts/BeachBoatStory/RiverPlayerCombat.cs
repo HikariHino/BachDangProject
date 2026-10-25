@@ -241,7 +241,7 @@ namespace BeachBoatStory
         void UpdateHUD()
         {
             caption.text=$"ĐỊCH CÒN {RemainingEnemies} • HẠ {Kills} • ĐỒNG MINH {AlliedKills} • TÊN {Arrows}/6"+(IsReloading?"  •  ĐANG NẠP":"");
-            targetText.text=IsAiming&&AimedGuard!=null?$"XẠ THỦ ĐỢT {AimedGuard.waveIndex+1}  •  {AimedGuard.Health}/2":"";
+            targetText.text=IsAiming&&AimedGuard!=null?$"XẠ THỦ NAM HÁN  •  {AimedGuard.Health}/2":"";
             notice.text=threat!=null?"ĐỊCH ĐANG NHẮM! DI CHUYỂN ĐỂ NÉ TÊN":Time.time<noticeUntil?message:
                 RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.SwordDrawn?"Chuột trái: chém • Chuột phải: đỡ • Q: cất kiếm":
                 "Giữ chuột phải: giương/ngắm • Chuột trái: bắn • R: nạp tên • Q: kiếm";

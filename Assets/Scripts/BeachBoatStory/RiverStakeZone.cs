@@ -82,6 +82,19 @@ namespace BeachBoatStory
         bool[] finished;
         Coroutine planting;
         bool ready;
+        Bounds fieldBounds;
+        public Bounds FieldBounds=>fieldBounds;
+        public bool ContainsHull(BoatHullCollision hull)
+        {
+            if(!ready||hull==null||hull.SolidHull==null)return false;
+            var c=hull.SolidHull;
+            for(int x=-1;x<=1;x+=2)for(int z=-1;z<=1;z+=2)
+            {
+                var p=c.transform.TransformPoint(c.center+Vector3.Scale(c.size*.5f,new Vector3(x,0,z)));
+                if(p.x<fieldBounds.min.x+8||p.x>fieldBounds.max.x-8||p.z<fieldBounds.min.z+8||p.z>fieldBounds.max.z-8)return false;
+            }
+            return true;
+        }
         int workingIndex = -1;
         GameObject lostStake;
         bool recoveryTriggered;
@@ -103,6 +116,8 @@ namespace BeachBoatStory
                 var renderer = stake.GetComponentInChildren<Renderer>(true);
                 centers[i] = renderer != null ? renderer.bounds.center : stake.position;
                 stakeTops[i] = renderer != null ? renderer.bounds.max.y : stake.position.y;
+                var extent=renderer!=null?renderer.bounds:new Bounds(stake.position,Vector3.one);
+                if(i==0)fieldBounds=extent;else fieldBounds.Encapsulate(extent);
                 colliders[i] = stake.GetComponentsInChildren<Collider>(true);
                 colliderStates[i] = new bool[colliders[i].Length];
                 for (int c = 0; c < colliders[i].Length; c++) colliderStates[i][c] = colliders[i][c].enabled;

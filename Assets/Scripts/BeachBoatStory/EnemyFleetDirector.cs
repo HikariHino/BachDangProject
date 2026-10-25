@@ -16,6 +16,7 @@ namespace BeachBoatStory
         public EnemyShip WatchedShip {get;private set;}
         public int CommandScore {get;private set;}
         public bool EbbStarted {get;private set;}
+        public bool AmbushStarted {get;private set;}
         public EnemyShip EbbTriggerShip {get;private set;}
         Coroutine battleLoop;
         Coroutine tideLoop;
@@ -82,7 +83,7 @@ namespace BeachBoatStory
             RiverFleetLayout.Configure(this);
             BattleStarted=true;
             CommandScore=0;
-            EbbStarted=false;EbbTriggerShip=null;
+            EbbStarted=false;AmbushStarted=false;EbbTriggerShip=null;
             scoredWaves.Clear();
             RiverPlayerCombat.Instance?.BeginBattle();
             foreach(var ship in enemyShips)if(ship!=null)ship.gameObject.SetActive(false);
@@ -108,36 +109,25 @@ namespace BeachBoatStory
             var fleet=new System.Collections.Generic.List<EnemyShip>();
             foreach(var candidate in enemyShips)
                 if(candidate!=null&&seen.Add(candidate))fleet.Add(candidate);
-            int waveSize=Mathf.Max(1,shipsPerWave);
             tideLoop=StartCoroutine(WatchStakeField(fleet));
-            // Waves enter from the authored northern branch while the water still conceals the field.
-            for(int waveStart=0;waveStart<fleet.Count;waveStart+=waveSize)
+            var pending=new System.Collections.Generic.List<EnemyShip>();
+            foreach(var ship in fleet)if(!resume||(!ship.gameObject.activeSelf&&!ship.isDestroyed))pending.Add(ship);
+            // Preflight the whole formation before activating any vessel. No timed waves.
+            float shift=0;
+            while(BattleStarted&&pending.Count>0)
             {
-                int waveEnd=Mathf.Min(waveStart+waveSize,fleet.Count);
-                for(int i=waveStart;i<waveEnd;i++)
+                bool clear=true;
+                foreach(var ship in pending)
                 {
-                    var ship=fleet[i];
-                    if(resume&&(ship.gameObject.activeSelf||ship.isDestroyed))continue;
-                    var spawn=(spawnPoints!=null&&i<spawnPoints.Length&&spawnPoints[i]!=null)?spawnPoints[i].position:ship.spawnPoint;
-                    spawn.y=TideSystem.CurrentWaterHeight;
-                    var approach=ship.targetPoint.position-spawn;
-                    foreach(var waypoint in ship.routeWaypoints)if(waypoint!=null&&QuestRowboat.FlatDistance(waypoint.position,spawn)>9){approach=waypoint.position-spawn;break;}
-                    approach.y=0;var heading=approach.sqrMagnitude>.01f?Quaternion.LookRotation(approach):Quaternion.identity;
-                    while(BattleStarted&&!BoatHullCollision.Get(ship.transform).CanOccupy(spawn,heading,false))yield return new WaitForSeconds(.5f);
-                    if(!BattleStarted)yield break;
-                    ship.transform.position=spawn;ship.Activate();
-                    // Release vessels separately so long hulls can clear crossing
-                    // northern approaches before the next vessel turns into them.
-                    if(!resume&&i+1<waveEnd)yield return new WaitForSeconds(6);
+                    var p=ship.spawnPoint+Vector3.forward*shift;p.y=TideSystem.CurrentWaterHeight;
+                    if(!BoatHullCollision.Get(ship.transform).CanOccupy(p,Quaternion.Euler(0,180,0),false)){clear=false;break;}
                 }
-                watchedFleetIndex=waveStart;
-                if(IsShowingBattle)WatchShip(fleet[watchedFleetIndex]);
-                BattleCaption=$"Đợt {waveStart/waveSize+1}/{CommandOpportunityCount}: thuyền địch từ nhánh sông phía bắc tiến xuống";
-                // Give the player time to see each invasion group enter the channel.
-                // The old two-second cap spawned all ten ships almost at once, so the battle
-                // could finish off-screen before the player understood what was happening.
-                if(waveEnd<fleet.Count)yield return new WaitForSeconds(Mathf.Max(10,waveDelay));
+                if(clear)break;
+                if(shift<240)shift+=80;else yield return new WaitForSeconds(.5f);
             }
+            if(!BattleStarted)yield break;
+            foreach(var ship in pending){var p=ship.spawnPoint+Vector3.forward*shift;p.y=TideSystem.CurrentWaterHeight;ship.transform.position=p;ship.Activate();}
+            BattleCaption=$"Toàn hạm đội Nam Hán tiến vào trận địa • {fleet.Count} thuyền";
 
             watchedFleetIndex=0;
             if(IsShowingBattle&&fleet.Count>0)WatchShip(fleet[0]);
@@ -182,9 +172,18 @@ namespace BeachBoatStory
             if(!EbbStarted){timeline?.MarkFleetInside();timeline?.BeginEbb();EbbStarted=true;}
             BachDangStoryManager.Instance?.UpdateUI();
             // Counterattack becomes available as tips emerge, while the ebb is still in progress.
-            while(BattleStarted&&RiverStakeZone.Instance!=null&&RiverStakeZone.Instance.ExposedStakeCount==0)yield return null;
+            while(BattleStarted)
+            {
+                bool ready=RiverStakeZone.Instance!=null&&RiverStakeZone.Instance.ExposedStakeCount>0;
+                foreach(var ship in fleet)
+                    if(ship!=null&&!ship.isDestroyed&&(!ship.IsHullInsideStakeField||!RiverStakeZone.Instance.TryHullContact(ship.transform.position,ship.transform.position,ship.transform.forward,ship.hullHalfLength,ship.stakeHitDistance,true,out _)))ready=false;
+                if(ready)break;yield return null;
+            }
             if(!BattleStarted)yield break;
+            AmbushStarted=true;
             timeline?.BeginAmbush();
+            // The exposed field catches the whole formation in one ambush event.
+            foreach(var ship in fleet)if(ship!=null&&!ship.isDestroyed&&RiverStakeZone.Instance.TryHullContact(ship.transform.position,ship.transform.position,ship.transform.forward,ship.hullHalfLength,ship.stakeHitDistance,true,out var point))ship.TakeDamage(point);
             choreography=GetComponent<RiverBattleChoreography>();choreography?.BeginAmbush(fleet);
             BachDangStoryManager.Instance?.UpdateUI();tideLoop=null;
         }
@@ -254,7 +253,7 @@ namespace BeachBoatStory
         }
         public void ResetForCheckpoint()
         {
-            StopBattle();CommandScore=0;scoredWaves.Clear();watchedFleetIndex=0;commandMessageUntil=0;EbbStarted=false;EbbTriggerShip=null;
+            StopBattle();CommandScore=0;scoredWaves.Clear();watchedFleetIndex=0;commandMessageUntil=0;EbbStarted=false;AmbushStarted=false;EbbTriggerShip=null;
             RiverPlayerCombat.Instance?.ResetForCheckpoint();
             foreach(var ship in enemyShips??System.Array.Empty<EnemyShip>())if(ship!=null)ship.ResetForCheckpoint();
         }

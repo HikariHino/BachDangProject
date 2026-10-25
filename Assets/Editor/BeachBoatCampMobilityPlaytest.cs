@@ -92,6 +92,7 @@ public static class BeachBoatCampMobilityPlaytest
     static void Tick()
     {
         if(!SessionState.GetBool(Flag,false)||!EditorApplication.isPlaying)return;
+        EditorApplication.QueuePlayerLoopUpdate();
         if(started==0)started=EditorApplication.timeSinceStartup;
         if(EditorApplication.timeSinceStartup-started<4)return;
         try
@@ -103,6 +104,15 @@ public static class BeachBoatCampMobilityPlaytest
                 foreach(var w in Object.FindObjectsByType<NPCWander>(FindObjectsSortMode.None).Where(w=>w.name.StartsWith("Camp_Guard_")))starts[w]=w.transform.position;
                 Check(starts.Count==6&&starts.Keys.All(w=>w.isActiveAndEnabled),"All six command/courtyard guard walkers are active");
                 CheckDetour();CheckRunningAudio();
+                foreach(var w in starts.Keys)
+                {
+                    Check(w.GetComponents<Collider>().All(c=>c.isTrigger||!c.enabled),w.name+" no longer has a duplicate legacy body collider");
+                    Check(w.GetComponent<ActorSolidBody>().SolidCollider.enabled,w.name+" has one active physical capsule");
+                }
+                // Reproduce two patrols meeting at the stair approach, rather than
+                // checking each NPC only against scenery in isolation.
+                var left=GameObject.Find("Camp_Guard_Front_Left").transform;
+                GameObject.Find("Camp_Guard_Back_1").transform.position=left.position+Vector3.right*.5f;Physics.SyncTransforms();
                 Capture("Camp_Guards_Patrol_Start");initial=starts.Keys.Select(Describe).ToArray();running=true;simulationStart=Time.time;until=EditorApplication.timeSinceStartup+75;return;
             }
             if(Time.frameCount!=lastFrame){lastFrame=Time.frameCount;movingSamples+=starts.Keys.Count(w=>w.CurrentSpeed>w.NominalStrideSpeed*.65f);}
@@ -119,6 +129,15 @@ public static class BeachBoatCampMobilityPlaytest
             if(Time.time-simulationStart<24&&EditorApplication.timeSinceStartup<until)return;
             Check(Time.time-simulationStart>=24,"Observed guards through 24 seconds of actual gameplay");
             foreach(var w in starts.Keys)Check(w.DistanceTravelled>20,w.name+" patrols instead of remaining stuck");
+            var a=GameObject.Find("Camp_Guard_Front_Left").GetComponent<ActorSolidBody>().SolidCollider;
+            var b=GameObject.Find("Camp_Guard_Back_1").GetComponent<ActorSolidBody>().SolidCollider;
+            Check(!Physics.ComputePenetration(a,a.transform.position,a.transform.rotation,b,b.transform.position,b.transform.rotation,out _,out var depth)||depth<.2f,"Meeting guards separate instead of standing inside each other");
+            foreach(var w in starts.Keys.Where(w=>w.name!="Camp_Guard_Back_2"&&w.name!="Camp_Guard_Back_3"))
+            {
+                var bottom=w.GetComponent<ActorSolidBody>().SolidCollider.bounds.min.y;
+                float floor=Terrain.activeTerrain.SampleHeight(w.transform.position)+Terrain.activeTerrain.transform.position.y;
+                Check(Mathf.Abs(bottom-floor)<.5f,w.name+" stands at ground level without hovering");
+            }
             Check(movingSamples>100,"Guard movement sustains normal walking speed");
             Capture("Camp_Guards_Patrol_End");
             Finish(null);

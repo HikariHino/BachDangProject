@@ -13,6 +13,7 @@ namespace BeachBoatStory
         public readonly float Radius;
         readonly RaycastHit[] hits=new RaycastHit[64];
         readonly Collider[] overlaps=new Collider[64];
+        readonly ActorSolidBody body;
         static int planningFrame=-1,plansThisFrame;
         sealed class Node
         {
@@ -26,11 +27,11 @@ namespace BeachBoatStory
         {
             this.actor=actor;this.terrain=terrain;this.scale=scale;this.raised=raised;
             var rig=actor.animator;
-            height=EnemyDeckGuard.RigHeight(rig);
-            feetOffset=Mathf.Min(rig.GetBoneTransform(HumanBodyBones.LeftFoot).position.y,rig.GetBoneTransform(HumanBodyBones.RightFoot).position.y)-actor.transform.position.y;
-            Radius=Mathf.Max(1.5f,height*.16f)+.15f;
-            groundOffset=terrain!=null?Mathf.Clamp(actor.transform.position.y-Ground(actor.transform.position),0,scale*5):0;
-            surfaceOffset=TryFloor(actor.transform.position,out float floor)?actor.transform.position.y-floor:0;
+            body=actor.GetComponent<ActorSolidBody>();
+            if(body!=null&&body.WalkingHeight>0){height=body.WalkingHeight;feetOffset=body.WalkingSoleOffset;Radius=body.WalkingRadius+.15f;}
+            else{ActorSolidBody.WalkingDimensions(rig,out height,out feetOffset,out var radius);Radius=radius+.15f;}
+            surfaceOffset=-feetOffset+.15f;
+            groundOffset=raised&&terrain!=null?actor.transform.position.y-Ground(actor.transform.position):surfaceOffset;
         }
         float Ground(Vector3 p)=>terrain.SampleHeight(p)+terrain.transform.position.y;
         bool Own(Collider c)=>c.transform.IsChildOf(actor.transform)||actor.transform.IsChildOf(c.transform);
@@ -38,7 +39,7 @@ namespace BeachBoatStory
         void Capsule(Vector3 p,out Vector3 lower,out Vector3 upper)
         {
             lower=p+Vector3.up*(feetOffset+Radius+.15f);
-            upper=p+Vector3.up*(feetOffset+Mathf.Max(Radius,height));
+            upper=p+Vector3.up*(feetOffset+Mathf.Max(Radius,height-Radius));
         }
         bool TryFloor(Vector3 point,out float floor)
         {
@@ -97,6 +98,28 @@ namespace BeachBoatStory
                 return false;
             }
             return count<hits.Length&&!Occupied(to,people);
+        }
+        public bool SeparateActors(float maximumStep,out Vector3 result)
+        {
+            result=actor.transform.position;if(body==null||body.SolidCollider==null)return false;
+            var own=body.SolidCollider;Capsule(result,out var lower,out var upper);
+            int count=Physics.OverlapCapsuleNonAlloc(lower,upper,Radius,overlaps,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+            var push=Vector3.zero;
+            for(int i=0;i<count;i++)
+            {
+                var other=overlaps[i];if(Own(other)||!Person(other))continue;
+                // Include the navigation clearance too. Stopping at zero physical
+                // penetration leaves a pair inside the cast's safety margin.
+                var delta=result-other.bounds.center;delta.y=0;
+                float clearance=Radius+Mathf.Max(other.bounds.extents.x,other.bounds.extents.z)+.2f-delta.magnitude;
+                if(clearance>0&&delta.sqrMagnitude>.001f){push+=delta.normalized*clearance;continue;}
+                if(!Physics.ComputePenetration(own,own.transform.position,own.transform.rotation,other,other.transform.position,other.transform.rotation,out var direction,out float depth)||depth<.06f)continue;
+                direction.y=0;if(direction.sqrMagnitude>.01f)push+=direction.normalized*(depth+.1f);
+            }
+            if(push.sqrMagnitude<.001f)return false;
+            var candidate=result+Vector3.ClampMagnitude(push,maximumStep);
+            if(!Project(candidate,out candidate)||!Clear(result,candidate,false))return false;
+            result=candidate;return true;
         }
         // Only used once at spawn: old authored actors can start inside newly solid props.
         public bool FindSpawn(Vector3 original,out Vector3 clear)
