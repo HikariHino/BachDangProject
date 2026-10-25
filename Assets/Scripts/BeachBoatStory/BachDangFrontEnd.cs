@@ -61,16 +61,31 @@ namespace BeachBoatStory
         {
             if(toast!=null)toast.SetActive(Time.unscaledTime<toastUntil);
             if(CampaignJournalUI.IsOpen||StoryDialogueUI.InputConsumedThisFrame)return;
-            if((GameStarted||Page==MenuPage.Slots||Page==MenuPage.ConfirmOverwrite)&&Input.GetKeyDown(KeyCode.Escape)&&!(QuestCheckpoint.Instance?.IsDefeated??false)&&!(ScreenFader.Instance?.IsTransitioning??false))
-            {
-                if(Page==MenuPage.None)SetPage(MenuPage.Pause);
-                else if(Page==MenuPage.Settings)SetPage(settingsReturn);
-                else if(Page==MenuPage.ConfirmOverwrite)CancelOverwrite();
-                else if(Page==MenuPage.Slots)CancelSlots();
-                else if(Page==MenuPage.ConfirmExit)SetPage(MenuPage.Pause);
-                else if(Page==MenuPage.Pause)Resume();
-            }
+            if(Input.GetKeyDown(KeyCode.Escape))HandleEscape();
             if(GameStarted&&Page==MenuPage.None&&Input.GetKeyDown(KeyCode.F5))SaveNow();
+        }
+        /// <summary>One Escape press belongs to the topmost current activity, never two screens.</summary>
+        public bool HandleEscape()
+        {
+            if(CampaignJournalUI.IsOpen||StoryDialogueUI.InputConsumedThisFrame||
+                !(GameStarted||Page==MenuPage.Slots||Page==MenuPage.ConfirmOverwrite)||
+                (QuestCheckpoint.Instance?.IsDefeated??false)||(ScreenFader.Instance?.IsTransitioning??false))return false;
+            if(Page==MenuPage.None)
+            {
+                // This runs before minigame Update. Close only the current attempt;
+                // each activity retains its earned levels, rewards and best times.
+                if(CampRecoveryGame.Active!=null)CampRecoveryGame.Active.Close();
+                else if(VillageWorkStall.Active!=null)VillageWorkStall.Active.Close();
+                else if(BeachBoatMinigameStation.Active!=null)BeachBoatMinigameStation.Active.CancelActivity();
+                else SetPage(MenuPage.Pause);
+            }
+            else if(Page==MenuPage.Settings)SetPage(settingsReturn);
+            else if(Page==MenuPage.ConfirmOverwrite)CancelOverwrite();
+            else if(Page==MenuPage.Slots)CancelSlots();
+            else if(Page==MenuPage.ConfirmExit)SetPage(MenuPage.Pause);
+            else if(Page==MenuPage.Pause)Resume();
+            else return false;
+            StoryDialogueUI.TryConsumeInput();return true;
         }
         public void Play()
         {

@@ -8,6 +8,14 @@
 - The journal retains completed, current and future tasks. Completed tasks
   use a green check. Achievements and the scoring guide have their own pages.
 - The title screen also offers **Hướng dẫn xếp hạng** before New Game.
+- Escape during ordinary world play opens Pause; another Escape resumes.
+  During drum, supply relay, trade or camp recovery minigames it closes the
+  current activity directly to the world. Previously earned levels, material
+  collection, best times and claimed rewards are retained. Cancelling an
+  unfinished attempt does not complete its quest or claim a new reward.
+  The same press is consumed so it cannot also open Pause. An open Tab
+  journal and existing settings/save confirmation pages keep their own back
+  behavior. The minigame instruction/result text describes this distinction.
 - Winning the fleet battle is not the campaign ending. Closing Ngô Quyền's
   victory-report dialogue advances to celebration; closing the celebration
   dialogue opens the results. Results can be stored in any of the ten slots.
@@ -154,3 +162,9 @@ Validation with the enlarged fleets and timed achievement rules: 129 marine/jour
 fleet/tide/wreck/withdrawal checks passed. Deck regressions compare boot soles
 against real triangle intersections on lower and raised decks, including
 old floating saves, full disk save/load, and boarding both factions' ships.
+
+Contextual Escape validation: BeachBoatEscapePlaytest.RunInEditor() passed 92
+checks for mandatory drum cancellation, completed drum replay, all four trade
+stalls (instructions, completed replays, win and loss), optional stamina
+training (unclaimed and claimed rewards), journal priority and Pause/settings
+back behavior. The test does not write player save slots.
