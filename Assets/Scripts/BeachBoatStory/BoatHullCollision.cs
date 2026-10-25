@@ -6,12 +6,20 @@ namespace BeachBoatStory
     [DisallowMultipleComponent]
     public sealed class BoatHullCollision : MonoBehaviour
     {
+        static readonly Unity.Profiling.ProfilerMarker SweepMarker=new Unity.Profiling.ProfilerMarker("BachDang.HullSweep");
         public static readonly System.Collections.Generic.HashSet<BoatHullCollision> Active=new System.Collections.Generic.HashSet<BoatHullCollision>();
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]static void ResetActive()=>Active.Clear();
         void OnEnable()=>Active.Add(this);
         void OnDisable()=>Active.Remove(this);
         [SerializeField] BoxCollider solidHull;
         readonly Collider[] overlaps=new Collider[256];
+        struct DeckTriangle
+        {
+            public Vector3 a,b,c;public float denominator;
+        }
+        readonly System.Collections.Generic.Dictionary<Vector2Int,System.Collections.Generic.List<DeckTriangle>> deckCells=new System.Collections.Generic.Dictionary<Vector2Int,System.Collections.Generic.List<DeckTriangle>>();
+        float deckCellSize=1;
+        Transform deckVisual;float deckCeiling;bool deckCached;
         public BoxCollider SolidHull=>solidHull;
         public float Radius {get;private set;}
         public int RejectedMoves {get;private set;}
@@ -58,21 +66,63 @@ namespace BeachBoatStory
             float height=Mathf.Max(5,top-bounds.min.y*scale.y);
             var center=bounds.center;center.y=bounds.min.y+height/(2*scale.y);
             solidHull.center=center;solidHull.size=new Vector3(bounds.size.x,height/scale.y,bounds.size.z);solidHull.isTrigger=false;
+            deckVisual=visual;deckCeiling=top/scale.y;deckCached=false;deckCells.Clear();
             foreach(var old in GetComponentsInChildren<BoxCollider>(true))
                 if(old!=solidHull&&!old.isTrigger&&old.GetComponentInParent<Animator>()==null)old.enabled=false;
             var body=GetComponent<Rigidbody>();if(body==null)body=gameObject.AddComponent<Rigidbody>();
             body.useGravity=false;body.isKinematic=true;body.collisionDetectionMode=CollisionDetectionMode.ContinuousSpeculative;
             UpdateRadius();
         }
+        void CacheDeck(Transform visual,float ceiling)
+        {
+            deckCells.Clear();deckCellSize=16/Mathf.Max(.01f,Mathf.Abs(transform.lossyScale.x));
+            foreach(var filter in visual.GetComponentsInChildren<MeshFilter>(true))
+            {
+                var mesh=filter.sharedMesh;if(mesh==null||!mesh.isReadable)continue;
+                var matrix=transform.worldToLocalMatrix*filter.transform.localToWorldMatrix;
+                var vertices=mesh.vertices;for(int i=0;i<vertices.Length;i++)vertices[i]=matrix.MultiplyPoint3x4(vertices[i]);
+                var indices=mesh.triangles;
+                for(int i=0;i<indices.Length;i+=3)
+                {
+                    var a=vertices[indices[i]];var b=vertices[indices[i+1]];var c=vertices[indices[i+2]];
+                    var normal=Vector3.Cross(b-a,c-a);
+                    if(normal.sqrMagnitude<.0000001f||Mathf.Abs(normal.normalized.y)<.65f||Mathf.Min(a.y,Mathf.Min(b.y,c.y))>ceiling+.05f)continue;
+                    float den=(b.z-c.z)*(a.x-c.x)+(c.x-b.x)*(a.z-c.z);if(Mathf.Abs(den)<.000001f)continue;
+                    var triangle=new DeckTriangle{a=a,b=b,c=c,denominator=den};
+                    int minX=Mathf.FloorToInt(Mathf.Min(a.x,Mathf.Min(b.x,c.x))/deckCellSize),maxX=Mathf.FloorToInt(Mathf.Max(a.x,Mathf.Max(b.x,c.x))/deckCellSize);
+                    int minZ=Mathf.FloorToInt(Mathf.Min(a.z,Mathf.Min(b.z,c.z))/deckCellSize),maxZ=Mathf.FloorToInt(Mathf.Max(a.z,Mathf.Max(b.z,c.z))/deckCellSize);
+                    for(int x=minX;x<=maxX;x++)for(int z=minZ;z<=maxZ;z++)
+                    {var key=new Vector2Int(x,z);if(!deckCells.TryGetValue(key,out var cell))deckCells[key]=cell=new System.Collections.Generic.List<DeckTriangle>();cell.Add(triangle);}
+                }
+            }
+        }
+        /// <summary>The timber directly below this point; the navigation box also covers raised decks and is not a floor.</summary>
+        public bool TryDeckSurface(Vector3 world,out Vector3 surface)
+        {
+            if(!deckCached){CacheDeck(deckVisual,deckCeiling);deckCached=true;}
+            var p=transform.InverseTransformPoint(world);surface=default;
+            if(!deckCells.TryGetValue(new Vector2Int(Mathf.FloorToInt(p.x/deckCellSize),Mathf.FloorToInt(p.z/deckCellSize)),out var cell))return false;
+            float best=float.NegativeInfinity;
+            foreach(var t in cell)
+            {
+                float u=((t.b.z-t.c.z)*(p.x-t.c.x)+(t.c.x-t.b.x)*(p.z-t.c.z))/t.denominator;
+                float v=((t.c.z-t.a.z)*(p.x-t.c.x)+(t.a.x-t.c.x)*(p.z-t.c.z))/t.denominator;
+                if(u<-.0001f||v<-.0001f||u+v>1.0001f)continue;
+                best=Mathf.Max(best,u*t.a.y+v*t.b.y+(1-u-v)*t.c.y);
+            }
+            if(float.IsNegativeInfinity(best))return false;p.y=best;surface=transform.TransformPoint(p);return true;
+        }
         public bool IsOwn(Collider collider)
         {
             if(collider.transform.IsChildOf(transform))return true;
             var actor=collider.GetComponentInParent<ActorSolidBody>();if(actor!=null&&actor.Carrier==transform)return true;
             var session=BeachBoatQuestSession.Instance;var boarding=RiverBoardingCombat.Instance;
+            if(boarding!=null&&boarding.PlayerDeckCarrier==transform&&session!=null&&collider.transform.IsChildOf(session.player.transform))return true;
             return GetComponent<QuestRowboat>()!=null&&session!=null&&QuestRowboat.Instance.IsAboard&&(boarding==null||!boarding.PlayerAway)&&collider.transform.IsChildOf(session.player.transform);
         }
         public bool CanMove(Vector3 from,Quaternion fromRotation,Vector3 to,Quaternion toRotation,bool reserveStakes=true)
         {
+            using var sample=SweepMarker.Auto();
             if(solidHull==null)Initialize();
             Physics.SyncTransforms();
             var scale=Abs(transform.lossyScale);var local=Vector3.Scale(solidHull.center,scale);

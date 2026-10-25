@@ -109,6 +109,7 @@ namespace BeachBoatStory
                 ships=EnemyFleetDirector.Instance.enemyShips.Select(s=>s.CaptureSave()).ToArray(),
                 guards=RiverPlayerCombat.Instance.guards.Select(g=>new BachDangSaveData.Guard{id=GuardId(g),ship=g.ship.name,health=g.Health,active=g.gameObject.activeSelf,independent=g.IsIndependentBoarder,position=g.transform.position,rotation=g.transform.rotation}).ToArray(),
                 boarding=RiverBoardingCombat.Instance?.CaptureSave(),dialogue=StoryDialogueUI.Instance?.CaptureSave(),
+                campaign=CampaignProgress.Instance?.Capture(),
                 patrols=UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None).Select(p=>new BachDangSaveData.Patrol{name=p.name,position=p.transform.position,rotation=p.transform.rotation}).ToArray()
             };
         }
@@ -141,6 +142,7 @@ namespace BeachBoatStory
             StoryDialogueUI.Instance.RestoreSave(data.dialogue);
             session.storyCamera.GetComponent<Camera_Script>().SnapToTarget();BachDangPreferences.Apply();
             QuestCheckpoint.Instance.Capture((BachDangStoryManager.StoryState)data.storyState);story.UpdateUI();
+            CampaignProgress.Instance?.Restore(data.campaign,data.storyState);
         }
         public static string Chapter(int state)
         {

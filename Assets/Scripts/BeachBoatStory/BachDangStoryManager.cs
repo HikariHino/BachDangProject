@@ -84,6 +84,7 @@ public class BachDangStoryManager : MonoBehaviour
     {
         bool enteringBattle = currentState != nextState && nextState == StoryState.Act3_WaitForLowTide;
         bool beginningVillageWork = currentState != nextState && nextState == StoryState.Act2_SupplyPreparation;
+        CampaignProgress.Instance?.Transition((int)currentState,(int)nextState);
         currentState = nextState;
         BachDangBattleTimeline.Instance?.ApplyStoryState(nextState, immediateEnvironment);
         if (enteringBattle) QuestRowboat.Instance?.PrepareForBattle();
@@ -311,6 +312,8 @@ public class BachDangStoryManager : MonoBehaviour
     public void OnSupplyPreparationComplete()
     {
         if (currentState != StoryState.Act2_SupplyPreparation) return;
+        var village=VillagePreparationQuest.Instance;
+        if(village!=null&&village.CompletedCount<village.stalls.Length)return;
         TransitionTo(StoryState.Act2_ReturnToCampGate);
         StoryDialogueUI.Instance?.Show("Dân binh", "Gỗ, dây buộc, gạo và lương khô đã sẵn sàng. Hãy về doanh trại báo Chủ tướng.");
     }

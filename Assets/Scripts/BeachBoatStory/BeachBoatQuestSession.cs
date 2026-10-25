@@ -50,6 +50,7 @@ namespace BeachBoatStory
             questGiver = GetComponentInChildren<NPCQuestGiver>(true);
             gates = GetComponentsInChildren<CampGateTransition>(true);
             Instance = this;
+            RiverVesselScale.ApplyScene();
             foreach(var root in gameObject.scene.GetRootGameObjects())
             {
                 var scale=root.GetComponent<BachDangWorldScale>();
@@ -73,6 +74,7 @@ namespace BeachBoatStory
             SetStoryMode(true);
             BuildIntro();
             gameObject.AddComponent<QuestCheckpoint>();
+            gameObject.AddComponent<CampaignProgress>();
             var frontEnd=Child("BachDangFrontEnd");frontEnd.AddComponent<BachDangFrontEnd>();
         }
 
@@ -171,7 +173,7 @@ namespace BeachBoatStory
                 }
                 else
                 {
-                    controlsText.text = "WASD: di chuyển  •  Shift: chạy  •  E: tương tác  •  M: bản đồ";
+                    controlsText.text = "WASD: di chuyển  •  Shift: chạy  •  E: tương tác  •  M: bản đồ  •  TAB: nhật ký";
                 }
             }
             if (vitals != null && healthFill != null)

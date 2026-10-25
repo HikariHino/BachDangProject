@@ -14,7 +14,7 @@ namespace BeachBoatStory
     {
         public enum MenuPage { None, Home, Pause, Settings, ConfirmExit, Loading, Slots, ConfirmOverwrite }
         public static BachDangFrontEnd Instance {get;private set;}
-        public static bool IsBlocking=>Instance!=null&&Instance.Page!=MenuPage.None;
+        public static bool IsBlocking=>(Instance!=null&&Instance.Page!=MenuPage.None)||CampaignJournalUI.IsOpen;
         public static bool AtTitle=>Instance!=null&&!Instance.GameStarted;
         public MenuPage Page {get;private set;}
         public bool GameStarted {get;private set;}
@@ -60,6 +60,7 @@ namespace BeachBoatStory
         void Update()
         {
             if(toast!=null)toast.SetActive(Time.unscaledTime<toastUntil);
+            if(CampaignJournalUI.IsOpen||StoryDialogueUI.InputConsumedThisFrame)return;
             if((GameStarted||Page==MenuPage.Slots||Page==MenuPage.ConfirmOverwrite)&&Input.GetKeyDown(KeyCode.Escape)&&!(QuestCheckpoint.Instance?.IsDefeated??false)&&!(ScreenFader.Instance?.IsTransitioning??false))
             {
                 if(Page==MenuPage.None)SetPage(MenuPage.Pause);
@@ -211,6 +212,7 @@ namespace BeachBoatStory
             Click("Play",home.transform,new Vector2(.077f,.425f),new Vector2(.365f,.505f),"PLAY  /  CHƠI MỚI",Play,true);
             loadButton=Click("LoadGame",home.transform,new Vector2(.077f,.325f),new Vector2(.365f,.405f),"LOAD GAME  /  TIẾP TỤC",()=>LoadGame());
             Click("Settings",home.transform,new Vector2(.077f,.225f),new Vector2(.365f,.305f),"SETTINGS  /  CÀI ĐẶT",OpenSettings);
+            Click("RankingGuide",home.transform,new Vector2(.395f,.225f),new Vector2(.66f,.285f),"HƯỚNG DẪN XẾP HẠNG",()=>CampaignJournalUI.Instance?.OpenRules());
             saveInfo=Label("SaveDetails",home.transform,new Vector2(.077f,.105f),new Vector2(.48f,.20f),13,new Color(.70f,.76f,.69f),"");
             pause=Card("Pause","TẠM DỪNG");
             Click("Resume",pause.transform,new Vector2(.12f,.67f),new Vector2(.88f,.77f),"TIẾP TỤC  [ESC]",Resume,true);

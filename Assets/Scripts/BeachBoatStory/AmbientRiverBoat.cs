@@ -27,6 +27,7 @@ namespace BeachBoatStory
         int target,pathIndex;
         float pause,phase,clock,nextPlan,blocked;
         bool ready;
+        bool liveUpdate;
         void Start()
         {
             if(tide==null)tide=FindAnyObjectByType<TideSystem>();
@@ -94,7 +95,7 @@ namespace BeachBoatStory
             if(!ready)return;battleTarget=null;IsReturningToHarbor=HasReturnedToHarbor=IsAtBattleStation=false;
             var p=checkpointHome;p.y=TideSystem.CurrentWaterHeight+waterlineOffset;RestorePosition(p,checkpointRotation);target=NearestNextPoint();pause=blocked=0;SetRowing(true);
         }
-        void Update()=>Step(Time.deltaTime);
+        void Update(){liveUpdate=true;Step(Time.deltaTime);liveUpdate=false;}
         public void Step(float dt)
         {
             if(!ready||dt<=0||BeachBoatQuestSession.InteractionBlocked)return;
@@ -124,6 +125,7 @@ namespace BeachBoatStory
             if(path.Count==0||QuestRowboat.FlatDistance(goal,lastGoal)>80||(blocked>1&&clock>=nextPlan))
             {
                 if(clock<nextPlan){FloatOnly();SetRowing(false);return false;}
+                if(liveUpdate&&!RiverWaterNavigation.ReservePlanningFrame()){FloatOnly();SetRowing(false);return false;}
                 nextPlan=clock+1.5f;lastGoal=goal;pathIndex=0;
                 HasNavigableRoute=RiverWaterNavigation.FindPath(transform.position,goal,hull.Radius,path,transform,!IsReturningToHarbor);
                 if(!HasNavigableRoute){FloatOnly();SetRowing(false);return false;}PlannedDetours++;

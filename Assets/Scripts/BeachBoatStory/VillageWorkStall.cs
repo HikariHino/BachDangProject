@@ -217,7 +217,7 @@ namespace BeachBoatStory
         {
             BeachBoatSoundscape.Instance?.PlayResult(true);
             Progress++;Feedback=message;LastCorrect=true;FeedbackVersion++;
-            if(Progress>=Goal){Phase=WorkPhase.Won;return;}NewTask();
+            if(Progress>=Goal){Phase=WorkPhase.Won;CampaignProgress.Instance?.RecordMinigame($"village:{(int)kind}:{Difficulty}",Elapsed,TimeLimit);return;}NewTask();
         }
         void Fault(string message)
         {

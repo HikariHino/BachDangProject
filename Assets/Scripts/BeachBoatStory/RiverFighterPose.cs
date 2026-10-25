@@ -50,6 +50,20 @@ namespace BeachBoatStory
         bool traversalAnimatorEnabled;
         float motionTime;
         int lastStroke=-1;
+        int sizeChecks;
+        public void MatchFriendlySize()
+        {
+            sizeChecks=3;MatchFriendlyStature();
+        }
+        void MatchFriendlyStature()
+        {
+            var reference=BeachBoatQuestSession.Instance.player.GetComponentInChildren<Animator>();
+            if(Animator==reference)return;
+            float feet=Mathf.Min(leftFoot.position.y,rightFoot.position.y);
+            Animator.transform.localScale*=EnemyDeckGuard.RigHeight(reference)/Mathf.Max(.01f,EnemyDeckGuard.RigHeight(Animator));
+            Animator.transform.position+=Vector3.up*(feet-Mathf.Min(leftFoot.position.y,rightFoot.position.y));
+            var scale=weapon.parent.lossyScale;weapon.localScale=new Vector3(swordScale/scale.x,swordScale/scale.y,swordScale/scale.z);
+        }
         public void Initialize(Animator animator,GameObject sword,RuntimeAnimatorController controller,float length)
         {
             Animator=animator;swordController=controller;modelRotation=animator.transform.localRotation;actorHeight=length*1.6f;
@@ -88,6 +102,7 @@ namespace BeachBoatStory
         void LateUpdate()
         {
             if(Animator==null)return;
+            if(sizeChecks>0&&Traversal==Motion.Idle){sizeChecks--;MatchFriendlyStature();}
             if(SwordVisible)FitSwordToGrip();
             if(Traversal==Motion.Idle)
             {

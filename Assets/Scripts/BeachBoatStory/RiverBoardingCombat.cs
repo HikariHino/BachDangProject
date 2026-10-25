@@ -10,7 +10,7 @@ namespace BeachBoatStory
     [DefaultExecutionOrder(400)]
     public sealed class RiverBoardingCombat : MonoBehaviour
     {
-        public enum PlayerState { Rowboat, Swimming, Climbing, EnemyDeck, Land }
+        public enum PlayerState { Rowboat, Swimming, Climbing, EnemyDeck, Land, FriendlyDeck }
         public static RiverBoardingCombat Instance {get;private set;}
         public GameObject swordPrefab,allyPrefab,enemyPrefab;
         public RuntimeAnimatorController swordController;
@@ -18,6 +18,8 @@ namespace BeachBoatStory
         public PlayerState State {get;private set;}
         public bool SwordDrawn {get;private set;}
         public bool PlayerAway=>State!=PlayerState.Rowboat;
+        public Transform PlayerDeckCarrier=>(State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck)?deckAnchor:null;
+        bool OnSolidDeck=>State==PlayerState.FriendlyDeck||(State==PlayerState.EnemyDeck&&deckShip!=null&&!deckShip.isDestroyed);
         public bool IsTraversing=>State==PlayerState.Swimming||State==PlayerState.Climbing;
         public bool IsBlocking=>SwordDrawn&&!IsTraversing&&Input.GetMouseButton(1);
         public int PlayerSwordHits {get;private set;}
@@ -30,6 +32,8 @@ namespace BeachBoatStory
         public bool AlliedAIEnabled {get;set;}=true;
         public RuntimeAnimatorController FootController {get;private set;}
         public int ActiveAllies {get{int n=0;foreach(var a in allies)if(a.health>0&&a.go.activeSelf)n++;return n;}}
+        public int AlliedCasualties=>allies.Count(a=>a.health<=0)+defenders.Count(d=>d.health<=0);
+        public int AlliedStrength=>allies.Count+defenders.Count;
         sealed class Ally
         {
             public GameObject go;public RiverFighterPose pose;public AmbientRiverBoat home;public EnemyDeckGuard target;
@@ -58,7 +62,7 @@ namespace BeachBoatStory
         public BachDangSaveData.Boarding CaptureSave()
         {
             return new BachDangSaveData.Boarding {
-                state=(int)State,sword=SwordDrawn,deckShip=deckShip!=null?deckShip.name:null,climbTime=climbTime,deckLocal=deckLocal,climbLocalStart=climbLocalStart,
+                state=(int)State,sword=SwordDrawn,deckShip=deckAnchor!=null?deckAnchor.name:null,climbTime=climbTime,deckLocal=deckLocal,climbLocalStart=climbLocalStart,
                 allies=allies.Select(a=>new BachDangSaveData.Fighter{id=a.go.name,active=a.go.activeSelf,health=a.health,state=a.state,arrows=a.arrows,time=a.travel,start=a.start,local=a.local,target=a.target!=null?BachDangSaveSystem.GuardId(a.target):null,position=a.go.transform.position,rotation=a.go.transform.rotation}).ToArray(),
                 hostiles=hostiles.Select(h=>new BachDangSaveData.Fighter{id=BachDangSaveSystem.GuardId(h.guard),active=h.go.activeSelf,source=h.source!=null?h.source.name:null,boat=h.boat!=null?h.boat.name:null,state=h.state,time=h.time,start=h.start,local=h.local,fromWreck=h.fromWreck,targetPlayer=h.targetPlayer,position=h.go.transform.position,rotation=h.go.transform.rotation}).ToArray(),
                 defenders=defenders.Select(d=>new BachDangSaveData.Fighter{id=d.soldier.GetComponentInParent<AmbientRiverBoat>().name+"/"+d.soldier.name,health=d.health,active=d.soldier.gameObject.activeSelf,position=d.soldier.position,rotation=d.soldier.rotation}).ToArray()};
@@ -96,15 +100,43 @@ namespace BeachBoatStory
                 var d=defenders.FirstOrDefault(x=>x.soldier.GetComponentInParent<AmbientRiverBoat>().name+"/"+x.soldier.name==saved.id);if(d==null)continue;
                 d.health=saved.health;d.soldier.gameObject.SetActive(saved.active);d.soldier.SetPositionAndRotation(saved.position,saved.rotation);
             }
-            State=(PlayerState)data.state;SwordDrawn=data.sword;deckShip=Ship(data.deckShip);deckAnchor=deckShip!=null?deckShip.transform:null;
+            State=(PlayerState)data.state;SwordDrawn=data.sword;deckShip=Ship(data.deckShip);deckAnchor=deckShip!=null?deckShip.transform:Boat(data.deckShip);
             deckLocal=data.deckLocal;climbLocalStart=data.climbLocalStart;climbTime=data.climbTime;
             playerPose.FinishTraversal();playerPose.SetSword(SwordDrawn);
-            if((State==PlayerState.EnemyDeck||State==PlayerState.Land)&&!SwordDrawn)playerPose.Animator.runtimeAnimatorController=FootController;
+            if((State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck||State==PlayerState.Land)&&!SwordDrawn)playerPose.Animator.runtimeAnimatorController=FootController;
             if(State==PlayerState.Swimming)playerPose.Traversal=RiverFighterPose.Motion.Swim;else if(State==PlayerState.Climbing)playerPose.Traversal=RiverFighterPose.Motion.Climb;
             QuestRowboat.Instance.SetShoreWalking(State==PlayerState.Land);
             if(State==PlayerState.Land&&SwordDrawn)playerPose.Animator.runtimeAnimatorController=swordController;
             wasBattle=BachDangStoryManager.Instance.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress;
             if(PlayerAway){var camera=session.storyCamera.GetComponent<Camera_Script>();camera.distance=70;camera.heightOffset=27;}
+            if(OnSolidDeck){playerPose.Animator.Update(0);FitPlayerToDeck();}
+        }
+        // Evaluate after the animator/weapon poses. A capsule bottom is not the
+        // animated boot sole, and a navigation hull top is not the plank deck.
+        void LateUpdate()
+        {
+            if(OnSolidDeck)FitPlayerToDeck();
+            foreach(var d in defenders)
+            {
+                if(d.health<=0||!d.soldier.gameObject.activeInHierarchy)continue;
+                var carrier=d.soldier.GetComponentInParent<AmbientRiverBoat>();
+                if(carrier!=null&&BoatHullCollision.Get(carrier.transform).TryDeckSurface(d.soldier.position,out var floor))
+                {ActorSolidBody.WalkingDimensions(d.pose.Animator,out _,out float sole,out _);d.soldier.position+=Vector3.up*(floor.y+.15f-d.pose.Animator.transform.position.y-sole);}
+            }
+            foreach(var h in hostiles)
+            {
+                if(h.state!=3||!h.guard.IsAlive||h.boat==null||h.boat.GetComponent<AmbientRiverBoat>()==null)continue;
+                var p=h.go.transform.position;
+                if(BoatHullCollision.Get(h.boat).TryDeckSurface(p,out var floor))
+                {p.y=floor.y+.2f;h.go.transform.position=p;h.local=h.boat.InverseTransformPoint(p);h.guard.FitStandingOnDeck();}
+            }
+        }
+        void FitPlayerToDeck()
+        {
+            if(deckAnchor==null||playerPose==null||!BoatHullCollision.Get(deckAnchor).TryDeckSurface(session.player.transform.position,out var floor))return;
+            ActorSolidBody.WalkingDimensions(playerPose.Animator,out _,out float sole,out _);
+            var p=session.player.transform.position;p.y=floor.y-sole+.15f;
+            MovePlayer(p,session.player.transform.rotation);deckLocal=deckAnchor.InverseTransformPoint(p);
         }
         void Awake(){Instance=this;session=GetComponent<BeachBoatQuestSession>();archery=GetComponent<RiverPlayerCombat>();}
         void Start()
@@ -116,7 +148,7 @@ namespace BeachBoatStory
             for(int i=0;i<friendlyBoats.Length*2;i++)
             {
                 var go=Instantiate(allyPrefab,transform);go.name="Linh_Dai_Viet_Tiep_Chien_"+i;ActorSolidBody.Ensure(go,go.GetComponentInChildren<Animator>());
-                var pose=go.AddComponent<RiverFighterPose>();pose.Initialize(go.GetComponentInChildren<Animator>(),swordPrefab,swordController,11);
+                var pose=go.AddComponent<RiverFighterPose>();pose.Initialize(go.GetComponentInChildren<Animator>(),swordPrefab,swordController,17);pose.Animator.Update(0);pose.MatchFriendlySize();
                 go.GetComponent<ActorSolidBody>().Carrier=friendlyBoats[i/2].transform;
                 allies.Add(new Ally{go=go,pose=pose,home=friendlyBoats[i/2],side=i%2==0?-1:1});go.SetActive(false);
             }
@@ -134,7 +166,7 @@ namespace BeachBoatStory
             {
                 var crew=friendly.GetComponentInChildren<FleetDeckCrew>();if(crew==null)continue;
                 foreach(var soldier in crew.soldiers)
-                {ActorSolidBody.Ensure(soldier.gameObject,soldier.GetComponentInChildren<Animator>());var pose=soldier.gameObject.AddComponent<RiverFighterPose>();pose.Initialize(soldier.GetComponentInChildren<Animator>(),swordPrefab,swordController,11);defenders.Add(new Defender{soldier=soldier,pose=pose});}
+                {ActorSolidBody.Ensure(soldier.gameObject,soldier.GetComponentInChildren<Animator>());var pose=soldier.gameObject.AddComponent<RiverFighterPose>();pose.Initialize(soldier.GetComponentInChildren<Animator>(),swordPrefab,swordController,17);pose.MatchFriendlySize();defenders.Add(new Defender{soldier=soldier,pose=pose});}
             }
         }
         public void ResetBattle(bool preserveWrecks=false)
@@ -142,8 +174,8 @@ namespace BeachBoatStory
             bool keepLand=preserveWrecks&&State==PlayerState.Land;
             if(QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard)QuestRowboat.Instance.SetShoreWalking(keepLand);
             if(playerPose!=null){playerPose.Restore();if(QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard)playerPose.Animator.runtimeAnimatorController=QuestRowboat.Instance.rowingController;}SwordDrawn=false;State=keepLand?PlayerState.Land:PlayerState.Rowboat;if(keepLand)playerPose.Animator.runtimeAnimatorController=FootController;deckShip=null;deckAnchor=null;
-            foreach(var a in allies){a.go.SetActive(false);a.health=6;a.state=0;a.pose.Restore();}
-            foreach(var d in defenders){d.pose.Restore();d.health=4;d.fighting=false;d.soldier.gameObject.SetActive(true);d.pose.Animator.enabled=true;d.pose.Animator.Update(0);d.pose.Animator.enabled=false;}
+            foreach(var a in allies){a.go.SetActive(false);if(!preserveWrecks){a.health=6;a.state=0;}a.pose.Restore();}
+            foreach(var d in defenders){d.pose.Restore();if(!preserveWrecks)d.health=4;d.fighting=false;d.soldier.gameObject.SetActive(d.health>0);if(d.health>0){d.pose.Animator.enabled=true;d.pose.Animator.Update(0);d.pose.Animator.enabled=false;}}
             DefenderHits=DefenderDamageTaken=0;
             foreach(var h in hostiles){h.pose.Restore();if(h.fromWreck&&!preserveWrecks){h.guard.IsIndependentBoarder=false;h.guard.RestoreDeck();h.guard.ResetGuard();}else h.go.SetActive(false);h.state=0;h.source=null;}
             hostiles.RemoveAll(h=>h.fromWreck);if(!preserveWrecks)ShipwreckSurvivors=ShipwreckDeaths=SurvivorsTargetingPlayer=SurvivorsTargetingAllies=0;
@@ -180,7 +212,7 @@ namespace BeachBoatStory
         {
             if(!archery.BattleActive||BeachBoatQuestSession.InteractionBlocked||IsTraversing)return false;
             archery.SetAim(false);SwordDrawn=!SwordDrawn;playerPose.SetSword(SwordDrawn);
-            if(!SwordDrawn&&(State==PlayerState.EnemyDeck||State==PlayerState.Land))playerPose.Animator.runtimeAnimatorController=FootController;return true;
+            if(!SwordDrawn&&(State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck||State==PlayerState.Land))playerPose.Animator.runtimeAnimatorController=FootController;return true;
         }
         public bool TrySlash()
         {
@@ -260,10 +292,10 @@ namespace BeachBoatStory
                 if(GroundAt(at,out float floor)&&floor<TideSystem.CurrentWaterHeight-5&&at.y+FeetOffset()<TideSystem.CurrentWaterHeight-1)BeginSwim(at);
                 return;
             }
-            if(State==PlayerState.EnemyDeck&&(deckAnchor==null||deckShip==null||!deckShip.gameObject.activeInHierarchy)){BeginSwim(session.player.transform.position);return;}
+            if((State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck)&&(deckAnchor==null||!deckAnchor.gameObject.activeInHierarchy)){BeginSwim(session.player.transform.position);return;}
             if(State==PlayerState.Climbing)
             {
-                if(deckAnchor==null||deckShip==null||!deckShip.gameObject.activeInHierarchy){BeginSwim(session.player.transform.position);return;}
+                if(deckAnchor==null||!deckAnchor.gameObject.activeInHierarchy){BeginSwim(session.player.transform.position);return;}
                 climbTime+=dt;var destination=deckAnchor.TransformPoint(deckLocal);float t=Mathf.Clamp01(climbTime/1.8f);
                 if(destination.y<TideSystem.CurrentWaterHeight-2){BeginSwim(session.player.transform.position);return;}
                 var facing=deckAnchor.position-session.player.transform.position;facing.y=0;
@@ -272,7 +304,7 @@ namespace BeachBoatStory
                 var rail=from;rail.y=destination.y+1;rail+=deckAnchor.right*(Mathf.Sign(deckLocal.x)*-5);
                 playerPose.ClimbRail=rail;playerPose.ClimbProgress=t;
                 MovePlayer(climb,facing.sqrMagnitude>.01f?Quaternion.LookRotation(facing):session.player.transform.rotation);
-                if(t>=1){State=PlayerState.EnemyDeck;playerPose.FinishTraversal();SwordDrawn=true;playerPose.SetSword(true);}return;
+                if(t>=1){State=deckShip!=null?PlayerState.EnemyDeck:PlayerState.FriendlyDeck;playerPose.FinishTraversal();SwordDrawn=true;playerPose.SetSword(true);if(OnSolidDeck){playerPose.Animator.Update(0);FitPlayerToDeck();}if(State==PlayerState.FriendlyDeck)CampaignProgress.Instance?.RecordFriendlyBoarding();}return;
             }
             var camera=session.storyCamera.transform;var forward=camera.forward;forward.y=0;forward.Normalize();var right=Vector3.Cross(Vector3.up,forward);
             var direction=Vector3.ClampMagnitude(forward*Input.GetAxisRaw("Vertical")+right*Input.GetAxisRaw("Horizontal"),1);
@@ -288,7 +320,17 @@ namespace BeachBoatStory
             else
             {
                 var carried=deckAnchor.TransformPoint(deckLocal);var proposed=carried+direction*26*dt;
-                if(deckShip.isDestroyed)
+                if(OnSolidDeck)
+                {
+                    var box=BoatHullCollision.Get(deckAnchor).SolidHull;var scale=deckAnchor.lossyScale;
+                    deckLocal=deckAnchor.InverseTransformPoint(proposed);float margin=16;
+                    deckLocal.x=Mathf.Clamp(deckLocal.x,box.center.x-box.size.x*.5f+margin/Mathf.Abs(scale.x),box.center.x+box.size.x*.5f-margin/Mathf.Abs(scale.x));
+                    deckLocal.z=Mathf.Clamp(deckLocal.z,box.center.z-box.size.z*.5f+margin/Mathf.Abs(scale.z),box.center.z+box.size.z*.5f-margin/Mathf.Abs(scale.z));
+                    p=deckAnchor.TransformPoint(deckLocal);
+                    if(BoatHullCollision.Get(deckAnchor).TryDeckSurface(p,out var floor))p.y=floor.y-FeetOffset()+.5f;
+                    else p=carried;
+                }
+                else if(deckShip.isDestroyed)
                 {
                     if(deckShip.TryWreckSurfaceAt(proposed,out var surface)&&Mathf.Abs(surface.y-carried.y)<16)p=surface;
                     else if(deckShip.TryWreckSurfaceAt(carried,out surface))p=surface;
@@ -300,10 +342,11 @@ namespace BeachBoatStory
                     deckLocal+=deckAnchor.InverseTransformDirection(direction)*26*dt;
                     deckLocal.x=Mathf.Clamp(deckLocal.x,-deckShip.stakeHitDistance*.65f,deckShip.stakeHitDistance*.65f);deckLocal.z=Mathf.Clamp(deckLocal.z,-deckShip.hullHalfLength*.65f,deckShip.hullHalfLength*.65f);p=deckAnchor.TransformPoint(deckLocal);
                 }
-                p=RiverHullCollision.Move(carried+Vector3.up*8,p+Vector3.up*8,4,false,session.player.transform)-Vector3.up*8;deckLocal=deckAnchor.InverseTransformPoint(p);
+                p=RiverHullCollision.Move(carried+Vector3.up*8,p+Vector3.up*8,4,false,session.player.transform,OnSolidDeck?BoatHullCollision.Get(deckAnchor):null)-Vector3.up*8;deckLocal=deckAnchor.InverseTransformPoint(p);
                 playerPose.Walk(direction.sqrMagnitude>.01f);
             }
             MovePlayer(p,direction.sqrMagnitude>.01f?Quaternion.LookRotation(direction):session.player.transform.rotation);
+            if(OnSolidDeck)FitPlayerToDeck();
         }
         float NearestBoard(Vector3 p,out EnemyShip ship,out Transform anchor,out Vector3 local)
         {
@@ -320,11 +363,26 @@ namespace BeachBoatStory
                 }
                 foreach(int side in new[]{-1,1})
                 {
-                    var boarding=candidate.transform.Find(side<0?"Boarding_Port":"Boarding_Starboard");
-                    var point=candidate.isDestroyed?new Vector3(side*12,2,0):boarding!=null?boarding.localPosition:new Vector3(side*candidate.stakeHitDistance*.5f,20,0);
-                    var world=target.TransformPoint(point);
-                    if(!candidate.isDestroyed)world=target.TransformPoint(new Vector3(side*(candidate.stakeHitDistance+7),point.y,point.z));
+                    var hull=BoatHullCollision.Get(target);var box=hull.SolidHull;var scale=target.lossyScale;
+                    var point=box.center+new Vector3(side*(box.size.x*.5f-16/Mathf.Abs(scale.x)),0,0);
+                    if(!hull.TryDeckSurface(target.TransformPoint(point),out var floor))continue;
+                    var landing=floor+Vector3.up*(.5f-FeetOffset());point=target.InverseTransformPoint(landing);
+                    var edge=point;edge.x=box.center.x+side*(box.size.x*.5f+6/Mathf.Abs(scale.x));var world=target.TransformPoint(edge);
                     float d=QuestRowboat.FlatDistance(p,world);if(d>=best)continue;best=d;ship=candidate;anchor=target;local=point;
+                }
+            }
+            foreach(var friendly in friendlyBoats)
+            {
+                if(friendly==null||!friendly.gameObject.activeInHierarchy)continue;
+                var hull=BoatHullCollision.Get(friendly.transform).SolidHull;var at=friendly.transform.InverseTransformPoint(p);var scale=friendly.transform.lossyScale;
+                foreach(int side in new[]{-1,1})
+                {
+                    var point=hull.center+new Vector3(side*(hull.size.x*.5f-16/Mathf.Abs(scale.x)),hull.size.y*.5f+(.5f-FeetOffset())/Mathf.Abs(scale.y),Mathf.Clamp(at.z-hull.center.z,-hull.size.z*.35f,hull.size.z*.35f));
+                    var world=friendly.transform.TransformPoint(point);
+                    if(!BoatHullCollision.Get(friendly.transform).TryDeckSurface(world,out var floor))continue;
+                    world.y=floor.y-FeetOffset()+.5f;point=friendly.transform.InverseTransformPoint(world);
+                    var edge=point;edge.x=hull.center.x+side*(hull.size.x*.5f+6/Mathf.Abs(scale.x));float d=QuestRowboat.FlatDistance(p,friendly.transform.TransformPoint(edge));
+                    if(d>=best)continue;best=d;ship=null;anchor=friendly.transform;local=point;
                 }
             }
             return best;
@@ -344,12 +402,11 @@ namespace BeachBoatStory
             foreach(var a in allies)
             {
                 a.go.GetComponent<ActorSolidBody>().Carrier=(a.state==0||a.state==4)?a.home.transform:a.state==3&&a.target!=null?a.target.ship.transform:null;
-                if(a.health<=0){a.go.SetActive(false);a.respawn+=dt;if(a.respawn>10){a.health=6;a.state=0;a.respawn=0;a.pose.FinishTraversal();a.go.SetActive(true);}continue;}
+                if(a.health<=0){a.go.SetActive(false);continue;}
                 if(a.target==null||!a.target.IsAlive){a.target=TargetFor(a);if(a.target==null){a.state=0;a.pose.FinishTraversal();}}
                 var home=a.home.transform.position+a.home.transform.forward*20+a.home.transform.right*(a.side*12);
-                var left=a.pose.Animator.GetBoneTransform(HumanBodyBones.LeftFoot);var right=a.pose.Animator.GetBoneTransform(HumanBodyBones.RightFoot);
-                float sole=Mathf.Min(left.position.y,right.position.y);
-                home.y=BoatHullCollision.Get(a.home.transform).SolidHull.bounds.max.y+(a.go.transform.position.y-sole)+.5f;
+                ActorSolidBody.WalkingDimensions(a.pose.Animator,out _,out float soleOffset,out _);float sole=a.pose.Animator.transform.position.y+soleOffset;
+                if(BoatHullCollision.Get(a.home.transform).TryDeckSurface(home,out var homeFloor))home.y=homeFloor.y+(a.go.transform.position.y-sole)+.15f;
                 if(a.state==0)
                 {
                     a.go.transform.position=home;
@@ -426,19 +483,23 @@ namespace BeachBoatStory
                 if(!melee)continue;
                 var direction=target.position-guard.transform.position;direction.y=0;
                 if(direction.sqrMagnitude>.01f)guard.transform.rotation=Quaternion.LookRotation(direction);
-                if(nearest>18)guard.transform.position=RiverHullCollision.Move(guard.transform.position+Vector3.up*8,Vector3.MoveTowards(guard.transform.position,target.position-guard.transform.forward*13,9*dt)+Vector3.up*8,3.5f,true,guard.transform)-Vector3.up*8;
+                var carrier=hostiles.FirstOrDefault(h=>h.guard==guard&&h.state==3)?.boat;
+                var deckHull=carrier!=null&&carrier.GetComponent<AmbientRiverBoat>()!=null?BoatHullCollision.Get(carrier):null;
+                if(nearest>18)guard.transform.position=RiverHullCollision.Move(guard.transform.position+Vector3.up*8,Vector3.MoveTowards(guard.transform.position,target.position-guard.transform.forward*13,9*dt)+Vector3.up*8,3.5f,true,guard.transform,deckHull)-Vector3.up*8;
+                if(deckHull!=null&&deckHull.TryDeckSurface(guard.transform.position,out var support)){var p=guard.transform.position;p.y=support.y+.2f;guard.transform.position=p;hostiles.First(h=>h.guard==guard).local=carrier.InverseTransformPoint(p);}
                 pose.Walk(nearest>20);
                 if(nearest<27&&Time.time>enemyAttacks[guard]&&CanMeleeReach(guard.transform,target,27))
                 {
                     enemyAttacks[guard]=Time.time+1.65f;pose.Slash();EnemySwordHits++;PlaySword(true);
-                    if(defender!=null){defender.health--;DefenderDamageTaken++;if(defender.health<=0)defender.soldier.gameObject.SetActive(false);}
-                    else if(opponent!=null)opponent.health--;
+                    if(defender!=null){defender.health--;DefenderDamageTaken++;if(defender.health<=0){defender.soldier.gameObject.SetActive(false);CampaignProgress.Instance?.RecordCasualty();}}
+                    else if(opponent!=null)DamageAlly(opponent);
                     else session.player.GetComponent<PlayerVitals>().TakeImpact(IsBlocking?2:9,"Kiếm địch");
                 }
             }
             if(Time.time<nextArrow)return;nextArrow=Time.time+3;
-            foreach(var a in allies)if(a.health>0&&a.state==1&&a.target!=null&&a.target.IsAlive&&Vector3.Distance(a.go.transform.position,a.target.transform.position)<240){a.health--;BeachBoatSoundscape.Instance?.PlayBow(true);break;}
+            foreach(var a in allies)if(a.health>0&&a.state==1&&a.target!=null&&a.target.IsAlive&&Vector3.Distance(a.go.transform.position,a.target.transform.position)<240){DamageAlly(a);BeachBoatSoundscape.Instance?.PlayBow(true);break;}
         }
+        void DamageAlly(Ally ally){if(ally.health<=0)return;ally.health--;if(ally.health<=0){ally.go.SetActive(false);CampaignProgress.Instance?.RecordCasualty();}}
         bool CanMeleeReach(Transform attacker,Transform target,float reach)
         {
             if(Vector3.Distance(attacker.position,target.position)>reach)return false;
@@ -479,12 +540,13 @@ namespace BeachBoatStory
                     entry.y=TideSystem.CurrentWaterHeight-4;h.go.transform.position=entry;
                     h.state=1;h.pose.SetSword(false);h.pose.Traversal=RiverFighterPose.Motion.Swim;h.guard.SetMelee(true);SwimsStarted++;
                 }
-                if(h.targetPlayer)h.boat=State==PlayerState.EnemyDeck&&deckAnchor!=null?deckAnchor:QuestRowboat.Instance.transform;
+                if(h.targetPlayer)h.boat=(State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck)&&deckAnchor!=null?deckAnchor:QuestRowboat.Instance.transform;
                 if(h.boat==null){h.source=null;continue;}
                 bool chasePlayer=h.targetPlayer&&PlayerAway&&(h.state==1||h.state==4);
                 var end=chasePlayer?session.player.transform.position:h.boat.position+h.boat.right*(h.boat==QuestRowboat.Instance.transform?4:10)+Vector3.up*(h.boat==QuestRowboat.Instance.transform?10:24);
                 if(h.boat!=QuestRowboat.Instance.transform&&h.boat.GetComponent<AmbientRiverBoat>()!=null)
-                {var crew=h.boat.GetComponentInChildren<FleetDeckCrew>();if(crew!=null&&crew.soldiers.Length>0)end=crew.soldiers[0].position+h.boat.forward*8;}
+                {var crew=h.boat.GetComponentInChildren<FleetDeckCrew>();if(crew!=null&&crew.soldiers.Length>0)end=crew.soldiers[0].position+h.boat.forward*8;
+                    if(BoatHullCollision.Get(h.boat).TryDeckSurface(end,out var support))end=support+Vector3.up*.2f;}
                 if(h.state==4)
                 {
                     if(chasePlayer)

@@ -247,6 +247,7 @@ namespace BeachBoatStory
             RestoreCursor();
             if (!completed) return;
             HasCompleted = true;
+            if(kind==ActivityKind.WarDrum)CampaignProgress.Instance?.RecordMinigame("drum",elapsed,TimeLimit);
             if (BestTime <= 0 || elapsed < BestTime) BestTime = elapsed;
             BestMistakes = Mathf.Min(BestMistakes, mistakes);
             string result = kind == ActivityKind.WarDrum

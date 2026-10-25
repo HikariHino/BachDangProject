@@ -85,6 +85,7 @@ namespace BeachBoatStory
         }
         public void RegisterKill(EnemyDeckGuard guard)
         {
+            CampaignProgress.Instance?.RecordKill(guard);
             Kills++;suppressed.Add(guard.waveIndex);
             Tell($"ĐÃ HẠ ĐỊCH • Còn {RemainingEnemies} lính địch");
             BachDangStoryManager.Instance?.UpdateUI();
@@ -92,6 +93,7 @@ namespace BeachBoatStory
         public void RegisterAlliedKill(EnemyDeckGuard guard){AlliedKills++;suppressed.Add(guard.waveIndex);Tell($"Đồng minh hạ địch • Còn {RemainingEnemies} lính địch");BachDangStoryManager.Instance?.UpdateUI();}
         public void BeginBattle()
         {
+            CampaignProgress.Instance?.BeginBattle();
             ResetForCheckpoint();wasBattle=true;nextThreat=Time.time+4;
             foreach(var guard in guards)if(guard!=null)guard.ResetGuard();
             Tell("Nhử địch vào sâu bãi cọc. Dùng cung/kiếm phối hợp đồng minh. Thắng khi mọi thuyền đắm và không còn lính địch.");
@@ -135,7 +137,7 @@ namespace BeachBoatStory
             IsAiming=value;
             if(animator!=null&&QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard)
             {animator.runtimeAnimatorController=value&&bowController!=null?bowController:
-                RiverBoardingCombat.Instance!=null&&(RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.EnemyDeck||RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.Land)?
+                RiverBoardingCombat.Instance!=null&&(RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.EnemyDeck||RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.FriendlyDeck||RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.Land)?
                 RiverBoardingCombat.Instance.FootController:QuestRowboat.Instance.rowingController;animator.speed=1;}
             if(bow!=null)bow.gameObject.SetActive(value);
         }

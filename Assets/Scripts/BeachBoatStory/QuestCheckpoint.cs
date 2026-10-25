@@ -54,6 +54,7 @@ namespace BeachBoatStory
         public void Defeat()
         {
             if(IsDefeated)return;
+            CampaignProgress.Instance?.RecordDefeat();
             if(!HasCheckpoint)Capture(BachDangStoryManager.Instance.currentState);
             IsDefeated=true;previousTimeScale=Time.timeScale>0?Time.timeScale:1;
             RiverBoardingCombat.Instance?.ResetBattle();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();StoryDialogueUI.Instance?.DismissForCheckpoint();

@@ -22,6 +22,14 @@ namespace BeachBoatStory
         public Boarding boarding;
         public Patrol[] patrols;
         public Dialogue dialogue;
+        public Campaign campaign;
+        [Serializable] public sealed class MiniRecord {public string id;public float seconds,limit;}
+        [Serializable] public sealed class Campaign
+        {
+            public float seconds,stakeSeconds;public int completedMask,visitedMask,defeats,casualties,friendlyBoardings,enemyCount=64,finalScore;
+            public bool stakeStarted,stakeFinished,finished,historyIncomplete;public string finalRank;
+            public MiniRecord[] minigames=Array.Empty<MiniRecord>();public string[] kills=Array.Empty<string>();
+        }
         [Serializable] public sealed class Dialogue {public bool active,femaleVoice;public string speaker,line,action,voiceIdentity,voiceProfile;}
         [Serializable] public sealed class Activity {public string name;public bool completed;public float bestTime;public int bestMistakes;}
         [Serializable] public sealed class Tide {public float height,target,start,elapsed,duration,hour;public bool rising,controlled,locked,high;public int moment;}

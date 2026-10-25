@@ -16,12 +16,13 @@ public static class BeachBoatSolidRiverPlaytest
     static readonly List<string> checks=new List<string>();
     static object[] movements;
     public static void RunAndExit(){EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(bool navigationOnly=false){SessionState.SetBool(Flag+"KeepEditor",true);SessionState.SetBool(Flag+"NavigationOnly",navigationOnly);SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Record;Application.logMessageReceived+=Record;}
     static void Record(string m,string stack,LogType type){if(SessionState.GetBool(Flag,false)&&EditorApplication.isPlaying&&(type==LogType.Exception||type==LogType.Error))runtimeError=m+"\n"+stack;}
     static void Check(bool value,string message){if(!value)throw new Exception(message);checks.Add(message);}
     static void Finish(string error)
     {
-        File.WriteAllText("Logs/SolidRiverPlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,checks,movements},Newtonsoft.Json.Formatting.Indented));SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(error==null?0:1);
+        File.WriteAllText("Logs/SolidRiverPlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,scope=SessionState.GetBool(Flag+"NavigationOnly",false)?"navigation":"full",checks,movements},Newtonsoft.Json.Formatting.Indented));SessionState.SetBool(Flag,false);if(SessionState.GetBool(Flag+"KeepEditor",false)){SessionState.SetBool(Flag+"KeepEditor",false);EditorApplication.isPlaying=false;}else BeachBoatQAExit.AfterPlayMode(error==null?0:1);
     }
     static void Tick()
     {
@@ -56,6 +57,7 @@ public static class BeachBoatSolidRiverPlaytest
             var rowboat=QuestRowboat.Instance;var story=BeachBoatStory.BachDangStoryManager.Instance;story.collectedWood=story.totalWoodRequired;story.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act3_WaitForLowTide,true);
             var player=BeachBoatQuestSession.Instance.player;player.transform.position=rowboat.boardingPoint.position;player.GetComponent<Rigidbody>().position=player.transform.position;
             Check(rowboat.TryBoard(),"Player can board a clear launch with full-hull checks");var from=rowboat.transform.position;for(int i=0;i<40;i++)rowboat.Step(1,0,.05f);Check(QuestRowboat.FlatDistance(from,rowboat.transform.position)>15,"Player can actually row away from the dock with solid bodies enabled");
+            if(SessionState.GetBool(Flag+"NavigationOnly",false)){Finish(null);return;}
             var clips=Resources.LoadAll<AudioClip>("BachDang938/RunSteps");Check(clips.Length==6,"Six recorded running footfalls are bundled");
             var signatures=new HashSet<string>();
             foreach(var clip in clips)

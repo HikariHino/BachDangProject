@@ -6,6 +6,7 @@ namespace BeachBoatStory
     [DisallowMultipleComponent]
     public class NPCWander : MonoBehaviour
     {
+        static readonly Unity.Profiling.ProfilerMarker MoveMarker=new Unity.Profiling.ProfilerMarker("BachDang.NPCMovement");
         public float wanderRadius = 30, walkSpeed = 8, minIdleTime = 3, maxIdleTime = 10;
         [Header("Natural movement")]
         public float acceleration = 5.5f, deceleration = 8f, turnSpeed = 150f, arrivalSlowDistance = 5f;
@@ -264,6 +265,7 @@ namespace BeachBoatStory
         }
         void Update()
         {
+            using var sample=MoveMarker.Auto();
             if(QuestCheckpoint.Instance!=null&&QuestCheckpoint.Instance.IsDefeated)return;
             if (animator == null) return;
             float dt=Mathf.Min(Time.deltaTime,.1f);

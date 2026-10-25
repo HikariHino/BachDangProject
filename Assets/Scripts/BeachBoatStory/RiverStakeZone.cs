@@ -188,6 +188,7 @@ namespace BeachBoatStory
                 QuestRowboat.FlatDistance(boat.transform.position, p.approach.position) > interactDistance ||
                 !HasBoatClearance(boat.transform.position)) return false;
             IsPlanting = true;
+            CampaignProgress.Instance?.StartStakes();
             BeachBoatSoundscape.Instance?.PlayInteraction();
             workingIndex = index;
             story.SetInteractPrompt(false, owner: this); story.UpdateUI();

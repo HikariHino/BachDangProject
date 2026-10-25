@@ -6,6 +6,7 @@ namespace BeachBoatStory
     [DefaultExecutionOrder(-100)]
     public sealed class QuestRowboat : MonoBehaviour
     {
+        static readonly Unity.Profiling.ProfilerMarker StepMarker=new Unity.Profiling.ProfilerMarker("BachDang.Rowboat");
         public enum BoatObstacleKind { None, Shore, Tree, Rock, Ship, Structure }
         public static QuestRowboat Instance { get; private set; }
         public Transform boardingPoint, dockPoint, seat;
@@ -288,6 +289,14 @@ namespace BeachBoatStory
         // Shared by live controls and editor validation; no allocation or scene scans per tick.
         public void Step(float throttle, float steering, float dt, bool boostWanted = false)
         {
+            using var sample=StepMarker.Auto();
+            if(dt>.05f)
+            {
+                // Keep elapsed time when a frame is slow. Every small slice
+                // still performs the complete hull sweep before moving.
+                int slices=Mathf.CeilToInt(Mathf.Min(dt,.25f)/.05f);float slice=Mathf.Min(dt,.25f)/slices;
+                for(int i=0;i<slices;i++)Step(throttle,steering,slice,boostWanted);return;
+            }
             var boarding=RiverBoardingCombat.Instance;
             if(IsAboard&&boarding!=null&&(boarding.PlayerAway||boarding.SwordDrawn))
             {Speed=0;IsBoosting=false;animator.speed=1;if(!boarding.PlayerAway)AttachPlayer();return;}

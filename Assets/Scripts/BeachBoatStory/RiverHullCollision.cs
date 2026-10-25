@@ -6,7 +6,16 @@ namespace BeachBoatStory
     public static class RiverHullCollision
     {
         static readonly RaycastHit[] hits=new RaycastHit[64];
-        public static Vector3 Move(Vector3 from,Vector3 destination,float radius,bool navigateAround=false,Transform owner=null)
+        static bool IsWalkableBank(RaycastHit hit)
+        {
+            if(!(hit.collider is TerrainCollider))return false;
+            var terrain=hit.collider.GetComponent<Terrain>();if(terrain==null)return hit.normal.y>=.65f;
+            var p=hit.point-terrain.transform.position;var size=terrain.terrainData.size;
+            // A sphere touching a bank from below can report a horizontal contact
+            // normal. Use the terrain's real slope so swimmers can reach dry sand.
+            return terrain.terrainData.GetInterpolatedNormal(Mathf.Clamp01(p.x/size.x),Mathf.Clamp01(p.z/size.z)).y>=.65f;
+        }
+        public static Vector3 Move(Vector3 from,Vector3 destination,float radius,bool navigateAround=false,Transform owner=null,BoatHullCollision deckCarrier=null)
         {
             Physics.SyncTransforms();
             var position=from;var remaining=destination-from;
@@ -19,8 +28,8 @@ namespace BeachBoatStory
                 for(int i=0;i<count;i++)
                 {
                     var collider=hits[i].collider;
-                    if(collider==null||(collider is TerrainCollider&&hits[i].normal.y>.45f)||collider.GetComponent<TideSystem>()!=null||
-                        (owner!=null&&collider.transform.IsChildOf(owner))||hits[i].distance>=nearest)continue;
+                    if(collider==null||IsWalkableBank(hits[i])||collider.GetComponent<TideSystem>()!=null||
+                        (owner!=null&&collider.transform.IsChildOf(owner))||(deckCarrier!=null&&collider==deckCarrier.SolidHull)||hits[i].distance>=nearest)continue;
                     nearest=hits[i].distance;normal=hits[i].normal;
                 }
                 if(float.IsPositiveInfinity(nearest)){position+=remaining;break;}
