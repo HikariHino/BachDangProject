@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -14,8 +15,8 @@ namespace BeachBoatStory
         public bool IsEnding {get;private set;}
         GameObject overlay,listView,ruleView,side,saveButton,homeButton,closeButton;
         TMP_Text heading,subtitle,metrics,rules,footer,rank,score;
-        readonly TMP_Text[] rows=new TMP_Text[15];readonly Image[] rowBackgrounds=new Image[15];readonly JournalCheck[] marks=new JournalCheck[15];
-        RectTransform content;ScrollRect scroll;int page;float previousScale=1,nextRefresh;CursorLockMode previousLock;bool previousVisible;
+        readonly TMP_Text[] rows=new TMP_Text[48];readonly Image[] rowBackgrounds=new Image[48];readonly JournalCheck[] marks=new JournalCheck[48];
+        RectTransform content,ruleContent;ScrollRect scroll,ruleScroll;int page,rowCount;float rowTop,previousScale=1,nextRefresh;CursorLockMode previousLock;bool previousVisible;
         static readonly Color Gold=new Color(.94f,.76f,.43f),Cream=new Color(.92f,.95f,.91f),Green=new Color(.43f,.94f,.66f),Muted=new Color(.56f,.65f,.64f);
         public void Awake(){Instance=this;Build();}
         void Update()
@@ -40,7 +41,7 @@ namespace BeachBoatStory
         {
             if(!IsOpen)return;overlay.SetActive(false);Time.timeScale=previousScale;Cursor.lockState=previousLock;Cursor.visible=previousVisible;StoryDialogueUI.TryConsumeInput();
         }
-        public void ShowPage(int value){page=value;listView.SetActive(page!=2);ruleView.SetActive(page==2);side.SetActive(page!=2);scroll.verticalNormalizedPosition=1;Refresh();}
+        public void ShowPage(int value){page=value;listView.SetActive(page!=2);ruleView.SetActive(page==2);side.SetActive(page!=2);Refresh();Canvas.ForceUpdateCanvases();scroll.verticalNormalizedPosition=ruleScroll.verticalNormalizedPosition=1;}
         public void SaveResult(){Close();BachDangFrontEnd.Instance.OpenSaveSlots("Tổng kết chiến dịch Bạch Đằng");}
         public void ReturnToTitle(){Close();BachDangSaveSystem.PendingLoad=null;Time.timeScale=1;SceneManager.LoadScene(gameObject.scene.name);}
         public void Refresh()
@@ -50,27 +51,69 @@ namespace BeachBoatStory
             subtitle.text=$"NHIỆM VỤ {p.CompletedMissions}/{CampaignProgress.StoryOrder.Length}  •  THỜI GIAN {CampaignProgress.Duration(r.seconds)}"+(r.historyIncomplete?"  •  SAVE CŨ: THỐNG KÊ CHƯA ĐẦY ĐỦ":"");
             closeButton.SetActive(!IsEnding);saveButton.SetActive(IsEnding);homeButton.SetActive(IsEnding);
             footer.text=IsEnding?"Lưu kết quả vào một ô trước khi về sảnh để giữ tiến trình và thành tích.":"TAB / ESC: đóng bảng  •  Cuộn chuột: xem toàn bộ danh sách  •  Bảng mở sẽ tạm dừng trò chơi.";
-            rules.text=p.RankingRules;
+            if(page==2)
+            {
+                rules.text=p.RankingRules;
+                Canvas.ForceUpdateCanvases();
+                float width=Mathf.Max(300,rules.rectTransform.rect.width);
+                ruleContent.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(700,rules.GetPreferredValues(rules.text,width,0).y+35));
+            }
+            rowCount=0;rowTop=4;
             if(page==0)
             {
-                for(int i=0;i<rows.Length;i++)
+                for(int i=0;i<CampaignProgress.StoryOrder.Length;i++)
                 {
-                    bool done=p.MissionDone(i),current=p.MissionCurrent(i);rows[i].transform.parent.gameObject.SetActive(true);marks[i].Set(done);
-                    rowBackgrounds[i].color=done?new Color(.075f,.19f,.14f,.9f):current?new Color(.20f,.21f,.13f,.95f):new Color(.07f,.10f,.105f,.8f);
+                    bool done=p.MissionDone(i),current=p.MissionCurrent(i);
                     string detail=CampaignProgress.StoryOrder[i]==13?$" ({VillagePreparationQuest.Instance.CompletedCount}/4 sạp)":"";
-                    rows[i].text=CampaignProgress.MissionTitles[i]+detail+(done?"  <color=#79E9AC>ĐÃ XONG</color>":current?"  <color=#F0C26D>ĐANG LÀM</color>":"  <color=#90A29D>CHƯA XONG</color>");
+                    Row(CampaignProgress.MissionTitles[i]+detail,i==1?p.TimingResult(0)+"\n"+p.TimingBands(0):"",done,current,i==1?82:46);
+                    if(CampaignProgress.StoryOrder[i]!=13)continue;
+                    for(int work=0;work<4;work++)
+                    {
+                        var stall=VillagePreparationQuest.Instance.stalls.FirstOrDefault(s=>(int)s.kind==work);
+                        int levels=stall!=null?stall.CompletedLevels:0;bool supplied=stall!=null&&stall.Completed;
+                        Row("VẬT TƯ • "+CampaignProgress.WorkNames[work]+$" ({levels}/3)","Hoàn thành Dễ → Vừa → Khó rồi nhận vật tư.",supplied,current&&!supplied,66);
+                        for(int difficulty=0;difficulty<3;difficulty++)
+                        {
+                            int index=1+work*3+difficulty;bool completed=levels>difficulty||p.MiniRecord(index)!=null;
+                            Row("    Minigame "+CampaignProgress.DifficultyNames[difficulty],p.TimingResult(index)+"\n"+p.TimingBands(index),completed,current&&!completed&&levels==difficulty,82);
+                        }
+                    }
                 }
+                int trained=BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().CompletedTrainingLevels;
+                Row($"NHIỆM VỤ PHỤ • Luyện thể lực ({trained}/3)","TÙY CHỌN • Có thể bỏ qua • Không ảnh hưởng cốt truyện và hạng.",trained==3,false,68);
+                for(int level=1;level<=3;level++)Row("    Luyện thể lực • "+CampaignProgress.DifficultyNames[level-1],$"Thắng cấp này: +20 thể lực tối đa • Tổng sau cấp {level}: +{level*20}.",trained>=level,false,64);
             }
             else if(page==1)
             {
+                for(int index=0;index<CampaignProgress.ScoredMinigames;index++)
+                {
+                    int tier=p.MiniRank(index);
+                    Row(CampaignProgress.MiniName(index)+(tier>0?" • HẠNG "+CampaignProgress.RankName(tier):""),p.TimingResult(index)+"\n"+p.TimingBands(index),tier>0,false,82,true);
+                }
                 string[] titles={"Luyện quân: xong cả 3 cấp thể lực","Hậu cần: hoàn tất đủ 4 sạp","Trận địa: dựng đủ 5 cụm cọc","Dũng sĩ: tự hạ ít nhất 10 địch","Tiếp viện: leo lên thuyền đồng minh","Bất khuất: kết thúc không gục ngã","Giữ quân: kết thúc không có thương vong","Bậc thầy Bạch Đằng: kết thúc hạng S"};
                 bool[] done={BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().CompletedTrainingLevels>=3,VillagePreparationQuest.Instance.CompletedCount==4,RiverStakeZone.Instance.IsComplete,r.kills.Length>=10,r.friendlyBoardings>0,r.finished&&!r.historyIncomplete&&r.defeats==0,r.finished&&!r.historyIncomplete&&r.casualties==0,r.finished&&!r.historyIncomplete&&r.finalRank=="S"};
-                for(int i=0;i<rows.Length;i++){bool active=i<titles.Length;rows[i].transform.parent.gameObject.SetActive(active);if(!active)continue;marks[i].Set(done[i]);rowBackgrounds[i].color=done[i]?new Color(.075f,.19f,.14f,.9f):new Color(.07f,.10f,.105f,.8f);rows[i].text=titles[i]+(done[i]?"  <color=#79E9AC>ĐÃ ĐẠT</color>":"  <color=#90A29D>CHƯA ĐẠT</color>");}
+                for(int i=0;i<titles.Length;i++)Row(titles[i],i==0?"TÙY CHỌN • +60 thể lực tối đa • Không tham gia xét hạng.":"",done[i],false,i==0?66:46,true);
+                for(int tier=3;tier>=1;tier--)
+                {
+                    var conditions=p.ConditionsFor(tier);int met=conditions.Count(c=>c.met);
+                    string missing=string.Join(", ",conditions.Where(c=>!c.met).Select(c=>c.name));
+                    bool earned=r.finished&&(r.finalRank=="S"||r.finalRank==CampaignProgress.RankName(tier)||(tier==1&&r.finalRank=="A"))&&!r.historyIncomplete;
+                    Row("TỔNG KẾT HẠNG "+CampaignProgress.RankName(tier),$"Đạt {met}/8 điều kiện. "+(met==8?(r.finished?"Đủ tất cả mốc.":"Hoàn thành báo công để chốt hạng."):"Còn thiếu: "+missing),earned,false,100,true);
+                }
             }
+            for(int i=rowCount;i<rows.Length;i++)rows[i].transform.parent.gameObject.SetActive(false);
+            content.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,Mathf.Max(420,rowTop+4));
             rank.text=IsEnding?r.finalRank:"938";rank.color=IsEnding?Gold:Muted;
-            score.text=IsEnding?$"{r.finalScore}/100 ĐIỂM"+(r.historyIncomplete?" • TẠM TÍNH":""):"HÀNH TRÌNH GIỮ NƯỚC";
-            metrics.text=(IsEnding?$"MINIGAME     {p.MiniPoints:0.0}/35\nĐÓNG CỌC     {p.StakePoints:0}/25\nHẠ ĐỊCH      {p.KillPoints:0.0}/25\nTHỜI GIAN    {p.TimePoints:0}/15\n\n":"")+
-                $"Tự hạ địch: {r.kills.Length}/{p.KillTarget}\nKỷ lục minigame: {Mathf.Min(13,r.minigames.Length)}/13\nĐóng cọc: "+(r.stakeStarted?CampaignProgress.Duration(r.stakeSeconds):r.stakeFinished?"Save cũ thiếu thời gian":"Chưa bắt đầu")+$"\nGục ngã: {r.defeats}\nQuân ta tử trận: {r.casualties}";
+            score.text=IsEnding?(r.historyIncomplete?"TẠM TÍNH • THIẾU THỐNG KÊ":"HẠNG THEO THÀNH TÍCH"):"HÀNH TRÌNH GIỮ NƯỚC";
+            metrics.text=$"Trống: "+(p.MiniRecord(0)==null?"Chưa ghi":CampaignProgress.Clock(p.MiniRecord(0).seconds)+" • "+CampaignProgress.RankName(p.MiniRank(0)))+
+                $"\nMinigame vật tư: {Enumerable.Range(1,12).Count(i=>p.MiniRecord(i)!=null)}/12\nĐiều kiện S: {p.ConditionsFor(3).Count(c=>c.met)}/8\nTự hạ địch: {r.kills.Length}/{p.KillTarget}\nĐóng cọc: "+(r.stakeStarted?CampaignProgress.Duration(r.stakeSeconds):r.stakeFinished?"Thiếu thời gian cũ":"Chưa bắt đầu")+$"\nGục ngã: {r.defeats}\nQuân ta tử trận: {r.casualties}\nThể lực phụ: {BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().CompletedTrainingLevels}/3";
+        }
+        void Row(string title,string detail,bool done,bool current=false,float height=46,bool achievement=false)
+        {
+            int i=rowCount++;var rt=(RectTransform)rows[i].transform.parent;rt.gameObject.SetActive(true);rt.anchoredPosition=new Vector2(0,-rowTop);rt.sizeDelta=new Vector2(0,height);rowTop+=height+4;
+            marks[i].Set(done);rowBackgrounds[i].color=done?new Color(.075f,.19f,.14f,.9f):current?new Color(.20f,.21f,.13f,.95f):new Color(.07f,.10f,.105f,.8f);
+            string status=done?(achievement?"ĐÃ ĐẠT":"ĐÃ XONG"):current?"ĐANG LÀM":achievement?"CHƯA ĐẠT":"CHƯA XONG";
+            rows[i].text=title+$"  <color={(done?"#79E9AC":current?"#F0C26D":"#90A29D")}>{status}</color>"+(string.IsNullOrEmpty(detail)?"":"\n<size=14><color=#B5C7C0>"+detail+"</color></size>");
         }
         static GameObject Box(string name,Transform parent,Vector2 min,Vector2 max,Color color)
         {
@@ -100,13 +143,13 @@ namespace BeachBoatStory
             subtitle=Text("Subtitle",card.transform,new Vector2(.04f,.85f),new Vector2(.95f,.90f),14,Muted);
             Button("Missions",card.transform,new Vector2(.04f,.76f),new Vector2(.23f,.82f),"NHIỆM VỤ",()=>ShowPage(0));Button("Achievements",card.transform,new Vector2(.25f,.76f),new Vector2(.44f,.82f),"THÀNH TÍCH",()=>ShowPage(1));Button("Rules",card.transform,new Vector2(.46f,.76f),new Vector2(.65f,.82f),"CÁCH XẾP HẠNG",()=>ShowPage(2));
             listView=Box("MissionList",card.transform,new Vector2(.04f,.16f),new Vector2(.65f,.73f),Color.clear);scroll=Scroll("Tasks",listView.transform,Vector2.zero,Vector2.one,15*48+8,out content);
-            for(int i=0;i<15;i++)
+            for(int i=0;i<rows.Length;i++)
             {
                 var row=Box("Mission_"+i,content,Vector2.zero,Vector2.one,Color.clear);var rt=(RectTransform)row.transform;rt.anchorMin=new Vector2(0,1);rt.anchorMax=Vector2.one;rt.pivot=new Vector2(.5f,1);rt.anchoredPosition=new Vector2(0,-i*48-4);rt.sizeDelta=new Vector2(0,44);rowBackgrounds[i]=row.GetComponent<Image>();
                 var mark=new GameObject("CompletionMark",typeof(RectTransform),typeof(CanvasRenderer),typeof(JournalCheck));mark.transform.SetParent(row.transform,false);var mr=(RectTransform)mark.transform;mr.anchorMin=mr.anchorMax=new Vector2(0,.5f);mr.anchoredPosition=new Vector2(21,0);mr.sizeDelta=new Vector2(23,23);marks[i]=mark.GetComponent<JournalCheck>();marks[i].raycastTarget=false;
                 rows[i]=Text("Task",row.transform,new Vector2(.075f,.03f),new Vector2(.98f,.97f),17,Cream);
             }
-            ruleView=Box("RulesView",card.transform,new Vector2(.04f,.16f),new Vector2(.96f,.73f),Color.clear);var rs=Scroll("RankingRules",ruleView.transform,Vector2.zero,Vector2.one,1190,out var ruleContent);rules=Text("RulesText",ruleContent,new Vector2(.02f,0),new Vector2(.98f,1),18,Cream);rules.alignment=TextAlignmentOptions.TopLeft;
+            ruleView=Box("RulesView",card.transform,new Vector2(.04f,.16f),new Vector2(.96f,.73f),Color.clear);ruleScroll=Scroll("RankingRules",ruleView.transform,Vector2.zero,Vector2.one,2400,out ruleContent);rules=Text("RulesText",ruleContent,new Vector2(.02f,0),new Vector2(.98f,1),18,Cream);rules.alignment=TextAlignmentOptions.TopLeft;
             side=Box("Statistics",card.transform,new Vector2(.68f,.16f),new Vector2(.96f,.73f),new Color(.06f,.11f,.12f));rank=Text("Rank",side.transform,new Vector2(.05f,.70f),new Vector2(.95f,.98f),82,Gold);rank.alignment=TextAlignmentOptions.Center;
             score=Text("Score",side.transform,new Vector2(.04f,.61f),new Vector2(.96f,.71f),17,Gold);score.alignment=TextAlignmentOptions.Center;
             metrics=Text("StatisticsText",side.transform,new Vector2(.08f,.035f),new Vector2(.95f,.61f),17,Cream);metrics.enableAutoSizing=true;metrics.fontSizeMin=13;metrics.fontSizeMax=17;metrics.alignment=TextAlignmentOptions.TopLeft;

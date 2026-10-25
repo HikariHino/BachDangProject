@@ -23,7 +23,8 @@ namespace BeachBoatStory
         public int ExpectedBeat => progress < rhythm.Length ? rhythm[progress] : 0;
         public float Elapsed => elapsed;
         public const int DrumBeats=8;
-        public float TimeLimit => kind == ActivityKind.WarDrum ? 55f : 105f;
+        public const float WarDrumTimeLimit=55f;
+        public float TimeLimit => kind == ActivityKind.WarDrum ? WarDrumTimeLimit : 105f;
         public float TimeRemaining => Mathf.Max(0f, TimeLimit - elapsed);
         public bool Failed { get; private set; }
         public bool IsSelectingCargo => kind == ActivityKind.SupplyRelay && !Failed && selectedCargo == 0 && !returningToWarehouse;
@@ -52,6 +53,7 @@ namespace BeachBoatStory
         {
             story = BachDangStoryManager.Instance;
             player = story != null ? story.GetPlayerTransform() : null;
+            if(kind==ActivityKind.WarDrum)DrumTrainingGround.Ensure(this);
             if (kind == ActivityKind.SupplyRelay) displayName = "Chuẩn bị vật tư cho doanh trại";
             SetMarkers(-1);
         }

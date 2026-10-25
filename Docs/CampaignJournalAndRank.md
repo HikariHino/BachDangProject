@@ -12,30 +12,69 @@
   victory-report dialogue advances to celebration; closing the celebration
   dialogue opens the results. Results can be stored in any of the ten slots.
 
-## Score
+## Timed ranks (rules version 2)
 
-The final score is the rounded sum of four categories, clamped to 0–100.
-Ranks are S at 90+, A at 75+, B at 60+, and C below 60. Deaths and allied
-casualties are recorded for achievements, but do not change these four
-user-requested score categories.
+A rank requires **all eight conditions**: drum, three levels at each of the
+four trades, all five stake clusters, personal kills, and campaign time.
+The ending awards the highest rank satisfying every condition; otherwise C.
+Fast results in another activity cannot compensate for a missing or slow one.
+The old weighted score is no longer used or displayed.
 
-| Category | Maximum | Calculation |
-| --- | ---: | --- |
-| Minigames | 35 | Best winning elapsed time / that difficulty's time limit, averaged over war drum plus all 12 village trade levels. Ratios at most 40%, 60%, 80%, and the remaining valid finishes award 35, 28, 20, and 12 points per level. Missing new-game records award zero. Mistake time penalties remain included. |
-| Stake operation | 25 | Active time from starting the first cluster until all five are complete, including rowing and the recovery incident. Reference = max(180 seconds, nearest-neighbor route distance / (0.65 × rowboat speed) + five-cluster work duration + 90 seconds). At most reference, 1.5× reference, 2× reference, and longer award 25, 20, 15, and 8 points. |
-| Personal kills | 25 | 25 × min(unique personal enemy kills / ceil(initial enemy count × 0.25), 1). Both sword and bow count. Allied kills and repeated kills of one pooled enemy identity do not. |
-| Campaign time | 15 | At most 40, 60, 90 minutes, and longer award 15, 12, 8, and 4. Uses actual active elapsed seconds; excludes menus, Tab, opening narration, dialogue and defeat screen. |
+| Condition | S | A | B |
+| --- | --- | --- | --- |
+| Drum, two full rounds | ≤22 s | ≤33 s | ≤44 s |
+| Each individual trade level | ≤60% of its timeout | ≤80% | ≤95% |
+| Stake operation | ≤reference | ≤1.5×reference | ≤2×reference |
+| Personal kills | ≥target | ≥ceil(0.75×target) | ≥ceil(0.5×target) |
+| Campaign time, reported victory | ≤40 min | ≤60 min | ≤90 min |
+
+Trade limits come directly from `VillageWorkStall.LimitFor`, shared with
+the minigame timer. Timber Dễ/Vừa/Khó timeouts are 100/135/180 s, rope
+100/75/55 s, rice 100/100/110 s, and provisions 90/70/50 s. Every level
+has visible absolute S/A/B deadlines, its actual best time, and earned tier
+in both the journal and minigame UI. Mistake penalties remain included.
+
+Stake reference = max(180 seconds, nearest-neighbor route distance /
+(0.65 × rowboat speed) + five-cluster work duration + 90 seconds).
+The timer covers planting, rowing and the recovery incident. Kill target =
+ceil(initial enemy count ×0.25), normally 16; resulting S/A/B targets are
+16/12/8. Each enemy identity counts once, using player sword or bow kills.
+Campaign time excludes menus, Tab, opening narration, dialogue and defeat.
+Its achievement is confirmed only after reporting victory.
 
 Records survive checkpoints and save/load. Replaying a minigame can improve
 its best successful record before the ending. The final result freezes after
 the victory report; it cannot change by leaving the results open.
 
-Old version-1 slots remain supported. Previous task checks are inferred using
-the explicit story order, not numeric enum order. Missing historical timing
-is labeled **Tạm tính**: unknown minigames use 20/35, unknown stake timing
-15/25, and unknown campaign timing 8/15. Existing real records and kill
-counts remain in use. Perfect-survival and S-rank achievements require a
-journey with complete historical statistics.
+Old save-file version-1 slots remain supported. Previous task checks use the
+explicit story order. Missing historical timing is shown as **Chưa ghi**;
+there is no assumed passing achievement. Endings saved under the old point
+rules are re-evaluated from real records and marked with rankRulesVersion=2.
+Missing historical data remains **Tạm tính**. The legacy finalScore field is
+retained for file compatibility but is no longer used to determine rank.
+
+## Nested missions and optional training
+
+The mission page expands supply preparation into four trade headings and
+12 Dễ/Vừa/Khó subtasks. Green checks show actual completed levels; old saves
+can show completion with a missing time until replayed. Parent supply
+completion still requires collecting all four finished trades. The 15 main
+mission count excludes these detail rows and optional activities.
+
+Stamina training is a separate optional heading with three levels, +20 max
+stamina each and +60 total. It may be skipped without blocking story progress
+or any rank. Its reward and completion state continue to use PlayerVitals.
+
+## Drum training station
+
+The former isolated drum is relocated at runtime to a clear side of the
+camp yard, relative to CampLayoutOrigin (-48, -120 in X/Z). This leaves the
+main central path clear. It has a solid timber rack, hide drumheads, bronze
+rims/studs, banners and a training sign. The station name stays unchanged
+for save compatibility; nearby E interaction uses a 26-unit radius.
+The new command UI presents a drum face, eight-beat sequence, military
+signals, two-round progress, timer and exact rank deadlines. The existing
+1/2/3 input and mistake penalty are preserved.
 
 ## Battle behavior
 
@@ -110,7 +149,7 @@ Editor entry points: `BeachBoatMarineJournalPlaytest.RunInEditor()`,
 `BeachBoatFramePacingReview.RunInEditor("label")`. They preserve the open
 Editor. Generated reports and screenshots are under ignored `Logs/`.
 
-Validation with the enlarged fleets: 69 marine/journal/save/rank checks,
+Validation with the enlarged fleets and timed achievement rules: 129 marine/journal/save/rank/drum checks,
 19 navigation checks covering 16,000 allied hull poses, and 12 concurrent
 fleet/tide/wreck/withdrawal checks passed. Deck regressions compare boot soles
 against real triangle intersections on lower and raised decks, including

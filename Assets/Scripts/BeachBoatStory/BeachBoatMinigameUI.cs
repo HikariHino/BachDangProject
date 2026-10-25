@@ -11,7 +11,8 @@ namespace BeachBoatStory
         public static BeachBoatMinigameUI Instance { get; private set; }
 
         GameObject drumRoot, relayRoot, relayTravelRoot, failureRoot, choicesRoot;
-        TMP_Text drumRound, expectedBeat, feedback, timer, relayTitle, relayHint, relayOrder, relayTime, failureTitle;
+        TMP_Text drumRound, expectedBeat, feedback, timer, relayTitle, relayHint, relayOrder, relayTime, failureTitle,drumTimingGoals,commandName;
+        static readonly string[] Commands={"TẬP HỢP","TIẾN QUÂN","GIỮ TRẬN"};
         TMP_Text relayTravelTitle, relayTravelHint, relayTravelTime;
         RectTransform drumProgress, relayProgress;
         Image[] beatCards;
@@ -73,6 +74,8 @@ namespace BeachBoatStory
 
         void RefreshDrum(BeachBoatMinigameStation game)
         {
+            drumTimingGoals.text=CampaignProgress.Instance.TimingBands(0);
+            commandName.text=game.ExpectedBeat>=1&&game.ExpectedBeat<=3?Commands[game.ExpectedBeat-1]:"HOÀN THÀNH";
             drumRound.text = $"LƯỢT {game.Round + 1}/2";
             expectedBeat.text = game.ExpectedBeat.ToString();
             timer.text = $"CÒN {game.TimeRemaining:0}s   •   Sai {game.Mistakes}";
@@ -145,48 +148,53 @@ namespace BeachBoatStory
 
         void BuildDrumUI()
         {
-            drumRoot = Panel("DrumMinigame", transform, Vector2.zero, Vector2.one, new Color(0, 0, 0, .48f));
-            var card = Panel("DrumBoard", drumRoot.transform, new Vector2(.18f, .13f), new Vector2(.82f, .86f), Ink);
+            drumRoot = Panel("DrumMinigame", transform, Vector2.zero, Vector2.one, new Color(.012f,.025f,.022f,.78f));
+            var card = Panel("DrumBoard", drumRoot.transform, new Vector2(.08f, .08f), new Vector2(.92f, .92f), Ink);
             Outline(card, new Color(.72f, .49f, .17f, .9f), 2f);
-
-            var title = Text("Title", card.transform, new Vector2(.05f, .86f), new Vector2(.72f, .96f), 30, FontStyles.Bold);
-            title.text = "HIỆU LỆNH TRỐNG TRẬN"; title.color = Gold;
-            drumRound = Text("Round", card.transform, new Vector2(.72f, .87f), new Vector2(.95f, .95f), 20, FontStyles.Bold);
+            Panel("HeaderRule",card.transform,new Vector2(.04f,.80f),new Vector2(.96f,.804f),Gold);
+            var title = Text("Title", card.transform, new Vector2(.04f, .87f), new Vector2(.74f, .97f), 34, FontStyles.Bold);
+            title.text = "LUYỆN HIỆU LỆNH"; title.color = Gold;
+            var subtitle=Text("CampCaption",card.transform,new Vector2(.04f,.82f),new Vector2(.74f,.88f),16);subtitle.text="SÂN LUYỆN QUÂN • DOANH TRẠI NGÔ QUYỀN";subtitle.color=new Color(.65f,.73f,.66f);
+            drumRound = Text("Round", card.transform, new Vector2(.74f, .87f), new Vector2(.96f, .96f), 20, FontStyles.Bold);
             drumRound.alignment = TextAlignmentOptions.Right;
-            var rule = Text("Rule", card.transform, new Vector2(.05f, .76f), new Vector2(.95f, .85f), 18);
-            rule.text = "Hai lượt, mỗi lượt 8 nhịp. Đánh số đang sáng; sai mất 1 giây, giữ nhịp đã đúng.";
-            rule.color = new Color(.82f, .82f, .77f);
-
-            var cue = Text("Cue", card.transform, new Vector2(.35f, .54f), new Vector2(.65f, .76f), 72, FontStyles.Bold);
+            Panel("CommandLedger",card.transform,new Vector2(.04f,.33f),new Vector2(.32f,.76f),new Color(.10f,.14f,.12f));
+            var legend=Text("LegendTitle",card.transform,new Vector2(.06f,.68f),new Vector2(.30f,.74f),20,FontStyles.Bold);legend.text="QUÂN LỆNH";legend.color=Gold;
+            for(int i=0;i<3;i++)
+            {var row=Text("Command"+i,card.transform,new Vector2(.06f,.59f-i*.085f),new Vector2(.30f,.67f-i*.085f),20,FontStyles.Bold);row.text=$"{i+1}  /  {Commands[i]}";}
+            var rule = Text("Rule", card.transform, new Vector2(.05f,.275f),new Vector2(.95f,.325f),16);
+            rule.text="Đánh hiệu lệnh đang sáng • 2 lượt × 8 nhịp • Bấm 1 / 2 / 3 hoặc nút bên dưới • Sai: cộng 1 giây";rule.color=new Color(.73f,.78f,.71f);
+            var face=new GameObject("WarDrumFace",typeof(RectTransform),typeof(CanvasRenderer),typeof(DrumFaceGraphic));face.transform.SetParent(card.transform,false);var rect=(RectTransform)face.transform;rect.anchorMin=new Vector2(.48f,.36f);rect.anchorMax=new Vector2(.83f,.69f);rect.offsetMin=rect.offsetMax=Vector2.zero;face.GetComponent<DrumFaceGraphic>().raycastTarget=false;
+            var cue = Text("Cue", card.transform, new Vector2(.48f,.43f),new Vector2(.83f,.63f),72,FontStyles.Bold);
             expectedBeat = cue; cue.alignment = TextAlignmentOptions.Center; cue.color = Gold;
-
+            commandName=Text("ActiveCommand",card.transform,new Vector2(.38f,.33f),new Vector2(.96f,.39f),22,FontStyles.Bold);commandName.alignment=TextAlignmentOptions.Center;commandName.color=Gold;
             beatCards = new Image[BeachBoatMinigameStation.DrumBeats]; beatLabels = new TMP_Text[BeachBoatMinigameStation.DrumBeats];
             for (int i = 0; i < beatCards.Length; i++)
             {
-                float slot=.89f/beatCards.Length;float left = .055f + i * slot;
-                var beat = Panel("Beat_" + (i + 1), card.transform, new Vector2(left, .43f), new Vector2(left + slot*.8f, .51f), new Color(.24f,.23f,.2f));
+                float slot=.58f/beatCards.Length;float left = .38f + i * slot;
+                var beat = Panel("Beat_" + (i + 1), card.transform, new Vector2(left,.70f),new Vector2(left+slot*.84f,.77f),new Color(.15f,.19f,.16f));
                 beatCards[i] = beat.GetComponent<Image>();
                 beatLabels[i] = Text("Number", beat.transform, Vector2.zero, Vector2.one, 18, FontStyles.Bold);
                 beatLabels[i].alignment = TextAlignmentOptions.Center;
             }
 
-            var track = Panel("ProgressTrack", card.transform, new Vector2(.055f,.365f), new Vector2(.945f,.39f), new Color(.20f,.20f,.18f));
+            var track = Panel("ProgressTrack", card.transform, new Vector2(.04f,.25f),new Vector2(.96f,.263f),new Color(.20f,.20f,.18f));
             drumProgress = Panel("Fill", track.transform, Vector2.zero, new Vector2(0,1), Green).GetComponent<RectTransform>();
-            feedback = Text("Feedback",card.transform,new Vector2(.05f,.28f),new Vector2(.70f,.35f),18,FontStyles.Bold);
-            timer = Text("Timer",card.transform,new Vector2(.70f,.28f),new Vector2(.95f,.35f),17);
+            feedback = Text("Feedback",card.transform,new Vector2(.04f,.17f),new Vector2(.65f,.23f),17,FontStyles.Bold);
+            timer = Text("Timer",card.transform,new Vector2(.73f,.17f),new Vector2(.96f,.23f),20,FontStyles.Bold);
             timer.alignment = TextAlignmentOptions.Right;
 
             for (int key = 1; key <= 3; key++)
             {
                 int value = key;
-                float left = .17f + (key - 1) * .23f;
-                var button = Button("Drum" + key, card.transform, new Vector2(left,.085f),new Vector2(left+.19f,.245f));
+                float left = .04f + (key - 1) * .312f;
+                var button = Button("Drum" + key, card.transform, new Vector2(left,.065f),new Vector2(left+.296f,.16f));
                 var label = Text("Label",button.transform,Vector2.zero,Vector2.one,28,FontStyles.Bold);
-                label.text = key + "\n<size=55%>ĐÁNH TRỐNG</size>"; label.alignment = TextAlignmentOptions.Center;
+                label.text = key + "  <size=65%>"+Commands[key-1]+"</size>"; label.alignment = TextAlignmentOptions.Center;
                 button.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => BeachBoatMinigameStation.Active?.SubmitRhythm(value));
             }
-            var exit = Text("Exit",card.transform,new Vector2(.72f,.015f),new Vector2(.95f,.07f),14);
+            var exit = Text("Exit",card.transform,new Vector2(.76f,.012f),new Vector2(.96f,.05f),14);
             exit.text = "ESC  Thoát"; exit.alignment = TextAlignmentOptions.Right; exit.color = new Color(.7f,.7f,.66f);
+            drumTimingGoals=Text("TimingGoals",card.transform,new Vector2(.04f,.012f),new Vector2(.75f,.05f),14);drumTimingGoals.color=Gold;
         }
 
         void BuildRelayUI()
@@ -284,6 +292,20 @@ namespace BeachBoatStory
         void OnDestroy()
         {
             if (Instance == this) Instance = null;
+        }
+    }
+    public sealed class DrumFaceGraphic : MaskableGraphic
+    {
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();var r=GetPixelAdjustedRect();var center=r.center;float radius=Mathf.Min(r.width,r.height)*.48f;
+            void Disc(Vector2 c,float outer,Color tint)
+            {
+                int start=vh.currentVertCount;vh.AddVert(c,tint,Vector2.zero);
+                for(int i=0;i<=64;i++){float a=i*Mathf.PI/32;vh.AddVert(c+new Vector2(Mathf.Cos(a),Mathf.Sin(a))*outer,tint,Vector2.zero);if(i>0)vh.AddTriangle(start,start+i,start+i+1);}
+            }
+            Disc(center,radius,new Color(.36f,.21f,.09f));Disc(center,radius*.94f,new Color(.83f,.61f,.29f));Disc(center,radius*.88f,new Color(.21f,.15f,.075f));Disc(center,radius*.82f,new Color(.56f,.39f,.19f));Disc(center,radius*.74f,new Color(.29f,.23f,.13f));
+            for(int i=0;i<16;i++){float angle=i*Mathf.PI/8;Disc(center+new Vector2(Mathf.Cos(angle),Mathf.Sin(angle))*radius*.85f,radius*.025f,new Color(.96f,.79f,.43f));}
         }
     }
 }

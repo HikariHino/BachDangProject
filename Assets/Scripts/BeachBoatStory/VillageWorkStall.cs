@@ -48,7 +48,8 @@ namespace BeachBoatStory
         public bool LastCorrect {get;private set;}
         public int FeedbackVersion {get;private set;}
         public Vector3 InteractionPosition=>interactionPoint!=null?interactionPoint.position:transform.position;
-        public float TimeLimit=>kind==WorkKind.Rice?(Difficulty==0?100:Difficulty==1?100:110):kind==WorkKind.Timber?(Difficulty==0?100:Difficulty==1?135:180):kind==WorkKind.Rope?(Difficulty==0?100:Difficulty==1?75:55):(Difficulty==0?90:Difficulty==1?70:50);
+        public static float LimitFor(WorkKind work,int difficulty)=>work==WorkKind.Rice?(difficulty==0?100:difficulty==1?100:110):work==WorkKind.Timber?(difficulty==0?100:difficulty==1?135:180):work==WorkKind.Rope?(difficulty==0?100:difficulty==1?75:55):(difficulty==0?90:difficulty==1?70:50);
+        public float TimeLimit=>LimitFor(kind,Difficulty);
         public int Goal=>kind==WorkKind.Rope?1:kind==WorkKind.Rice?Mathf.Min(3,2+Difficulty):2+Difficulty;
         public int MistakeLimit=>kind==WorkKind.Timber||kind==WorkKind.Rice?3:Difficulty==2?2:3;
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);

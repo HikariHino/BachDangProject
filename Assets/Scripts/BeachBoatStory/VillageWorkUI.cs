@@ -9,7 +9,7 @@ namespace BeachBoatStory
     {
         static VillageWorkUI instance;
         GameObject shade,instructions,work,result,woodChoices,foodChoices,ropeGame,riceGame;
-        TMP_Text title,rules,stats,task,feedback,resultTitle,resultBody,startLabel;
+        TMP_Text title,rules,stats,task,feedback,resultTitle,resultBody,startLabel,timingGoals;
         TMP_Text[] difficultyLabels,woodLabels,foodLabels,riceLabels;
         Button[] difficultyButtons;
         GameObject[] woodButtons;
@@ -48,6 +48,7 @@ namespace BeachBoatStory
                 difficultyLabels[i]=b.GetComponentInChildren<TMP_Text>();difficultyButtons[i]=b.GetComponent<Button>();
             }
             var start=Click("StartWork",instructions.transform,new Vector2(.25f,.02f),new Vector2(.75f,.18f),"BẮT ĐẦU",()=>VillageWorkStall.Active?.StartAttempt(selectedDifficulty));startLabel=start.GetComponentInChildren<TMP_Text>();
+            timingGoals=Label("TimingGoals",instructions.transform,new Vector2(.04f,.18f),new Vector2(.96f,.24f),14,Gold);
             work=Box("Work",card,new Vector2(.05f,.05f),new Vector2(.95f,.80f),Color.clear);
             stats=Label("Stats",work.transform,new Vector2(0,.90f),new Vector2(1,1),19,Color.white);
             var clock=Box("Clock",work.transform,new Vector2(0,.85f),new Vector2(1,.875f),new Color(.2f,.2f,.2f));clockFill=Box("Fill",clock.transform,Vector2.zero,Vector2.one,Gold).GetComponent<RectTransform>();
@@ -99,6 +100,7 @@ namespace BeachBoatStory
             result=Box("Result",card,new Vector2(.05f,.06f),new Vector2(.95f,.80f),Color.clear);
             resultTitle=Label("Heading",result.transform,new Vector2(.04f,.70f),new Vector2(.96f,.93f),35,Gold);
             resultBody=Label("Details",result.transform,new Vector2(.04f,.36f),new Vector2(.96f,.67f),22,Color.white);
+            resultBody.enableAutoSizing=true;resultBody.fontSizeMin=16;resultBody.fontSizeMax=22;
             Click("ConfirmResult",result.transform,new Vector2(.20f,.06f),new Vector2(.80f,.26f),"",()=>{var s=VillageWorkStall.Active;if(s==null)return;if(s.Phase==VillageWorkStall.WorkPhase.Won)s.ClaimReward();else s.StartAttempt(s.Difficulty);});
             shade.SetActive(false);
         }
@@ -112,6 +114,7 @@ namespace BeachBoatStory
             if(intro)
             {
                 selectedDifficulty=s.Difficulty;
+                timingGoals.text=CampaignProgress.Instance.TimingBands(1+(int)s.kind*3+selectedDifficulty);
                 rules.text=s.Instructions+"\n\nHoàn thành lần lượt Dễ → Vừa → Khó để nhận vật tư. Z: hoàn tác; C: làm lại phần này. Không hoàn thời gian/lỗi. Mỗi lỗi mất 2 giây. X: rời sạp. ESC: tạm dừng.";
                 for(int i=0;i<3;i++){difficultyLabels[i].color=i==selectedDifficulty?Gold:Color.white;difficultyButtons[i].interactable=i<=s.UnlockedDifficulty;difficultyLabels[i].text=new[]{"DỄ","VỪA","KHÓ"}[i]+(i<s.CompletedLevels?" • XONG":i>s.UnlockedDifficulty?" • KHÓA":"");}
                 startLabel.text="BẮT ĐẦU  •  "+new[]{"DỄ","VỪA","KHÓ"}[selectedDifficulty];return;
@@ -121,9 +124,11 @@ namespace BeachBoatStory
                 bool won=s.Phase==VillageWorkStall.WorkPhase.Won;
                 resultTitle.text=won?"LÀM TỐT LẮM!":"CHƯA HOÀN THÀNH";resultTitle.color=won?Green:new Color(1,.4f,.3f);
                 resultBody.text=won?$"Xong mức {new[]{"DỄ","VỪA","KHÓ"}[s.Difficulty]}: {s.Progress}/{s.Goal} phần việc trong {s.Elapsed:0.0}s.\n"+(s.Difficulty==2?"Nhận vật tư để tính tiến độ nhiệm vụ.":"Xác nhận để mở mức tiếp theo. Chưa nhận vật tư."):s.Feedback+"\nMức đã hoàn thành và các sạp khác vẫn được giữ.";
+                if(won){int index=1+(int)s.kind*3+s.Difficulty;resultBody.text+="\n"+CampaignProgress.Instance.TimingResult(index)+"\n"+CampaignProgress.Instance.TimingBands(index);}
                 result.transform.Find("ConfirmResult/Label").GetComponent<TMP_Text>().text=won?(s.Difficulty==2?"NHẬN VẬT TƯ  [ENTER]":"MỞ MỨC TIẾP THEO  [ENTER]"):"CHƠI LẠI  [R]";return;
             }
             stats.text=$"{new[]{"DỄ","VỪA","KHÓ"}[s.Difficulty]}  •  CÒN {s.TimeRemaining:0.0}s  •  XONG {s.Progress}/{s.Goal}  •  SAI {s.Mistakes}/{s.MistakeLimit}";
+            stats.text+="\n<size=14>"+CampaignProgress.Instance.TimingBands(1+(int)s.kind*3+s.Difficulty)+"</size>";
             undoButton.interactable=s.CanUndo;restoreButton.interactable=s.CanRestore;
             stats.color=s.TimeRemaining<7?new Color(1,.4f,.3f):Color.white;
             clockFill.anchorMax=new Vector2(s.TimeRemaining/s.TimeLimit,1);progressFill.anchorMax=new Vector2(s.Progress/(float)s.Goal,1);
