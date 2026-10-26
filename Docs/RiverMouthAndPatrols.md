@@ -7,6 +7,9 @@ new stakes are assigned to those same clusters. Local planting approaches remain
 clear. Stakes stay below high tide and emerge during the existing controlled ebb.
 Enemy fleet entry, dispersed wreck berths and the simultaneous ambush remain unchanged.
 
+The later [dock-access revision](StakeFieldDockAccess.md) irregularly scatters the
+extension stakes and reserves a narrow winding passage into the reporting pier.
+
 The ten allied vessels now comprise two existing warships and eight light patrol
 boats using the player's wooden hull at its gameplay footprint. Their NPCs retain
 normal character stature. Each light boat carries one seated operator before

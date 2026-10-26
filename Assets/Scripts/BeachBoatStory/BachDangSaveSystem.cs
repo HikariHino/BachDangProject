@@ -108,7 +108,7 @@ namespace BeachBoatStory
                 activities=UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsSortMode.None).Select(s=>new BachDangSaveData.Activity{name=s.name,completed=s.HasCompleted,bestTime=s.BestTime,bestMistakes=s.BestMistakes}).ToArray(),
                 tide=TideSystem.Instance?.CaptureSave(),fleet=EnemyFleetDirector.Instance?.CaptureSave(),
                 ships=EnemyFleetDirector.Instance.enemyShips.Select(s=>s.CaptureSave()).ToArray(),
-                guards=RiverPlayerCombat.Instance.guards.Select(g=>new BachDangSaveData.Guard{id=GuardId(g),ship=g.ship.name,health=g.Health,active=g.gameObject.activeSelf,independent=g.IsIndependentBoarder,floatingCorpse=g.GetComponent<RiverCorpse>()!=null&&g.GetComponent<RiverCorpse>().enabled,position=g.transform.position,rotation=g.transform.rotation}).ToArray(),
+                guards=RiverPlayerCombat.Instance.guards.Select(g=>new BachDangSaveData.Guard{id=GuardId(g),ship=g.ship.name,health=g.Health,active=g.gameObject.activeSelf,independent=g.IsIndependentBoarder,floatingCorpse=g.GetComponent<RiverCorpse>()!=null&&g.GetComponent<RiverCorpse>().enabled,position=g.transform.position,rotation=g.transform.rotation,anchored=!g.IsIndependentBoarder,localPosition=g.ship.transform.InverseTransformPoint(g.transform.position),localRotation=Quaternion.Inverse(g.ship.transform.rotation)*g.transform.rotation}).ToArray(),
                 boarding=RiverBoardingCombat.Instance?.CaptureSave(),dialogue=StoryDialogueUI.Instance?.CaptureSave(),
                 campaign=CampaignProgress.Instance?.Capture(),
                 patrols=UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None).Select(p=>new BachDangSaveData.Patrol{name=p.name,position=p.transform.position,rotation=p.transform.rotation,layoutVersion=AmbientRiverBoat.PatrolLayoutVersion}).ToArray()
@@ -128,18 +128,22 @@ namespace BeachBoatStory
             var stalls=VillagePreparationQuest.Instance.stalls;for(int i=0;i<stalls.Length;i++)stalls[i].RestoreLearningProgress(i<data.stallLevels.Length?data.stallLevels[i]:0);
             foreach(var activity in data.activities??Array.Empty<BachDangSaveData.Activity>())
                 foreach(var station in UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsInactive.Include,FindObjectsSortMode.None))if(station.name==activity.name)station.RestoreSave(activity);
+            if(data.tide!=null){BachDangBattleTimeline.Instance.RestoreSave(data.tide);TideSystem.Instance.RestoreSave(data.tide);}
+            BachDangBattleTimeline.Instance.ReconcileAfterLoad((BachDangStoryManager.StoryState)data.storyState);
             foreach(var patrol in UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None))
             {var saved=(data.patrols??Array.Empty<BachDangSaveData.Patrol>()).FirstOrDefault(p=>p.name==patrol.name);if(saved!=null)patrol.RestorePatrol(saved);}
-            if(data.tide!=null){BachDangBattleTimeline.Instance.RestoreSave(data.tide);TideSystem.Instance.RestoreSave(data.tide);}
             boat.RestoreSave(data.aboard,data.boatPosition,data.boatRotation);
             foreach(var saved in data.ships??Array.Empty<BachDangSaveData.Ship>()){var ship=EnemyFleetDirector.Instance.enemyShips.FirstOrDefault(s=>s.name==saved.name);ship?.RestoreSave(saved);}
-            RiverBoardingCombat.Instance.RestoreSave(data.boarding);
             foreach(var saved in data.guards??Array.Empty<BachDangSaveData.Guard>())
             {var guard=RiverPlayerCombat.Instance.guards.FirstOrDefault(g=>GuardId(g)==saved.id);guard?.RestoreSave(saved);}
+            // Restore traversal after guards: their ResetGuard/RestoreDeck calls must
+            // not replace an already-restored swimming, boarding or sword pose.
+            RiverBoardingCombat.Instance.RestoreSave(data.boarding);
             if(data.fleet!=null){RiverPlayerCombat.Instance.RestoreSave(data.fleet);EnemyFleetDirector.Instance.RestoreSave(data.fleet);}
             var player=session.player;var body=player.GetComponent<Rigidbody>();player.transform.SetPositionAndRotation(data.playerPosition,data.playerRotation);body.position=data.playerPosition;body.rotation=data.playerRotation;
             if(!body.isKinematic){body.linearVelocity=Vector3.zero;body.angularVelocity=Vector3.zero;}
-            player.GetComponent<PlayerVitals>().RestoreSave(data);Physics.SyncTransforms();
+            player.GetComponent<PlayerVitals>().RestoreSave(data);
+            RiverBoardingCombat.Instance.ReconcileAfterLoad(data);Physics.SyncTransforms();
             StoryDialogueUI.Instance.RestoreSave(data.dialogue);
             session.storyCamera.GetComponent<Camera_Script>().SnapToTarget();BachDangPreferences.Apply();
             QuestCheckpoint.Instance.Capture((BachDangStoryManager.StoryState)data.storyState);story.UpdateUI();

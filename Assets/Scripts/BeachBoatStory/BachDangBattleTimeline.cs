@@ -63,13 +63,17 @@ namespace BeachBoatStory
                     SetMoment(BattleMoment.Preparation, 7.25f, "Dân binh chuẩn bị cọc gỗ", "Triều thấp", immediate);
                     SetFreeTide(false, immediate); break;
                 case BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver:
-                case BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp:
                     SetMoment(BattleMoment.Preparation, 8f, "Đóng cọc ngầm ở lòng sông", "Triều rút — bãi sông lộ", immediate);
+                    SetFreeTide(false, immediate);
+                    break;
+                case BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp:
+                    SetMoment(BattleMoment.Preparation, 8.25f, "Trận địa đã sẵn sàng — trở về báo cáo", "TRIỀU DÂNG — nước phủ cọc, đường về bến thông thoáng", immediate);
+                    HoldHighWater(immediate);
                     break;
                 case BachDangStoryManager.StoryState.Act2_Completed:
                 case BachDangStoryManager.StoryState.Act3_PrepareForBattle:
                     SetMoment(BattleMoment.Preparation, 8.5f, "Quân mai phục vào vị trí hai bờ", "Triều bắt đầu dâng", immediate);
-                    SetFreeTide(true, immediate); break;
+                    HoldHighWater(immediate); break;
                 case BachDangStoryManager.StoryState.Act3_WaitForLowTide:
                     BeginLure(immediate); break;
                 case BachDangStoryManager.StoryState.Act3_Victory:
@@ -81,7 +85,7 @@ namespace BeachBoatStory
         public void BeginLure(bool immediate = false)
         {
             SetMoment(BattleMoment.LureAtHighTide, 9f, "Thuyền nhẹ ra cửa sông nhử địch", "TRIỀU CAO — cọc chìm dưới nước", immediate);
-            TideSystem.Instance?.HoldHighTide(this, immediate);
+            HoldHighWater(immediate);
         }
 
         public void MarkFleetInside()
@@ -102,8 +106,30 @@ namespace BeachBoatStory
 
         public void MarkVictory()
         {
-            SetMoment(BattleMoment.Victory, 11.5f, "Đại thắng Bạch Đằng", "Bãi cọc đã phá tan hạm đội địch");
-            TideSystem.Instance?.ReleaseTide(this);
+            SetMoment(BattleMoment.Victory, 11.5f, "Đại thắng Bạch Đằng — trở về báo công", "TRIỀU DÂNG — cọc ngập, xác thuyền địch còn tại trận địa");
+            HoldHighWater();
+        }
+
+        void HoldHighWater(bool immediate=false)
+        {
+            var tide=TideSystem.Instance;if(tide==null)return;
+            // The planting boat owns low water until the final work cluster finishes.
+            // Release that owner before reserving the return journey's high water.
+            tide.ReleaseTide(QuestRowboat.Instance);tide.HoldHighTide(this,immediate);
+        }
+        public void ReconcileAfterLoad(BachDangStoryManager.StoryState state)
+        {
+            switch(state)
+            {
+                case BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp:
+                case BachDangStoryManager.StoryState.Act2_Completed:
+                case BachDangStoryManager.StoryState.Act3_PrepareForBattle:
+                case BachDangStoryManager.StoryState.Act3_Victory:
+                case BachDangStoryManager.StoryState.Act3_Celebration:
+                    // Keep the saved height; correct old low-water targets and retain
+                    // a new save's in-progress rise without jumping to full flood.
+                    ApplyStoryState(state,false);break;
+            }
         }
 
         void SetMoment(BattleMoment moment, float hour, string eventLabel, string tideLabel, bool immediate = false)
@@ -131,7 +157,9 @@ namespace BeachBoatStory
         void SetFreeTide(bool high, bool immediate)
         {
             var tide = TideSystem.Instance;
-            if (tide != null && !tide.IsTideLocked) tide.SetTide(high, immediate);
+            if(tide==null)return;
+            tide.ReleaseTide(this);tide.ReleaseTide(QuestRowboat.Instance);
+            if(!tide.IsTideLocked)tide.SetTide(high,immediate);
         }
 
         void OnGUI()

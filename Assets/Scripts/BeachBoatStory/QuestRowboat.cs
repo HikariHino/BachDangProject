@@ -277,8 +277,7 @@ namespace BeachBoatStory
                 PrepareForBattle();
             if (tide != null)
             {
-                bool building = story != null && (story.currentState == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver ||
-                    story.currentState == BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp);
+                bool building = story != null && story.currentState == BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver;
                 if (building) tide.HoldLowTide(this); else tide.ReleaseLowTide(this);
             }
             // Kinematic navigation and the seated player advance once per rendered frame,

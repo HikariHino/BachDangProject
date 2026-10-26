@@ -63,7 +63,10 @@ namespace BeachBoatStory
             notice.text=message;notice.color=threat?new Color(1,.44f,.33f):White;
             var fleet=EnemyFleetDirector.Instance;var tide=TideSystem.Instance;float progress=0;
             if(fleet==null)return;
-            if(fleet.AmbushStarted){tideLabel.text=$"CỌC ĐÃ LỘ\nThuyền đắm {BachDangStoryManager.Instance.destroyedEnemyShips}/{fleet.ShipCount}";progress=1;tideFill.color=new Color(.42f,.88f,.65f);}
+            var state=BachDangStoryManager.Instance.currentState;
+            if(state==BachDangStoryManager.StoryState.Act3_Victory||state==BachDangStoryManager.StoryState.Act3_Celebration)
+            {progress=tide!=null?Mathf.InverseLerp(tide.lowTideY,tide.highTideY,TideSystem.CurrentWaterHeight):1;tideLabel.text=progress>.995f?"TRIỀU CAO • CỌC ĐÃ NGẬP\nTrở về báo công": "TRIỀU ĐANG DÂNG\nĐã thắng • Nước phủ bãi cọc";tideFill.color=new Color(.50f,.83f,.95f);}
+            else if(fleet.AmbushStarted){tideLabel.text=$"CỌC ĐÃ LỘ\nThuyền đắm {BachDangStoryManager.Instance.destroyedEnemyShips}/{fleet.ShipCount}";progress=1;tideFill.color=new Color(.42f,.88f,.65f);}
             else if(fleet.EbbStarted&&tide!=null){progress=tide.EbbProgress;tideLabel.text=$"THỦY TRIỀU ĐANG RÚT\nCòn {tide.EbbSecondsRemaining:0}s • Cọc dần lộ";tideFill.color=new Color(.50f,.83f,.95f);}
             else{tideLabel.text=$"ĐANG NHỬ ĐỊCH\nĐã vào bãi cọc {fleet.ShipsInside}/{fleet.ShipCount}";progress=fleet.ShipsInside/(float)Mathf.Max(1,fleet.ShipCount);tideFill.color=Gold;}
             tideFill.rectTransform.sizeDelta=new Vector2(208*Mathf.Clamp01(progress),3);

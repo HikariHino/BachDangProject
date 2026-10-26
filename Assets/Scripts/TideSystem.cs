@@ -179,6 +179,14 @@ public class TideSystem : MonoBehaviour
             ToggleTide();
         }
 
+        Step(Time.deltaTime);
+    }
+
+    /// <summary>Advance the saved tide target; paused game time does not advance water.</summary>
+    public void Step(float deltaTime)
+    {
+        if(deltaTime<=0)return;
+
         // 2. Chế độ Thủy Triều tự động lên xuống nhịp nhàng
         if (IsTideLocked)
         {
@@ -187,7 +195,7 @@ public class TideSystem : MonoBehaviour
         }
         else if (autoCycle)
         {
-            timer += Time.deltaTime;
+            timer += deltaTime;
             float phase = (timer / Mathf.Max(0.1f, cycleDuration)) * Mathf.PI * 2f - Mathf.PI / 2f;
             float t = (Mathf.Sin(phase) + 1f) / 2f;
             currentTargetY = Mathf.Lerp(lowTideY, highTideY, t);
@@ -198,11 +206,15 @@ public class TideSystem : MonoBehaviour
         Vector3 pos = transform.position;
         if (controlledEbb)
         {
-            ebbElapsed = Mathf.Min(ebbDuration, ebbElapsed + Time.deltaTime);
+            ebbElapsed = Mathf.Min(ebbDuration, ebbElapsed + deltaTime);
             pos.y = Mathf.Lerp(ebbStartY, lowTideY, Mathf.SmoothStep(0, 1, ebbElapsed / ebbDuration));
             if (ebbElapsed >= ebbDuration) controlledEbb = false;
         }
-        else pos.y = Mathf.Lerp(pos.y, currentTargetY, Time.deltaTime * 1.5f);
+        else
+        {
+            pos.y = Mathf.Lerp(pos.y, currentTargetY, deltaTime * 1.5f);
+            if(Mathf.Abs(pos.y-currentTargetY)<.01f)pos.y=currentTargetY;
+        }
         transform.position = pos;
 
         // Cập nhật biến toàn cục

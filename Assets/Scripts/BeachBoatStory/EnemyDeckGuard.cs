@@ -115,7 +115,16 @@ namespace BeachBoatStory
             foreach(var candidate in EnemyFleetDirector.Instance.enemyShips)if(candidate.name==data.ship){ship=candidate;break;}
             IsIndependentBoarder=data.independent;
             if(data.independent)transform.SetParent(BeachBoatQuestSession.Instance.transform,true);
-            transform.SetPositionAndRotation(data.position,data.rotation);gameObject.SetActive(data.active);
+            if(data.independent)transform.SetPositionAndRotation(data.position,data.rotation);
+            else
+            {
+                // A deck guard is a passenger, not an independent world-space actor.
+                // Legacy saves keep the authored station; new saves keep the relative pose.
+                if(data.anchored)transform.SetPositionAndRotation(ship.transform.TransformPoint(data.localPosition),ship.transform.rotation*data.localRotation);
+                if(BoatHullCollision.Get(ship.transform).TryDeckSurface(transform.position,out var floor))
+                {var p=transform.position;p.y=floor.y+.2f;transform.position=p;FitStandingOnDeck();}
+            }
+            gameObject.SetActive(data.active);
             Health=Mathf.Clamp(data.health,0,2);fall=Health==0?1:0;
             GetComponent<Collider>().enabled=Health>0;animator.enabled=Health>0;
             SetMelee(data.independent);if(Health==0){FinishDeathPose();animator.enabled=false;bow.gameObject.SetActive(false);if(data.floatingCorpse)RiverCorpse.Ensure(this);}
