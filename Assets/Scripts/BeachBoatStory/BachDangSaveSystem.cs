@@ -13,6 +13,7 @@ namespace BeachBoatStory
     {
         [Serializable] sealed class Envelope {public string payload,sha256;}
         public static BachDangSaveData PendingLoad;
+        public static bool PendingLoadSelectedManual;
 #if UNITY_EDITOR
         public static string TestDirectory;
 #endif
@@ -29,6 +30,17 @@ namespace BeachBoatStory
             return Path.Combine(directory,slot==1?"campaign938.json":$"campaign938-{slot:00}.json");
         }
         public static string SavePath=>SlotPath(ActiveSlot);
+        public static string TemporaryPath=>Path.Combine(Path.GetDirectoryName(SlotPath(1)),"campaign938-auto.json");
+        public static bool TryReadTemporary(out BachDangSaveData data)=>ReadFile(TemporaryPath,out data)||ReadFile(TemporaryPath+".bak",out data);
+        static long SaveTime(BachDangSaveData data)=>data.savedUtcTicks>0?data.savedUtcTicks:
+            DateTime.TryParse(data.savedAt,System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.AssumeLocal,out var time)?time.ToUniversalTime().Ticks:0;
+        public static bool TryReadResume(out BachDangSaveData data,out int slot)
+        {
+            data=null;slot=0;
+            for(int i=1;i<=SlotCount;i++)if(TryRead(i,out var candidate)&&(data==null||SaveTime(candidate)>SaveTime(data))){data=candidate;slot=i;}
+            if(TryReadTemporary(out var temporary)&&(data==null||SaveTime(temporary)>SaveTime(data))){data=temporary;slot=0;}
+            return data!=null;
+        }
         public static bool HasData(int slot)=>File.Exists(SlotPath(slot))||File.Exists(SlotPath(slot)+".bak");
         public static void SelectSlot(int slot){SlotPath(slot);ActiveSlot=slot;}
         public static bool TryRead(int slot,out BachDangSaveData data)
@@ -53,7 +65,8 @@ namespace BeachBoatStory
             bool Finite(float v)=>!float.IsNaN(v)&&!float.IsInfinity(v);
             return data!=null&&data.version==1&&data.scene=="beachBoat"&&Enum.IsDefined(typeof(BachDangStoryManager.StoryState),data.storyState)&&
                 Finite(data.playerPosition.x)&&Finite(data.playerPosition.y)&&Finite(data.playerPosition.z)&&
-                Finite(data.health)&&data.health>0&&Finite(data.maxHealth)&&data.maxHealth>0&&data.woods!=null&&data.stakes!=null&&data.stallLevels!=null;
+                Finite(data.health)&&data.health>0&&Finite(data.maxHealth)&&data.maxHealth>0&&data.woods!=null&&data.stakes!=null&&data.stallLevels!=null&&
+                (data.rowboatDurabilityVersion==0||(Finite(data.boatDurability)&&data.boatDurability>0&&data.boatDurability<=QuestRowboat.MaximumDurability));
         }
         static bool ReadFile(string path,out BachDangSaveData data)
         {
@@ -75,19 +88,32 @@ namespace BeachBoatStory
             ActiveSlot=previous;return false;
         }
         public static bool CanSave=>BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
-            !(QuestCheckpoint.Instance?.IsDefeated??false)&&!(ScreenFader.Instance?.IsTransitioning??false);
+            !(QuestCheckpoint.Instance?.IsDefeated??false)&&!(QuestRowboat.Instance?.IsBroken??false)&&!(ScreenFader.Instance?.IsTransitioning??false);
+        static bool WriteData(string path,BachDangSaveData data)
+        {
+            LastError="";
+            try
+            {
+                if(!Valid(data))throw new InvalidDataException("Invalid campaign state");
+                var payload=JsonUtility.ToJson(data);var envelope=new Envelope{payload=payload,sha256=Digest(payload)};
+                Directory.CreateDirectory(Path.GetDirectoryName(path));string temp=path+".tmp";
+                File.WriteAllText(temp,JsonUtility.ToJson(envelope),new UTF8Encoding(false));
+                if(!ReadFile(temp,out _))throw new InvalidDataException("Save verification failed");
+                if(File.Exists(path))File.Replace(temp,path,path+".bak");else File.Move(temp,path);
+                return true;
+            }
+            catch(Exception e) when(e is IOException||e is UnauthorizedAccessException||e is ArgumentException)
+            {LastError="Không thể lưu: "+e.Message;return false;}
+        }
+        public static bool SaveTemporary(BachDangSaveData data)=>CanSave&&WriteData(TemporaryPath,data);
         public static bool Save(string location)
         {
             LastError="";
             if(!CanSave){LastError="Hãy kết thúc thao tác đang làm trước khi lưu.";return false;}
             try
             {
-                var data=Capture(location);if(!Valid(data))throw new InvalidDataException("Invalid campaign state");
-                var payload=JsonUtility.ToJson(data);var envelope=new Envelope{payload=payload,sha256=Digest(payload)};
-                Directory.CreateDirectory(Path.GetDirectoryName(SavePath));string temp=SavePath+".tmp";
-                File.WriteAllText(temp,JsonUtility.ToJson(envelope),new UTF8Encoding(false));
-                if(!ReadFile(temp,out _))throw new InvalidDataException("Save verification failed");
-                if(File.Exists(SavePath))File.Replace(temp,SavePath,SavePath+".bak");else File.Move(temp,SavePath);
+                var data=Capture(location);if(!WriteData(SavePath,data))return false;
+                BachDangAutoSave.Instance?.AcceptSavedPoint(data);
                 QuestCheckpoint.Instance?.Capture((BachDangStoryManager.StoryState)data.storyState);
                 BeachBoatSoundscape.Instance?.PlayResult(true);return true;
             }
@@ -98,7 +124,8 @@ namespace BeachBoatStory
         {
             var session=BeachBoatQuestSession.Instance;var story=BachDangStoryManager.Instance;var vitals=session.player.GetComponent<PlayerVitals>();var boat=QuestRowboat.Instance;
             return new BachDangSaveData{
-                savedAt=DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),location=location,storyState=(int)story.currentState,woodCount=story.collectedWood,destroyedCount=story.destroyedEnemyShips,
+                savedAt=DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),savedUtcTicks=DateTime.UtcNow.Ticks,location=location,storyState=(int)story.currentState,woodCount=story.collectedWood,destroyedCount=story.destroyedEnemyShips,
+                rowboatDurabilityVersion=1,boatDurability=boat!=null?boat.Durability:QuestRowboat.MaximumDurability,
                 playerPosition=session.player.transform.position,playerRotation=session.player.transform.rotation,aboard=boat!=null&&boat.IsAboard,
                 boatPosition=boat!=null?boat.transform.position:Vector3.zero,boatRotation=boat!=null?boat.transform.rotation:Quaternion.identity,
                 health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,
@@ -118,9 +145,12 @@ namespace BeachBoatStory
         {
             if(!Valid(data))throw new InvalidDataException("Unsupported campaign save");
             var session=BeachBoatQuestSession.Instance;var story=BachDangStoryManager.Instance;var boat=QuestRowboat.Instance;
+            QuestCheckpoint.Instance?.PrepareForLoad();
+            CampaignJournalUI.Instance?.Close();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();
             BachDangFrontEnd.Instance?.ReleaseHiddenUI();
             foreach(var intro in UnityEngine.Object.FindObjectsByType<OpeningEvent>(FindObjectsInactive.Include,FindObjectsSortMode.None))intro.SkipOpening();
             StoryDialogueUI.Instance?.DismissForCheckpoint();EnemyFleetDirector.Instance.ResetForCheckpoint();
+            EnemyFleetDirector.Instance.GetComponent<RiverShoreArchers>()?.ResetAmbush();
             VillageWoodHunt.Instance.Restore(data);
             RiverStakeZone.Instance.RestoreCheckpoint(data.stakes);
             story.collectedWood=data.woodCount;story.destroyedEnemyShips=data.destroyedCount;
@@ -132,6 +162,7 @@ namespace BeachBoatStory
             BachDangBattleTimeline.Instance.ReconcileAfterLoad((BachDangStoryManager.StoryState)data.storyState);
             foreach(var patrol in UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None))
             {var saved=(data.patrols??Array.Empty<BachDangSaveData.Patrol>()).FirstOrDefault(p=>p.name==patrol.name);if(saved!=null)patrol.RestorePatrol(saved);}
+            boat.RestoreDurability(data.rowboatDurabilityVersion==0?QuestRowboat.MaximumDurability:data.boatDurability);
             boat.RestoreSave(data.aboard,data.boatPosition,data.boatRotation);
             foreach(var saved in data.ships??Array.Empty<BachDangSaveData.Ship>()){var ship=EnemyFleetDirector.Instance.enemyShips.FirstOrDefault(s=>s.name==saved.name);ship?.RestoreSave(saved);}
             foreach(var saved in data.guards??Array.Empty<BachDangSaveData.Guard>())

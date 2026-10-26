@@ -25,7 +25,7 @@ public static class BeachBoatNpcLoadPlaytest
     static void Finish(string error)
     {
         Directory.CreateDirectory("Logs");File.WriteAllText("Logs/NpcLoadPlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,phase,realSaveSlots=saves.Count,checks},Newtonsoft.Json.Formatting.Indented));
-        SessionState.SetBool(Flag,false);EditorApplication.isPlaying=false;
+        SessionState.SetBool(Flag,false);BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
     }
     static void Audit(string label)
     {
@@ -92,8 +92,10 @@ public static class BeachBoatNpcLoadPlaytest
             if(runtimeError!=null)throw new Exception(runtimeError);if(EditorApplication.timeSinceStartup-began>180)throw new Exception("NPC load regression timed out");
             if(phase==0)
             {
-                BachDangFrontEnd.Instance.Play();Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 for(int slot=1;slot<=BachDangSaveSystem.SlotCount;slot++)if(BachDangSaveSystem.TryRead(slot,out var data)){saves.Add(data);var path=BachDangSaveSystem.SlotPath(slot);if(File.Exists(path))hashes[path]=Hash(path);if(File.Exists(path+".bak"))hashes[path+".bak"]=Hash(path+".bak");}
+                BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/NpcLoadQA/"+DateTime.Now.ToString("yyyyMMdd-HHmmssfff"));
+                BachDangAutoSave.Instance.enabled=false;
+                BachDangFrontEnd.Instance.Play();Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 if(saves.Count==0)saves.Add(BachDangSaveSystem.Capture("No user slots; current-state fixture"));phase=1;return;
             }
             if(phase==1){ApplyAndCheck(saves[index],"Existing slot "+(index+1));phase=2;return;}

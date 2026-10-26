@@ -28,6 +28,7 @@ namespace BeachBoatStory
         PlayerVitals vitals;
         Image healthFill, staminaFill;
         TMP_Text healthText, staminaText, impactText;
+        GameObject boatPanel;TMP_Text boatText;Image boatFill;
         int shownHealth = -1, shownStamina = -1;
         NPCDialogue[] talkers;
         NPCQuestGiver questGiver;
@@ -158,6 +159,12 @@ namespace BeachBoatStory
             if (controlsPanel != null) controlsPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive && !(RiverPlayerCombat.Instance?.BattleActive??false));
             if (vitalsPanel != null) vitalsPanel.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
             if (impactText != null) impactText.gameObject.SetActive(!focusedOverlay && !OpeningEvent.IsOpeningActive);
+            var rowboat=QuestRowboat.Instance;
+            if(boatPanel!=null)
+            {
+                boatPanel.SetActive(!focusedOverlay&&!OpeningEvent.IsOpeningActive&&rowboat!=null&&rowboat.IsAboard);
+                if(rowboat!=null){boatText.text=$"THUYỀN {rowboat.Durability:0}/100";boatFill.rectTransform.anchorMax=new Vector2(rowboat.Durability/QuestRowboat.MaximumDurability,1);boatFill.color=rowboat.Durability<=25?new Color(.9f,.24f,.16f):new Color(.86f,.66f,.29f);}
+            }
             if (controlsText != null)
             {
                 if (EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsShowingBattle)
@@ -189,6 +196,7 @@ namespace BeachBoatStory
                 impactText.text = Time.unscaledTime < vitals.LastImpactUntil
                     ? vitals.LastImpact + (vitals.LastImpactDamage > 0 ? $"  -{vitals.LastImpactDamage:0} máu" : "")
                     : "";
+                if(rowboat!=null&&Time.unscaledTime<rowboat.LastHullImpactUntil&&!string.IsNullOrEmpty(rowboat.LastHullImpact))impactText.text=rowboat.LastHullImpact;
             }
             if (Input.GetKeyDown(KeyCode.F9) && !InteractionBlocked && BeachBoatMinigameStation.Active == null &&
                 !(StoryDialogueUI.Instance?.IsOpen ?? false) && !(ScreenFader.Instance?.IsTransitioning ?? false)) SetStoryMode(!storyMode);
@@ -256,6 +264,10 @@ namespace BeachBoatStory
             staminaFill.type = Image.Type.Simple;
             impactText = Text("ImpactNotice",canvas.transform,new Vector2(.018f,.192f),new Vector2(.38f,.23f),15);
             impactText.color = new Color(1f,.67f,.53f); impactText.text = "";
+            boatPanel=Panel("RowboatDurability",canvas.transform,new Vector2(.015f,.238f),new Vector2(.257f,.285f),new Color(.02f,.025f,.03f,.8f));
+            boatText=Text("BoatDurabilityLabel",boatPanel.transform,new Vector2(.04f,.1f),new Vector2(.55f,.9f),13);
+            var hullTrack=Panel("HullTrack",boatPanel.transform,new Vector2(.56f,.33f),new Vector2(.96f,.66f),new Color(.22f,.18f,.1f));
+            boatFill=Panel("HullFill",hullTrack.transform,Vector2.zero,Vector2.one,new Color(.86f,.66f,.29f)).GetComponent<Image>();
             var guide = Panel("RouteGuide", canvas.transform, new Vector2(.35f,.875f), new Vector2(.65f,.97f), new Color(.04f,.035f,.025f,.82f));
             var pointer = Text("Direction",guide.transform,new Vector2(.02f,.2f),new Vector2(.16f,.8f),34);
             pointer.text = ">"; pointer.alignment = TextAlignmentOptions.Center;

@@ -21,7 +21,8 @@ namespace BeachBoatStory
         bool restoring;
         float previousTimeScale=1;
         GameObject overlay;
-        TMP_Text checkpointText;
+        TMP_Text checkpointText,headingText,retryText;
+        BachDangSaveData recoveryPoint;
         void Awake(){Instance=this;session=GetComponent<BeachBoatQuestSession>();vitals=session.player.GetComponent<PlayerVitals>();}
         void Start(){BuildUI();Capture(BachDangStoryManager.Instance.currentState);}
         public void Capture(BachDangStoryManager.StoryState state)
@@ -51,9 +52,10 @@ namespace BeachBoatStory
             var village=VillagePreparationQuest.Instance;if(village==null)return;
             stalls=new bool[village.stalls.Length];stallLevels=new int[stalls.Length];for(int i=0;i<stalls.Length;i++){stalls[i]=village.stalls[i]!=null&&village.stalls[i].Completed;stallLevels[i]=village.stalls[i]!=null?village.stalls[i].CompletedLevels:0;}
         }
-        public void Defeat()
+        public void Defeat(string title="BẠN ĐÃ GỤC NGÃ",string reason="")
         {
             if(IsDefeated)return;
+            recoveryPoint=BachDangAutoSave.Instance?.RetryPoint;
             CampaignProgress.Instance?.RecordDefeat();
             if(!HasCheckpoint)Capture(BachDangStoryManager.Instance.currentState);
             IsDefeated=true;previousTimeScale=Time.timeScale>0?Time.timeScale:1;
@@ -61,12 +63,22 @@ namespace BeachBoatStory
             EnemyFleetDirector.Instance?.StopBattle();QuestRowboat.Instance?.LeaveForCheckpoint();
             var body=session.player.GetComponent<Rigidbody>();if(!body.isKinematic){body.linearVelocity=Vector3.zero;body.angularVelocity=Vector3.zero;}body.isKinematic=true;
             Time.timeScale=0;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;
-            if(overlay==null)BuildUI();checkpointText.text="CHƠI LẠI TỪ: "+CheckpointName(SavedState)+"\nPhần nhiệm vụ đã hoàn thành trước checkpoint vẫn được giữ.";overlay.SetActive(true);
+            if(overlay==null)BuildUI();headingText.text=title;
+            checkpointText.text=reason+(recoveryPoint!=null?"\nTiếp tục từ bản lưu gần nhất: "+recoveryPoint.savedAt+"\n"+recoveryPoint.location:"\nCHƠI LẠI TỪ: "+CheckpointName(SavedState));
+            retryText.text=recoveryPoint!=null?"TIẾP TỤC TỪ BẢN LƯU  [R]":"CHƠI LẠI CHECKPOINT  [R]";overlay.SetActive(true);
             BachDangStoryManager.Instance?.SetInteractPrompt(false);
         }
         public bool Retry()
         {
             if(!IsDefeated||!HasCheckpoint)return false;
+            if(recoveryPoint!=null)
+            {
+                var saved=recoveryPoint;PrepareForLoad();
+                BachDangSaveSystem.Apply(saved);BachDangAutoSave.Instance?.AcceptSavedPoint(saved);
+                Time.timeScale=previousTimeScale;
+                var orbit=session.storyCamera.GetComponent<Camera_Script>();orbit.CaptureCursor(session.storyMode);
+                return true;
+            }
             restoring=true;
             var story=BachDangStoryManager.Instance;var boat=QuestRowboat.Instance;var tide=TideSystem.Instance;
             EnemyFleetDirector.Instance?.ResetForCheckpoint();boat?.LeaveForCheckpoint();
@@ -78,12 +90,16 @@ namespace BeachBoatStory
             if(village!=null)for(int i=0;i<village.stalls.Length;i++)
                 if(village.stalls[i]!=null){village.stalls[i].RestoreLearningProgress(stallLevels!=null&&i<stallLevels.Length?stallLevels[i]:0);if(stalls!=null&&i<stalls.Length&&stalls[i])village.stalls[i].MarkCollected();}
             foreach(var patrol in FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None))patrol.ResetForCheckpoint();
-            if(boat!=null)boat.PrepareForBattle();
+            if(boat!=null){boat.RestoreDurability(QuestRowboat.MaximumDurability);boat.PrepareForBattle();}
             var player=session.player;var body=player.GetComponent<Rigidbody>();
             PlayerArrival.Teleport(player,position,rotation);body.isKinematic=!session.storyMode;
             player.GetComponent<CapsuleCollider>().enabled=true;player.GetComponent<Character_Movement>().enabled=session.storyMode;
             vitals.RestoreCheckpoint(armor);Physics.SyncTransforms();IsDefeated=false;restoring=false;Time.timeScale=previousTimeScale;
             overlay.SetActive(false);var camera=session.storyCamera.GetComponent<Camera_Script>();camera.SnapToTarget();camera.CaptureCursor(session.storyMode);story.UpdateUI();return true;
+        }
+        public void PrepareForLoad()
+        {
+            IsDefeated=false;restoring=false;recoveryPoint=null;if(overlay!=null)overlay.SetActive(false);
         }
         static string CheckpointName(BachDangStoryManager.StoryState state)
         {
@@ -107,10 +123,10 @@ namespace BeachBoatStory
             var scaler=canvas.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1280,720);scaler.matchWidthOrHeight=.5f;
             overlay=Panel("Defeated",canvas.transform,Vector2.zero,Vector2.one,new Color(.025f,.02f,.02f,.87f));
             var card=Panel("Card",overlay.transform,new Vector2(.20f,.25f),new Vector2(.80f,.75f),new Color(.055f,.06f,.065f,.99f)).transform;
-            Text("Heading",card,new Vector2(.06f,.69f),new Vector2(.94f,.92f),34,new Color(1,.42f,.3f)).text="BẠN ĐÃ GỤC NGÃ";
+            headingText=Text("Heading",card,new Vector2(.06f,.69f),new Vector2(.94f,.92f),34,new Color(1,.42f,.3f));headingText.text="BẠN ĐÃ GỤC NGÃ";
             checkpointText=Text("Checkpoint",card,new Vector2(.06f,.32f),new Vector2(.94f,.66f),21,Color.white);
             var button=Panel("RetryCheckpoint",card,new Vector2(.16f,.08f),new Vector2(.84f,.27f),new Color(.24f,.36f,.29f));var retry=button.AddComponent<Button>();retry.targetGraphic=button.GetComponent<Image>();retry.onClick.AddListener(()=>Retry());
-            Text("Label",button.transform,Vector2.zero,Vector2.one,24,new Color(1,.83f,.45f)).text="CHƠI LẠI CHECKPOINT  [R]";overlay.SetActive(false);
+            retryText=Text("Label",button.transform,Vector2.zero,Vector2.one,24,new Color(1,.83f,.45f));retryText.text="CHƠI LẠI CHECKPOINT  [R]";overlay.SetActive(false);
         }
         static GameObject Panel(string name,Transform parent,Vector2 min,Vector2 max,Color color)
         {var go=new GameObject(name,typeof(RectTransform),typeof(Image));go.transform.SetParent(parent,false);var r=(RectTransform)go.transform;r.anchorMin=min;r.anchorMax=max;r.offsetMin=r.offsetMax=Vector2.zero;go.GetComponent<Image>().color=color;return go;}

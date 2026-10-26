@@ -7,7 +7,7 @@ namespace BeachBoatStory
     public sealed class QuestRowboat : MonoBehaviour
     {
         static readonly Unity.Profiling.ProfilerMarker StepMarker=new Unity.Profiling.ProfilerMarker("BachDang.Rowboat");
-        public enum BoatObstacleKind { None, Shore, Tree, Rock, Ship, Structure }
+        public enum BoatObstacleKind { None, Shore, Tree, Rock, Ship, Structure, Stake }
         public static QuestRowboat Instance { get; private set; }
         public Transform boardingPoint, dockPoint, seat;
         public RuntimeAnimatorController rowingController;
@@ -21,6 +21,12 @@ namespace BeachBoatStory
         [Header("Hull clearance")]
         public float hullProbeSpacing = 26, hullProbeRadius = 11;
         public bool IsAboard { get; private set; }
+        public const float MaximumDurability=100;
+        public float Durability {get;private set;}=MaximumDurability;
+        public bool IsBroken=>Durability<=0;
+        public string LastHullImpact {get;private set;}
+        public float LastHullImpactUntil {get;private set;}
+        public void RestoreDurability(float value){Durability=Mathf.Clamp(value,0,MaximumDurability);nextImpactTime=0;LastHullImpact=null;}
         public bool BlocksGroundInteractions=>IsAboard&&RiverBoardingCombat.Instance?.State!=RiverBoardingCombat.PlayerState.Land;
         public float Speed { get; private set; }
         public bool IsBoosting { get; private set; }
@@ -156,7 +162,7 @@ namespace BeachBoatStory
             if (story != null && story.currentState == BachDangStoryManager.StoryState.Act3_WaitForLowTide && !IsAboard &&
                 (!battleLaunchPrepared || !HasClearLaunch(transform.position, transform.rotation)))
                 if (!PrepareForBattle()) return false;
-            if (!isActiveAndEnabled || session == null || IsAboard || BeachBoatQuestSession.InteractionBlocked ||
+            if (IsBroken || !isActiveAndEnabled || session == null || IsAboard || BeachBoatQuestSession.InteractionBlocked ||
                 story == null || !CanBoardForState(story.currentState) ||
                 story.collectedWood < story.totalWoodRequired || !AtDock || animator == null ||
                 FlatDistance(session.player.transform.position, boardingPoint.position) > boardingRange) return false;
@@ -253,7 +259,7 @@ namespace BeachBoatStory
         }
         public void ResumeRowing()
         {
-            if(!IsAboard)return;
+            if(!IsAboard||IsBroken)return;
             SetShoreWalking(false);animator.enabled=true;animator.runtimeAnimatorController=rowingController;animator.speed=0;
             Speed=0;IsBoosting=false;AttachPlayer();Physics.SyncTransforms();
         }
@@ -284,7 +290,7 @@ namespace BeachBoatStory
             // before Animator evaluation and the orbit camera, instead of stepping at 50 Hz.
             // Cursor lock only controls mouse look. Losing it (Esc, a UI overlay, or
             // Editor focus) must not strand the player aboard during the battle.
-            bool input = IsAboard && !BeachBoatQuestSession.InputBlocked;
+            bool input = IsAboard && !IsBroken && !BeachBoatQuestSession.InputBlocked;
             bool boost = input && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
             Step(input ? Input.GetAxisRaw("Vertical") : 0, input ? Input.GetAxisRaw("Horizontal") : 0, Time.deltaTime, boost);
             if (story == null || session == null || BeachBoatQuestSession.InteractionBlocked) return;
@@ -322,7 +328,7 @@ namespace BeachBoatStory
             if(IsAboard&&boarding!=null&&(boarding.PlayerAway||boarding.SwordDrawn))
             {Speed=0;IsBoosting=false;animator.speed=1;if(!boarding.PlayerAway)AttachPlayer();return;}
             if(RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming){throttle=0;steering=0;boostWanted=false;}
-            if (dt <= 0 || !isActiveAndEnabled) return;
+            if (dt <= 0 || !isActiveAndEnabled || IsBroken) {if(IsBroken){Speed=0;IsBoosting=false;}return;}
             var position = transform.position; position.y = TideSystem.CurrentWaterHeight;
             transform.position = position;
             if (!IsAboard || BeachBoatQuestSession.InteractionBlocked)
@@ -343,7 +349,8 @@ namespace BeachBoatStory
                 // Safe launch/old-save placement happens before rowing begins.
                 if(obstacle==BoatObstacleKind.None)
                 {var blocker=BoatHullCollision.Get(transform).LastBlocker;obstacle=blocker!=null?ClassifyObstacle(blocker):BoatObstacleKind.Structure;}
-                bool knockedOut = HandleImpact(obstacle, Mathf.Max(Mathf.Abs(Speed), Mathf.Abs(speed)));
+                float turnImpact=BoatHullCollision.Get(transform).Radius*Mathf.Deg2Rad*turnSpeed*Mathf.Abs(steering);
+                bool knockedOut = ApplyCollisionImpact(obstacle, Mathf.Max(turnImpact,Mathf.Max(Mathf.Abs(Speed), Mathf.Abs(speed))));
                 Speed = 0; IsBoosting = false;
                 if (knockedOut) return;
             }
@@ -425,6 +432,7 @@ namespace BeachBoatStory
             if (hit.GetComponentInParent<AmbientRiverBoat>() != null || hit.GetComponentInParent<EnemyShip>() != null)
                 return BoatObstacleKind.Ship;
             string name = hit.name.ToLowerInvariant();
+            if(name.Contains("cocgo")||name.Contains("coc_go")||name.Contains("cọc"))return BoatObstacleKind.Stake;
             if (name.Contains("rock") || name.Contains("stone") || name.Contains("boulder") || name.Contains("đá"))
                 return BoatObstacleKind.Rock;
             if (name.Contains("tree") || name.Contains("pine") || name.Contains("mangrove") || name.Contains("cây") || name.Contains("cay"))
@@ -442,35 +450,34 @@ namespace BeachBoatStory
                 BoatObstacleKind.Tree => 15f,
                 BoatObstacleKind.Shore => 12f,
                 BoatObstacleKind.Structure => 17f,
+                BoatObstacleKind.Stake => 28f,
                 _ => 0f
             };
             return Mathf.Round(baseDamage * Mathf.Clamp(impactSpeed / Mathf.Max(1, rowingSpeed), .25f, 1.4f));
         }
 
-        bool HandleImpact(BoatObstacleKind obstacle, float impactSpeed)
+        public bool ApplyCollisionImpact(BoatObstacleKind obstacle, float impactSpeed)
         {
-            if (vitals == null || Time.unscaledTime < nextImpactTime) return false;
+            if (IsBroken) return true;
+            if (!IsAboard || BeachBoatQuestSession.InteractionBlocked || Time.timeScale<=0 || Time.time < nextImpactTime) return false;
             float damage = ImpactDamage(obstacle, impactSpeed, maxSpeed);
             if (damage <= 0) return false;
-            nextImpactTime = Time.unscaledTime + 1.2f;
+            nextImpactTime = Time.time + 1.2f;
             string label = obstacle switch
             {
                 BoatObstacleKind.Ship => "Va vào thuyền khác",
                 BoatObstacleKind.Rock => "Va vào đá",
                 BoatObstacleKind.Tree => "Va vào cây",
                 BoatObstacleKind.Shore => "Mắc cạn ở bờ sông",
+                BoatObstacleKind.Stake => "Va vào cọc",
                 _ => "Va vào vật cản"
             };
-            vitals.TakeImpact(damage, label);
-            if (vitals.Health > 0) return false;
-            if (QuestCheckpoint.Instance != null) return true;
-            RestorePlayer();
-            transform.SetPositionAndRotation(new Vector3(homePosition.x, TideSystem.CurrentWaterHeight, homePosition.z), homeRotation);
-            session.player.transform.SetPositionAndRotation(boardingPoint.position, boardingPoint.rotation);
-            playerBody.position = boardingPoint.position; playerBody.rotation = boardingPoint.rotation;
-            Physics.SyncTransforms(); orbit.SnapToTarget();
-            vitals.RecoverAtDock();
-            BachDangStoryManager.Instance?.UpdateUI();
+            Durability=Mathf.Max(0,Durability-damage);
+            LastHullImpact=$"{label} • -{damage:0} độ bền";LastHullImpactUntil=Time.unscaledTime+2.4f;
+            BeachBoatSoundscape.Instance?.PlayHit();
+            if(!IsBroken)return false;
+            Speed=0;IsBoosting=false;
+            QuestCheckpoint.Instance?.Defeat("THUYỀN ĐÃ HỎNG", "Thuyền hết độ bền và không thể sử dụng tiếp.");
             return true;
         }
 

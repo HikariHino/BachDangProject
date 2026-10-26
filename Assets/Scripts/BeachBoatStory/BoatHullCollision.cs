@@ -172,7 +172,11 @@ namespace BeachBoatStory
             for(int i=0;i<count;i++)
             {
                 var c=overlaps[i];if(c==null||IsOwn(c)||c.GetComponent<TideSystem>()!=null)continue;
-                LastBlocker=c;RejectedMoves++;return false;
+                LastBlocker=c;RejectedMoves++;
+                var rowboat=c.GetComponentInParent<QuestRowboat>();
+                if(rowboat!=null&&rowboat.transform!=transform&&Time.deltaTime>0)
+                    rowboat.ApplyCollisionImpact(QuestRowboat.BoatObstacleKind.Ship,Vector3.Distance(from,to)/Time.deltaTime);
+                return false;
             }
             if(reserveStakes&&RiverWaterNavigation.StakeIntersection((a+b)*.5f,half,mid))
             {RejectedMoves++;return false;}

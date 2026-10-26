@@ -36,6 +36,8 @@ namespace BeachBoatStory
             battleAudio.playOnAwake = false; battleAudio.loop = false;
             battleAudio.spatialBlend = 0.15f; battleAudio.volume = .32f;
             BuildPool();
+            if(GetComponent<RiverShoreArchers>()==null)gameObject.AddComponent<RiverShoreArchers>();
+            if(GetComponent<RiverBattleVoices>()==null)gameObject.AddComponent<RiverBattleVoices>();
         }
 
         public void BeginAmbush(IEnumerable<EnemyShip> fleet)

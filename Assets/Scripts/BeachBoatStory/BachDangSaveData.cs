@@ -7,6 +7,9 @@ namespace BeachBoatStory
     {
         public int version=1;
         public string scene="beachBoat",savedAt,location;
+        public long savedUtcTicks;
+        public int rowboatDurabilityVersion;
+        public float boatDurability;
         public int storyState,woodCount,destroyedCount,armor,trainingLevels;
         public float health,stamina,maxHealth,maxStamina;
         public Vector3 playerPosition,boatPosition;
@@ -35,7 +38,7 @@ namespace BeachBoatStory
         [Serializable] public sealed class Dialogue {public bool active,femaleVoice;public string speaker,line,action,voiceIdentity,voiceProfile;}
         [Serializable] public sealed class Activity {public string name;public bool completed;public float bestTime;public int bestMistakes;}
         [Serializable] public sealed class Tide {public float height,target,start,elapsed,duration,hour;public bool rising,controlled,locked,high;public int moment;}
-        [Serializable] public sealed class Fleet {public bool active,ebb;public int commands,kills,alliedKills,arrows,shots,hits;public int[] scored,suppressed;}
+        [Serializable] public sealed class Fleet {public bool active,ebb,invasionVoiced,ambushVoiced,counterattackVoiced;public float counterattackDelay;public int commands,kills,alliedKills,arrows,shots,hits;public int[] scored,suppressed;}
         [Serializable] public sealed class Ship
         {
             public string name;public bool active,started,destroyed,settled,released,signal;

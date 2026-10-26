@@ -73,9 +73,9 @@ public static class BeachBoatWholeMapPlaytest
         foreach(var other in allies.Where(a=>a!=allied))other.transform.position=new Vector3(-1000,100,-1000);
         foreach(var enemy in Object.FindObjectsByType<EnemyShip>(FindObjectsInactive.Include,FindObjectsSortMode.None))enemy.gameObject.SetActive(false);
         // Forced overlap reproduces the screenshot, with the player pointing away.
-        allied.transform.position=start+Vector3.left*30;Physics.SyncTransforms();float hp=session.player.GetComponent<PlayerVitals>().Health;
+        allied.transform.position=start+Vector3.left*30;Physics.SyncTransforms();float hp=boat.Durability;
         var before=boat.transform.position;for(int i=0;i<70;i++)boat.Step(1,0,.05f);float escape=QuestRowboat.FlatDistance(before,boat.transform.position);
-        if(escape<90||session.player.GetComponent<PlayerVitals>().Health<hp)throw new Exception("Friendly overlap traps or damages escaping player: "+escape+", aboard="+boat.IsAboard+", blocked="+BeachBoatQuestSession.InteractionBlocked+", aiming="+RiverPlayerCombat.Instance.IsAiming+", canEscape="+boat.CanOccupy(before+Vector3.right,boat.transform.rotation)+", depth="+(TideSystem.CurrentWaterHeight-Terrain.activeTerrain.SampleHeight(before)));
+        if(escape<90||boat.Durability<hp)throw new Exception("Friendly overlap traps or damages escaping player: "+escape+", aboard="+boat.IsAboard+", blocked="+BeachBoatQuestSession.InteractionBlocked+", aiming="+RiverPlayerCombat.Instance.IsAiming+", canEscape="+boat.CanOccupy(before+Vector3.right,boat.transform.rotation)+", depth="+(TideSystem.CurrentWaterHeight-Terrain.activeTerrain.SampleHeight(before)));
         boatCases.Add(new{test="escape existing overlap",travel=escape,health=session.player.GetComponent<PlayerVitals>().Health});
         // A moving patrol yields before reaching the stationary rowboat.
         boat.transform.SetPositionAndRotation(start,Quaternion.Euler(0,90,0));allied.transform.SetPositionAndRotation(start+Vector3.right*155,Quaternion.Euler(0,-90-allied.visualForwardYaw,0));Physics.SyncTransforms();
@@ -87,8 +87,8 @@ public static class BeachBoatWholeMapPlaytest
         boat.transform.SetPositionAndRotation(start,Quaternion.Euler(0,90,0));allied.transform.position=start+Vector3.right*110;Physics.SyncTransforms();before=boat.transform.position;
         for(int i=0;i<100;i++)boat.Step(1,0,.05f);
         float stopped=QuestRowboat.FlatDistance(before,boat.transform.position);
-        if(stopped>40||session.player.GetComponent<PlayerVitals>().Health>=hp)throw new Exception("New ship collision no longer blocks/damages the boat");
-        boatCases.Add(new{test="new collision retains impact",travel=stopped,health=session.player.GetComponent<PlayerVitals>().Health});
+        if(stopped>40||boat.Durability>=hp)throw new Exception("New ship collision no longer blocks/damages the boat");
+        boatCases.Add(new{test="new collision retains impact",travel=stopped,durability=boat.Durability});
     }
     static void Finish(string failure)
     {

@@ -82,6 +82,7 @@ namespace BeachBoatStory
             if(zone==null||!zone.IsComplete)return;
             RiverFleetLayout.Configure(this);
             BattleStarted=true;
+            GetComponent<RiverBattleVoices>()?.ResetForNewBattle();
             CommandScore=0;
             EbbStarted=false;AmbushStarted=false;EbbTriggerShip=null;
             scoredWaves.Clear();
@@ -94,10 +95,11 @@ namespace BeachBoatStory
         public BachDangSaveData.Fleet CaptureSave()
         {
             var data=new BachDangSaveData.Fleet{active=BattleStarted,ebb=EbbStarted,commands=CommandScore,scored=new System.Collections.Generic.List<int>(scoredWaves).ToArray()};
-            RiverPlayerCombat.Instance?.FillSave(data);return data;
+            RiverPlayerCombat.Instance?.FillSave(data);GetComponent<RiverBattleVoices>()?.FillSave(data);return data;
         }
         public void RestoreSave(BachDangSaveData.Fleet data)
         {
+            GetComponent<RiverBattleVoices>()?.RestoreSave(data);
             BattleStarted=data.active;EbbStarted=data.ebb;CommandScore=data.commands;scoredWaves.Clear();
             foreach(int wave in data.scored??System.Array.Empty<int>())scoredWaves.Add(wave);
             if(BattleStarted){BeginBattleView();battleLoop=StartCoroutine(SpawnWaves(true));}
@@ -244,6 +246,7 @@ namespace BeachBoatStory
         }
         public void StopBattle()
         {
+            GetComponent<RiverBattleVoices>()?.Silence();
             choreography?.EndBattle();
             EndBattleView();
             if(battleLoop!=null){StopCoroutine(battleLoop);battleLoop=null;}
@@ -253,6 +256,7 @@ namespace BeachBoatStory
         }
         public void ResetForCheckpoint()
         {
+            GetComponent<RiverBattleVoices>()?.ResetForNewBattle();
             StopBattle();CommandScore=0;scoredWaves.Clear();watchedFleetIndex=0;commandMessageUntil=0;EbbStarted=false;AmbushStarted=false;EbbTriggerShip=null;
             RiverPlayerCombat.Instance?.ResetForCheckpoint();
             foreach(var ship in enemyShips??System.Array.Empty<EnemyShip>())if(ship!=null)ship.ResetForCheckpoint();

@@ -53,6 +53,9 @@ public static class BeachBoatCheckpointPlaytest
             var vitals=session.player.GetComponent<PlayerVitals>();
             if(phase==0)
             {
+                // This suite deliberately tests the fallback when no recovery file
+                // has been written. The full snapshot path has its own QA suite.
+                BachDangAutoSave.Instance.enabled=false;
                 BeachBoatStory.BachDangFrontEnd.Instance?.Play();
                 foreach(var opening in UnityEngine.Object.FindObjectsByType<BeachBoatStory.OpeningEvent>(FindObjectsSortMode.None))opening.SkipOpening();BeachBoatStory.StoryDialogueUI.Instance?.Close();
                 story.collectedWood=0;foreach(var item in session.woodItems)item.RestoreCollection(false);
@@ -90,9 +93,9 @@ public static class BeachBoatCheckpointPlaytest
                 secondBattle=fleet.enemyShips.Any(s=>s.gameObject.activeSelf&&!s.isDestroyed)&&story.currentState==Story.StoryState.Act3_BattleInProgress;
                 if(!secondBattle)throw new Exception("Fleet did not spawn on second battle attempt");
                 var rock=GameObject.CreatePrimitive(PrimitiveType.Cube);rock.name="Rock_CheckpointFatal";var p=boat.transform.position+boat.transform.forward*90;p.y=TideSystem.CurrentWaterHeight+2;rock.transform.position=p;rock.transform.localScale=new Vector3(28,35,28);Physics.SyncTransforms();
-                vitals.TakeImpact(vitals.Health-1,"Chuẩn bị va chạm");
+                boat.RestoreDurability(1);
                 for(int i=0;i<100&&!checkpoint.IsDefeated;i++)boat.Step(1,0,.05f,true);
-                collisionDefeat=checkpoint.IsDefeated&&vitals.Health==0&&!boat.IsAboard;
+                collisionDefeat=checkpoint.IsDefeated&&boat.IsBroken&&vitals.Health>0&&!boat.IsAboard;
                 if(!collisionDefeat)throw new Exception("Fatal collision did not enter defeat state");
                 UnityEngine.Object.DestroyImmediate(rock);Physics.SyncTransforms();Retry();
                 if(story.currentState!=Story.StoryState.Act3_WaitForLowTide||!zone.IsComplete||!staminaNotDeath)throw new Exception("Final mission/stamina check failed");

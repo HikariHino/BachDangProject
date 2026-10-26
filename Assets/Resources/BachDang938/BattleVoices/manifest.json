@@ -1,0 +1,53 @@
+{
+  "entries": [
+    {
+      "name": "Enemy_Advance_1",
+      "voice": "VieNeu/Thái Sơn",
+      "text": "Xông lên! Chiếm lấy bờ sông!",
+      "tempo": 1.22,
+      "bytes": 19052
+    },
+    {
+      "name": "Enemy_Advance_2",
+      "voice": "VieNeu/Đức Trí",
+      "text": "Tiến lên! Quân ta sắp thắng rồi!",
+      "tempo": 1.23,
+      "bytes": 26828
+    },
+    {
+      "name": "Enemy_Panic_1",
+      "voice": "VieNeu/Thái Sơn",
+      "text": "Trúng mai phục rồi! Rút lui! Rút lui!",
+      "tempo": 1.25,
+      "bytes": 34172
+    },
+    {
+      "name": "Enemy_Panic_2",
+      "voice": "VieNeu/Đức Trí",
+      "text": "Thuyền mắc cọc rồi! Cứu ta với!",
+      "tempo": 1.22,
+      "bytes": 27260
+    },
+    {
+      "name": "Enemy_Panic_3",
+      "voice": "VieNeu/Hải Đăng",
+      "text": "Bỏ thuyền! Mau chạy! Chạy đi!",
+      "tempo": 1.24,
+      "bytes": 20348
+    },
+    {
+      "name": "NgoQuyen_Ambush",
+      "voice": "VieNeu/Minh Đức",
+      "text": "Thời cơ đã đến! Quân sĩ hai bờ, bắn tên!",
+      "tempo": 1.18,
+      "bytes": 31580
+    },
+    {
+      "name": "NgoQuyen_Attack",
+      "voice": "VieNeu/Minh Đức",
+      "text": "Toàn quân phản công! Không để giặc thoát!",
+      "tempo": 1.18,
+      "bytes": 28124
+    }
+  ]
+}
