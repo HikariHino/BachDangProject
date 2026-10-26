@@ -1,0 +1,3 @@
+Title music and menu click feedback; pooled blood and distinct confirmed sword/arrow impacts; swimmer combat and real-carrier boarding; equal allied observers, rowers and fighters; corrected waterline restoration; pre-baked split wrecks with small fire, smoke, human cries, corpses and survivors; five fixed wood pickups with retained achievement timing.
+
+CLI Play Mode verification: AudioBattle 33, MarineJournal 130, ConcurrentBattle 12 and TraversalWood 118 checks passed. Reports and captures are in ignored Logs. These automated scenarios do not establish hardware-wide FPS or coverage of every possible battle state. Audio sources: ShipwreckAudioCredits.md.

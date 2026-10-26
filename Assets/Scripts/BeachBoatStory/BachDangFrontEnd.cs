@@ -42,7 +42,7 @@ namespace BeachBoatStory
         static readonly Color Gold=new Color(.88f,.69f,.38f),Cream=new Color(.95f,.90f,.78f),Ink=new Color(.025f,.06f,.055f,.96f);
         void Awake()
         {
-            Instance=this;Build();BachDangPreferences.Apply();
+            Instance=this;gameObject.AddComponent<BachDangMenuAudio>();Build();BachDangPreferences.Apply();
             GameStarted=BachDangSaveSystem.PendingLoad!=null;
             SetPage(GameStarted?MenuPage.Loading:MenuPage.Home);RefreshSaveInfo();
         }
@@ -90,7 +90,7 @@ namespace BeachBoatStory
         public void Play()
         {
             if(Page!=MenuPage.Home)return;
-            GameStarted=true;SetPage(MenuPage.None);BeachBoatSoundscape.Instance?.PlayInteraction();
+            GameStarted=true;SetPage(MenuPage.None);
         }
         public void Resume(){if(GameStarted)SetPage(MenuPage.None);}
         public void OpenSettings(){settingsReturn=GameStarted?MenuPage.Pause:MenuPage.Home;SetPage(MenuPage.Settings);}
@@ -238,10 +238,10 @@ namespace BeachBoatStory
             settings=Card("Settings","CÀI ĐẶT");
             Label("Volume",settings.transform,new Vector2(.10f,.65f),new Vector2(.72f,.75f),22,Cream,"ÂM LƯỢNG");volumeValue=Label("VolumeValue",settings.transform,new Vector2(.75f,.65f),new Vector2(.90f,.75f),22,Gold,"");
             volumeSlider=MakeSlider("VolumeSlider",settings.transform,new Vector2(.10f,.56f),new Vector2(.90f,.63f),0,1,BachDangPreferences.Volume);
-            volumeSlider.onValueChanged.AddListener(v=>{BachDangPreferences.SetVolume(v);RefreshSettingsLabels();});
+            volumeSlider.onValueChanged.AddListener(v=>{BachDangPreferences.SetVolume(v);RefreshSettingsLabels();BachDangMenuAudio.SliderChanged();});
             Label("Mouse",settings.transform,new Vector2(.10f,.40f),new Vector2(.72f,.50f),22,Cream,"ĐỘ NHẠY CHUỘT");mouseValue=Label("MouseValue",settings.transform,new Vector2(.75f,.40f),new Vector2(.90f,.50f),22,Gold,"");
             mouseSlider=MakeSlider("MouseSlider",settings.transform,new Vector2(.10f,.31f),new Vector2(.90f,.38f),.25f,2.5f,BachDangPreferences.Sensitivity);
-            mouseSlider.onValueChanged.AddListener(v=>{BachDangPreferences.SetSensitivity(v);RefreshSettingsLabels();});
+            mouseSlider.onValueChanged.AddListener(v=>{BachDangPreferences.SetSensitivity(v);RefreshSettingsLabels();BachDangMenuAudio.SliderChanged();});
             Label("Applied",settings.transform,new Vector2(.10f,.20f),new Vector2(.90f,.28f),14,new Color(.65f,.74f,.67f),"Áp dụng ngay • Tự nhớ cho lần chơi sau",TextAlignmentOptions.Center);
             Click("Back",settings.transform,new Vector2(.24f,.07f),new Vector2(.76f,.17f),"QUAY LẠI",BackFromSettings,true);
             confirm=Card("ConfirmExit","LƯU TRƯỚC KHI THOÁT?");
@@ -285,7 +285,7 @@ namespace BeachBoatStory
         {
             var color=primary?new Color(.47f,.30f,.13f,.96f):new Color(.07f,.15f,.13f,.94f);var go=Box(name,parent,min,max,color);
             Box("Rule",go.transform,Vector2.zero,new Vector2(.008f,1),Gold);
-            var button=go.AddComponent<Button>();button.targetGraphic=go.GetComponent<Image>();var colors=button.colors;colors.highlightedColor=new Color(1.3f,1.25f,1.05f);colors.pressedColor=new Color(.70f,.65f,.5f);colors.disabledColor=new Color(.45f,.45f,.45f,.65f);button.colors=colors;button.navigation=new Navigation{mode=Navigation.Mode.Automatic};button.onClick.AddListener(action);
+            var button=go.AddComponent<Button>();button.targetGraphic=go.GetComponent<Image>();var colors=button.colors;colors.highlightedColor=new Color(1.3f,1.25f,1.05f);colors.pressedColor=new Color(.70f,.65f,.5f);colors.disabledColor=new Color(.45f,.45f,.45f,.65f);button.colors=colors;button.navigation=new Navigation{mode=Navigation.Mode.Automatic};button.onClick.AddListener(()=>{BachDangMenuAudio.Click();action();});
             Label("Label",go.transform,new Vector2(.07f,.05f),new Vector2(.96f,.95f),21,Cream,caption);return button;
         }
         static void Stretch(RectTransform rect,Vector2 min,Vector2 max){rect.anchorMin=min;rect.anchorMax=max;rect.offsetMin=rect.offsetMax=Vector2.zero;}

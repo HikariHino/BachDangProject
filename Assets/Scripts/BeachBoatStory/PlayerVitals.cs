@@ -46,7 +46,7 @@ namespace BeachBoatStory
             return true;
         }
 
-        public void TakeImpact(float damage, string obstacle)
+        public void TakeImpact(float damage, string obstacle,CombatImpactKind kind=CombatImpactKind.Other)
         {
             if (damage <= 0 || Health <= 0) return;
             if (ArmorCharges > 0)
@@ -57,7 +57,8 @@ namespace BeachBoatStory
             Health = Mathf.Max(0, Health - damage);
             LastImpact = obstacle;
             LastImpactDamage = damage;
-            BeachBoatSoundscape.Instance?.PlayHit();
+            if(kind==CombatImpactKind.Other)BeachBoatSoundscape.Instance?.PlayHit();
+            else CombatHitFeedback.Show(transform.position+Vector3.up*10,kind,true);
             LastImpactUntil = Time.unscaledTime + 2.4f;
             if (Health <= 0) QuestCheckpoint.Instance?.Defeat();
         }

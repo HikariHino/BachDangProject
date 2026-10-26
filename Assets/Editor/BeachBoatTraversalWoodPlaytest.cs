@@ -49,7 +49,7 @@ public static class BeachBoatTraversalWoodPlaytest
         var saved=BachDangSaveSystem.Capture("QA random village logs");var pos=s.woodItems.Select(w=>w.transform.position).ToArray();
         foreach(var w in s.woodItems)w.transform.position+=Vector3.forward*200;
         VillageWoodHunt.Instance.Restore(saved);
-        Check(s.woodItems.Select((w,i)=>Vector3.Distance(w.transform.position,pos[i])<.01f&&w.IsCollected==saved.woods[i]).All(x=>x),"Save restore preserves all random positions and previously collected wood");
+        Check(s.woodItems.Select((w,i)=>Vector3.Distance(w.transform.position,pos[i])<.01f&&w.IsCollected==saved.woods[i]).All(x=>x),"Save restore preserves fixed village positions and previously collected wood");
         p.Record.woodSeconds=90;
         foreach(var w in s.woodItems.Where(w=>!w.IsCollected)){Move(w.transform.position+Vector3.up*2);Check(w.TryCollect(),"Collect remaining reachable log "+w.name);}
         Check(story.collectedWood==5&&story.currentState==Story.StoryState.Act2_SupplyPreparation&&p.Record.woodFinished,"The fifth pickup ends the timed search and starts material preparation");

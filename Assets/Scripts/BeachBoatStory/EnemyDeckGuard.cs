@@ -28,7 +28,7 @@ namespace BeachBoatStory
         }
         public void MatchPlayerSize()
         {
-            Cache();ActorSolidBody.Ensure(gameObject,animator);var player=BeachBoatQuestSession.Instance.player;var reference=player.GetComponentInChildren<Animator>();
+            Cache();if(animator.isActiveAndEnabled)animator.Update(0);ActorSolidBody.Ensure(gameObject,animator);var player=BeachBoatQuestSession.Instance.player;var reference=player.GetComponentInChildren<Animator>();
             float oldFeet=Mathf.Min(animator.GetBoneTransform(HumanBodyBones.LeftFoot).position.y,animator.GetBoneTransform(HumanBodyBones.RightFoot).position.y);
             visual.localScale*=RigHeight(reference)/Mathf.Max(.01f,RigHeight(animator));
             float newFeet=Mathf.Min(animator.GetBoneTransform(HumanBodyBones.LeftFoot).position.y,animator.GetBoneTransform(HumanBodyBones.RightFoot).position.y);
@@ -41,7 +41,7 @@ namespace BeachBoatStory
         Quaternion restRotation;
         float fall;
         bool initialized;
-        int sizeCheckFrames;
+        int sizeCheckFrames;float nextSizeCheck;
         Transform bow,leftUpper,leftFore,leftHand,rightUpper,rightFore,rightHand;
         LineRenderer bowString;
         float draw;
@@ -75,9 +75,14 @@ namespace BeachBoatStory
         }
         public void DefeatFromVolley()
         {
-            if(!IsAlive)return;Health=0;
+            if(Health<=0)return;FinishDeathPose();Health=0;
             if(animator!=null)animator.enabled=false;
-            GetComponent<Collider>().enabled=false;bow.gameObject.SetActive(false);
+            GetComponent<Collider>().enabled=false;var body=GetComponent<ActorSolidBody>();if(body?.SolidCollider!=null)body.SolidCollider.enabled=false;bow.gameObject.SetActive(false);
+        }
+        void FinishDeathPose()
+        {
+            var pose=GetComponent<RiverFighterPose>();if(pose!=null){pose.FinishTraversal();pose.SetSword(false);pose.SetRanged(false);}
+            fall=1;visual.localRotation=restRotation*Quaternion.Euler(88,0,8);
         }
         public void ResetGuard()
         {
@@ -88,16 +93,17 @@ namespace BeachBoatStory
             if(animator!=null)animator.enabled=true;
             var col=GetComponent<Collider>();if(col!=null)col.enabled=true;
         }
-        public bool Hit(int damage,bool creditPlayer=true)
+        public bool Hit(int damage,bool creditPlayer=true,CombatImpactKind kind=CombatImpactKind.Sword)
         {
             if(!IsAlive||damage<=0)return false;
             int previous=Health;Health=Mathf.Max(0,Health-damage);
             if(creditPlayer)CombatDamageNumbers.Show(AimPoint,previous-Health);
-            BeachBoatSoundscape.Instance?.PlayHit();
+            CombatHitFeedback.Show(AimPoint,kind,creditPlayer);
             if(Health==0)
             {
+                FinishDeathPose();
                 if(animator!=null)animator.enabled=false;
-                GetComponent<Collider>().enabled=false;
+                GetComponent<Collider>().enabled=false;var body=GetComponent<ActorSolidBody>();if(body?.SolidCollider!=null)body.SolidCollider.enabled=false;
                 bow.gameObject.SetActive(false);
                 if(creditPlayer)RiverPlayerCombat.Instance?.RegisterKill(this);else RiverPlayerCombat.Instance?.RegisterAlliedKill(this);
             }
@@ -112,7 +118,7 @@ namespace BeachBoatStory
             transform.SetPositionAndRotation(data.position,data.rotation);gameObject.SetActive(data.active);
             Health=Mathf.Clamp(data.health,0,2);fall=Health==0?1:0;
             GetComponent<Collider>().enabled=Health>0;animator.enabled=Health>0;
-            SetMelee(data.independent);if(Health==0)bow.gameObject.SetActive(false);
+            SetMelee(data.independent);if(Health==0){FinishDeathPose();animator.enabled=false;bow.gameObject.SetActive(false);if(data.floatingCorpse)RiverCorpse.Ensure(this);}
         }
         public void FitStandingOnDeck()
         {
@@ -124,9 +130,9 @@ namespace BeachBoatStory
         {
             // Inactive pooled avatars have not evaluated their humanoid retargeting yet.
             // Validate after evaluation too, including restored and boarding characters.
-            if(sizeCheckFrames>0&&Health>0&&animator!=null&&animator.isActiveAndEnabled)
+            if((sizeCheckFrames>0||Time.time>=nextSizeCheck)&&Health>0&&animator!=null&&animator.isActiveAndEnabled)
             {
-                sizeCheckFrames--;
+                sizeCheckFrames--;nextSizeCheck=Time.time+.5f;
                 var reference=BeachBoatQuestSession.Instance.player.GetComponentInChildren<Animator>();
                 float ratio=RigHeight(reference)/Mathf.Max(.01f,RigHeight(animator));
                 if(ratio<.96f||ratio>1.04f)MatchPlayerSize();

@@ -126,7 +126,7 @@ namespace BeachBoatStory
         }
         static GameObject Button(string name,Transform parent,Vector2 min,Vector2 max,string label,UnityEngine.Events.UnityAction click)
         {
-            var go=Box(name,parent,min,max,new Color(.16f,.25f,.23f));var b=go.AddComponent<Button>();b.onClick.AddListener(click);b.navigation=new Navigation{mode=Navigation.Mode.None};var t=Text("Label",go.transform,Vector2.zero,Vector2.one,17,Cream,label);t.alignment=TextAlignmentOptions.Center;return go;
+            var go=Box(name,parent,min,max,new Color(.16f,.25f,.23f));var b=go.AddComponent<Button>();b.onClick.AddListener(()=>{BachDangMenuAudio.Click();click();});b.navigation=new Navigation{mode=Navigation.Mode.None};var t=Text("Label",go.transform,Vector2.zero,Vector2.one,17,Cream,label);t.alignment=TextAlignmentOptions.Center;return go;
         }
         ScrollRect Scroll(string name,Transform parent,Vector2 min,Vector2 max,float height,out RectTransform target)
         {

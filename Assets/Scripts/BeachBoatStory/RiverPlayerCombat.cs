@@ -196,10 +196,10 @@ namespace BeachBoatStory
                 if(a.hostile)
                 {
                     if(QuestRowboat.FlatDistance(session.player.transform.position,a.end)<22)
-                    {session.player.GetComponent<PlayerVitals>().TakeImpact(a.damage,"Trúng tên địch");Tell("TRÚNG TÊN! Bỏ ngắm, chèo lệch hướng để né loạt kế tiếp.");}
+                    {session.player.GetComponent<PlayerVitals>().TakeImpact(a.damage,"Trúng tên địch",CombatImpactKind.Arrow);Tell("TRÚNG TÊN! Bỏ ngắm, chèo lệch hướng để né loạt kế tiếp.");}
                     else {DodgedShots++;Tell("ĐÃ NÉ LOẠT TÊN!");}
                 }
-                else if(a.target!=null&&a.target.IsAlive&&a.target.Hit(a.damage))
+                else if(a.target!=null&&a.target.IsAlive&&a.target.Hit(a.damage,true,CombatImpactKind.Arrow))
                 {Hits++;hitUntil=Time.time+.3f;if(a.target.IsAlive)Tell("TRÚNG ĐỊCH • giữ dây cung lâu hơn để bắn mạnh.");}
             }
         }

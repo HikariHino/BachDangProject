@@ -108,7 +108,7 @@ namespace BeachBoatStory
                 activities=UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsSortMode.None).Select(s=>new BachDangSaveData.Activity{name=s.name,completed=s.HasCompleted,bestTime=s.BestTime,bestMistakes=s.BestMistakes}).ToArray(),
                 tide=TideSystem.Instance?.CaptureSave(),fleet=EnemyFleetDirector.Instance?.CaptureSave(),
                 ships=EnemyFleetDirector.Instance.enemyShips.Select(s=>s.CaptureSave()).ToArray(),
-                guards=RiverPlayerCombat.Instance.guards.Select(g=>new BachDangSaveData.Guard{id=GuardId(g),ship=g.ship.name,health=g.Health,active=g.gameObject.activeSelf,independent=g.IsIndependentBoarder,position=g.transform.position,rotation=g.transform.rotation}).ToArray(),
+                guards=RiverPlayerCombat.Instance.guards.Select(g=>new BachDangSaveData.Guard{id=GuardId(g),ship=g.ship.name,health=g.Health,active=g.gameObject.activeSelf,independent=g.IsIndependentBoarder,floatingCorpse=g.GetComponent<RiverCorpse>()!=null&&g.GetComponent<RiverCorpse>().enabled,position=g.transform.position,rotation=g.transform.rotation}).ToArray(),
                 boarding=RiverBoardingCombat.Instance?.CaptureSave(),dialogue=StoryDialogueUI.Instance?.CaptureSave(),
                 campaign=CampaignProgress.Instance?.Capture(),
                 patrols=UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None).Select(p=>new BachDangSaveData.Patrol{name=p.name,position=p.transform.position,rotation=p.transform.rotation}).ToArray()

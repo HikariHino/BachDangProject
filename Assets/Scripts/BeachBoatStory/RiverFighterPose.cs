@@ -91,7 +91,7 @@ namespace BeachBoatStory
         {
             if(Animator==null)return;
             if(value)SetRanged(false);
-            if(value&&!usingSword){previousController=Animator.runtimeAnimatorController;Animator.runtimeAnimatorController=swordController;usingSword=true;Animator.SetBool("isWalking",false);Animator.SetBool("isRunning",false);Animator.SetInteger("Pose",0);Animator.Play("sword_idle",0,0);}
+            if(value&&!usingSword){previousController=Animator.runtimeAnimatorController;Animator.runtimeAnimatorController=swordController;usingSword=true;Animator.SetBool("isWalking",false);Animator.SetBool("isRunning",false);Animator.SetInteger("Pose",0);Animator.Play("sword_idle",0,0);if(Animator.gameObject.activeInHierarchy){Animator.Update(0);MatchFriendlyStature();}}
             if(value&&Traversal==Motion.Idle&&Animator.runtimeAnimatorController!=swordController)Animator.runtimeAnimatorController=swordController;
             if(!value&&usingSword){Animator.runtimeAnimatorController=previousController;usingSword=false;}
             SwordVisible=value;if(weapon!=null)weapon.gameObject.SetActive(value);Animator.speed=1;
@@ -123,7 +123,7 @@ namespace BeachBoatStory
         {
             if(Animator==null)return;
             traversalController=Animator.runtimeAnimatorController;traversalAnimatorEnabled=Animator.enabled;
-            Animator.enabled=true;Animator.runtimeAnimatorController=Resources.Load<RuntimeAnimatorController>("Player_Neutral");Animator.Update(0);
+            Animator.enabled=true;Animator.runtimeAnimatorController=Resources.Load<RuntimeAnimatorController>("Player_Neutral");Animator.Update(0);MatchFriendlyStature();
             var list=new System.Collections.Generic.List<Transform>();
             for(int i=0;i<(int)HumanBodyBones.LastBone;i++){var bone=Animator.GetBoneTransform((HumanBodyBones)i);if(bone!=null)list.Add(bone);}
             traversalBones=list.ToArray();traversalRotations=new Quaternion[list.Count];traversalPositions=new Vector3[list.Count];
@@ -195,6 +195,7 @@ namespace BeachBoatStory
         public void FitSwordToGrip()
         {
             if(weapon==null||rightHand==null)return;
+            var scale=weapon.parent.lossyScale;weapon.localScale=new Vector3(swordScale/scale.x,swordScale/scale.y,swordScale/scale.z);
             // Follow the palm and its thumb side, rather than guessing bone Euler axes.
             var across=indexKnuckle!=null&&littleKnuckle!=null?indexKnuckle.position-littleKnuckle.position:rightHand.up;
             BladeDirection=across.normalized;

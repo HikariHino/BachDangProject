@@ -27,7 +27,7 @@ namespace BeachBoatStory
         public static BoatHullCollision Get(Transform root)
         {
             var hull=root.GetComponent<BoatHullCollision>();if(hull==null)hull=root.gameObject.AddComponent<BoatHullCollision>();
-            if(hull.solidHull==null)hull.Initialize();else hull.UpdateRadius();return hull;
+            if(hull.solidHull==null||hull.deckVisual==null)hull.Initialize();else hull.UpdateRadius();return hull;
         }
         void Awake(){if(solidHull!=null)UpdateRadius();}
         void UpdateRadius(){var half=Vector3.Scale(solidHull.size,Abs(solidHull.transform.lossyScale))*.5f;Radius=new Vector2(half.x,half.z).magnitude+3;}

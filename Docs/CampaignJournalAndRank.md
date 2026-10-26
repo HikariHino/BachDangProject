@@ -62,12 +62,12 @@ rules are re-evaluated from real records and marked with rankRulesVersion=3.
 Missing historical data remains **Tạm tính**. The legacy finalScore field is
 retained for file compatibility but is no longer used to determine rank.
 
-The village now chooses five clear positions around inhabitants and market
-approaches per new journey, with random offsets and yaw. Pickups have no
+The village uses five original, fixed log positions again. Pickups have no
 floating wood labels or distant route marker. Only the closest log within
-10 world units offers `[E] Nhặt`. Save slots retain each log's identity,
-position, rotation, collection state, search duration and target. Existing
-seven-log saves retain already collected identities when reduced to five.
+10 world units offers `[E] Nhặt`. Loading an older scattered layout returns
+uncollected logs to those original positions while retaining collected
+identities and the recorded search duration/target. Existing seven-log
+saves retain already collected identities when reduced to five.
 
 Search reference = max(180 seconds, exact shortest order through the five
 positions from the village arrival / walking speed ×1.8 +100 seconds).

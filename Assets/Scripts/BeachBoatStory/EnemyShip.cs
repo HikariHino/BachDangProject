@@ -28,7 +28,7 @@ namespace BeachBoatStory
         Vector3 sinkStart;Quaternion sinkRotation;
         GameObject[] debris;
         Rigidbody[] debrisBodies;
-        MeshCollider[] wreckColliders;
+        MeshCollider[] wreckColliders;ShipwreckPresentation presentation;
         public bool HasSolidWreck=>isDestroyed&&wreckColliders!=null&&System.Array.Exists(wreckColliders,c=>c!=null&&c.enabled);
         public bool TryWreckSurfaceAt(Vector3 position,out Vector3 surface)
         {
@@ -56,8 +56,20 @@ namespace BeachBoatStory
             }
             return !float.IsPositiveInfinity(best);
         }
+        public void PrepareWreck()
+        {
+            if(presentation==null)presentation=GetComponent<ShipwreckPresentation>()??gameObject.AddComponent<ShipwreckPresentation>();
+            presentation.Prepare();EnsureDebrisPool();if(!isDestroyed)ConfigureWreckCollision(false);
+        }
         void ConfigureWreckCollision(bool wreck)
         {
+            if(presentation!=null&&presentation.Colliders!=null)
+            {
+                wreckColliders=presentation.Colliders;
+                foreach(var col in GetComponentsInChildren<Collider>(true))
+                    if(col.GetComponentInParent<EnemyDeckGuard>()==null)col.enabled=System.Array.IndexOf<Collider>(wreckColliders,col)>=0?wreck:!wreck;
+                return;
+            }
             if(wreckColliders==null)
             {
                 var colliders=new System.Collections.Generic.List<MeshCollider>();var visual=transform.Find("RedSailJunkVisual");
@@ -78,6 +90,7 @@ namespace BeachBoatStory
         }
         public void Activate()
         {
+            PrepareWreck();presentation.SetBroken(false);
             isDestroyed=false;HasSettled=false;destroyedTime=stakeContactTime=0;battleStarted=true;
             attackReleased=false;SignalReady=false;routeIndex=0;
             var first=targetPoint;
@@ -112,7 +125,8 @@ namespace BeachBoatStory
                 destroyedTime+=dt;float t=Mathf.Clamp01(destroyedTime/7f);
                 float fall=Mathf.SmoothStep(0,1,t);
                 transform.SetPositionAndRotation(sinkStart-transform.forward*(8f*Mathf.Sin(t*Mathf.PI))-Vector3.up*sinkDepth*fall,
-                    sinkRotation*Quaternion.Euler(28*fall,0,42*fall));
+                    sinkRotation*Quaternion.Euler(6*fall,0,12*fall));
+                presentation?.Step(destroyedTime);
                 if(t>=1)
                 {
                     HideDebris();
@@ -193,17 +207,16 @@ namespace BeachBoatStory
             // Upper timber remains visible and can support a boarder.
             float ground=TideSystem.CurrentWaterHeight-85;
             var terrain=Terrain.activeTerrain;if(terrain!=null)ground=terrain.SampleHeight(sinkStart)+terrain.transform.position.y;
-            var finalRotation=sinkRotation*Quaternion.Euler(28,0,42);
+            var finalRotation=sinkRotation*Quaternion.Euler(6,0,12);
             float hullBottom=float.PositiveInfinity;
             foreach(float x in new[]{-40f,40f})foreach(float z in new[]{-120f,120f})
                 hullBottom=Mathf.Min(hullBottom,(finalRotation*new Vector3(x,-4,z)).y);
             // Grounded on the stakes: keep real upper timber reachable while the hull floods.
             sinkDepth=Mathf.Clamp(sinkStart.y-(ground-hullBottom+1),18,32);
-            ConfigureWreckCollision(true);
+            presentation?.SetBroken(true);ConfigureWreckCollision(true);
             FloatSurvivors();
             LaunchDebris(impactPoint);
-            BeachBoatSoundscape.Instance?.PlayCrash();
-            FindAnyObjectByType<RiverBattleChoreography>()?.PlayShipImpact();
+            BeachBoatSoundscape.Instance?.PlayShipwreck(transform.position);
         }
 
         void FloatSurvivors()
@@ -222,6 +235,7 @@ namespace BeachBoatStory
         }
         public void ClearWreck()
         {
+            presentation?.SetBroken(false);
             if(deckGuards!=null)foreach(var guard in deckGuards)if(guard!=null){guard.IsIndependentBoarder=false;guard.RestoreDeck();guard.ResetGuard();}
             ConfigureWreckCollision(false);
             if(wreckRaft!=null)wreckRaft.gameObject.SetActive(false);
@@ -254,7 +268,7 @@ namespace BeachBoatStory
             {
                 if(wreckRaft==null){wreckRaft=new GameObject(name+"_ViTri_XacTau").transform;wreckRaft.SetParent(transform.parent,true);}
                 wreckRaft.gameObject.SetActive(true);wreckRaft.SetPositionAndRotation(new Vector3(sinkStart.x,TideSystem.CurrentWaterHeight+1,sinkStart.z),sinkRotation);
-                ConfigureWreckCollision(true);
+                if(presentation==null)PrepareWreck();presentation.SetBroken(true,destroyedTime);ConfigureWreckCollision(true);
             }
             gameObject.SetActive(data.active);
         }

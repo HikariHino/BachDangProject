@@ -22,6 +22,9 @@ namespace BeachBoatStory
         public AudioSource RiverSource {get;private set;}
         public AudioSource WindSource {get;private set;}
         AudioSource foley,effects,ui,birds;
+        AudioClip arrowImpact;AudioClip[] wreckCries;float nextDistantHit,nextWreckSound;
+        public int WreckSoundsPlayed {get;private set;}
+        public int CombatHitsPlayed {get;private set;}
         BeachBoatQuestSession session;
         Vector3 previous;
         float distance,nextStep,nextOar,nextBird,toastUntil;
@@ -36,7 +39,11 @@ namespace BeachBoatStory
         {
             Application.runInBackground=true;
             savedListenerVolume=AudioListener.volume;
+            if(GetComponent<CombatHitFeedback>()==null)gameObject.AddComponent<CombatHitFeedback>();
+            if(GetComponent<ShipwreckPrewarm>()==null)gameObject.AddComponent<ShipwreckPrewarm>();
+            wreckCries=Resources.LoadAll<AudioClip>("BachDang938/WreckAudio");
             runningFootsteps=Resources.LoadAll<AudioClip>("BachDang938/RunSteps");
+            arrowImpact=Resources.Load<AudioClip>("BachDang938/LobbyAudio/Arrow_Flesh_Impact");
             System.Array.Sort(runningFootsteps,(a,b)=>string.CompareOrdinal(a.name,b.name));
             foreach(var old in session.player.GetComponentsInChildren<FootstepSound>(true))old.enabled=false;
             previous=session.player.transform.position;
@@ -108,8 +115,26 @@ namespace BeachBoatStory
         public void PlayBow(bool hostile=false)=>Play(effects,bow,hostile ? .25f : .65f,Random.Range(.95f,1.05f));
         public void PlayDrum(int beat)=>Play(effects,drum,.8f,.8f+beat*.13f);
         public void PlayCrash()=>Play(effects,crash,.85f);
+        public void PlayShipwreck(Vector3 point)
+        {
+            if(Time.time<nextWreckSound)return;nextWreckSound=Time.time+.22f;
+            float distance=Vector3.Distance(point,session.player.transform.position);float level=Mathf.Lerp(.72f,.12f,Mathf.Clamp01(distance/900));
+            Play(effects,crash,level,.9f);
+            if(wreckCries!=null&&wreckCries.Length>0)Play(effects,wreckCries[Random.Range(0,wreckCries.Length)],level*.65f,Random.Range(.92f,1.05f));
+            WreckSoundsPlayed++;
+        }
         public void PlayStake()=>Play(effects,drum,.3f,1.7f);
         public void PlayHit()=>Play(effects,hit,.55f);
+        public void PlayCombatHit(Vector3 point,CombatImpactKind kind,bool foreground)
+        {
+            float distance=Vector3.Distance(point,session.player.transform.position);
+            if(!foreground&&(distance>180||Time.unscaledTime<nextDistantHit))return;
+            var clip=kind==CombatImpactKind.Arrow?arrowImpact:GetComponent<RiverBattleChoreography>()?.hitImpact;
+            if(clip==null)clip=hit;
+            if(Muted||effects==null||clip==null)return;
+            if(!foreground)nextDistantHit=Time.unscaledTime+.08f;
+            Play(effects,clip,foreground?.72f:Mathf.Lerp(.34f,.035f,distance/180),Random.Range(.97f,1.04f));CombatHitsPlayed++;
+        }
         public void PlayResult(bool correct)=>Play(ui,correct?good:bad,.55f);
         public void PlayInteraction()
         {

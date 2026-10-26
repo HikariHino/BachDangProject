@@ -88,7 +88,7 @@ namespace BeachBoatStory
             if(hull==null)hull=BoatHullCollision.Get(transform);
             if(!hull.CanOccupy(position,rotation)&&RiverWaterNavigation.NearestClear(position,hull.Radius,out var repaired))
             {repaired.y=TideSystem.CurrentWaterHeight+waterlineOffset;position=repaired;}
-            transform.SetPositionAndRotation(position,rotation);Physics.SyncTransforms();path.Clear();nextPlan=0;
+            position.y=TideSystem.CurrentWaterHeight+waterlineOffset;transform.SetPositionAndRotation(position,rotation);Physics.SyncTransforms();path.Clear();nextPlan=0;
         }
         public void ResetForCheckpoint()
         {
@@ -98,7 +98,10 @@ namespace BeachBoatStory
         void Update(){liveUpdate=true;Step(Time.deltaTime);liveUpdate=false;}
         public void Step(float dt)
         {
-            if(!ready||dt<=0||BeachBoatQuestSession.InteractionBlocked)return;
+            if(!ready||dt<=0)return;
+            // Water level is the support plane, even while an order/dialogue pauses navigation.
+            var afloat=transform.position;afloat.y=TideSystem.CurrentWaterHeight+waterlineOffset;transform.position=afloat;
+            if(BeachBoatQuestSession.InteractionBlocked)return;
             dt=Mathf.Min(dt,.05f);clock+=dt;
             if(YieldFromTraffic(dt))return;
             var story=BachDangStoryManager.Instance;

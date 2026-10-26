@@ -136,7 +136,18 @@ public static class BeachBoatMarineJournalPlaytest
         var lower=game.CaptureSave();var raised=game.CaptureSave();var station=friendly.GetComponentInChildren<FleetDeckCrew>().soldiers[0];
         raised.deckLocal=friendly.transform.InverseTransformPoint(station.position+friendly.transform.right*8);game.RestoreSave(raised);game.StepPlayer(0);CheckSoles("On the raised stern deck");
         game.RestoreSave(lower);game.StepPlayer(0);CheckSoles("After returning to the lower deck");
-        victim.ResetGuard();victim.IsIndependentBoarder=true;victim.transform.SetParent(session.transform,true);victim.transform.position=session.player.transform.position+session.player.transform.forward*15;Physics.SyncTransforms();int hp=victim.Health;Check(game.TrySlash()&&victim.Health==hp-1,"Player can slash an enemy who boarded an allied ship");
+        victim.ResetGuard();victim.IsIndependentBoarder=true;victim.transform.SetParent(session.transform,true);victim.GetComponent<ActorSolidBody>().Carrier=friendly.transform;
+        // Keep this fixture's hit lane clear of the real friendly defenders. They
+        // correctly block a blade after melee obstruction checks were introduced.
+        bool lane=false;var reach=typeof(RiverBoardingCombat).GetMethod("CanMeleeReach",BindingFlags.Instance|BindingFlags.NonPublic);
+        for(int angle=0;angle<360&&!lane;angle+=30)
+        {
+            var direction=Quaternion.Euler(0,angle,0)*Vector3.forward;var at=session.player.transform.position+direction*15;
+            if(!deckHull.TryDeckSurface(at,out var surface)||Mathf.Abs(surface.y-session.player.transform.position.y)>12)continue;
+            at.y=surface.y+.2f;victim.transform.position=at;victim.FitStandingOnDeck();Physics.SyncTransforms();
+            lane=(bool)reach.Invoke(game,new object[]{session.player.transform,victim.transform,36f});if(lane)session.player.transform.rotation=Quaternion.LookRotation(direction);
+        }
+        Check(lane,"Find a clear sword lane without hitting through a friendly defender");int hp=victim.Health;Check(game.TrySlash()&&victim.Health==hp-1,"Player can slash an enemy who boarded an allied ship");
         game.ToggleSword();combat.SetAim(true);float y=session.player.transform.position.y;typeof(RiverPlayerCombat).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(combat,null);Check(Mathf.Abs(session.player.transform.position.y-y)<.01f,"Aiming on an allied deck cannot pull the player to the waterline");combat.SetAim(false);
         var boarding=game.CaptureSave();Move(session.player.transform.position+Vector3.right*70);game.RestoreSave(boarding);game.StepPlayer(0);Check(game.State==RiverBoardingCombat.PlayerState.FriendlyDeck&&boarding.deckShip==friendly.name,"Allied-deck state keeps its moving carrier after restore");
         BachDangSaveSystem.TestDirectory=Path.GetFullPath("Logs/MarineJournalSaveQA");
