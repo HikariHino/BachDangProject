@@ -151,7 +151,7 @@ public static class BeachBoatRecoveryPlaytest
         Check(archers.Kills>0&&RiverPlayerCombat.Instance.AlliedKills>=archers.Kills,"Successful shoreline kills count for allies");
         Check(RiverPlayerCombat.Instance.Kills==boatSave.fleet.kills,"Allied archers do not steal credit in the player's personal kill achievement");
         var voices=fleet.GetComponent<RiverBattleVoices>();voices.enabled=false;voices.ResetForNewBattle();
-        Check(voices.AssetsReady,"All seven offline battle voice clips and three human cries are packaged and loadable");
+        Check(voices.AssetsReady,"All eight offline battle voice clips and three human cries are packaged and loadable");
         Set(fleet,"<AmbushStarted>k__BackingField",false);BachDangBattleTimeline.Instance.BeginLure();voices.Step(.1f);
         Check(voices.InvasionCues>0&&!voices.AmbushPlayed,"Invaders cheer during the approach, before the ambush");
         Set(fleet,"<AmbushStarted>k__BackingField",true);BachDangBattleTimeline.Instance.BeginAmbush();voices.Step(.1f);

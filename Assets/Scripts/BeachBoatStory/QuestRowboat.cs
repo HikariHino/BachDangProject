@@ -199,6 +199,7 @@ namespace BeachBoatStory
         public void RestoreSave(bool aboard,Vector3 position,Quaternion rotation)
         {
             if(IsAboard)RestorePlayer();
+            position.y=TideSystem.CurrentWaterHeight;
             transform.SetPositionAndRotation(position,rotation);
             if(aboard)BoardPlayer(false);
             Speed=0;IsBoosting=false;
@@ -324,13 +325,16 @@ namespace BeachBoatStory
                 int slices=Mathf.CeilToInt(Mathf.Min(dt,.25f)/.05f);float slice=Mathf.Min(dt,.25f)/slices;
                 for(int i=0;i<slices;i++)Step(throttle,steering,slice,boostWanted);return;
             }
+            if (dt <= 0 || !isActiveAndEnabled) return;
+            // The empty boat still floats while the player swims, walks ashore,
+            // climbs another vessel or draws a weapon. Traversal only stops rowing.
+            var position = transform.position; position.y = TideSystem.CurrentWaterHeight;
+            transform.position = position;
             var boarding=RiverBoardingCombat.Instance;
             if(IsAboard&&boarding!=null&&(boarding.PlayerAway||boarding.SwordDrawn))
             {Speed=0;IsBoosting=false;animator.speed=1;if(!boarding.PlayerAway)AttachPlayer();return;}
             if(RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming){throttle=0;steering=0;boostWanted=false;}
-            if (dt <= 0 || !isActiveAndEnabled || IsBroken) {if(IsBroken){Speed=0;IsBoosting=false;}return;}
-            var position = transform.position; position.y = TideSystem.CurrentWaterHeight;
-            transform.position = position;
+            if (IsBroken) {Speed=0;IsBoosting=false;return;}
             if (!IsAboard || BeachBoatQuestSession.InteractionBlocked)
             { Speed = 0; IsBoosting = false; if (IsAboard) { animator.speed = 0; AttachPlayer(); } return; }
             dt = Mathf.Min(dt, .05f);

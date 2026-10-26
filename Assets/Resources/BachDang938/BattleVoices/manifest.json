@@ -5,6 +5,7 @@
       "voice": "VieNeu/Thái Sơn",
       "text": "Xông lên! Chiếm lấy bờ sông!",
       "tempo": 1.22,
+      "mastering": "battle-presence-v2",
       "bytes": 19052
     },
     {
@@ -12,6 +13,7 @@
       "voice": "VieNeu/Đức Trí",
       "text": "Tiến lên! Quân ta sắp thắng rồi!",
       "tempo": 1.23,
+      "mastering": "battle-presence-v2",
       "bytes": 26828
     },
     {
@@ -19,6 +21,7 @@
       "voice": "VieNeu/Thái Sơn",
       "text": "Trúng mai phục rồi! Rút lui! Rút lui!",
       "tempo": 1.25,
+      "mastering": "battle-presence-v2",
       "bytes": 34172
     },
     {
@@ -26,6 +29,7 @@
       "voice": "VieNeu/Đức Trí",
       "text": "Thuyền mắc cọc rồi! Cứu ta với!",
       "tempo": 1.22,
+      "mastering": "battle-presence-v2",
       "bytes": 27260
     },
     {
@@ -33,21 +37,32 @@
       "voice": "VieNeu/Hải Đăng",
       "text": "Bỏ thuyền! Mau chạy! Chạy đi!",
       "tempo": 1.24,
+      "mastering": "battle-presence-v2",
       "bytes": 20348
     },
     {
       "name": "NgoQuyen_Ambush",
       "voice": "VieNeu/Minh Đức",
-      "text": "Thời cơ đã đến! Quân sĩ hai bờ, bắn tên!",
-      "tempo": 1.18,
-      "bytes": 31580
+      "text": "Thời cơ đã đến! Bắn! Toàn quân, đánh!",
+      "tempo": 1.14,
+      "mastering": "battle-presence-v2",
+      "bytes": 32444
     },
     {
       "name": "NgoQuyen_Attack",
       "voice": "VieNeu/Minh Đức",
-      "text": "Toàn quân phản công! Không để giặc thoát!",
-      "tempo": 1.18,
-      "bytes": 28124
+      "text": "Đánh! Quyết không để giặc thoát!",
+      "tempo": 1.14,
+      "mastering": "battle-presence-v2",
+      "bytes": 22076
+    },
+    {
+      "name": "Enemy_Cheer_Crowd",
+      "voice": "VieNeu/Quốc Tuấn + Hải Đăng + Đức Trí",
+      "text": "Xông lên! Xông lên!",
+      "tempo": 1.15,
+      "mastering": "battle-presence-v2",
+      "bytes": 23372
     }
   ]
 }

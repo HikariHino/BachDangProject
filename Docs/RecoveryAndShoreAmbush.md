@@ -46,9 +46,12 @@ identifies their source meshes, including generated `Tree_<guid>` terrain
 prefabs, disables their colliders and keeps tree trunks, rocks, buildings,
 actors and stakes solid. The revision retains every vegetation instance.
 
-Six additional allied archers take dry-bank positions above high water at
-the shipwreck ambush. They remain hidden before the ambush, fire every
-4.5–6.5 seconds, and use a fixed pool of 12 visible arrows. The probability
+Eighteen additional allied archers form six groups along dry shorelines,
+including both dry landmasses around the stake field and the reporting-dock
+bank. A terrain grid and connected-land search find smaller islands that the
+previous radial search missed. They remain hidden before the ambush, fire
+every 12–18 seconds each, and use a fixed pool of 24 visible arrows. The longer
+individual cooldown retains roughly the previous overall firing rate. The probability
 of aiming a hit decreases from 65% at close range to 25% at 4,200 units;
 cover can stop an arrow. A successful shot has a 25% lethal-damage roll;
 otherwise it inflicts one of a guard's two health points. Damage is applied
@@ -72,9 +75,12 @@ ducks enemy/crowd volume. Three existing recorded human cries from the CC0
 pack credited in `ShipwreckAudioCredits.md` add variety during the wreck battle.
 All three audio channels pause in menus/dialogue, and stop on defeat/reset.
 
-Seven new speech clips are generated offline using the locally cached
+Eight battle clips are generated offline using the locally cached
 VieNeu model already used by the campaign cast. Ngô Quyền retains Minh Đức;
-invaders use Thái Sơn, Đức Trí and Hải Đăng. These are synthesized performances,
+invaders use Thái Sơn, Đức Trí and Hải Đăng. A three-voice advance chant adds
+Quốc Tuấn. Speech is remastered with presence EQ, compression and higher
+average level, with controlled peaks. Enemy/commander channel levels are
+also higher; commander orders are shorter and more emphatic. These are synthesized performances,
 not historical voice recordings. The exact text, cast, tempo and size are in
 `Assets/Resources/BachDang938/BattleVoices/manifest.json`; reproduction uses
 `Tools/generate_battle_voices.py`. No model/runtime dependency ships in Assets.
@@ -89,10 +95,34 @@ not replay the opening ambush command or lose a scheduled counterattack cue.
   including repeated restore, legacy patrol migration and a real scene reload.
 - Tide/wreck save regression: 232 checks passed, including mid-rise, ebb,
   victory and retained-wreck roundtrips.
-- All seven MP3 clips decoded, were non-silent and stayed below full scale;
-  combined size is 187,364 bytes. Phase triggers, pauses and saved cue flags
+- All eight MP3 clips decoded, were non-silent and stayed below full scale;
+  combined size is 205,552 bytes. Phase triggers, pauses and saved cue flags
   were exercised through the runtime components.
 
 Tests ran through Unity CLI in headless mode. They do not replace a visual
 layout review or listening pass on the player's speakers. The warm restore
 measurement excludes application startup and the loading-panel frame.
+
+## Ebb and shoreline regression
+
+The rowboat follows current water height before traversal/sword early returns,
+including when the player is on land, swimming, climbing or visiting another
+deck. Old saved boat heights are reconciled against the restored tide on load.
+Pausing still stops traversal. Walking resumes in water shallower than 40%
+of the player's capsule height; entering swim requires water deeper than 65%
+and the actual feet to be submerged. This hysteresis avoids repeated swim/walk
+flips at the beach, and the feet test protects a player standing on a pier
+above deep seabed. Receding water can return an idle swimmer to standing.
+
+`BeachBoatShorelinePlaytest.RunInEditor()` verifies all traversal modes across
+high/low water, paused movement, shallow/deep transition, hysteresis, standing
+on exposed sand, reboarding and old saved floating-boat poses. It also checks
+18 prepared archer stations on two dry landmasses, dock-bank coverage, dry
+high-water footing, eight loadable audio cues and unchanged real user saves.
+The report is written to ignored `Logs/ShorelinePlaytest.json`.
+
+The shoreline suite passed 59 checks on 2026-10-26. The recovery/battle suite
+passed another 85 checks after this revision, including 390 simulated arrow
+launches, 13 real enemy hits and 7 allied kills. Original manual and temporary
+save files remained byte-identical. Decoded speech/crowd clips measured peak
+levels below 0.82 (full scale 1.0), with no clipped samples.

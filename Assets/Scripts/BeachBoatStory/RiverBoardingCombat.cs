@@ -352,11 +352,25 @@ namespace BeachBoatStory
             var c=session.player.GetComponent<CapsuleCollider>();
             return (c.center.y-c.height*.5f)*session.player.transform.lossyScale.y;
         }
+        float PlayerBodyHeight
+        {
+            get{var c=session.player.GetComponent<CapsuleCollider>();return c.height*Mathf.Abs(session.player.transform.lossyScale.y);}
+        }
+        public float WadeExitDepth=>PlayerBodyHeight*.40f;
+        public float SwimEntryDepth=>PlayerBodyHeight*.65f;
+        public bool TryEnterWaterFromShore()
+        {
+            if(State!=PlayerState.Land)return false;
+            var at=session.player.transform.position;
+            if(!GroundAt(at,out float floor)||floor>=TideSystem.CurrentWaterHeight-SwimEntryDepth||
+                at.y+FeetOffset()>=TideSystem.CurrentWaterHeight-SwimEntryDepth+1)return false;
+            BeginSwim(at);return true;
+        }
         public bool TryWalkAshore(Vector3 point)
         {
             // Low tide can leave the beach well above the swimming root. Judge
             // the actual support slope, not a fixed height band above the water.
-            if(State!=PlayerState.Swimming||!GroundAt(point,out float floor,out var normal)||floor<TideSystem.CurrentWaterHeight-1||Vector3.Angle(normal,Vector3.up)>55)return false;
+            if(State!=PlayerState.Swimming||!GroundAt(point,out float floor,out var normal)||floor<TideSystem.CurrentWaterHeight-WadeExitDepth||Vector3.Angle(normal,Vector3.up)>55)return false;
             var capsule=session.player.GetComponent<CapsuleCollider>();
             var landing=point;landing.y=floor-FeetOffset()+.5f;
             float radius=capsule.radius*Mathf.Max(session.player.transform.lossyScale.x,session.player.transform.lossyScale.z)*.88f;
@@ -372,13 +386,15 @@ namespace BeachBoatStory
         public void StepPlayer(float dt)=>StepPlayer(dt,new Vector2(Input.GetAxisRaw("Horizontal"),Input.GetAxisRaw("Vertical")),Input.GetKey(KeyCode.LeftShift));
         public void StepPlayer(float dt,Vector2 movement,bool sprint=false)
         {
-            if(State==PlayerState.Rowboat)return;
+            if(dt<=0||State==PlayerState.Rowboat)return;
             if(State==PlayerState.Land)
             {
-                var at=session.player.transform.position;
-                if(GroundAt(at,out float floor)&&floor<TideSystem.CurrentWaterHeight-5&&at.y+FeetOffset()<TideSystem.CurrentWaterHeight-1)BeginSwim(at);
+                TryEnterWaterFromShore();
                 return;
             }
+            // Falling water can expose the bank beneath a stationary swimmer.
+            // Restore standing before applying the swim pose or water-height clamp.
+            if(State==PlayerState.Swimming&&TryWalkAshore(session.player.transform.position))return;
             if((State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck)&&(deckAnchor==null||!deckAnchor.gameObject.activeInHierarchy)){BeginSwim(session.player.transform.position);return;}
             if(State==PlayerState.Climbing)
             {
