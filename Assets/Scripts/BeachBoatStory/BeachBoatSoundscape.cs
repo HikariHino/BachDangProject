@@ -9,6 +9,14 @@ namespace BeachBoatStory
         public AudioClip river,wind,bird,oar,bow,drum,crash,good,bad,hit;
         public AudioClip[] footsteps=new AudioClip[0];
         AudioClip[] runningFootsteps;
+        AudioClip[] recordedOars,recordedBows,recordedSwordSwings,deckFootsteps;
+        int oarIndex,bowIndex,swordIndex;
+        Transform previousCarrier;Vector3 previousDeckPosition;
+        public AudioClip LastOar {get;private set;}
+        public AudioClip LastBow {get;private set;}
+        public AudioClip LastSwordSwing {get;private set;}
+        public AudioClip LastCombatImpact {get;private set;}
+        public int SwordSwingsPlayed {get;private set;}
         public int RunningFootstepsPlayed {get;private set;}
         public AudioClip LastFootstep {get;private set;}
         [Range(0,1)] public float masterVolume=.8f;
@@ -44,6 +52,13 @@ namespace BeachBoatStory
             wreckCries=Resources.LoadAll<AudioClip>("BachDang938/WreckAudio");
             runningFootsteps=Resources.LoadAll<AudioClip>("BachDang938/RunSteps");
             arrowImpact=Resources.Load<AudioClip>("BachDang938/LobbyAudio/Arrow_Flesh_Impact");
+            var actionClips=Resources.LoadAll<AudioClip>("BachDang938/ActionAudio");
+            AudioClip[] Group(string prefix)=>System.Array.FindAll(actionClips,c=>c.name.StartsWith(prefix,System.StringComparison.Ordinal));
+            var walking=Group("Walk_");if(walking.Length>0)footsteps=walking;
+            var running=Group("Run_");if(running.Length>0)runningFootsteps=running;
+            recordedOars=Group("Oar_");recordedBows=Group("Bow_");recordedSwordSwings=Group("Sword_");deckFootsteps=Group("Deck_");
+            foreach(var clips in new[]{footsteps,runningFootsteps,recordedOars,recordedBows,recordedSwordSwings,deckFootsteps})System.Array.Sort(clips,(a,b)=>string.CompareOrdinal(a.name,b.name));
+            var impacts=Group("Arrow_Flesh_");if(impacts.Length>0)arrowImpact=impacts[0];
             System.Array.Sort(runningFootsteps,(a,b)=>string.CompareOrdinal(a.name,b.name));
             foreach(var old in session.player.GetComponentsInChildren<FootstepSound>(true))old.enabled=false;
             previous=session.player.transform.position;
@@ -76,21 +91,30 @@ namespace BeachBoatStory
             float breeze=.035f+.01f*Mathf.Sin(Time.unscaledTime*.23f);
             WindSource.volume=Mathf.MoveTowards(WindSource.volume,volume*(dead?.01f:breeze)*intro,Time.unscaledDeltaTime*.012f);
             var position=session.player.transform.position;float moved=QuestRowboat.FlatDistance(position,previous);previous=position;
+            var carrier=RiverBoardingCombat.Instance?.PlayerDeckCarrier;
+            if(carrier!=null)
+            {
+                var local=carrier.InverseTransformPoint(position);
+                moved=previousCarrier==carrier?carrier.TransformVector(local-previousDeckPosition).magnitude:0;
+                previousDeckPosition=local;
+            }
+            previousCarrier=carrier;
             if(Muted||dead||!session.storyMode)return;
             if(Time.time>=nextBird){nextBird=Time.time+Random.Range(8,15);birds.panStereo=Random.Range(-.6f,.6f);Play(birds,bird,.22f,Random.Range(.94f,1.08f));}
             if(BeachBoatQuestSession.InputBlocked)return;
             bool aboard=QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard&&!(RiverBoardingCombat.Instance?.State==RiverBoardingCombat.PlayerState.Land);
-            if(RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.PlayerAway&&RiverBoardingCombat.Instance.State!=RiverBoardingCombat.PlayerState.Land){distance=0;return;}
+            if(RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.PlayerAway&&RiverBoardingCombat.Instance.State!=RiverBoardingCombat.PlayerState.Land&&carrier==null){distance=0;return;}
+            if(carrier!=null)aboard=false;
             if(aboard)
             {
                 distance=0;var boat=QuestRowboat.Instance;
                 if(Mathf.Abs(boat.Speed)>5&&Time.time>=nextOar&&!(RiverPlayerCombat.Instance?.IsAiming??false))
                 {nextOar=Time.time+Mathf.Lerp(1.3f,.7f,Mathf.Abs(boat.Speed)/Mathf.Max(1,boat.maxSpeed));PlayOar();}
             }
-            else if(moved<60&&session.player.GetComponent<Character_Movement>().IsGrounded)
+            else if(moved<60&&(carrier!=null||session.player.GetComponent<Character_Movement>().IsGrounded))
             {
                 distance+=moved;
-                bool running=session.player.GetComponent<Character_Movement>().IsRunning;
+                bool running=carrier==null&&session.player.GetComponent<Character_Movement>().IsRunning;
                 if(moved>.001f&&distance>=(running?12:14)&&Time.time>=nextStep){distance=0;nextStep=Time.time+(running?.23f:.42f);PlayFootstep(running);}
             }
             else distance=0;
@@ -99,20 +123,27 @@ namespace BeachBoatStory
         {if(Muted||source==null||clip==null)return;source.pitch=pitch;source.PlayOneShot(clip,volume*masterVolume);EffectsPlayed++;}
         public void PlayFootstep(bool running=false)
         {
-            var clips=running&&runningFootsteps!=null&&runningFootsteps.Length>0?runningFootsteps:footsteps;
+            bool deck=RiverBoardingCombat.Instance?.PlayerDeckCarrier!=null&&deckFootsteps!=null&&deckFootsteps.Length>0;
+            var clips=deck?deckFootsteps:running&&runningFootsteps!=null&&runningFootsteps.Length>0?runningFootsteps:footsteps;
             if(clips.Length==0)return;
             // Recorded pairs alternate left/right, with varied takes of each foot.
             int index=running?(runStepIndex++%2)+2*Random.Range(0,Mathf.Max(1,clips.Length/2)):footIndex++%clips.Length;
             LastFootstep=clips[Mathf.Min(index,clips.Length-1)];
-            Play(foley,LastFootstep,running?.60f:.38f,Random.Range(.98f,1.02f));FootstepsPlayed++;
+            Play(foley,LastFootstep,running?.62f:.52f,Random.Range(.98f,1.02f));FootstepsPlayed++;
             if(running)RunningFootstepsPlayed++;
         }
         public void SetMuted(bool value){Muted=value;AudioListener.volume=value?0:BachDangPreferences.Volume;toastUntil=Time.unscaledTime+2.5f;}
-        public void PlayOar(){Play(foley,oar,.62f,Random.Range(.94f,1.06f));OarsPlayed++;}
+        static AudioClip Next(AudioClip[] clips,ref int index,AudioClip fallback)=>clips!=null&&clips.Length>0?clips[index++%clips.Length]:fallback;
+        public void PlayOar(){LastOar=Next(recordedOars,ref oarIndex,oar);Play(foley,LastOar,.65f,Random.Range(.98f,1.02f));OarsPlayed++;}
         public void PlaySwimStroke(bool moving=true){Play(foley,oar,moving?.48f:.22f,Random.Range(1.10f,1.25f));SwimStrokesPlayed++;}
         public void PlayWaterEntry()=>Play(foley,oar,.72f,.8f);
         public void PlayClimbGrip()=>Play(foley,footsteps.Length>0?footsteps[0]:oar,.38f,.92f);
-        public void PlayBow(bool hostile=false)=>Play(effects,bow,hostile ? .25f : .65f,Random.Range(.95f,1.05f));
+        public void PlayBow(bool hostile=false){LastBow=Next(recordedBows,ref bowIndex,bow);Play(effects,LastBow,hostile ? .23f : .65f,Random.Range(.98f,1.02f));}
+        public void PlaySwordSwing()
+        {
+            LastSwordSwing=Next(recordedSwordSwings,ref swordIndex,GetComponent<RiverBattleChoreography>()?.swordSwing);
+            Play(effects,LastSwordSwing,.65f,Random.Range(.97f,1.03f));SwordSwingsPlayed++;
+        }
         public void PlayDrum(int beat)=>Play(effects,drum,.8f,.8f+beat*.13f);
         public void PlayCrash()=>Play(effects,crash,.85f);
         public void PlayShipwreck(Vector3 point)
@@ -132,6 +163,7 @@ namespace BeachBoatStory
             var clip=kind==CombatImpactKind.Arrow?arrowImpact:GetComponent<RiverBattleChoreography>()?.hitImpact;
             if(clip==null)clip=hit;
             if(Muted||effects==null||clip==null)return;
+            LastCombatImpact=clip;
             if(!foreground)nextDistantHit=Time.unscaledTime+.08f;
             Play(effects,clip,foreground?.72f:Mathf.Lerp(.34f,.035f,distance/180),Random.Range(.97f,1.04f));CombatHitsPlayed++;
         }

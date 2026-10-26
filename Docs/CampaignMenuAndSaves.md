@@ -14,7 +14,7 @@ All four travel gates are available throughout the campaign. Traveling changes t
 
 The camp has two separate gates in the west palisade, with clear openings and destination signs: **Làng • nhiệm vụ 2** goes to the village wood/supply quests; **Bến sông Bạch Đằng** goes to the stake-field harbor and naval battle. Their interaction circles do not overlap, and only the nearest eligible gate receives E. The HUD routes the current objective through the appropriate gate instead of pointing at any nearby gate.
 
-Walking uses the existing light footsteps at a slower cadence. Running uses eight original boot/soil impacts with separate heel, toe, granular crunch and short scuff layers. The generator does not reuse Walk1, Walk2 or the previous running waveform. Playback gain is .55 with small pitch variation; every take is short, distinct and checked for audible energy and unclipped peaks. `Tools/author_running_foley.py` reproduces these recordings. Footsteps stop when the player is still, airborne or swimming.
+Walking and running use separate edited grass recordings; walking on a ship uses wood recordings. Steps stop when the player is still, airborne or swimming, and standing on a moving ship does not count as walking. Rowing, bow release and sword swings rotate through short recorded variants. See [ActionAudioSources.md](ActionAudioSources.md) for sources and processing details.
 
 ## Naval controls and wrecks
 

@@ -53,7 +53,25 @@ public static class BeachBoatAudioBattlePlaytest
         a0.position=origin+Vector3.right*16;game.RestoreSave(data);var wall=GameObject.CreatePrimitive(PrimitiveType.Cube);wall.name="QA solid obstruction";wall.transform.position=origin+new Vector3(8,8,0);wall.transform.localScale=new Vector3(3,30,40);Physics.SyncTransforms();attacks[guard]=-1;
         game.StepHostiles(.01f);Check(game.CaptureSave().allies[0].health==5,"Enemy cannot hit an allied swimmer through solid timber");Object.DestroyImmediate(wall);
         var fx=CombatHitFeedback.Instance;int arrows=fx.ArrowHits,sounds=BeachBoatSoundscape.Instance.CombatHitsPlayed;guard.ResetGuard();guard.Hit(1,true,CombatImpactKind.Arrow);Check(fx.ArrowHits==arrows+1&&BeachBoatSoundscape.Instance.CombatHitsPlayed==sounds+1,"Confirmed arrow hit emits blood and its distinct impact sound");
+        Check(BeachBoatSoundscape.Instance.LastCombatImpact.name=="Arrow_Flesh_01","A real arrow hit uses the newly edited YouTube flesh impact");
         guard.Hit(2,true);int count=fx.ConfirmedHits;guard.Hit(1,true);Check(fx.ConfirmedHits==count&&fx.PoolSize==12,"Already dead targets emit no extra blood and the pool remains bounded");
+    }
+    static void RecordedAudioChecks()
+    {
+        var sound=BeachBoatSoundscape.Instance;var clips=Resources.LoadAll<AudioClip>("BachDang938/ActionAudio");
+        Check(clips.Length==31,"All 31 edited action recordings are imported");
+        foreach(var clip in clips)
+        {
+            Check(clip.frequency==32000&&clip.channels==1&&clip.length>0&&clip.length<1,"Short mono action asset: "+clip.name);
+            clip.LoadAudioData();var samples=new float[clip.samples];Check(clip.GetData(samples,0)&&samples.Max(x=>Mathf.Abs(x))>.05f&&samples.All(x=>!float.IsNaN(x)&&Mathf.Abs(x)<.8f),"Recording contains audible unclipped samples: "+clip.name);
+        }
+        var heard=new HashSet<string>();for(int i=0;i<6;i++){sound.PlayFootstep();heard.Add(sound.LastFootstep.name);}
+        Check(heard.Count==6&&heard.All(n=>n.StartsWith("Walk_Grass_")),"Walking rotates through six real grass footsteps");
+        for(int i=0;i<6;i++)sound.PlayFootstep(true);Check(sound.LastFootstep.name.StartsWith("Run_Grass_"),"Running uses its separate short recordings");
+        heard.Clear();for(int i=0;i<4;i++){sound.PlayOar();heard.Add(sound.LastOar.name);}Check(heard.Count==4&&heard.All(n=>n.StartsWith("Oar_Stroke_")),"Rowing varies four recorded oar strokes");
+        heard.Clear();for(int i=0;i<3;i++){sound.PlayBow();heard.Add(sound.LastBow.name);}Check(heard.Count==3&&heard.All(n=>n.StartsWith("Bow_Release_")),"Bow release varies three edited shots");
+        int confirmed=CombatHitFeedback.Instance.ConfirmedHits;heard.Clear();for(int i=0;i<5;i++){sound.PlaySwordSwing();heard.Add(sound.LastSwordSwing.name);}Check(heard.Count==5&&heard.All(n=>n.StartsWith("Sword_Swing_"))&&CombatHitFeedback.Instance.ConfirmedHits==confirmed,"Five sword swishes do not produce a false hit or blood");
+        int effects=sound.EffectsPlayed;sound.SetMuted(true);sound.PlayOar();sound.PlayBow();sound.PlaySwordSwing();Check(sound.EffectsPlayed==effects&&AudioListener.volume==0,"Mute applies to every new action sound");sound.SetMuted(false);
     }
     static void Sink()
     {
@@ -85,6 +103,14 @@ public static class BeachBoatAudioBattlePlaytest
         game.RestoreSave(data);game.StepHostiles(0);var ally=session.transform.Find(a.id);ally.GetComponentInChildren<Animator>().Update(.2f);Physics.SyncTransforms();var before=ally.position;game.StepAllies(.2f);
         Check(QuestRowboat.FlatDistance(before,ally.position)>1,"Ally advances on the friendly deck despite enemy's original source ship");
         Check(ally.GetComponent<ActorSolidBody>().Carrier==friendly.transform&&game.CaptureSave().allies[0].boat==friendly.name,"Actual allied carrier is retained and serialized");
+        var beforeDeck=game.CaptureSave();var playerBefore=session.player.transform.position;
+        var onDeck=game.CaptureSave();onDeck.state=(int)RiverBoardingCombat.PlayerState.FriendlyDeck;onDeck.deckShip=friendly.name;onDeck.deckLocal=friendly.transform.InverseTransformPoint(floor);game.RestoreSave(onDeck);session.player.transform.position=floor;
+        var sound=BeachBoatSoundscape.Instance;var tick=typeof(BeachBoatSoundscape).GetMethod("Update",BindingFlags.Instance|BindingFlags.NonPublic);tick.Invoke(sound,null);
+        int footsteps=sound.FootstepsPlayed;var shipBefore=friendly.transform.position;friendly.transform.position+=Vector3.forward*20;session.player.transform.position+=Vector3.forward*20;tick.Invoke(sound,null);
+        Check(sound.FootstepsPlayed==footsteps,"Standing on a moving deck does not produce footsteps");
+        session.player.transform.position+=friendly.transform.forward*18;tick.Invoke(sound,null);
+        Check(sound.FootstepsPlayed>footsteps&&sound.LastFootstep.name.StartsWith("Deck_Wood_"),"Walking across a deck plays timber footsteps instead of grass");
+        friendly.transform.position=shipBefore;session.player.transform.position=playerBefore;game.RestoreSave(beforeDeck);
         // Review the actual sword/arrow impacts on open, walkable shoreline so sails cannot hide them.
         var terrain=Terrain.activeTerrain;var shore=QuestRowboat.Instance.dockPoint.position;bool found=false;
         for(int radius=20;radius<850&&!found;radius+=20)for(int angle=0;angle<360&&!found;angle+=20)
@@ -101,6 +127,7 @@ public static class BeachBoatAudioBattlePlaytest
         Check(game.TryWalkAshore(shore)&&game.ToggleSword(),"Real swimming-to-shore path restores a standing sword rig");
         guard.transform.position=shore+Vector3.forward*15;guard.GetComponent<ActorSolidBody>().Carrier=null;guard.ResetGuard();guard.IsIndependentBoarder=true;guard.FitStandingOnDeck();Physics.SyncTransforms();
         int hits=CombatHitFeedback.Instance.SwordHits;Check(game.TrySlash()&&guard.Health==1&&CombatHitFeedback.Instance.SwordHits==hits+1,"Actual player sword hit removes health and emits one blood burst");
+        Check(BeachBoatSoundscape.Instance.LastSwordSwing.name.StartsWith("Sword_Swing_"),"Actual player slash triggers the new recorded sword sound");
         var camera=session.storyCamera;camera.GetComponent<BeachBoatStory.Camera_Script>().enabled=false;camera.transform.position=player.position+new Vector3(24,15,-22);camera.transform.LookAt(guard.AimPoint);
         foreach(var particles in CombatHitFeedback.Instance.GetComponentsInChildren<ParticleSystem>())if(particles.particleCount>0)particles.Simulate(.14f,true,false,false);
         Capture("Blood_Hit_Checked");
@@ -127,7 +154,7 @@ public static class BeachBoatAudioBattlePlaytest
                     Check(Time.timeScale==0&&BachDangMenuAudio.Instance.Music.isPlaying&&BachDangMenuAudio.Instance.EntriesPlayed==1,"Title entry and looping music play while game time is paused");
                     Click("Settings");Click("Back");Click("RankingGuide");CampaignJournalUI.Instance.Close();Check(BachDangMenuAudio.Instance.EntriesPlayed==1,"Navigating title pages does not repeat the startup sound");Click("Play");waitUntil=EditorApplication.timeSinceStartup+1;break;
                 case 1:Check(!BachDangMenuAudio.Instance.Music.isPlaying,"Lobby music fades out after starting gameplay");Setup();break;
-                case 2:WaterCombat();break;
+                case 2:RecordedAudioChecks();WaterCombat();break;
                 case 3:DeckCombat();break;
                 case 4:
                     if(SessionState.GetBool("AudioBattleInspectDeck",false)){SessionState.SetBool("AudioBattleInspectDeck",false);EditorApplication.isPaused=true;return;}

@@ -1,8 +1,16 @@
-# Recorded running footsteps
+# Recorded footsteps
+
+Current gameplay uses six grass walking takes, six separate grass running takes,
+and six wood takes for walking on ship decks, edited from YouTube recordings.
+See [ActionAudioSources.md](ActionAudioSources.md) for sources, permission notes
+and the reproducible 31-clip action audio manifest. Standing on a moving deck
+does not trigger footsteps; movement is measured relative to that deck.
+
+## Previous fallback recordings
 
 Running uses six alternating left/right recordings of feet on sand/grass by
 Fantozzi, sliced by qubodup. These replace the previous generated impacts.
-Walking retains its separate existing clips.
+These remain a fallback if the newer running recordings are unavailable.
 
 Source: https://opengameart.org/content/fantozzis-footsteps-grasssand-stone
 

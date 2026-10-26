@@ -762,7 +762,7 @@ namespace BeachBoatStory
             }
         }
         void PlaySwordSwing()
-        {var scene=GetComponent<RiverBattleChoreography>();if(scene==null)return;var source=GetComponent<AudioSource>();if(source!=null)source.PlayOneShot(scene.swordSwing,.25f);}
+        {BeachBoatSoundscape.Instance?.PlaySwordSwing();}
         void OnDestroy(){if(Instance==this)Instance=null;}
     }
 }
