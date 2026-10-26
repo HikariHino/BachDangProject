@@ -71,19 +71,20 @@ unchanged. Results are written to ignored `Logs/RecoveryPlaytest.json`.
 Invaders now cheer during their advance, then panic and call for retreat
 when the ambush begins. Two timed Ngô Quyền orders announce archery and the
 counterattack, with a small subtitle near the bottom edge. Commander speech
-ducks enemy/crowd volume. Three existing recorded human cries from the CC0
-pack credited in `ShipwreckAudioCredits.md` add variety during the wreck battle.
-All three audio channels pause in menus/dialogue, and stop on defeat/reset.
+is serialized on the same voice channel as enemy calls. Wreck vocal requests
+also use that coordinator; the CC0 pack credited in `ShipwreckAudioCredits.md`
+remains a fallback when no battle-voice component exists. The voice channel
+pauses in menus/dialogue and stops on defeat/reset.
 
-Eight battle clips are generated offline using the locally cached
-VieNeu model already used by the campaign cast. Ngô Quyền retains Minh Đức;
-invaders use Thái Sơn, Đức Trí and Hải Đăng. A three-voice advance chant adds
-Quốc Tuấn. Speech is remastered with presence EQ, compression and higher
-average level, with controlled peaks. Enemy/commander channel levels are
-also higher; commander orders are shorter and more emphatic. These are synthesized performances,
-not historical voice recordings. The exact text, cast, tempo and size are in
-`Assets/Resources/BachDang938/BattleVoices/manifest.json`; reproduction uses
-`Tools/generate_battle_voices.py`. No model/runtime dependency ships in Assets.
+The original generated battle cast has been replaced with eight short recorded
+film excerpts at the player's request. Normal NPC dialogue voices are unchanged.
+The single speech channel never loops or layers OneShots; each advance/panic
+excerpt is consumed once per battle and its used bit is saved. Shipwreck vocal
+cues route through that same channel. Physical impacts remain separate effects.
+The source links, exact cut times and reproduction instructions are in
+`Docs/BattleRecordingSources.md` and the asset manifest. The old generation
+entry point now delegates to `Tools/prepare_battle_recordings.py` so it cannot
+accidentally restore the rejected generated speech.
 Save fields retain heard cues and a pending second order so loading does
 not replay the opening ambush command or lose a scheduled counterattack cue.
 
@@ -96,7 +97,7 @@ not replay the opening ambush command or lose a scheduled counterattack cue.
 - Tide/wreck save regression: 232 checks passed, including mid-rise, ebb,
   victory and retained-wreck roundtrips.
 - All eight MP3 clips decoded, were non-silent and stayed below full scale;
-  combined size is 205,552 bytes. Phase triggers, pauses and saved cue flags
+  the latest recorded batch totals 89,344 bytes. Phase triggers, pauses and saved cue flags
   were exercised through the runtime components.
 
 Tests ran through Unity CLI in headless mode. They do not replace a visual
@@ -114,6 +115,14 @@ and the actual feet to be submerged. This hysteresis avoids repeated swim/walk
 flips at the beach, and the feet test protects a player standing on a pier
 above deep seabed. Receding water can return an idle swimmer to standing.
 
+When the bank actually emerges beneath a parked boat, a 5×5 keel-footprint
+support sample keeps the hull above the sand rather than forcing it through
+the terrain down to water level. A nearby player can press E to push toward
+deeper water in small swept steps. Solid stakes, hulls and structures still
+block that motion. Backing out of shallow water is allowed when clearance
+improves. Rising tide refloats the boat. Old embedded saved poses are corrected
+on restore, and an interrupted push is not resumed automatically after load.
+
 `BeachBoatShorelinePlaytest.RunInEditor()` verifies all traversal modes across
 high/low water, paused movement, shallow/deep transition, hysteresis, standing
 on exposed sand, reboarding and old saved floating-boat poses. It also checks
@@ -126,3 +135,14 @@ passed another 85 checks after this revision, including 390 simulated arrow
 launches, 13 real enemy hits and 7 allied kills. Original manual and temporary
 save files remained byte-identical. Decoded speech/crowd clips measured peak
 levels below 0.82 (full scale 1.0), with no clipped samples.
+
+The later parked-boat revision passed 40 checks in
+`BeachBoatGroundedBoatPlaytest.RunInEditor()`: compact title digits, high/low
+shoreline parking, immediate landing when exiting onto exposed sand, actual
+mesh vertices above sand, no paused displacement,
+solid-object blocking, nearby-player push-off, deep-water recovery, old embedded
+save repair and refloating. Its audio checks confirm one non-looping channel,
+exhausted playlists that do not restart, the real shipwreck callback routing
+vocals to the fleet's shared voice channel, queued wreck vocals, short commands
+and preserved used-cue masks after load. Saves also support inactive parent
+boats when capturing/restoring their deck defenders.

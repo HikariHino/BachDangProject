@@ -151,7 +151,9 @@ namespace BeachBoatStory
             if(Time.time<nextWreckSound)return;nextWreckSound=Time.time+.22f;
             float distance=Vector3.Distance(point,session.player.transform.position);float level=Mathf.Lerp(.72f,.12f,Mathf.Clamp01(distance/900));
             Play(effects,crash,level,.9f);
-            if(wreckCries!=null&&wreckCries.Length>0)Play(effects,wreckCries[Random.Range(0,wreckCries.Length)],level*.65f,Random.Range(.92f,1.05f));
+            var voices=EnemyFleetDirector.Instance?.GetComponent<RiverBattleVoices>();
+            if(voices!=null)voices.RequestWreckCry();
+            else if(wreckCries!=null&&wreckCries.Length>0)Play(effects,wreckCries[Random.Range(0,wreckCries.Length)],level*.65f,Random.Range(.92f,1.05f));
             WreckSoundsPlayed++;
         }
         public void PlayStake()=>Play(effects,drum,.3f,1.7f);

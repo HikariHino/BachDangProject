@@ -66,7 +66,7 @@ namespace BeachBoatStory
                 state=(int)State,sword=SwordDrawn,deckShip=deckAnchor!=null?deckAnchor.name:null,climbTime=climbTime,deckLocal=deckLocal,climbLocalStart=climbLocalStart,
                 allies=allies.Select(a=>new BachDangSaveData.Fighter{id=a.go.name,active=a.go.activeSelf,boat=a.carrier!=null?a.carrier.name:null,health=a.health,state=a.state,arrows=a.arrows,time=a.travel,start=a.start,local=a.local,target=a.target!=null?BachDangSaveSystem.GuardId(a.target):null,position=a.go.transform.position,rotation=a.go.transform.rotation}).ToArray(),
                 hostiles=hostiles.Select(h=>new BachDangSaveData.Fighter{id=BachDangSaveSystem.GuardId(h.guard),active=h.go.activeSelf,source=h.source!=null?h.source.name:null,boat=h.boat!=null?h.boat.name:null,state=h.state,time=h.time,start=h.start,local=h.local,fromWreck=h.fromWreck,targetPlayer=h.targetPlayer,position=h.go.transform.position,rotation=h.go.transform.rotation}).ToArray(),
-                defenders=defenders.Select(d=>new BachDangSaveData.Fighter{id=d.soldier.GetComponentInParent<AmbientRiverBoat>().name+"/"+d.soldier.name,boat=d.soldier.GetComponentInParent<AmbientRiverBoat>().name,local=d.station,health=d.health,active=d.soldier.gameObject.activeSelf,position=d.soldier.position,rotation=d.soldier.rotation}).ToArray()};
+                defenders=defenders.Select(d=>new BachDangSaveData.Fighter{id=d.soldier.GetComponentInParent<AmbientRiverBoat>(true).name+"/"+d.soldier.name,boat=d.soldier.GetComponentInParent<AmbientRiverBoat>(true).name,local=d.station,health=d.health,active=d.soldier.gameObject.activeSelf,position=d.soldier.position,rotation=d.soldier.rotation}).ToArray()};
         }
         public void RestoreSave(BachDangSaveData.Boarding data)
         {
@@ -98,7 +98,7 @@ namespace BeachBoatStory
             }
             foreach(var saved in data.defenders??Array.Empty<BachDangSaveData.Fighter>())
             {
-                var d=defenders.FirstOrDefault(x=>x.soldier.GetComponentInParent<AmbientRiverBoat>().name+"/"+x.soldier.name==saved.id);if(d==null)continue;
+                var d=defenders.FirstOrDefault(x=>x.soldier.GetComponentInParent<AmbientRiverBoat>(true).name+"/"+x.soldier.name==saved.id);if(d==null)continue;
                 d.health=saved.health;d.soldier.gameObject.SetActive(saved.active);RestoreDefenderStation(d);
             }
             State=(PlayerState)data.state;SwordDrawn=data.sword;deckShip=Ship(data.deckShip);deckAnchor=deckShip!=null?deckShip.transform:Boat(data.deckShip);
@@ -114,7 +114,7 @@ namespace BeachBoatStory
         }
         void RestoreDefenderStation(Defender d)
         {
-            var carrier=d.soldier.GetComponentInParent<AmbientRiverBoat>().transform;
+            var carrier=d.soldier.GetComponentInParent<AmbientRiverBoat>(true).transform;
             d.pose.Restore();d.pose.FinishTraversal();d.fighting=false;d.nextAttack=0;
             d.soldier.SetPositionAndRotation(carrier.TransformPoint(d.station),carrier.rotation*d.stationRotation);
             d.soldier.GetComponent<ActorSolidBody>().Carrier=carrier;
@@ -181,7 +181,7 @@ namespace BeachBoatStory
             foreach(var d in defenders)
             {
                 if(d.health<=0||!d.soldier.gameObject.activeInHierarchy)continue;
-                var carrier=d.soldier.GetComponentInParent<AmbientRiverBoat>();
+                var carrier=d.soldier.GetComponentInParent<AmbientRiverBoat>(true);
                 if(carrier!=null&&BoatHullCollision.Get(carrier.transform).TryDeckSurface(d.soldier.position,out var floor))
                 {ActorSolidBody.WalkingDimensions(d.pose.Animator,out _,out float sole,out _);d.soldier.position+=Vector3.up*(floor.y+.15f-d.pose.Animator.transform.position.y-sole);}
             }
@@ -308,7 +308,9 @@ namespace BeachBoatStory
             if(State==PlayerState.Land)return false;
             var carrier=deckAnchor!=null?deckAnchor:QuestRowboat.Instance.transform;
             if(!BoatHullCollision.Get(carrier).TryWaterExit(session.player.transform.position,4,session.player.transform,out var exit))return false;
-            traversalInputFrame=Time.frameCount;BeginSwim(exit);return true;
+            traversalInputFrame=Time.frameCount;BeginSwim(exit);
+            if(TryWalkAshore(exit))session.storyCamera.GetComponent<Camera_Script>().SnapToTarget();
+            return true;
         }
         public bool NearRowboat
         {

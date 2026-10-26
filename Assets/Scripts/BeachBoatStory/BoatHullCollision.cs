@@ -150,7 +150,7 @@ namespace BeachBoatStory
             }
             floor=default;return false;
         }
-        public bool CanMove(Vector3 from,Quaternion fromRotation,Vector3 to,Quaternion toRotation,bool reserveStakes=true)
+        public bool CanMove(Vector3 from,Quaternion fromRotation,Vector3 to,Quaternion toRotation,bool reserveStakes=true,bool allowBankContact=false)
         {
             using var sample=SweepMarker.Auto();
             if(solidHull==null)Initialize();
@@ -172,6 +172,9 @@ namespace BeachBoatStory
             for(int i=0;i<count;i++)
             {
                 var c=overlaps[i];if(c==null||IsOwn(c)||c.GetComponent<TideSystem>()!=null)continue;
+                // A grounded rowboat has separately sampled keel support and may
+                // slide toward deeper water while touching sand. Other solids stay hard.
+                if(allowBankContact&&c is TerrainCollider&&GetComponent<QuestRowboat>()!=null)continue;
                 LastBlocker=c;RejectedMoves++;
                 var rowboat=c.GetComponentInParent<QuestRowboat>();
                 if(rowboat!=null&&rowboat.transform!=transform&&Time.deltaTime>0)

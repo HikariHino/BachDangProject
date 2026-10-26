@@ -2,67 +2,83 @@
   "entries": [
     {
       "name": "Enemy_Advance_1",
-      "voice": "VieNeu/Thái Sơn",
-      "text": "Xông lên! Chiếm lấy bờ sông!",
-      "tempo": 1.22,
-      "mastering": "battle-presence-v2",
-      "bytes": 19052
+      "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
+      "start": 230.48,
+      "end": 231.1,
+      "tempo": 1.06,
+      "kind": "recorded-film-excerpt",
+      "sha256": "b7e655637289504158e87f95fc4659621cd8b8ba83087b688c6900376cc0e6c9",
+      "bytes": 8252
     },
     {
       "name": "Enemy_Advance_2",
-      "voice": "VieNeu/Đức Trí",
-      "text": "Tiến lên! Quân ta sắp thắng rồi!",
-      "tempo": 1.23,
-      "mastering": "battle-presence-v2",
-      "bytes": 26828
-    },
-    {
-      "name": "Enemy_Panic_1",
-      "voice": "VieNeu/Thái Sơn",
-      "text": "Trúng mai phục rồi! Rút lui! Rút lui!",
-      "tempo": 1.25,
-      "mastering": "battle-presence-v2",
-      "bytes": 34172
-    },
-    {
-      "name": "Enemy_Panic_2",
-      "voice": "VieNeu/Đức Trí",
-      "text": "Thuyền mắc cọc rồi! Cứu ta với!",
-      "tempo": 1.22,
-      "mastering": "battle-presence-v2",
-      "bytes": 27260
-    },
-    {
-      "name": "Enemy_Panic_3",
-      "voice": "VieNeu/Hải Đăng",
-      "text": "Bỏ thuyền! Mau chạy! Chạy đi!",
-      "tempo": 1.24,
-      "mastering": "battle-presence-v2",
-      "bytes": 20348
-    },
-    {
-      "name": "NgoQuyen_Ambush",
-      "voice": "VieNeu/Minh Đức",
-      "text": "Thời cơ đã đến! Bắn! Toàn quân, đánh!",
-      "tempo": 1.14,
-      "mastering": "battle-presence-v2",
-      "bytes": 32444
-    },
-    {
-      "name": "NgoQuyen_Attack",
-      "voice": "VieNeu/Minh Đức",
-      "text": "Đánh! Quyết không để giặc thoát!",
-      "tempo": 1.14,
-      "mastering": "battle-presence-v2",
-      "bytes": 22076
+      "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
+      "start": 231.48,
+      "end": 232.72,
+      "tempo": 1.06,
+      "kind": "recorded-film-excerpt",
+      "sha256": "a919cd0dea0d0e721e145b05813378920474a08cee5a54fcd31f54b8f3fad582",
+      "bytes": 15164
     },
     {
       "name": "Enemy_Cheer_Crowd",
-      "voice": "VieNeu/Quốc Tuấn + Hải Đăng + Đức Trí",
-      "text": "Xông lên! Xông lên!",
-      "tempo": 1.15,
-      "mastering": "battle-presence-v2",
-      "bytes": 23372
+      "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
+      "start": 212.36,
+      "end": 213.15,
+      "tempo": 1.06,
+      "kind": "recorded-film-excerpt",
+      "sha256": "d48e796f9df4a2b3716be22ad6817baa2df36a4f39ee86767cb14e76ebfe5cff",
+      "bytes": 10412
+    },
+    {
+      "name": "Enemy_Panic_1",
+      "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
+      "start": 308.53,
+      "end": 309.35,
+      "tempo": 1.06,
+      "kind": "recorded-film-excerpt",
+      "sha256": "1b766c1019914fd88371841067d3b20ed7e80e144b426f531fb2f2ac024bdb8f",
+      "bytes": 10844
+    },
+    {
+      "name": "Enemy_Panic_2",
+      "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
+      "start": 283.3,
+      "end": 284.12,
+      "tempo": 1.06,
+      "kind": "recorded-film-excerpt",
+      "sha256": "fa60c171038aaae7af85c993154b8f95f003897c4a8fc56bb64f6e7f60fcbba7",
+      "bytes": 10844
+    },
+    {
+      "name": "Enemy_Panic_3",
+      "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
+      "start": 290.08,
+      "end": 290.82,
+      "tempo": 1.06,
+      "kind": "recorded-film-excerpt",
+      "sha256": "3213887fdf4493c99c5aa30cfe423970ed724dd5898f3c6846c5ae79d2cc9872",
+      "bytes": 9548
+    },
+    {
+      "name": "NgoQuyen_Ambush",
+      "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
+      "start": 269.06,
+      "end": 270.47,
+      "tempo": 1.06,
+      "kind": "recorded-film-excerpt",
+      "sha256": "63b213fca0b7f60c602cceedd153bfae616b6da106cc025ab584d21dc41a3418",
+      "bytes": 17324
+    },
+    {
+      "name": "NgoQuyen_Attack",
+      "source": "https://www.youtube.com/watch?v=FEdW8VpWHA8",
+      "start": 132.01,
+      "end": 132.53,
+      "tempo": 1.06,
+      "kind": "recorded-film-excerpt",
+      "sha256": "01e54563c10ad21444d8d1cb9045da86bd7393c519b86499560abb800847b7c3",
+      "bytes": 6956
     }
   ]
 }

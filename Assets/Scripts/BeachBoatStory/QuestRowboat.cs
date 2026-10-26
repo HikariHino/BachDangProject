@@ -63,6 +63,54 @@ namespace BeachBoatStory
         AnimatorUpdateMode originalUpdateMode;
         AnimatorCullingMode originalCullingMode;
         readonly Collider[] overlaps = new Collider[32];
+        bool pushingOff;float pushRemaining;
+        public bool IsGroundedOnBank {get;private set;}
+        public float WaterClearance {get;private set;}=float.PositiveInfinity;
+        float SupportHeight(Vector3 position,Quaternion rotation,out float clearance)
+        {
+            clearance=float.PositiveInfinity;if(terrain==null)return TideSystem.CurrentWaterHeight;
+            var box=BoatHullCollision.Get(transform).SolidHull;var scale=transform.lossyScale;
+            var keel=box.center-Vector3.up*(box.size.y*.5f);float support=float.NegativeInfinity;
+            for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++)
+            {
+                var local=keel+new Vector3(box.size.x*.25f*x,0,box.size.z*.25f*z);
+                var offset=rotation*Vector3.Scale(local,scale);var point=position+offset;
+                var at=point-terrain.transform.position;var size=terrain.terrainData.size;
+                if(at.x<0||at.z<0||at.x>size.x||at.z>size.z)continue;
+                float ground=terrain.SampleHeight(point)+terrain.transform.position.y;
+                support=Mathf.Max(support,ground-offset.y+.5f);clearance=Mathf.Min(clearance,TideSystem.CurrentWaterHeight-ground);
+            }
+            return Mathf.Max(TideSystem.CurrentWaterHeight,support);
+        }
+        public void MaintainBuoyancy()
+        {
+            var position=transform.position;position.y=SupportHeight(position,transform.rotation,out float clearance);transform.position=position;
+            WaterClearance=clearance;IsGroundedOnBank=position.y>TideSystem.CurrentWaterHeight+.1f;
+        }
+        public bool TryPushOff()
+        {
+            if(IsBroken||BeachBoatQuestSession.InteractionBlocked||session==null||WaterClearance>=minimumDepth)return false;
+            var box=BoatHullCollision.Get(transform).SolidHull;
+            if(Vector3.Distance(box.ClosestPoint(session.player.transform.position),session.player.transform.position)>boardingRange)return false;
+            pushingOff=true;pushRemaining=8;return true;
+        }
+        public bool StepPushOff(float dt)
+        {
+            if(dt<=0||IsBroken)return false;
+            var from=transform.position;SupportHeight(from,transform.rotation,out float current);
+            if(current>=minimumDepth){pushingOff=false;return false;}
+            Vector3 best=from;float deepest=current;
+            for(int i=0;i<24;i++)
+            {
+                var direction=Quaternion.Euler(0,i*15,0)*Vector3.forward;var probe=from+direction*60;
+                SupportHeight(probe,transform.rotation,out float depth);if(depth<=deepest+.0001f)continue;
+                var next=from+direction*Mathf.Min(1,20*dt);next.y=SupportHeight(next,transform.rotation,out float nextDepth);
+                if(nextDepth<current-.001f)continue;
+                if(!BoatHullCollision.Get(transform).CanMove(from,transform.rotation,next,transform.rotation,false,true))continue;
+                best=next;deepest=depth;
+            }
+            if(best==from)return false;transform.position=best;MaintainBuoyancy();return true;
+        }
 
         public static float FlatDistance(Vector3 a, Vector3 b)
         { a.y = b.y = 0; return Vector3.Distance(a, b); }
@@ -199,8 +247,10 @@ namespace BeachBoatStory
         public void RestoreSave(bool aboard,Vector3 position,Quaternion rotation)
         {
             if(IsAboard)RestorePlayer();
+            pushingOff=false;pushRemaining=0;
             position.y=TideSystem.CurrentWaterHeight;
             transform.SetPositionAndRotation(position,rotation);
+            MaintainBuoyancy();
             if(aboard)BoardPlayer(false);
             Speed=0;IsBoosting=false;
         }
@@ -296,6 +346,15 @@ namespace BeachBoatStory
             Step(input ? Input.GetAxisRaw("Vertical") : 0, input ? Input.GetAxisRaw("Horizontal") : 0, Time.deltaTime, boost);
             if (story == null || session == null || BeachBoatQuestSession.InteractionBlocked) return;
             var traversal=RiverBoardingCombat.Instance;
+            if(WaterClearance<minimumDepth)
+            {
+                var box=BoatHullCollision.Get(transform).SolidHull;
+                if(Vector3.Distance(box.ClosestPoint(session.player.transform.position),session.player.transform.position)<=boardingRange)
+                {
+                    story.SetInteractPrompt(true,pushingOff?"Đang đẩy thuyền ra nước sâu…":"[E] Đẩy thuyền ra nước sâu",this);
+                    if(Input.GetKeyDown(KeyCode.E)&&StoryDialogueUI.TryConsumeInput())TryPushOff();return;
+                }
+            }
             if(IsAboard&&traversal!=null&&traversal.PlayerAway)
             {
                 if(traversal.NearRowboat)
@@ -328,8 +387,9 @@ namespace BeachBoatStory
             if (dt <= 0 || !isActiveAndEnabled) return;
             // The empty boat still floats while the player swims, walks ashore,
             // climbs another vessel or draws a weapon. Traversal only stops rowing.
-            var position = transform.position; position.y = TideSystem.CurrentWaterHeight;
-            transform.position = position;
+            MaintainBuoyancy();var position=transform.position;
+            if(pushingOff&&!BeachBoatQuestSession.InteractionBlocked)
+            {pushRemaining-=dt;StepPushOff(dt);if(pushRemaining<=0||WaterClearance>=minimumDepth)pushingOff=false;position=transform.position;}
             var boarding=RiverBoardingCombat.Instance;
             if(IsAboard&&boarding!=null&&(boarding.PlayerAway||boarding.SwordDrawn))
             {Speed=0;IsBoosting=false;animator.speed=1;if(!boarding.PlayerAway)AttachPlayer();return;}
@@ -345,7 +405,10 @@ namespace BeachBoatStory
                 acceleration * (IsBoosting ? 1.55f : 1f) * dt);
             var rotation = transform.rotation * Quaternion.Euler(0, Mathf.Clamp(steering, -1, 1) * turnSpeed * dt, 0);
             var next = position + rotation * Vector3.forward * (speed * dt);
-            bool clear=TryCanOccupy(next,rotation,out var obstacle)&&BoatHullCollision.Get(transform).CanMove(position,transform.rotation,next,rotation,false);
+            next.y=SupportHeight(next,rotation,out float nextClearance);
+            bool shoreEscape=WaterClearance<minimumDepth&&nextClearance>WaterClearance+.0001f;
+            var obstacle=BoatObstacleKind.Shore;
+            bool clear=(nextClearance>=minimumDepth||shoreEscape)&&TryCanOccupy(next,rotation,out obstacle,shoreEscape)&&BoatHullCollision.Get(transform).CanMove(position,transform.rotation,next,rotation,false,shoreEscape);
             if (clear) { transform.SetPositionAndRotation(next, rotation); Speed = speed; wedgedAtDockSeconds = 0; }
             else
             {
@@ -366,7 +429,11 @@ namespace BeachBoatStory
             AttachPlayer();
         }
 
-        public bool CanOccupy(Vector3 position, Quaternion rotation) => TryCanOccupy(position, rotation, out _)&&BoatHullCollision.Get(transform).CanOccupy(position,rotation,false);
+        public bool CanOccupy(Vector3 position, Quaternion rotation)
+        {
+            SupportHeight(position,rotation,out float clearance);clearance+=position.y-TideSystem.CurrentWaterHeight;
+            return clearance>=minimumDepth&&TryCanOccupy(position,rotation,out _)&&BoatHullCollision.Get(transform).CanOccupy(position,rotation,false);
+        }
 
         float ShipClearance(Vector3 position, Quaternion rotation, Vector3 ship, float radius)
         {
@@ -388,7 +455,7 @@ namespace BeachBoatStory
                 FlatDistance(position,ship.position)>FlatDistance(transform.position,ship.position)+.0001f);
         }
 
-        bool TryCanOccupy(Vector3 position, Quaternion rotation, out BoatObstacleKind obstacle)
+        bool TryCanOccupy(Vector3 position, Quaternion rotation, out BoatObstacleKind obstacle,bool shoreEscape=false)
         {
             obstacle = BoatObstacleKind.None;
             for (int i = -1; i <= 1; i++)
@@ -424,7 +491,7 @@ namespace BeachBoatStory
                 {
                     var local = sample - terrain.transform.position; var size = terrain.terrainData.size;
                     if (local.x < 0 || local.z < 0 || local.x > size.x || local.z > size.z ||
-                        terrain.SampleHeight(sample) + terrain.transform.position.y + minimumDepth > position.y)
+                        (!shoreEscape&&terrain.SampleHeight(sample) + terrain.transform.position.y + minimumDepth > position.y))
                     { obstacle = BoatObstacleKind.Shore; return false; }
                 }
             }
@@ -499,6 +566,7 @@ namespace BeachBoatStory
         {
             if(IsAboard)RestorePlayer();
             Speed=0;IsBoosting=false;pendingBattleLaunch=false;wedgedAtDockSeconds=0;nextImpactTime=0;
+            pushingOff=false;
             if(tide!=null)tide.ReleaseLowTide(this);
         }
         void LateUpdate()

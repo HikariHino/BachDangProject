@@ -258,7 +258,7 @@ namespace BeachBoatStory
             home=Box("Home",transform,Vector2.zero,Vector2.one,Color.clear);
             Label("Eyebrow",home.transform,new Vector2(.075f,.83f),new Vector2(.48f,.89f),14,Gold,"NGÔ QUYỀN • HÀNH TRÌNH GIỮ NƯỚC");
             var heading=Label("Title",home.transform,new Vector2(.07f,.69f),new Vector2(.59f,.83f),64,Cream,"BẠCH ĐẰNG");heading.fontStyle=FontStyles.Bold;heading.characterSpacing=3;
-            var year=Label("Year",home.transform,new Vector2(.075f,.58f),new Vector2(.4f,.70f),52,Gold,"9 3 8");year.characterSpacing=12;
+            var year=Label("Year",home.transform,new Vector2(.075f,.58f),new Vector2(.4f,.70f),52,Gold,"938");year.characterSpacing=1;
             Box("TitleRule",home.transform,new Vector2(.077f,.565f),new Vector2(.35f,.568f),Gold);
             Click("Play",home.transform,new Vector2(.077f,.44f),new Vector2(.365f,.515f),"PLAY  /  CHƠI MỚI",Play,true);
             continueButton=Click("Continue",home.transform,new Vector2(.077f,.35f),new Vector2(.365f,.425f),"TIẾP TỤC",()=>ContinueGame());
