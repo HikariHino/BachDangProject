@@ -97,10 +97,10 @@ public static class BeachBoatGroundedBoatPlaytest
         Check(voices.AssetsReady&&!voices.SpeechSource.loop,"Short recorded film cues load on a non-looping voice channel");
         Check(voices.SpeechSource.transform.GetComponents<AudioSource>().Length==1,"Battle voice has exactly one AudioSource");
         for(int i=0;i<600;i++)voices.Step(.1f);
-        Check(voices.InvasionCues==3,"Advance playlist plays each of its three excerpts once without a repeated reading loop");
+        Check(voices.InvasionCues==2,"The complete advance order and distinct crowd response each play once without a repeated reading loop");
         int prior=voices.InvasionCues;for(int i=0;i<600;i++)voices.Step(.1f);Check(voices.InvasionCues==prior,"An exhausted advance playlist does not restart");
         Set(fleet,"<AmbushStarted>k__BackingField",true);BachDangBattleTimeline.Instance.BeginAmbush();voices.Step(.01f);var clip=voices.SpeechSource.clip;
-        Check(voices.CommanderCues==1&&clip.length<2,"The initial recorded command is short and decisive");
+        Check(voices.CommanderCues==1&&clip.length>2.5f&&clip.length<4,"The initial recorded command keeps the complete sentence and its natural tail");
         Set(BeachBoatSoundscape.Instance,"nextWreckSound",0f);BeachBoatSoundscape.Instance.PlayShipwreck(QuestRowboat.Instance.transform.position);
         Check((float)typeof(RiverBattleVoices).GetField("nextEnemy",Private).GetValue(voices)<=.5f&&voices.SpeechSource.clip==clip,"The real shipwreck sound path queues a cry on the fleet voice coordinator without replacing the command");
         for(int i=0;i<8;i++){voices.RequestWreckCry();voices.Step(.02f);Check(voices.SpeechSource.clip==clip,"Wreck cries wait for the commander rather than overlapping");}

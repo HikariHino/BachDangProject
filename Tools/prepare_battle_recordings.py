@@ -13,14 +13,14 @@ ROOT=Path('Logs/BattleVoiceSources')
 OUT=Path('Assets/Resources/BachDang938/BattleVoices')
 RATE=32000
 CLIPS=[
-    ('Enemy_Advance_1','ok_KBwgS9eg',230.48,231.10),
-    ('Enemy_Advance_2','ok_KBwgS9eg',231.48,232.72),
-    ('Enemy_Cheer_Crowd','ok_KBwgS9eg',212.36,213.15),
-    ('Enemy_Panic_1','ok_KBwgS9eg',308.53,309.35),
-    ('Enemy_Panic_2','ok_KBwgS9eg',283.30,284.12),
-    ('Enemy_Panic_3','ok_KBwgS9eg',290.08,290.82),
-    ('NgoQuyen_Ambush','ok_KBwgS9eg',269.06,270.47),
-    ('NgoQuyen_Attack','FEdW8VpWHA8',132.01,132.53),
+    ('Enemy_Advance_1','ok_KBwgS9eg',230.28,233.35),
+    ('Enemy_Advance_2','ok_KBwgS9eg',231.32,233.35), # legacy resource; no longer in the playlist
+    ('Enemy_Cheer_Crowd','ok_KBwgS9eg',212.20,214.40),
+    ('Enemy_Panic_1','ok_KBwgS9eg',308.35,310.10),
+    ('Enemy_Panic_2','ok_KBwgS9eg',283.10,284.80),
+    ('Enemy_Panic_3','ok_KBwgS9eg',289.90,291.50),
+    ('NgoQuyen_Ambush','ok_KBwgS9eg',268.16,270.87),
+    ('NgoQuyen_Attack','FEdW8VpWHA8',128.62,137.80),
 ]
 def main():
     ffmpeg=shutil.which('ffmpeg')
@@ -38,11 +38,12 @@ def main():
         response=(1/np.sqrt(1+(110/np.maximum(hz,.01))**4))*(1/np.sqrt(1+(hz/6500)**8))
         audio=np.fft.irfft(np.fft.rfft(audio)*response,n=len(audio));audio-=audio.mean()
         audio*=min(.16/max(1e-5,float(np.sqrt(np.mean(audio*audio)))),.78/max(1e-5,float(np.max(np.abs(audio)))))
-        fade=min(160,len(audio)//10);audio[:fade]*=np.linspace(0,1,fade);audio[-fade:]*=np.linspace(1,0,fade)
+        fade_in=min(480,len(audio)//10);fade_out=min(2560,len(audio)//10)
+        audio[:fade_in]*=np.linspace(0,1,fade_in);audio[-fade_out:]*=np.linspace(1,0,fade_out)
         output=OUT/(name+'.mp3')
         subprocess.run([ffmpeg,'-v','error','-y','-f','f32le','-ar',str(RATE),'-ac','1','-i','-',
-                        '-af','atempo=1.06','-codec:a','libmp3lame','-b:a','96k',str(output)],input=audio.astype('<f4').tobytes(),check=True)
-        entries.append(dict(name=name,source='https://www.youtube.com/watch?v='+video,start=start,end=end,tempo=1.06,kind='recorded-film-excerpt',sha256=hashlib.sha256(output.read_bytes()).hexdigest(),bytes=output.stat().st_size))
+                        '-codec:a','libmp3lame','-b:a','96k',str(output)],input=audio.astype('<f4').tobytes(),check=True)
+        entries.append(dict(name=name,source='https://www.youtube.com/watch?v='+video,start=start,end=end,tempo=1.0,kind='recorded-film-excerpt',sha256=hashlib.sha256(output.read_bytes()).hexdigest(),bytes=output.stat().st_size))
         print(name,output.stat().st_size,flush=True)
     (OUT/'manifest.json').write_text(json.dumps(dict(entries=entries),indent=2)+'\n',encoding='utf-8')
 if __name__=='__main__':main()

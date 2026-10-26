@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using BeachBoatStory;
 using Newtonsoft.Json;
 using UnityEditor;
@@ -19,7 +20,9 @@ public static class BeachBoatConcurrentBattlePlaytest
     static string runtimeError;
     static Vector3[] berths;
     static readonly List<string> checks=new List<string>();
-    public static void RunInEditor(){SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
+    static string Hash(string p){using(var sha=SHA256.Create())return Convert.ToBase64String(sha.ComputeHash(File.ReadAllBytes(p)));}
+    public static void RunInEditor(){phase=0;started=0;runtimeError=null;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Record;Application.logMessageReceived+=Record;}
     static void Record(string m,string stack,LogType t){if(SessionState.GetBool(Flag,false)&&EditorApplication.isPlaying&&(t==LogType.Error||t==LogType.Exception))runtimeError=m+"\n"+stack;}
     static void Check(bool value,string message){if(!value)throw new Exception(message);checks.Add(message);}
@@ -38,7 +41,7 @@ public static class BeachBoatConcurrentBattlePlaytest
         var fleet=EnemyFleetDirector.Instance;Time.timeScale=1;
         File.WriteAllText("Logs/ConcurrentBattlePlaytest.json",JsonConvert.SerializeObject(new{success=error==null,error,phase,checks,launched,ebbTime,ambushTime,water=TideSystem.CurrentWaterHeight,exposed=StakeZone.Instance?.ExposedStakeCount,
             ships=fleet?.enemyShips.Select(s=>new{s.name,active=s.gameObject.activeSelf,s.isDestroyed,s.HasSettled,inside=s.IsHullInsideStakeField,p=s.transform.position.ToString(),goal=s.targetPoint.position.ToString(),blocker=s.GetComponent<BoatHullCollision>()?.LastBlocker?.name})},Formatting.Indented));
-        SessionState.SetBool(Flag,false);EditorApplication.isPlaying=false;
+        SessionState.SetBool(Flag,false);BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
     }
     static void Tick()
     {
@@ -53,6 +56,8 @@ public static class BeachBoatConcurrentBattlePlaytest
             var fleet=EnemyFleetDirector.Instance;var zone=StakeZone.Instance;var story=Story.Instance;
             if(phase==0)
             {
+                foreach(var p in Directory.GetFiles(Application.persistentDataPath,"campaign938*"))if(p.EndsWith(".json")||p.EndsWith(".bak"))hashes[p]=Hash(p);
+                BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/ConcurrentQA/"+DateTime.Now.ToString("yyyyMMdd-HHmmssfff"));BachDangAutoSave.Instance.enabled=false;
                 BachDangFrontEnd.Instance.Play();Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 zone.RestoreCheckpoint(Enumerable.Repeat(true,5).ToArray());story.collectedWood=story.totalWoodRequired;
                 story.TransitionTo(Story.StoryState.Act3_WaitForLowTide,true);
@@ -64,7 +69,7 @@ public static class BeachBoatConcurrentBattlePlaytest
                 Check(probe.IsHullInsideStakeField,"Full hull inside the stake field is recognized before the final 55-unit waypoint radius");
                 probe.transform.SetPositionAndRotation(old,rotation);Physics.SyncTransforms();
                 RiverPlayerCombat.Instance.ReturnFireEnabled=false;
-                RiverBoardingCombat.Instance.enabled=false;fleet.StartBattle();highWater=TideSystem.CurrentWaterHeight;launched=Time.time;Time.timeScale=4;phase=1;return;
+                RiverBoardingCombat.Instance.enabled=false;fleet.StartBattle();fleet.GetComponent<RiverInvasionIntro>().Cancel();fleet.GetComponent<RiverBattleVoices>().enabled=false;highWater=TideSystem.CurrentWaterHeight;launched=Time.time;Time.timeScale=4;phase=1;return;
             }
             if(phase==1)
             {
@@ -96,7 +101,8 @@ public static class BeachBoatConcurrentBattlePlaytest
             if(phase==5)
             {
                 if(fleet.BattleStarted)return;
-                Check(RiverBoardingCombat.Instance.friendlyBoats.All(b=>b.IsReturningToHarbor||b.HasReturnedToHarbor),"Allied ships receive their withdrawal order after victory");Finish(null);
+                Check(RiverBoardingCombat.Instance.friendlyBoats.All(b=>b.IsReturningToHarbor||b.HasReturnedToHarbor),"Allied ships receive their withdrawal order after victory");
+                foreach(var p in hashes)Check(File.Exists(p.Key)&&Hash(p.Key)==p.Value,"User save unchanged: "+Path.GetFileName(p.Key));Finish(null);
             }
         }
         catch(Exception e){Finish(e.ToString());}

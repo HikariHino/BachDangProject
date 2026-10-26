@@ -164,7 +164,7 @@ namespace BeachBoatStory
 
         void OnGUI()
         {
-            if (BachDangFrontEnd.IsBlocking || OpeningEvent.IsOpeningActive || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
+            if (RiverInvasionIntro.IsRunning || BachDangFrontEnd.IsBlocking || OpeningEvent.IsOpeningActive || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
                 (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen) ||
                 (BeachBoatQuestSession.Instance != null && !BeachBoatQuestSession.Instance.storyMode)) return;

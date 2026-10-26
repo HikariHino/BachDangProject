@@ -62,7 +62,11 @@ namespace BeachBoatStory
                 var ship=fleet.enemyShips[i];if(ship==null)continue;
                 // Preserve every dispersed wreck berth. Front ranks sail farther;
                 // rear ranks have their own clear space and stop in shallower berths.
-                var p=new Vector3(ship.targetPoint.position.x,TideSystem.CurrentWaterHeight,bounds.max.z+longest+240+(i/4)*(longest*2+120));
+                float x=bounds.center.x+(ship.targetPoint.position.x-bounds.center.x)*1.10f;
+                var p=new Vector3(x,TideSystem.CurrentWaterHeight,bounds.max.z+longest+240+(i/4)*(longest*2+220));
+                // Widen the approach only where the whole hull still fits. The
+                // dispersed berths inside the stakes remain unchanged.
+                if(!BoatHullCollision.Get(ship.transform).CanOccupy(p,Quaternion.Euler(0,180,0),false))p.x=ship.targetPoint.position.x;
                 var entry=new GameObject("Concurrent_Entry_"+i).transform;entry.SetParent(root,false);entry.position=p;
                 spawns[i]=entry;ship.spawnPoint=p;ship.routeWaypoints=new[]{entry};ship.moveSpeed=34;ship.ambushDelay=0;
             }

@@ -155,7 +155,9 @@ public static class BeachBoatRecoveryPlaytest
         Set(fleet,"<AmbushStarted>k__BackingField",false);BachDangBattleTimeline.Instance.BeginLure();voices.Step(.1f);
         Check(voices.InvasionCues>0&&!voices.AmbushPlayed,"Invaders cheer during the approach, before the ambush");
         Set(fleet,"<AmbushStarted>k__BackingField",true);BachDangBattleTimeline.Instance.BeginAmbush();voices.Step(.1f);
-        Check(voices.AmbushPlayed&&voices.CommanderCues==1,"Ngô Quyền commands the counterattack exactly when the ambush begins");
+        Check(!voices.AmbushPlayed&&voices.CommanderCues==0,"An ambush queues its command while the enemy's full sentence finishes");
+        for(int i=0;i<40;i++)voices.Step(.1f);
+        Check(voices.AmbushPlayed&&voices.CommanderCues==1,"Ngô Quyền commands the counterattack after the enemy line finishes without cutting it");
         var pending=fleet.CaptureSave();voices.RestoreSave(pending);voices.Step(.1f);
         Check(voices.CommanderCues==1&&pending.counterattackDelay>0,"A mid-command save retains the pending second order without replaying the first");
         for(int i=0;i<160;i++)voices.Step(.2f);

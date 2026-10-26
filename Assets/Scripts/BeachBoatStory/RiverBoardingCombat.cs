@@ -18,6 +18,7 @@ namespace BeachBoatStory
         public PlayerState State {get;private set;}
         public bool SwordDrawn {get;private set;}
         public bool PlayerAway=>State!=PlayerState.Rowboat;
+        public bool TraversalActive=>QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard;
         public Transform PlayerDeckCarrier=>(State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck)?deckAnchor:null;
         bool OnSolidDeck=>State==PlayerState.FriendlyDeck||(State==PlayerState.EnemyDeck&&deckShip!=null&&!deckShip.isDestroyed);
         public bool IsTraversing=>State==PlayerState.Swimming||State==PlayerState.Climbing;
@@ -238,9 +239,17 @@ namespace BeachBoatStory
         }
         public void ResetBattle(bool preserveWrecks=false)
         {
-            bool keepLand=preserveWrecks&&State==PlayerState.Land;
-            if(QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard)QuestRowboat.Instance.SetShoreWalking(keepLand);
-            if(playerPose!=null){playerPose.Restore();if(QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard)playerPose.Animator.runtimeAnimatorController=QuestRowboat.Instance.rowingController;}SwordDrawn=false;State=keepLand?PlayerState.Land:PlayerState.Rowboat;if(keepLand)playerPose.Animator.runtimeAnimatorController=FootController;deckShip=null;deckAnchor=null;
+            bool keepTraversal=preserveWrecks&&TraversalActive;
+            bool keepLand=keepTraversal&&State==PlayerState.Land;
+            if(TraversalActive)QuestRowboat.Instance.SetShoreWalking(keepLand);
+            if(playerPose!=null)
+            {
+                playerPose.Restore();
+                if(TraversalActive)playerPose.Animator.runtimeAnimatorController=keepTraversal&&(keepLand||State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck)?FootController:QuestRowboat.Instance.rowingController;
+                if(keepTraversal&&State==PlayerState.Swimming)playerPose.Traversal=RiverFighterPose.Motion.Swim;
+                if(keepTraversal&&State==PlayerState.Climbing)playerPose.Traversal=RiverFighterPose.Motion.Climb;
+            }
+            SwordDrawn=false;if(!keepTraversal){State=PlayerState.Rowboat;deckShip=null;deckAnchor=null;}
             foreach(var a in allies){a.go.SetActive(false);if(!preserveWrecks){a.health=6;a.state=0;}a.pose.Restore();}
             foreach(var d in defenders){d.pose.Restore();if(!preserveWrecks)d.health=4;d.fighting=false;d.soldier.gameObject.SetActive(d.health>0);if(d.health>0){d.pose.Animator.enabled=true;d.pose.Animator.Update(0);d.pose.Animator.enabled=false;}}
             DefenderHits=DefenderDamageTaken=0;
@@ -252,7 +261,12 @@ namespace BeachBoatStory
         void Update()
         {
             bool battle=archery!=null&&archery.BattleActive;
-            if(!battle){if(wasBattle)ResetBattle(true);if(State==PlayerState.Land&&!BeachBoatQuestSession.InputBlocked)StepPlayer(Time.deltaTime);return;}
+            if(!battle)
+            {
+                if(wasBattle)ResetBattle(true);
+                if(!TraversalActive||BeachBoatQuestSession.InputBlocked)return;
+                ReadTraversalInput();StepPlayer(Time.deltaTime);return;
+            }
             if(!wasBattle)
             {
                 wasBattle=true;foreach(var a in allies){a.health=6;a.state=0;a.arrows=2;a.shot=Time.time+2;a.go.SetActive(true);a.pose.SetSword(true);}
@@ -262,11 +276,16 @@ namespace BeachBoatStory
             if(Cursor.lockState==CursorLockMode.Locked)
             {
                 if(Input.GetKeyDown(KeyCode.Q))HandleActionKey(KeyCode.Q);
-                if(Input.GetKeyDown(KeyCode.F))HandleActionKey(KeyCode.F);
-                if(Input.GetKeyDown(KeyCode.Space))HandleActionKey(KeyCode.Space);
+                ReadTraversalInput();
                 if(SwordDrawn&&Input.GetMouseButtonDown(0))TrySlash();
             }
             StepPlayer(Time.deltaTime);StepAllies(Time.deltaTime);StepHostiles(Time.deltaTime);StepDefenders();StepEnemies(Time.deltaTime);
+        }
+        void ReadTraversalInput()
+        {
+            if(Cursor.lockState!=CursorLockMode.Locked)return;
+            if(Input.GetKeyDown(KeyCode.F))HandleActionKey(KeyCode.F);
+            if(Input.GetKeyDown(KeyCode.Space))HandleActionKey(KeyCode.Space);
         }
         public bool HandleActionKey(KeyCode key)
         {
@@ -297,7 +316,7 @@ namespace BeachBoatStory
         }
         public bool TryTraverse()
         {
-            if(!archery.BattleActive||BeachBoatQuestSession.InteractionBlocked||State==PlayerState.Climbing)return false;
+            if(!TraversalActive||BeachBoatQuestSession.InteractionBlocked||State==PlayerState.Climbing)return false;
             if((State==PlayerState.Swimming||State==PlayerState.Land)&&TryReturnToRowboat())return true;
             if(State==PlayerState.Swimming)
             {

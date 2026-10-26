@@ -3,82 +3,82 @@
     {
       "name": "Enemy_Advance_1",
       "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
-      "start": 230.48,
-      "end": 231.1,
-      "tempo": 1.06,
+      "start": 230.28,
+      "end": 233.35,
+      "tempo": 1.0,
       "kind": "recorded-film-excerpt",
-      "sha256": "b7e655637289504158e87f95fc4659621cd8b8ba83087b688c6900376cc0e6c9",
-      "bytes": 8252
+      "sha256": "aba60fc38490720afc5b64b7ddb0e51c82cc2dacff83efc85b28fcd00809cee7",
+      "bytes": 38060
     },
     {
       "name": "Enemy_Advance_2",
       "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
-      "start": 231.48,
-      "end": 232.72,
-      "tempo": 1.06,
+      "start": 231.32,
+      "end": 233.35,
+      "tempo": 1.0,
       "kind": "recorded-film-excerpt",
-      "sha256": "a919cd0dea0d0e721e145b05813378920474a08cee5a54fcd31f54b8f3fad582",
-      "bytes": 15164
+      "sha256": "a75c16ce577a006f8ab7d8a4adf521cfd50ab8820c84237dfcfe97b6d6b7776e",
+      "bytes": 25532
     },
     {
       "name": "Enemy_Cheer_Crowd",
       "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
-      "start": 212.36,
-      "end": 213.15,
-      "tempo": 1.06,
+      "start": 212.2,
+      "end": 214.4,
+      "tempo": 1.0,
       "kind": "recorded-film-excerpt",
-      "sha256": "d48e796f9df4a2b3716be22ad6817baa2df36a4f39ee86767cb14e76ebfe5cff",
-      "bytes": 10412
+      "sha256": "265221c01e39527a1e2b261db769dce118bbb5df1620217df50d0aee2fd453a6",
+      "bytes": 27692
     },
     {
       "name": "Enemy_Panic_1",
       "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
-      "start": 308.53,
-      "end": 309.35,
-      "tempo": 1.06,
+      "start": 308.35,
+      "end": 310.1,
+      "tempo": 1.0,
       "kind": "recorded-film-excerpt",
-      "sha256": "1b766c1019914fd88371841067d3b20ed7e80e144b426f531fb2f2ac024bdb8f",
-      "bytes": 10844
+      "sha256": "90faea5e467daf0a138421e281b3dc508eacb27c23615cf527ca682905d4cd80",
+      "bytes": 22076
     },
     {
       "name": "Enemy_Panic_2",
       "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
-      "start": 283.3,
-      "end": 284.12,
-      "tempo": 1.06,
+      "start": 283.1,
+      "end": 284.8,
+      "tempo": 1.0,
       "kind": "recorded-film-excerpt",
-      "sha256": "fa60c171038aaae7af85c993154b8f95f003897c4a8fc56bb64f6e7f60fcbba7",
-      "bytes": 10844
+      "sha256": "aee4a3d26944f4a5c5d2499e7863d13a19ea1e083dbce61a620eb930fc784308",
+      "bytes": 21644
     },
     {
       "name": "Enemy_Panic_3",
       "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
-      "start": 290.08,
-      "end": 290.82,
-      "tempo": 1.06,
+      "start": 289.9,
+      "end": 291.5,
+      "tempo": 1.0,
       "kind": "recorded-film-excerpt",
-      "sha256": "3213887fdf4493c99c5aa30cfe423970ed724dd5898f3c6846c5ae79d2cc9872",
-      "bytes": 9548
+      "sha256": "04b4935c86ef1839f83af24b254de8f04e4deb928efb6922a483a719067e92f5",
+      "bytes": 20348
     },
     {
       "name": "NgoQuyen_Ambush",
       "source": "https://www.youtube.com/watch?v=ok_KBwgS9eg",
-      "start": 269.06,
-      "end": 270.47,
-      "tempo": 1.06,
+      "start": 268.16,
+      "end": 270.87,
+      "tempo": 1.0,
       "kind": "recorded-film-excerpt",
-      "sha256": "63b213fca0b7f60c602cceedd153bfae616b6da106cc025ab584d21dc41a3418",
-      "bytes": 17324
+      "sha256": "b6b57f716d8cdbfb076c764750335267b03444b368f83f3e03861ea1a7b67e4d",
+      "bytes": 33740
     },
     {
       "name": "NgoQuyen_Attack",
       "source": "https://www.youtube.com/watch?v=FEdW8VpWHA8",
-      "start": 132.01,
-      "end": 132.53,
-      "tempo": 1.06,
+      "start": 128.62,
+      "end": 137.8,
+      "tempo": 1.0,
       "kind": "recorded-film-excerpt",
-      "sha256": "01e54563c10ad21444d8d1cb9045da86bd7393c519b86499560abb800847b7c3",
-      "bytes": 6956
+      "sha256": "ab06bfa5933974ab2ec3a7a4f21e73eed7a94ae21ceb6d153beea109983b4104",
+      "bytes": 111068
     }
   ]
 }

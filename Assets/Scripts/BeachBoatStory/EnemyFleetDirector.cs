@@ -71,7 +71,7 @@ namespace BeachBoatStory
                 return null;
             }
         }
-        void Awake(){Instance=this;}
+        void Awake(){Instance=this;if(GetComponent<RiverInvasionIntro>()==null)gameObject.AddComponent<RiverInvasionIntro>();}
         void Start()=>RiverFleetLayout.Configure(this);
         void OnDestroy(){if(Instance==this)Instance=null;}
         void OnDisable(){StopBattle();}
@@ -82,6 +82,7 @@ namespace BeachBoatStory
             if(zone==null||!zone.IsComplete)return;
             RiverFleetLayout.Configure(this);
             BattleStarted=true;
+            GetComponent<RiverInvasionIntro>().Queue();
             GetComponent<RiverBattleVoices>()?.ResetForNewBattle();
             CommandScore=0;
             EbbStarted=false;AmbushStarted=false;EbbTriggerShip=null;
@@ -129,6 +130,7 @@ namespace BeachBoatStory
             }
             if(!BattleStarted)yield break;
             foreach(var ship in pending){var p=ship.spawnPoint+Vector3.forward*shift;p.y=TideSystem.CurrentWaterHeight;ship.transform.position=p;ship.Activate();}
+            if(!resume&&fleet.Count>0)GetComponent<RiverInvasionIntro>().Begin(fleet[0]);
             BattleCaption=$"Toàn hạm đội Nam Hán tiến vào trận địa • {fleet.Count} thuyền";
 
             watchedFleetIndex=0;
@@ -246,6 +248,7 @@ namespace BeachBoatStory
         }
         public void StopBattle()
         {
+            GetComponent<RiverInvasionIntro>()?.Cancel();
             GetComponent<RiverBattleVoices>()?.Silence();
             choreography?.EndBattle();
             EndBattleView();

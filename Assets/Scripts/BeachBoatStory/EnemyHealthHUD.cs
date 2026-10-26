@@ -57,7 +57,7 @@ namespace BeachBoatStory
             if(canvas==null)return;
             if(bars==null||bars.Length!=combat.guards.Length)BuildBars();
             var camera=BeachBoatQuestSession.Instance.storyCamera;VisibleCount=0;
-            bool battle=combat.BattleActive&&Time.timeScale>0;
+            bool battle=combat.BattleActive&&Time.timeScale>0&&!RiverInvasionIntro.IsRunning;
             foreach(var bar in bars)
             {
                 var guard=bar.guard;bar.fill.fillAmount=guard.HealthFraction;

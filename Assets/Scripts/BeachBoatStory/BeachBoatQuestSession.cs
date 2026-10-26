@@ -38,7 +38,7 @@ namespace BeachBoatStory
              (BeachBoatMinigameStation.Active.kind == BeachBoatMinigameStation.ActivityKind.WarDrum ||
               BeachBoatMinigameStation.Active.IsSelectingCargo || BeachBoatMinigameStation.Active.Failed)) ||
             StoryDialogueUI.InputConsumedThisFrame;
-        public static bool InteractionBlocked => BachDangFrontEnd.IsBlocking || CampRecoveryGame.Active != null || OpeningEvent.IsOpeningActive || VillageWorkStall.Active != null ||
+        public static bool InteractionBlocked => RiverInvasionIntro.IsRunning || BachDangFrontEnd.IsBlocking || CampRecoveryGame.Active != null || OpeningEvent.IsOpeningActive || VillageWorkStall.Active != null ||
             (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
             (RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsPlanting) ||
             (Instance != null && !Instance.storyMode) ||
@@ -151,7 +151,7 @@ namespace BeachBoatStory
         void Update()
         {
             var story = GetComponent<BachDangStoryManager>();
-            bool focusedOverlay = BachDangFrontEnd.IsBlocking || CampRecoveryGame.Active != null || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
+            bool focusedOverlay = RiverInvasionIntro.IsRunning || BachDangFrontEnd.IsBlocking || CampRecoveryGame.Active != null || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
                 (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen);
             if (story != null && story.objectiveUIPanel != null)
