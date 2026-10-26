@@ -13,6 +13,7 @@ namespace BeachBoatStory
         bool invasionPlayed,ambushPlayed,counterattackPlayed,active,paused,secondCommand;
         float nextEnemy,commandTime,nextCommand,busy;
         int advanceMask,panicMask;
+        const string InvasionLine="Đây là cơ hội tốt để ta xâm lược và đô hộ Giao Châu!";
         public int InvasionCues {get;private set;}
         public int PanicCues {get;private set;}
         public int CommanderCues {get;private set;}
@@ -58,7 +59,7 @@ namespace BeachBoatStory
         {
             if((advanceMask&1)!=0)return;
             invasionPlayed=true;advanceMask|=1;InvasionCues++;
-            Play(advances[0],false,"Giết! Đuổi theo cho ta!");nextEnemy=12;
+            Play(advances[0],false,InvasionLine);nextEnemy=12;
         }
         void Update()
         {
@@ -80,7 +81,7 @@ namespace BeachBoatStory
             if(busy>0)return;var clips=panic?panics:advances;int mask=panic?panicMask:advanceMask;
             for(int i=0;i<clips.Length;i++)
             {
-                if((mask&(1<<i))!=0)continue;mask|=1<<i;Play(clips[i],false,!panic&&i==0?"Giết! Đuổi theo cho ta!":null);
+                if((mask&(1<<i))!=0)continue;mask|=1<<i;Play(clips[i],false,!panic&&i==0?InvasionLine:null);
                 if(panic){panicMask=mask;PanicCues++;}else{advanceMask=mask;InvasionCues++;}break;
             }
             nextEnemy=Random.Range(8f,13f);

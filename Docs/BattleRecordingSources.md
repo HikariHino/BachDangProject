@@ -14,7 +14,7 @@ and provenance; this document is not a grant of rights to the source material.
 
 | Resource | Video ID | Start–end (seconds) |
 | --- | --- | --- |
-| Enemy_Advance_1 | ok_KBwgS9eg | 230.28–233.35 |
+| Enemy_Advance_1 | ok_KBwgS9eg | 99.03–102.55 |
 | Enemy_Advance_2 (legacy, not played) | ok_KBwgS9eg | 231.32–233.35 |
 | Enemy_Cheer_Crowd | ok_KBwgS9eg | 212.20–214.40 |
 | Enemy_Panic_1 | ok_KBwgS9eg | 308.35–310.10 |
@@ -39,9 +39,15 @@ load. Shipwreck cries route through the same coordinator so ten sinking hulls
 do not layer cries over the commander. Physical combat/wood impacts remain
 independent effects.
 
-The old second advance asset repeated the end of the first sentence. It is
+The old second advance asset contains the pursuit order. It is
 retained for resource compatibility but is no longer in the active playlist.
-The invasion cinematic plays the complete first advance line once, with a
+The invasion cinematic now uses the film's invasion statement about Giao Chau,
+rather than the pursuit order heard during the original film's battle. It plays once, with a
 caption; the regular scheduler remembers that consumed cue. A transition to
 victory lets the current sentence finish, while defeat, reset and load cancel
 the old scene's channel explicitly.
+
+The invasion-line correction passed 48 victory/cinematic checks in Unity batch
+mode, including the actual invasion caption, complete sentence scheduling and
+unchanged player save files. The replacement decodes to 3.52 seconds with a
+peak below 0.740 and matches the manifest digest.

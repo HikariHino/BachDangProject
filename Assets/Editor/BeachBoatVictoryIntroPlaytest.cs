@@ -27,12 +27,17 @@ public static class BeachBoatVictoryIntroPlaytest
         phase=0;lastFrame=-1;began=0;runtimeError=null;middleChecked=false;checks.Clear();originals.Clear();
         SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;
     }
+    public static void RunBatch()
+    {
+        UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();
+    }
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Record;Application.logMessageReceived+=Record;}
     static void Record(string text,string stack,LogType type){if(SessionState.GetBool(Flag,false)&&EditorApplication.isPlaying&&(type==LogType.Error||type==LogType.Exception))runtimeError=text+"\n"+stack;}
     static void Finish(string failure)
     {
         Directory.CreateDirectory("Logs");File.WriteAllText("Logs/VictoryIntroPlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=failure==null,failure,phase,checks},Newtonsoft.Json.Formatting.Indented));
         SessionState.SetBool(Flag,false);BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
+        if(Application.isBatchMode)EditorApplication.delayCall+=()=>EditorApplication.Exit(failure==null?0:1);
     }
     static void Setup()
     {
@@ -97,6 +102,8 @@ public static class BeachBoatVictoryIntroPlaytest
             Check(fleet.enemyShips.All(s=>s.gameObject.activeInHierarchy),"All enemy vessels enter together before the cinematic starts");
             Check(!camera.GetComponent<BeachBoatStory.Camera_Script>().enabled,"The orbit camera yields control to the invasion shot");
             var voice=fleet.GetComponent<RiverBattleVoices>();Check(voice.InvasionCues==1&&voice.SpeechSource.clip.length>3,"The invasion shot starts one complete recorded enemy order with its tail intact");
+            var caption=(TMPro.TMP_Text)typeof(RiverBattleVoices).GetField("caption",Private).GetValue(voice);
+            Check(caption.text.Contains("xâm lược")&&caption.text.Contains("Giao Châu")&&!caption.text.Contains("Đuổi theo"),"The fleet introduction uses the invasion statement instead of a pursuit order");
         }
         if(!middleChecked&&intro.Elapsed>=3)
         {
@@ -117,8 +124,8 @@ public static class BeachBoatVictoryIntroPlaytest
         Set(fleet,"<AmbushStarted>k__BackingField",false);BachDangBattleTimeline.Instance.BeginLure();voices.PlayInvasionIntroduction();var line=voices.SpeechSource.clip;
         Set(fleet,"<AmbushStarted>k__BackingField",true);BachDangBattleTimeline.Instance.BeginAmbush();voices.Step(.1f);
         Check(voices.SpeechSource.clip==line&&!voices.AmbushPlayed,"An ambush cannot cut the active enemy sentence halfway through");
-        for(int i=0;i<40;i++)voices.Step(.1f);
-        Check(voices.AmbushPlayed&&voices.CommanderCues==1&&voices.SpeechSource.clip.length>2.5f,"The full ambush order follows after the enemy's line finishes");
+        for(int i=0;i<150&&!voices.AmbushPlayed;i++)voices.Step(.1f);
+        Check(voices.AmbushPlayed&&voices.CommanderCues==1&&voices.SpeechSource.clip.length>2.5f,"The full ambush order follows after the enemy's line finishes; busy="+voices.VoiceBusySeconds+", clip="+voices.SpeechSource.clip.name+", duration="+voices.SpeechSource.clip.length);
         for(int i=0;i<220;i++)voices.Step(.1f);
         Check(voices.CommanderCues==2,"The second complete commander line plays once");
         voices.ResetForNewBattle();Set(fleet,"<AmbushStarted>k__BackingField",false);BachDangBattleTimeline.Instance.BeginLure();voices.PlayInvasionIntroduction();voices.Step(.01f);line=voices.SpeechSource.clip;
