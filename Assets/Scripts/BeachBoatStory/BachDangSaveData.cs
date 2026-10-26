@@ -54,6 +54,6 @@ namespace BeachBoatStory
             public Vector3 deckLocal,climbLocalStart;
             public Fighter[] allies,hostiles,defenders;
         }
-        [Serializable] public sealed class Patrol {public string name;public Vector3 position;public Quaternion rotation;}
+        [Serializable] public sealed class Patrol {public string name;public Vector3 position;public Quaternion rotation;public int layoutVersion;}
     }
 }

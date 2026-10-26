@@ -22,6 +22,7 @@ namespace BeachBoatStory
         Transform deckVisual;float deckCeiling;bool deckCached;
         public BoxCollider SolidHull=>solidHull;
         public float Radius {get;private set;}
+        public float TrafficPadding=>GetComponent<AmbientRiverBoat>()?.trafficPadding??30;
         public int RejectedMoves {get;private set;}
         public Collider LastBlocker {get;private set;}
         public static BoatHullCollision Get(Transform root)

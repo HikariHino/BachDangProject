@@ -455,7 +455,7 @@ namespace BeachBoatStory
                 var body=a.go.GetComponent<ActorSolidBody>();body.Carrier=a.state==0?a.home.transform:a.state==3||a.state==4?a.carrier:null;
                 var candidate=TargetFor(a);
                 if(a.target==null||!a.target.IsAlive||candidate!=null&&(candidate.transform.position-a.go.transform.position).sqrMagnitude<(a.target.transform.position-a.go.transform.position).sqrMagnitude*.5f)a.target=candidate;
-                var home=a.home.transform.position+a.home.transform.forward*20+a.home.transform.right*(a.side*12);
+                var home=a.home.lightPatrol?a.home.transform.position+a.home.transform.forward*(a.side*17):a.home.transform.position+a.home.transform.forward*20+a.home.transform.right*(a.side*12);
                 var homeHull=BoatHullCollision.Get(a.home.transform);
                 if(homeHull.TryDeckSurface(home,out var homeFloor))home.y=homeFloor.y+AllyRootOffset(a)+.15f;
                 if(a.state==0)

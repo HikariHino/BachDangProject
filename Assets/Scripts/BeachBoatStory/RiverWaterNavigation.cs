@@ -27,6 +27,7 @@ namespace BeachBoatStory
         static Vector2Int Bucket(Vector3 p)=>new Vector2Int(Mathf.FloorToInt(p.x/StakeCell),Mathf.FloorToInt(p.z/StakeCell));
         static float SqrXZ(Vector3 a,Vector3 b){float x=a.x-b.x,z=a.z-b.z;return x*x+z*z;}
         static Bounds stakeField;
+        static Bounds invasionApproach;
         public static bool ReserveInvasionApproach=true;
         static int ProfileKey(float radius)=>Mathf.CeilToInt(radius/10)+(ReserveInvasionApproach?10000:0);
         static readonly Collider[] hits=new Collider[256];
@@ -41,6 +42,22 @@ namespace BeachBoatStory
             foreach(var stake in zone!=null?zone.fieldStakes:Array.Empty<Transform>())
             {if(stake==null)continue;var renderer=stake.GetComponentInChildren<Renderer>(true);if(renderer!=null)list.Add(renderer.bounds);}
             stakes=list.ToArray();stakeField=stakes.Length>0?stakes[0]:default;foreach(var b in stakes)stakeField.Encapsulate(b);
+            // Reserve the actual invasion lanes, rather than the entire upstream
+            // half of the river. A bank-to-bank field still leaves western patrol water.
+            bool hasApproach=false;invasionApproach=default;
+            var fleet=UnityEngine.Object.FindAnyObjectByType<EnemyFleetDirector>();
+            foreach(var ship in fleet!=null?fleet.enemyShips:Array.Empty<EnemyShip>())
+            {
+                if(ship==null)continue;
+                var points=new List<Vector3>{ship.spawnPoint};
+                foreach(var point in ship.routeWaypoints)if(point!=null)points.Add(point.position);
+                foreach(var point in points)
+                {
+                    if(point.z<stakeField.max.z-20)continue;
+                    var b=new Bounds(new Vector3(point.x,water,point.z),new Vector3((ship.stakeHitDistance+120)*2,1,400));
+                    if(!hasApproach){invasionApproach=b;hasApproach=true;}else invasionApproach.Encapsulate(b);
+                }
+            }
             stakeBuckets.Clear();maximumStakeRadius=0;
             foreach(var b in stakes){var key=Bucket(b.center);if(!stakeBuckets.TryGetValue(key,out var bucket)){bucket=new List<Bounds>();stakeBuckets[key]=bucket;}bucket.Add(b);maximumStakeRadius=Mathf.Max(maximumStakeRadius,new Vector2(b.extents.x,b.extents.z).magnitude+1);}
         }
@@ -70,7 +87,8 @@ namespace BeachBoatStory
             if(id<0||id>=width*height)return false;
             int key=ProfileKey(radius);if(!maps.TryGetValue(key,out var map)){map=new Dictionary<int,byte>(2048);maps[key]=map;}
             if(map.TryGetValue(id,out var cached))return cached==1;
-            float r=Mathf.Ceil(radius/10)*10+Cell*.72f;var p=Point(id);bool clear=!(ReserveInvasionApproach&&stakes.Length>0&&p.z+r>stakeField.max.z-20&&p.x+r>stakeField.min.x-220);
+            float r=Mathf.Ceil(radius/10)*10+Cell*.72f;var p=Point(id);
+            bool clear=!(ReserveInvasionApproach&&invasionApproach.size.x>0&&p.x+r>invasionApproach.min.x&&p.x-r<invasionApproach.max.x&&p.z+r>invasionApproach.min.z&&p.z-r<invasionApproach.max.z);
             for(int i=0;i<9&&clear;i++)
             {
                 var sample=p+(i==0?Vector3.zero:Quaternion.Euler(0,(i-1)*45,0)*Vector3.forward*r);var local=sample-origin;
@@ -115,11 +133,13 @@ namespace BeachBoatStory
             using var sample=PathMarker.Auto();
             Prepare();path.Clear();
             if(!NearestClear(from,radius,out var startPoint)||!NearestClear(target,radius,out var goalPoint))return false;
-            var traffic=new List<(Vector3 position,float safeSquared,float initialSquared)>();var positions=new List<Vector3>();float spacing=radius*2+30;
+            var requesterHull=requester!=null?requester.GetComponent<BoatHullCollision>():null;
+            float padding=requesterHull!=null?requesterHull.TrafficPadding:30;
+            var traffic=new List<(Vector3 position,float safeSquared,float initialSquared)>();var positions=new List<Vector3>();float spacing=radius*2+padding;
             if(requester!=null)foreach(var other in BoatHullCollision.Active)
             {
                 if(other.transform==requester||other.SolidHull==null||!other.SolidHull.enabled)continue;
-                var position=other.transform.position;float safe=radius+other.Radius+30,initial=QuestRowboat.FlatDistance(from,position)+4;
+                var position=other.transform.position;float safe=radius+other.Radius+Mathf.Max(padding,other.TrafficPadding),initial=QuestRowboat.FlatDistance(from,position)+4;
                 traffic.Add((position,safe*safe,initial*initial));positions.Add(position);spacing=Mathf.Max(spacing,safe);
             }
             if(adjustGoalForTraffic&&positions.Count>0&&!NearestClear(target,radius,out goalPoint,positions,spacing))return false;

@@ -111,7 +111,7 @@ namespace BeachBoatStory
                 guards=RiverPlayerCombat.Instance.guards.Select(g=>new BachDangSaveData.Guard{id=GuardId(g),ship=g.ship.name,health=g.Health,active=g.gameObject.activeSelf,independent=g.IsIndependentBoarder,floatingCorpse=g.GetComponent<RiverCorpse>()!=null&&g.GetComponent<RiverCorpse>().enabled,position=g.transform.position,rotation=g.transform.rotation}).ToArray(),
                 boarding=RiverBoardingCombat.Instance?.CaptureSave(),dialogue=StoryDialogueUI.Instance?.CaptureSave(),
                 campaign=CampaignProgress.Instance?.Capture(),
-                patrols=UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None).Select(p=>new BachDangSaveData.Patrol{name=p.name,position=p.transform.position,rotation=p.transform.rotation}).ToArray()
+                patrols=UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None).Select(p=>new BachDangSaveData.Patrol{name=p.name,position=p.transform.position,rotation=p.transform.rotation,layoutVersion=AmbientRiverBoat.PatrolLayoutVersion}).ToArray()
             };
         }
         public static void Apply(BachDangSaveData data)
@@ -129,7 +129,7 @@ namespace BeachBoatStory
             foreach(var activity in data.activities??Array.Empty<BachDangSaveData.Activity>())
                 foreach(var station in UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsInactive.Include,FindObjectsSortMode.None))if(station.name==activity.name)station.RestoreSave(activity);
             foreach(var patrol in UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None))
-            {var saved=(data.patrols??Array.Empty<BachDangSaveData.Patrol>()).FirstOrDefault(p=>p.name==patrol.name);if(saved!=null)patrol.RestorePosition(saved.position,saved.rotation);}
+            {var saved=(data.patrols??Array.Empty<BachDangSaveData.Patrol>()).FirstOrDefault(p=>p.name==patrol.name);if(saved!=null)patrol.RestorePatrol(saved);}
             if(data.tide!=null){BachDangBattleTimeline.Instance.RestoreSave(data.tide);TideSystem.Instance.RestoreSave(data.tide);}
             boat.RestoreSave(data.aboard,data.boatPosition,data.boatRotation);
             foreach(var saved in data.ships??Array.Empty<BachDangSaveData.Ship>()){var ship=EnemyFleetDirector.Instance.enemyShips.FirstOrDefault(s=>s.name==saved.name);ship?.RestoreSave(saved);}

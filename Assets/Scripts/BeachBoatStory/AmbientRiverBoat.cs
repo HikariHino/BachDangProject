@@ -7,10 +7,13 @@ namespace BeachBoatStory
     [DisallowMultipleComponent]
     public sealed class AmbientRiverBoat : MonoBehaviour
     {
+        public const int PatrolLayoutVersion=2;
         public TideSystem tide;
         public Transform[] route=Array.Empty<Transform>();
         public Animator[] rowers=Array.Empty<Animator>();
         public float cruiseSpeed=24,turnSpeed=32,visualForwardYaw,pauseAtPoint=.6f,waterlineOffset,bobAmplitude=.12f;
+        public bool lightPatrol;
+        [Min(30)] public float trafficPadding=80;
         public bool IsReturningToHarbor {get;private set;}
         public bool HasReturnedToHarbor {get;private set;}
         public bool IsAtBattleStation {get;private set;}
@@ -90,6 +93,13 @@ namespace BeachBoatStory
             {repaired.y=TideSystem.CurrentWaterHeight+waterlineOffset;position=repaired;}
             position.y=TideSystem.CurrentWaterHeight+waterlineOffset;transform.SetPositionAndRotation(position,rotation);Physics.SyncTransforms();path.Clear();nextPlan=0;
         }
+        public void RestorePatrol(BachDangSaveData.Patrol saved)
+        {
+            // Old warship patrol positions can lie behind the newly completed barrier.
+            // Keep quest progress, but start that vessel on its newly authored safe loop.
+            if(saved.layoutVersion!=PatrolLayoutVersion){ResetForCheckpoint();return;}
+            RestorePosition(saved.position,saved.rotation);
+        }
         public void ResetForCheckpoint()
         {
             if(!ready)return;battleTarget=null;IsReturningToHarbor=HasReturnedToHarbor=IsAtBattleStation=false;
@@ -165,7 +175,7 @@ namespace BeachBoatStory
             foreach(var other in BoatHullCollision.Active)
             {
                 if(other==hull||other.SolidHull==null||!other.SolidHull.enabled)continue;
-                float safe=hull.Radius+other.Radius+30;
+                float safe=hull.Radius+other.Radius+Mathf.Max(trafficPadding,other.TrafficPadding);
                 float now=QuestRowboat.FlatDistance(transform.position,other.transform.position),after=QuestRowboat.FlatDistance(next,other.transform.position);
                 if(after<safe&&after<now+.001f)return false;
             }

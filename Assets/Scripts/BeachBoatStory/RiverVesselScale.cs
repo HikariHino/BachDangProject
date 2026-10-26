@@ -9,7 +9,7 @@ namespace BeachBoatStory
         public static void ApplyScene()
         {
             foreach(var ship in Object.FindObjectsByType<EnemyShip>(FindObjectsInactive.Include))Enlarge(ship.transform);
-            foreach(var ship in Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include))Enlarge(ship.transform);
+            foreach(var ship in Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include))if(!ship.lightPatrol)Enlarge(ship.transform);
         }
         static void Enlarge(Transform ship)
         {
