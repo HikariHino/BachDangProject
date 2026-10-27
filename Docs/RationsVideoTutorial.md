@@ -1,5 +1,10 @@
 # Rations video tutorial
 
+> Historical design, retired on 2026-10-27. The four village trades now use
+> [physical 3D interactions](PhysicalVillageTrades.md). The obsolete 2D video,
+> player, generator and video-only test were removed during project cleanup.
+> The implementation and validation below describe the earlier puzzle version.
+
 The rations instruction paragraph is replaced by an automatic 15-second
 demonstration inside the workbench. It shows cursor clicks, enough/missing/
 excess colors, whole-group salt, an excess-salt undo and a successful package.

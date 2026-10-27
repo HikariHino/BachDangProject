@@ -75,7 +75,8 @@ namespace BeachBoatStory
             {
                 // This runs before minigame Update. Close only the current attempt;
                 // each activity retains its earned levels, rewards and best times.
-                if(CampRecoveryGame.Active!=null)CampRecoveryGame.Active.Close();
+                if(ArcheryTraining.Active!=null)ArcheryTraining.Active.Close();
+                else if(CampRecoveryGame.Active!=null)CampRecoveryGame.Active.Close();
                 else if(VillageWorkStall.Active!=null)VillageWorkStall.Active.Close();
                 else if(BeachBoatMinigameStation.Active!=null)BeachBoatMinigameStation.Active.CancelActivity();
                 else SetPage(MenuPage.Pause);

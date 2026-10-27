@@ -22,7 +22,14 @@ public class Camera_Script : MonoBehaviour
     public void SetElevation(float degrees)
     {pitch=Mathf.Clamp(degrees,yMinAngle,yMaxAngle);if(initialized&&target!=null)ApplyPose(true);}
     public bool IsAiming { get; private set; }
+    bool combatAimRequested;
+    public void SetCombatAim(bool value){combatAimRequested=value;}
     public bool IsFreeLooking { get; private set; }
+    public bool WorkFocusActive {get;private set;}
+    Vector3 workFocus,workForward;float workDistance;
+    public void FocusWork(Vector3 point,Vector3 forward,float closeDistance=24)
+    {workFocus=point;workForward=forward;workDistance=closeDistance;WorkFocusActive=true;}
+    public void ClearWorkFocus(){if(!WorkFocusActive)return;WorkFocusActive=false;velocity=Vector3.zero;}
     public bool InputCaptured => Cursor.lockState == CursorLockMode.Locked && (!BeachBoatQuestSession.InputBlocked||StakeConstruction.AllowsCamera||VillagePhysicalWork.AllowsCamera);
     float yaw, pitch = 12f, normalFieldOfView, nextTargetSearch;
     bool initialized;
@@ -56,11 +63,23 @@ public class Camera_Script : MonoBehaviour
             if (target == null) return;
         }
         if (!initialized) SnapToTarget();
+        if(WorkFocusActive)
+        {
+            // Tool drags manipulate the world object, never orbit the camera as well.
+            var forward=Vector3.ProjectOnPlane(workForward,Vector3.up).normalized;
+            var right=Vector3.Cross(Vector3.up,forward);
+            var desired=workFocus-forward*workDistance+right*20+Vector3.up*17;
+            desired=KeepAboveWater(ResolveObstruction(workFocus+Vector3.up*2,desired));
+            transform.position=Vector3.SmoothDamp(transform.position,desired,ref velocity,.12f);
+            transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(workFocus-transform.position),1-Mathf.Exp(-18*Time.deltaTime));
+            if(view!=null)view.fieldOfView=Mathf.Lerp(view.fieldOfView,55,1-Mathf.Exp(-12*Time.deltaTime));
+            previousTarget=target.position;return;
+        }
         if (BachDangFrontEnd.Instance==null && !BeachBoatQuestSession.InputBlocked && Input.GetKeyDown(KeyCode.Escape)) CaptureCursor(!InputCaptured);
         // Click to resume after unlocking; the opening itself never skips on mouse input.
         if (!BeachBoatQuestSession.InputBlocked && !InputCaptured && Input.GetMouseButtonDown(0) &&
             (UnityEngine.EventSystems.EventSystem.current == null || !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())) CaptureCursor(true);
-        IsAiming = enableShoulderAim && InputCaptured && Input.GetMouseButton(1);
+        IsAiming = enableShoulderAim && (combatAimRequested || InputCaptured && Input.GetMouseButton(1));
         IsFreeLooking = InputCaptured && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
         if (InputCaptured)
         {

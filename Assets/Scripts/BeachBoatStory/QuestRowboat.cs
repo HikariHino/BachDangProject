@@ -640,8 +640,22 @@ namespace BeachBoatStory
         public void ApplyBowArmPose(Vector3 grip,Vector3 draw,Vector3 forward)
         {
             if(leftUpperArm==null||rightUpperArm==null)return;
-            SolveArm(leftUpperArm,leftForearm,leftHand,grip,leftUpperArm.position-transform.right*4-Vector3.up*3);
-            SolveArm(rightUpperArm,rightForearm,rightHand,draw,rightUpperArm.position+transform.right*5-forward*4);
+            var side=session.player.transform.right;var profile=RiverPlayerCombat.Instance?.GripProfile;
+            if(profile!=null)
+            {
+                profile.Align(leftUpperArm,leftForearm,leftHand,grip,leftUpperArm.position-side*4-Vector3.up*2,true);
+                profile.Align(rightUpperArm,rightForearm,rightHand,draw,rightUpperArm.position+side*6+Vector3.up*.5f,false);
+            }
+            else
+            {
+                SolveArm(leftUpperArm,leftForearm,leftHand,grip,leftUpperArm.position-side*4-Vector3.up*2);
+                SolveArm(rightUpperArm,rightForearm,rightHand,draw,rightUpperArm.position+side*6+Vector3.up*.5f);
+                foreach(var pair in new[]{(leftHand,leftForearm),(rightHand,rightForearm)})
+                {
+                    var end=pair.Item1.Find(pair.Item1.name+"_End");
+                    if(end!=null)pair.Item1.rotation=Quaternion.FromToRotation(pair.Item1.TransformVector(end.localPosition*10000).normalized,(pair.Item1.position-pair.Item2.position).normalized)*pair.Item1.rotation;
+                }
+            }
         }
         void OnDisable() { if (IsAboard) RestorePlayer(); if (tide != null) tide.ReleaseLowTide(this); }
         void OnDestroy() { if (Instance == this) Instance = null; }

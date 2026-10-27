@@ -78,6 +78,7 @@ namespace BeachBoatStory
             gameObject.AddComponent<VillageWoodHunt>();
             gameObject.AddComponent<CampaignProgress>();
             var frontEnd=Child("BachDangFrontEnd");frontEnd.AddComponent<BachDangFrontEnd>();
+            gameObject.AddComponent<ArcheryTraining>();
         }
 
         public bool IsPreferredGate(CampGateTransition candidate)

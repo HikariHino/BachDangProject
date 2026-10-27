@@ -12,13 +12,13 @@ using Story=BeachBoatStory.BachDangStoryManager;
 public static class BeachBoatPhysicalVillagePlaytest
 {
     const string Flag="PhysicalVillage938QA";
-    static int phase,index,lastFrame,captureFrame;static double began;static string runtimeError,pendingCapture;static bool capturing;
+    static int phase,index,lastFrame,captureFrame;static double began;static string runtimeError,pendingCapture;static bool capturing,captureReady;
     static VillageWorkStall stall;static bool riceOverflow;static HashSet<string> captures=new HashSet<string>();
     static readonly List<string> checks=new List<string>();static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static string Hash(string p)=>Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(File.ReadAllBytes(p)));
     static void Check(bool ok,string s){if(!ok)throw new Exception(s);checks.Add(s);}
     public static void RunBatch(){EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
-    public static void RunInEditor(){phase=index=0;lastFrame=-1;began=0;runtimeError=pendingCapture=null;capturing=false;riceOverflow=false;checks.Clear();hashes.Clear();captures.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){phase=index=0;lastFrame=-1;began=0;runtimeError=pendingCapture=null;capturing=captureReady=false;riceOverflow=false;checks.Clear();hashes.Clear();captures.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Log;Application.logMessageReceived+=Log;}
     static void Log(string m,string stack,LogType t){if(SessionState.GetBool(Flag,false)&&(t==LogType.Error||t==LogType.Exception))runtimeError=m+"\n"+stack;}
     public static void Place(Vector3 p)
@@ -33,18 +33,23 @@ public static class BeachBoatPhysicalVillagePlaytest
         {
             var work=s.Physical;float distance=QuestRowboat.FlatDistance(player.transform.position,work.RequiredApproach);
             if(distance>1){s.AdvanceTime(distance/30);Place(work.RequiredApproach);}
-            bool action=work.Current==VillagePhysicalWork.Step.Saw||work.Current==VillagePhysicalWork.Step.Tie||work.Current==VillagePhysicalWork.Step.Wrap||work.Current==VillagePhysicalWork.Step.FillRice&&work.RiceFill<.72f;
-            if(action){s.AdvanceTime(.1f);if(!work.Work(.1f))throw new Exception("Cannot perform physical action at "+work.Current);}
+            bool action=work.Current==VillagePhysicalWork.Step.Saw||work.Current==VillagePhysicalWork.Step.Tie||work.Current==VillagePhysicalWork.Step.Wrap||work.Current==VillagePhysicalWork.Step.FillRice&&work.RiceFill<.70f;
+            if(action){s.AdvanceTime(.1f);if(!DriveTool(work))throw new Exception("Cannot perform physical action at "+work.Current);}
             else {s.AdvanceTime(.2f);if(!work.Interact())throw new Exception("Cannot interact at "+work.Current);}
         }
         if(s.Phase!=VillageWorkStall.WorkPhase.Won)throw new Exception("Physical work did not finish: "+s.kind+" / "+s.Feedback);
+    }
+    public static bool DriveTool(VillagePhysicalWork work)
+    {
+        if(!work.ToolHeld&&!work.PressTool())return false;
+        return work.DragTool(Vector2.ClampMagnitude(work.ToolGoal-work.ToolPointer,.3f),.1f);
     }
     static void RequestCapture(string name)
     {
         if(captures.Contains(name)||pendingCapture!=null)return;
         var player=BeachBoatQuestSession.Instance.player;var direction=stall.Physical.TargetPosition-player.transform.position;direction.y=0;
         player.transform.rotation=Quaternion.LookRotation(direction);player.GetComponent<Rigidbody>().rotation=player.transform.rotation;
-        var orbit=BeachBoatQuestSession.Instance.storyCamera.GetComponent<BeachBoatStory.Camera_Script>();float elevation=orbit.Elevation;orbit.SnapToTarget();orbit.SetElevation(elevation);pendingCapture=name;captureFrame=Time.frameCount;
+        var orbit=BeachBoatQuestSession.Instance.storyCamera.GetComponent<BeachBoatStory.Camera_Script>();if(!stall.Physical.ToolStep){float elevation=orbit.Elevation;orbit.SnapToTarget();orbit.SetElevation(elevation);}pendingCapture=name;captureFrame=Time.frameCount;
     }
     static void Capture(string name)
     {
@@ -57,6 +62,14 @@ public static class BeachBoatPhysicalVillagePlaytest
             Check(Vector3.Distance(rig.GetBoneTransform(HumanBodyBones.LeftHand).position,held.transform.position-player.transform.right*2)<2.5f,"Left hand reaches the carried item: "+stall.kind);
         }
         foreach(var r in player.GetComponentsInChildren<SkinnedMeshRenderer>())r.forceMatrixRecalculationPerRender=true;
+        if(stall.Physical.ToolStep)
+        {
+            var contact=(Vector3)typeof(VillagePhysicalWork).GetMethod("ToolPoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(stall.Physical,new object[]{stall.Physical.ToolPointer});
+            var rig=player.GetComponentInChildren<Animator>();
+            var hand=rig.GetBoneTransform(HumanBodyBones.RightHand);var shoulder=rig.GetBoneTransform(HumanBodyBones.RightUpperArm);var elbow=rig.GetBoneTransform(HumanBodyBones.RightLowerArm);
+            Check(Vector3.Distance(hand.position,stall.Physical.RightGripPosition)<2.5f,"Working hand reaches the tool, not the air: "+stall.kind+" hand="+hand.position+" grip="+stall.Physical.RightGripPosition+" arm="+(Vector3.Distance(shoulder.position,elbow.position)+Vector3.Distance(elbow.position,hand.position)));
+        }
+        File.WriteAllText("Logs/VillageCamera_"+name+".json",Newtonsoft.Json.JsonConvert.SerializeObject(new { focus=source.GetComponent<BeachBoatStory.Camera_Script>().WorkFocusActive, distance=QuestRowboat.FlatDistance(player.transform.position,stall.Physical.RequiredApproach), camera=source.transform.position.ToString(), target=stall.Physical.TargetPosition.ToString(), activeCamera=Camera.main?.name, components=source.GetComponents<Behaviour>().Select(c=>c.GetType().FullName+":"+c.enabled).ToArray() },Newtonsoft.Json.Formatting.Indented));
         var ui=Object.FindAnyObjectByType<VillageWorkUI>();typeof(VillageWorkUI).GetMethod("Update",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(ui,null);
         var canvases=Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None).Where(c=>c.isRootCanvas&&c.renderMode==RenderMode.ScreenSpaceOverlay).ToArray();
         foreach(var c in canvases){c.renderMode=RenderMode.ScreenSpaceCamera;c.worldCamera=source;c.planeDistance=source.nearClipPlane+1;}
@@ -79,6 +92,12 @@ public static class BeachBoatPhysicalVillagePlaytest
         File.WriteAllText("Logs/PhysicalVillagePlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,phase,index,checks},Newtonsoft.Json.Formatting.Indented));
         BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
     }
+    public static void CaptureAfterPose()
+    {
+        if(!captureReady||pendingCapture==null||!SessionState.GetBool(Flag,false))return;
+        captureReady=false;string name=pendingCapture;pendingCapture=null;
+        try{Capture(name);}catch(Exception e){Finish(e.ToString());}
+    }
     static void Tick()
     {
         if(!SessionState.GetBool(Flag,false)||!EditorApplication.isPlaying||capturing)return;EditorApplication.QueuePlayerLoopUpdate();if(lastFrame==Time.frameCount)return;lastFrame=Time.frameCount;
@@ -86,11 +105,12 @@ public static class BeachBoatPhysicalVillagePlaytest
         try
         {
             if(runtimeError!=null)throw new Exception(runtimeError);if(EditorApplication.timeSinceStartup-began>120)throw new Exception("Physical village QA timeout");
-            if(pendingCapture!=null){if(Time.frameCount<captureFrame+3)return;string name=pendingCapture;pendingCapture=null;Capture(name);return;}
+            if(pendingCapture!=null){if(Time.frameCount>=captureFrame+(stall.Physical.ToolStep?20:3))captureReady=true;return;}
             if(phase==0)
             {
                 foreach(var p in Directory.GetFiles(Application.persistentDataPath,"campaign938*"))hashes[p]=Hash(p);
                 BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/PhysicalVillageQA/"+DateTime.Now.ToString("yyyyMMddHHmmssfff"));BachDangAutoSave.Instance.enabled=false;
+                BeachBoatQuestSession.Instance.player.AddComponent<VillageWorkPoseProbe>();
                 BachDangFrontEnd.Instance.Play();Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 Story.Instance.collectedWood=5;Story.Instance.TransitionTo(Story.StoryState.Act2_SupplyPreparation,true);phase=1;return;
             }
@@ -134,13 +154,19 @@ public static class BeachBoatPhysicalVillagePlaytest
                 {stall.AdvanceTime(QuestRowboat.FlatDistance(BeachBoatQuestSession.Instance.player.transform.position,work.RequiredApproach)/30);Place(work.RequiredApproach);return;}
                 if(work.Current==VillagePhysicalWork.Step.FillRice&&!riceOverflow)
                 {
-                    if(work.RiceFill<.95f){stall.AdvanceTime(.1f);work.Work(.1f);return;}
+                    if(work.RiceFill<.95f){stall.AdvanceTime(.1f);DriveTool(work);return;}
                     int errors=stall.Mistakes;work.Interact();Check(stall.Mistakes==errors+1&&work.RiceFill==0&&stall.Progress==0,"Overfilled rice visibly resets the bag, charges one error and grants no delivery");riceOverflow=true;
                 }
-                bool action=work.Current==VillagePhysicalWork.Step.Saw||work.Current==VillagePhysicalWork.Step.Tie||work.Current==VillagePhysicalWork.Step.Wrap||work.Current==VillagePhysicalWork.Step.FillRice&&work.RiceFill<.72f;
+                bool action=work.Current==VillagePhysicalWork.Step.Saw||work.Current==VillagePhysicalWork.Step.Tie||work.Current==VillagePhysicalWork.Step.Wrap||work.Current==VillagePhysicalWork.Step.FillRice&&work.RiceFill<.70f;
                 if(action)
                 {
-                    stall.AdvanceTime(.1f);CheckAction(work.Work(.1f),work.Current.ToString());
+                    if(!work.ToolHeld)
+                    {
+                        float beforeProgress=work.ActionProgress;
+                        work.PressTool();for(int n=0;n<10;n++)work.DragTool(Vector2.zero,.1f);
+                        Check(work.ActionProgress==beforeProgress,"Holding without tool motion grants no work: "+work.Current);
+                    }
+                    stall.AdvanceTime(.1f);CheckAction(DriveTool(work),work.Current.ToString());
                     if(work.ActionProgress>.35f&&work.ActionProgress<.65f)RequestCapture(stall.kind.ToString());
                 }
                 else
@@ -166,5 +192,11 @@ public static class BeachBoatPhysicalVillagePlaytest
         }
         catch(Exception e){Finish(e.ToString());}
     }
-    static void CheckAction(bool ok,string step){if(!ok)throw new Exception("Physical input failed at "+step);}
+    static void CheckAction(bool ok,string step){if(!ok)throw new Exception("Physical input failed at "+step+" phase="+stall.Phase+" elapsed="+stall.Elapsed+" time="+stall.TimeRemaining+" near="+stall.Physical.CanInteract+" held="+stall.Physical.ToolHeld+" pointer="+stall.Physical.ToolPointer+" target="+stall.Physical.RequiredApproach+" player="+BeachBoatQuestSession.Instance.player.transform.position);}
+}
+
+[DefaultExecutionOrder(950)]
+public sealed class VillageWorkPoseProbe : MonoBehaviour
+{
+    void LateUpdate(){BeachBoatPhysicalVillagePlaytest.CaptureAfterPose();}
 }

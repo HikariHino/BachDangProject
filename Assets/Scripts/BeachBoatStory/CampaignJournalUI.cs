@@ -76,6 +76,7 @@ namespace BeachBoatStory
                         Row("    Thành tích chuẩn bị",p.TimingResult(index)+"\n"+p.TimingBands(index),completed,current&&!completed,82);
                     }
                 }
+                Row("NHIỆM VỤ PHỤ • Tập bắn cung",$"Bãi tập trong doanh trại • 6 mũi, trúng ít nhất 4 bia • Kỷ lục {ArcheryTraining.Instance?.BestScore??0}/60 • Không tính vào hạng chiến dịch",ArcheryTraining.Instance?.Completed??false,false,82);
                 int trained=BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().CompletedTrainingLevels;
                 Row($"NHIỆM VỤ PHỤ • Luyện thể lực ({trained}/3)","TÙY CHỌN • Có thể bỏ qua • Không ảnh hưởng cốt truyện và hạng.",trained==3,false,68);
                 for(int level=1;level<=3;level++)Row("    Luyện thể lực • "+CampaignProgress.DifficultyNames[level-1],$"Thắng cấp này: +20 thể lực tối đa • Tổng sau cấp {level}: +{level*20}.",trained>=level,false,64);

@@ -87,7 +87,7 @@ namespace BeachBoatStory
             if(Save(location))return true;
             ActiveSlot=previous;return false;
         }
-        public static bool CanSave=>!RiverInvasionIntro.IsRunning&&StakeConstruction.Active==null&&VillageWorkStall.Active==null&&BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
+        public static bool CanSave=>ArcheryTraining.Active==null&&!RiverInvasionIntro.IsRunning&&StakeConstruction.Active==null&&VillageWorkStall.Active==null&&BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
             !(QuestCheckpoint.Instance?.IsDefeated??false)&&!(QuestRowboat.Instance?.IsBroken??false)&&!(ScreenFader.Instance?.IsTransitioning??false);
         static bool WriteData(string path,BachDangSaveData data)
         {
@@ -126,6 +126,7 @@ namespace BeachBoatStory
             return new BachDangSaveData{
                 savedAt=DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),savedUtcTicks=DateTime.UtcNow.Ticks,location=location,storyState=(int)story.currentState,woodCount=story.collectedWood,destroyedCount=story.destroyedEnemyShips,
                 rowboatDurabilityVersion=1,boatDurability=boat!=null?boat.Durability:QuestRowboat.MaximumDurability,
+                archeryBestScore=ArcheryTraining.Instance?.BestScore??0,archeryTrainingCompleted=ArcheryTraining.Instance?.Completed??false,
                 playerPosition=session.player.transform.position,playerRotation=session.player.transform.rotation,aboard=boat!=null&&boat.IsAboard,
                 boatPosition=boat!=null?boat.transform.position:Vector3.zero,boatRotation=boat!=null?boat.transform.rotation:Quaternion.identity,
                 health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,
@@ -146,7 +147,7 @@ namespace BeachBoatStory
             if(!Valid(data))throw new InvalidDataException("Unsupported campaign save");
             var session=BeachBoatQuestSession.Instance;var story=BachDangStoryManager.Instance;var boat=QuestRowboat.Instance;
             QuestCheckpoint.Instance?.PrepareForLoad();
-            CampaignJournalUI.Instance?.Close();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();
+            CampaignJournalUI.Instance?.Close();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();ArcheryTraining.Instance?.Restore(data.archeryBestScore,data.archeryTrainingCompleted);
             BachDangFrontEnd.Instance?.ReleaseHiddenUI();
             foreach(var intro in UnityEngine.Object.FindObjectsByType<OpeningEvent>(FindObjectsInactive.Include,FindObjectsSortMode.None))intro.SkipOpening();
             StoryDialogueUI.Instance?.DismissForCheckpoint();EnemyFleetDirector.Instance.ResetForCheckpoint();

@@ -29,6 +29,8 @@ namespace BeachBoatStory
                 float d=(actor.transform.position-camera.transform.position).sqrMagnitude;
                 actor.target.forceRenderingOff=!actor.important&&d>=700*700;
                 var mesh=actor.important||d<100*100?actor.closeMesh:d<260*260?actor.middleMesh:actor.farMesh;
+                var combat=RiverPlayerCombat.Instance;
+                if(combat!=null&&combat.GripProfile!=null&&actor.target.sharedMesh==combat.GripProfile.posed&&(combat.IsAiming||StakeConstruction.Active!=null&&StakeConstruction.Active.Step==StakeConstruction.WorkStep.Hammer))mesh=combat.GripProfile.posed;
                 if(mesh!=null&&actor.target.sharedMesh!=mesh){actor.target.sharedMesh=null;actor.target.sharedMesh=mesh;}
                 actor.target.shadowCastingMode=d<300*300?UnityEngine.Rendering.ShadowCastingMode.On:UnityEngine.Rendering.ShadowCastingMode.Off;
             }

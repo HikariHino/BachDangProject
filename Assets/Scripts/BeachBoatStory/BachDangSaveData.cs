@@ -11,6 +11,7 @@ namespace BeachBoatStory
         public int rowboatDurabilityVersion;
         public float boatDurability;
         public int storyState,woodCount,destroyedCount,armor,trainingLevels;
+        public int archeryBestScore;public bool archeryTrainingCompleted;
         public float health,stamina,maxHealth,maxStamina;
         public Vector3 playerPosition,boatPosition;
         public Quaternion playerRotation=Quaternion.identity,boatRotation=Quaternion.identity;
