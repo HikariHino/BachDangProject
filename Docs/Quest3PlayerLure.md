@@ -56,3 +56,20 @@ The live-AI pursuit regression passed 51 checks on 2026-10-27, including actual
 escort movement, unspent allied arrows throughout pursuit and ebb, no premature
 enemy boarding, old-save assault recovery, resumption of allied bow fire at the
 ambush, the complete physical fleet sinking together, and unchanged user saves.
+
+Enemy hulls now accelerate and advance along their bow with a bounded
+10-degree-per-second turn rate. The formation anchor only changes course while
+advancing, with a small lateral deadband. Blocked vessels wait or advance on a
+clear heading rather than sliding sideways away from one another. Every move
+and turn still uses the conservative solid hull sweep, including smaller steps
+on slow frames. Save data retains each live ship's forward speed; older saves
+start with a gentle acceleration from their stored position and heading.
+
+The zigzag-bait pursuit regression passed 55 checks on 2026-10-27. Across
+12,180 moving hull samples, maximum observed yaw rate was 10.055 degrees per
+second and bow/displacement deviation stayed below 0.970 degrees. The player
+alternated sideways before returning through the field; all ten ships entered
+with separate hulls, then began sinking together. Pursuit speed survived a
+save/load, allied escorts kept their no-attack behavior, and user saves remained
+byte-for-byte unchanged. These measurements cover live hull navigation, not the
+deliberate listing and rolling animation after a ship is destroyed.

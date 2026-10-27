@@ -18,8 +18,8 @@ namespace BeachBoatStory
         bool battleStarted;
         bool attackReleased;
         int routeIndex;
-        Transform yieldThreat;
-        float yieldTime;
+        float forwardSpeed;
+        public float ForwardSpeed=>forwardSpeed;
         float destroyedTime;
         float sinkDepth;
         public bool HasSettled {get;private set;}
@@ -92,7 +92,7 @@ namespace BeachBoatStory
         {
             PrepareWreck();presentation.SetBroken(false);
             isDestroyed=false;HasSettled=false;destroyedTime=stakeContactTime=0;battleStarted=true;
-            attackReleased=false;SignalReady=false;routeIndex=0;
+            attackReleased=false;SignalReady=false;routeIndex=0;forwardSpeed=0;
             var first=targetPoint;
             if(routeWaypoints!=null)foreach(var waypoint in routeWaypoints)
                 if(waypoint!=null&&QuestRowboat.FlatDistance(waypoint.position,transform.position)>9){first=waypoint;break;}
@@ -120,6 +120,11 @@ namespace BeachBoatStory
         public void Step(float dt)
         {
             if(dt<=0||!battleStarted)return;
+            if(!isDestroyed&&dt>.05f)
+            {
+                int slices=Mathf.CeilToInt(Mathf.Min(dt,.25f)/.05f);float slice=Mathf.Min(dt,.25f)/slices;
+                for(int i=0;i<slices;i++)Step(slice);return;
+            }
             if(isDestroyed)
             {
                 destroyedTime+=dt;float t=Mathf.Clamp01(destroyedTime/7f);
@@ -139,18 +144,6 @@ namespace BeachBoatStory
             }
             var pos=transform.position;pos.y=TideSystem.CurrentWaterHeight;transform.position=pos;
             if(targetPoint==null)return;
-            if(yieldTime>0&&yieldThreat!=null&&QuestRowboat.FlatDistance(pos,yieldThreat.position)<420)
-            {
-                yieldTime-=dt;var away=pos-yieldThreat.position;away.y=0;
-                for(int option=0;option<8;option++)
-                {
-                    float turn=option==0?0:((option+1)/2)*35*(option%2==1?1:-1);
-                    var retreat=pos+Quaternion.Euler(0,turn,0)*away.normalized*Mathf.Max(18,moveSpeed*.65f)*Mathf.Min(dt,.05f);
-                    if(QuestRowboat.FlatDistance(retreat,yieldThreat.position)<=away.magnitude||!BoatHullCollision.Get(transform).CanMove(pos,transform.rotation,retreat,transform.rotation,false))continue;
-                    transform.position=retreat;return;
-                }
-                return;
-            }
             Transform destination=targetPoint;
             if(routeWaypoints!=null)
                 while(routeIndex<routeWaypoints.Length)
@@ -171,19 +164,28 @@ namespace BeachBoatStory
             float holdDistance=hullHalfLength+stakeHitDistance*.5f;
             if(finalLeg&&!attackReleased&&distance<=holdDistance+.5f)
                 SignalReady=true;
-            float step=Mathf.Max(0,moveSpeed)*dt;
-            var next=Vector3.MoveTowards(pos,end,step);
-            if(finalLeg&&!attackReleased&&Vector3.Distance(next,end)<=holdDistance+.5f)SignalReady=true;
             var direction=end-pos;
-            var rotation=direction.sqrMagnitude>.001f?Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-2*dt)):transform.rotation;
-            if(BoatHullCollision.Get(transform).CanMove(pos,transform.rotation,next,rotation,false))transform.SetPositionAndRotation(next,rotation);
+            var rotation=distance>8?Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),10*dt):transform.rotation;
+            float alignment=distance>8?Mathf.Max(0,Vector3.Dot(rotation*Vector3.forward,direction.normalized)):0;
+            float wantedSpeed=distance>8?Mathf.Min(moveSpeed,(distance-8)*1.2f)*alignment:0;
+            forwardSpeed=Mathf.MoveTowards(forwardSpeed,wantedSpeed,18*dt);
+            float step=distance>8?Mathf.Min(distance-8,forwardSpeed*dt):0;
+            // A hull advances along its bow, never sideways toward a moving marker.
+            var next=pos+rotation*Vector3.forward*step;
+            var hull=BoatHullCollision.Get(transform);
+            if(hull.CanMove(pos,transform.rotation,next,rotation,false))transform.SetPositionAndRotation(next,rotation);
             else
             {
-                next=pos;var blocker=BoatHullCollision.Get(transform).LastBlocker;
+                next=pos;var blocker=hull.LastBlocker;
                 var ally=blocker!=null?blocker.GetComponentInParent<AmbientRiverBoat>():null;if(ally!=null)ally.YieldTo(transform);
-                var other=blocker!=null?blocker.GetComponentInParent<EnemyShip>():null;
-                if(other!=null&&System.Array.IndexOf(EnemyFleetDirector.Instance.enemyShips,this)>System.Array.IndexOf(EnemyFleetDirector.Instance.enemyShips,other)){yieldThreat=other.transform;yieldTime=4;}
+                // Wait or make a clear forward move to open turning room, without a sideways shove.
+                var straight=pos+transform.forward*(step*.5f);
+                if(step>0&&Vector3.Dot(transform.forward,direction.normalized)>.25f&&hull.CanMove(pos,transform.rotation,straight,transform.rotation,false))
+                {next=straight;transform.position=next;}
+                else if(hull.CanMove(pos,transform.rotation,pos,rotation,false))transform.rotation=rotation;
+                else forwardSpeed=0;
             }
+            if(finalLeg&&!attackReleased&&Vector3.Distance(next,end)<=holdDistance+.5f)SignalReady=true;
             if(targetPoint!=null&&QuestRowboat.FlatDistance(next,targetPoint.position)<=55)CheckStakeHit(pos,next,dt);
         }
         public void ReleaseForAmbush()
@@ -204,7 +206,7 @@ namespace BeachBoatStory
         public void TakeDamage(Vector3 impactPoint)
         {
             if(!battleStarted||isDestroyed)return;
-            isDestroyed=true;destroyedTime=0;sinkStart=transform.position;sinkRotation=transform.rotation;
+            isDestroyed=true;destroyedTime=0;forwardSpeed=0;sinkStart=transform.position;sinkRotation=transform.rotation;
             SignalReady=true;
             // Ground the capsized hull on the stakes and retain its actual mesh.
             // Upper timber remains visible and can support a boarder.
@@ -245,7 +247,7 @@ namespace BeachBoatStory
         }
         public BachDangSaveData.Ship CaptureSave()=>new BachDangSaveData.Ship {
             name=name,active=gameObject.activeSelf,started=battleStarted,destroyed=isDestroyed,settled=HasSettled,released=attackReleased,
-            signal=SignalReady,route=routeIndex,routeCount=routeWaypoints.Length,destroyedTime=destroyedTime,sinkDepth=sinkDepth,
+            signal=SignalReady,route=routeIndex,routeCount=routeWaypoints.Length,destroyedTime=destroyedTime,sinkDepth=sinkDepth,speed=forwardSpeed,
             position=transform.position,rotation=transform.rotation,sinkStart=sinkStart,sinkRotation=sinkRotation};
         public void RestoreSave(BachDangSaveData.Ship data)
         {
@@ -256,7 +258,7 @@ namespace BeachBoatStory
             if(data.active)Activate();
             if(deckGuards==null)deckGuards=GetComponentsInChildren<EnemyDeckGuard>(true);
             battleStarted=data.started;isDestroyed=data.destroyed;HasSettled=data.settled;attackReleased=data.released;
-            SignalReady=data.signal;routeIndex=data.route;
+            SignalReady=data.signal;routeIndex=data.route;forwardSpeed=Mathf.Clamp(data.speed,0,moveSpeed);
             // Older saves refer to the former two-point route. Resume at the closest
             // forward segment of the new physical approach instead of sailing back.
             if(!data.destroyed&&data.routeCount!=routeWaypoints.Length)
@@ -313,7 +315,7 @@ namespace BeachBoatStory
         void HideDebris(){if(debris==null)return;foreach(var piece in debris)if(piece!=null)piece.SetActive(false);}
         public void ResetForCheckpoint()
         {
-            ClearWreck();HideDebris();battleStarted=false;HasSettled=false;isDestroyed=false;attackReleased=false;SignalReady=false;routeIndex=0;destroyedTime=0;
+            ClearWreck();HideDebris();battleStarted=false;HasSettled=false;isDestroyed=false;attackReleased=false;SignalReady=false;routeIndex=0;destroyedTime=0;forwardSpeed=0;
             gameObject.SetActive(false);
         }
         void OnDestroy(){if(wreckRaft!=null)Destroy(wreckRaft.gameObject);if(debris==null)return;foreach(var piece in debris)if(piece!=null)Destroy(piece);}

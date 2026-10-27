@@ -98,7 +98,12 @@ namespace BeachBoatStory
             var follow=new Vector3(origin.x+Mathf.Clamp(p.x-origin.x,-120,120),TideSystem.CurrentWaterHeight,p.z+longest+180);
             // Do not reverse the rear ranks through the leading ranks when the bait circles.
             follow.z=Mathf.Min(follow.z,FormationAnchor.z);
-            FormationAnchor=Vector3.MoveTowards(FormationAnchor,follow,26*dt);
+            var anchor=FormationAnchor;
+            float advance=Mathf.Min(Mathf.Max(0,anchor.z-follow.z),26*dt);
+            // Course changes require forward progress, so circling bait cannot
+            // make the entire formation crab sideways at a stationary marker.
+            if(Mathf.Abs(follow.x-anchor.x)>12)anchor.x=Mathf.MoveTowards(anchor.x,follow.x,advance*.22f);
+            anchor.z-=advance;anchor.y=TideSystem.CurrentWaterHeight;FormationAnchor=anchor;
         }
         public bool TryDestination(EnemyShip ship,out Vector3 destination,out bool finalLeg)
         {

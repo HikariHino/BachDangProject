@@ -42,7 +42,7 @@ namespace BeachBoatStory
         [Serializable] public sealed class Ship
         {
             public string name;public bool active,started,destroyed,settled,released,signal;
-            public int route,routeCount;public float destroyedTime,sinkDepth;public Vector3 position,sinkStart;public Quaternion rotation,sinkRotation;
+            public int route,routeCount;public float destroyedTime,sinkDepth,speed;public Vector3 position,sinkStart;public Quaternion rotation,sinkRotation;
         }
         [Serializable] public sealed class Guard
         {public string id,ship;public bool active,independent,floatingCorpse,anchored;public int health;public Vector3 position,localPosition;public Quaternion rotation,localRotation;}

@@ -19,6 +19,11 @@ public static class BeachBoatConcurrentBattlePlaytest
     static float launched,ebbTime,ambushTime,highWater;
     static float phaseTime,boatDistance;
     static Vector3 chaseStart;
+    static Vector3 baitStart;
+    static Vector3[] previousPositions;
+    static Quaternion[] previousRotations;
+    static float maxYawRate,maxSlip;
+    static int motionSamples;
     static Dictionary<string,Vector3> escortStarts;
     static int lastFrame=-1;
     static string runtimeError;
@@ -26,11 +31,29 @@ public static class BeachBoatConcurrentBattlePlaytest
     static readonly List<string> checks=new List<string>();
     static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static string Hash(string p){using(var sha=SHA256.Create())return Convert.ToBase64String(sha.ComputeHash(File.ReadAllBytes(p)));}
-    public static void RunInEditor(){phase=0;lastFrame=-1;boatDistance=0;started=0;runtimeError=null;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){phase=0;lastFrame=-1;boatDistance=0;previousPositions=null;previousRotations=null;maxYawRate=maxSlip=0;motionSamples=0;started=0;runtimeError=null;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     public static void RunBatch(){UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Record;Application.logMessageReceived+=Record;}
     static void Record(string m,string stack,LogType t){if(SessionState.GetBool(Flag,false)&&EditorApplication.isPlaying&&(t==LogType.Error||t==LogType.Exception))runtimeError=m+"\n"+stack;}
     static void Check(bool value,string message){if(!value)throw new Exception(message);checks.Add(message);}
+    static void MeasureMotion(EnemyFleetDirector fleet)
+    {
+        if(Time.deltaTime<=0)return;
+        for(int i=0;i<fleet.enemyShips.Length;i++)
+        {
+            var ship=fleet.enemyShips[i];var p=ship.transform.position;var r=ship.transform.rotation;
+            if(!ship.isDestroyed&&previousPositions!=null)
+            {
+                var delta=p-previousPositions[i];delta.y=0;
+                float yaw=Mathf.Abs(Vector3.SignedAngle(previousRotations[i]*Vector3.forward,r*Vector3.forward,Vector3.up))/Time.deltaTime;
+                maxYawRate=Mathf.Max(maxYawRate,yaw);
+                if(delta.magnitude>.03f)
+                {maxSlip=Mathf.Max(maxSlip,Vector3.Angle(delta,r*Vector3.forward));motionSamples++;}
+            }
+        }
+        previousPositions=fleet.enemyShips.Select(s=>s.transform.position).ToArray();
+        previousRotations=fleet.enemyShips.Select(s=>s.transform.rotation).ToArray();
+    }
     static void RowUntil(float stopZ)
     {
         var boat=QuestRowboat.Instance;
@@ -61,7 +84,7 @@ public static class BeachBoatConcurrentBattlePlaytest
     {
         var fleet=EnemyFleetDirector.Instance;Time.timeScale=1;
         File.WriteAllText("Logs/ConcurrentBattlePlaytest.json",JsonConvert.SerializeObject(new{success=error==null,error,phase,checks,launched,ebbTime,ambushTime,water=TideSystem.CurrentWaterHeight,exposed=StakeZone.Instance?.ExposedStakeCount,
-            lure=fleet?.Pursuit.Stage.ToString(),boatDistance,boat=QuestRowboat.Instance?.transform.position.ToString(),field=StakeZone.Instance?.FieldBounds.ToString(),
+            lure=fleet?.Pursuit.Stage.ToString(),boatDistance,maxYawRate,maxSlip,motionSamples,boat=QuestRowboat.Instance?.transform.position.ToString(),field=StakeZone.Instance?.FieldBounds.ToString(),
             ships=fleet?.enemyShips.Select(s=>new{s.name,active=s.gameObject.activeSelf,s.isDestroyed,s.HasSettled,inside=s.IsHullInsideStakeField,p=s.transform.position.ToString(),spawn=s.spawnPoint.ToString(),goal=s.targetPoint.position.ToString(),blocker=s.GetComponent<BoatHullCollision>()?.LastBlocker?.name})},Formatting.Indented));
         SessionState.SetBool(Flag,false);BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
         if(Application.isBatchMode)BeachBoatQAExit.AfterPlayMode(error==null?0:1);
@@ -78,6 +101,7 @@ public static class BeachBoatConcurrentBattlePlaytest
             if(runtimeError!=null)throw new Exception(runtimeError);
             if(EditorApplication.timeSinceStartup-started>220)throw new Exception("Concurrent battle timed out at phase "+phase);
             var fleet=EnemyFleetDirector.Instance;var zone=StakeZone.Instance;var story=Story.Instance;
+            if(phase>=11||phase>=2&&phase<=3)MeasureMotion(fleet);
             if(phase==0)
             {
                 foreach(var p in Directory.GetFiles(Application.persistentDataPath,"campaign938*"))if(p.EndsWith(".json")||p.EndsWith(".bak"))hashes[p]=Hash(p);
@@ -128,6 +152,18 @@ public static class BeachBoatConcurrentBattlePlaytest
                 Check(!fleet.EbbStarted,"Meeting the bait starts pursuit without exposing the stakes prematurely");
                 var voices=fleet.GetComponent<RiverBattleVoices>();
                 Check(!voices.PursuitPlayed&&voices.SpeechSource.clip.name=="Enemy_Advance_1","Detection queues the pursuit shout without cutting the current spoken sentence");
+                baitStart=QuestRowboat.Instance.transform.position;phaseTime=Time.time;phase=111;return;
+            }
+            if(phase==111)
+            {
+                float elapsed=Time.time-phaseTime;
+                var boat=QuestRowboat.Instance;
+                var p=baitStart+new Vector3(Mathf.Sin(elapsed*2.5f)*80,0,-elapsed*45);
+                if(boat.CanOccupy(p,Quaternion.Euler(0,180,0)))
+                    boat.RestoreSave(true,p,Quaternion.Euler(0,180,0));
+                if(elapsed<8)return;
+                Check(fleet.Pursuit.Stage==RiverFleetPursuit.LureStage.Pursuit,"Alternating the bait's heading keeps the fleet in pursuit outside the trap");
+                Check(maxYawRate<10.3f&&maxSlip<2,"Repeated side changes do not snap enemy headings or slide their hulls sideways");
                 chaseStart=fleet.enemyShips[0].transform.position;phaseTime=Time.time;phase=12;return;
             }
             if(phase==12)
@@ -156,6 +192,7 @@ public static class BeachBoatConcurrentBattlePlaytest
                 Check(boarding.CaptureSave().allies.All(a=>a.state==0&&a.arrows==2),"Loading an old premature allied assault returns its crew to escort duty without shooting");
                 Check(fleet.Pursuit.Stage==RiverFleetPursuit.LureStage.Pursuit&&Vector3.Distance(fleet.Pursuit.FormationAnchor,anchor)<.01f,"A pursuit save restores the stage and formation anchor");
                 Check(fleet.enemyShips.Select((s,i)=>Vector3.Distance(positions[i],s.transform.position)<.01f).All(v=>v),"Loading pursuit preserves all physical ship positions without respawning them");
+                Check(fleet.enemyShips.Select((s,i)=>Mathf.Abs(s.ForwardSpeed-save.ships.First(x=>x.name==s.name).speed)<.01f).All(v=>v),"Pursuit save restores each vessel's forward speed without a restart jerk");
                 Check(fleet.GetComponent<RiverBattleVoices>().PursuitPlayed,"Loading pursuit retains the spoken order so it is not repeated");
                 fleet.Pursuit.RestoreSave(new BachDangSaveData.Fleet{active=true});
                 Check(fleet.Pursuit.HasEnteredTrap,"An older active-battle save retains its ongoing berth approach instead of restarting baiting");
@@ -189,6 +226,7 @@ public static class BeachBoatConcurrentBattlePlaytest
                 if(!fleet.EbbStarted)return;ebbTime=Time.time;
                 Check(fleet.ShipsInside==fleet.ShipCount,"The complete physical formation enters deeply before the ebb begins");
                 Check(HullsSeparate(fleet),"The entire baited formation reaches the trap without overlapping hulls");
+                Check(motionSamples>100&&maxYawRate<10.3f&&maxSlip<2,"All live hulls keep smooth bounded turns and bow-aligned movement through the full pursuit and trap entry");
                 Check(TideSystem.Instance.IsControlledEbb&&TideSystem.Instance.TargetWaterHeight==TideSystem.Instance.lowTideY,"Entire fleet inside actually starts controlled falling water");phase=3;
                 Check(RiverBoardingCombat.Instance.CaptureSave().allies.All(a=>a.state==0&&a.arrows==2),"Falling water alone still does not authorize allied attacks before exposed stakes");
             }
