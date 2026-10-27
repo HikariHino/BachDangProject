@@ -14,11 +14,13 @@ public static class BeachBoatPhysicalVillagePlaytest
     const string Flag="PhysicalVillage938QA";
     static int phase,index,lastFrame,captureFrame;static double began;static string runtimeError,pendingCapture;static bool capturing,captureReady;
     static VillageWorkStall stall;static bool riceOverflow;static HashSet<string> captures=new HashSet<string>();
+    static readonly HashSet<VillageWorkStall.WorkKind> challengeChecks=new HashSet<VillageWorkStall.WorkKind>();
+    static BachDangSaveData completedCheckpoint;
     static readonly List<string> checks=new List<string>();static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static string Hash(string p)=>Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(File.ReadAllBytes(p)));
     static void Check(bool ok,string s){if(!ok)throw new Exception(s);checks.Add(s);}
     public static void RunBatch(){EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
-    public static void RunInEditor(){phase=index=0;lastFrame=-1;began=0;runtimeError=pendingCapture=null;capturing=captureReady=false;riceOverflow=false;checks.Clear();hashes.Clear();captures.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){phase=index=0;lastFrame=-1;began=0;runtimeError=pendingCapture=null;capturing=captureReady=false;riceOverflow=false;checks.Clear();hashes.Clear();captures.Clear();challengeChecks.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Log;Application.logMessageReceived+=Log;}
     static void Log(string m,string stack,LogType t){if(SessionState.GetBool(Flag,false)&&(t==LogType.Error||t==LogType.Exception))runtimeError=m+"\n"+stack;}
     public static void Place(Vector3 p)
@@ -42,7 +44,13 @@ public static class BeachBoatPhysicalVillagePlaytest
     public static bool DriveTool(VillagePhysicalWork work)
     {
         if(!work.ToolHeld&&!work.PressTool())return false;
-        return work.DragTool(Vector2.ClampMagnitude(work.ToolGoal-work.ToolPointer,.3f),.1f);
+        if(work.Finishing)
+        {
+            work.AdvanceTool(.1f);
+            if(work.Current==VillagePhysicalWork.Step.Tie&&work.ToolPressure>=.6f)work.ReleaseTool();
+            return true;
+        }
+        bool moved=work.DragTool(Vector2.ClampMagnitude(work.ToolGoal-work.ToolPointer,.3f),.1f);return moved;
     }
     static void RequestCapture(string name)
     {
@@ -68,6 +76,11 @@ public static class BeachBoatPhysicalVillagePlaytest
             var rig=player.GetComponentInChildren<Animator>();
             var hand=rig.GetBoneTransform(HumanBodyBones.RightHand);var shoulder=rig.GetBoneTransform(HumanBodyBones.RightUpperArm);var elbow=rig.GetBoneTransform(HumanBodyBones.RightLowerArm);
             Check(Vector3.Distance(hand.position,stall.Physical.RightGripPosition)<2.5f,"Working hand reaches the tool, not the air: "+stall.kind+" hand="+hand.position+" grip="+stall.Physical.RightGripPosition+" arm="+(Vector3.Distance(shoulder.position,elbow.position)+Vector3.Distance(elbow.position,hand.position)));
+            Check(stall.Physical.HandsOnly&&stall.Physical.HandTriangles>100,"Only the player's forearms render at the bench; torso and helmet are hidden: "+stall.kind);
+            Check(stall.Physical.HandSegmentError<.001f,"Display arm segments keep their original proportions throughout tool motion: "+stall.kind+" error="+stall.Physical.HandSegmentError);
+            Check(source.GetComponent<BeachBoatStory.Camera_Script>().TableFocusActive&&!VillagePhysicalWork.AllowsMovement,"Bench view locks walking and uses the centered tabletop camera: "+stall.kind);
+            var viewport=source.WorldToViewportPoint(contact);
+            Check(viewport.z>0&&viewport.x>.08f&&viewport.x<.92f&&viewport.y>.18f&&viewport.y<.88f,"Tool stays inside the unobstructed tabletop frame: "+stall.kind+" "+viewport);
         }
         File.WriteAllText("Logs/VillageCamera_"+name+".json",Newtonsoft.Json.JsonConvert.SerializeObject(new { focus=source.GetComponent<BeachBoatStory.Camera_Script>().WorkFocusActive, distance=QuestRowboat.FlatDistance(player.transform.position,stall.Physical.RequiredApproach), camera=source.transform.position.ToString(), target=stall.Physical.TargetPosition.ToString(), activeCamera=Camera.main?.name, components=source.GetComponents<Behaviour>().Select(c=>c.GetType().FullName+":"+c.enabled).ToArray() },Newtonsoft.Json.Formatting.Indented));
         var ui=Object.FindAnyObjectByType<VillageWorkUI>();typeof(VillageWorkUI).GetMethod("Update",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(ui,null);
@@ -130,6 +143,7 @@ public static class BeachBoatPhysicalVillagePlaytest
             {
                 Check(BachDangFrontEnd.Instance.HandleEscape()&&VillageWorkStall.Active==null&&BachDangFrontEnd.Instance.Page==BachDangFrontEnd.MenuPage.None,"ESC cancels the work without opening Pause: "+stall.kind);
                 Check(!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name=="Village_3D_Work_"+stall.kind),"Temporary workstation immediately stops blocking the world: "+stall.kind);
+                Check(!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name=="Workbench_Hands_Only")&&BeachBoatQuestSession.Instance.player.GetComponentsInChildren<SkinnedMeshRenderer>().All(r=>!r.forceRenderingOff),"ESC restores the complete player and removes the hands-only view: "+stall.kind);
                 Place(stall.InteractionPosition);phase=3;return;
             }
             if(phase==3)
@@ -143,6 +157,7 @@ public static class BeachBoatPhysicalVillagePlaytest
             {
                 if(stall.Phase==VillageWorkStall.WorkPhase.Won)
                 {
+                    Check(!stall.Physical.HandsOnly&&!BeachBoatQuestSession.Instance.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().TableFocusActive,"Finishing goods restores third-person view before claiming the reward: "+stall.kind);
                     Check(stall.Progress==stall.Goal&&CampaignProgress.Instance.MiniRecord(index+1)?.id==CampaignProgress.MiniId(index+1),"Only actual deliveries finish and record the 3D trade: "+stall.kind);
                     Check(stall.ClaimReward()&&stall.Completed,"Confirming the result grants the required supplies: "+stall.kind);BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                     var save=BachDangSaveSystem.Capture("Physical trade QA");BachDangSaveSystem.Apply(save);
@@ -152,6 +167,27 @@ public static class BeachBoatPhysicalVillagePlaytest
                 var work=stall.Physical;var before=work.Current;
                 if(QuestRowboat.FlatDistance(BeachBoatQuestSession.Instance.player.transform.position,work.RequiredApproach)>1)
                 {stall.AdvanceTime(QuestRowboat.FlatDistance(BeachBoatQuestSession.Instance.player.transform.position,work.RequiredApproach)/30);Place(work.RequiredApproach);return;}
+                if(!challengeChecks.Contains(stall.kind)&&work.ToolStep)
+                {
+                    if(work.Current==VillagePhysicalWork.Step.Saw)
+                    {
+                        work.PressTool();for(int n=0;n<3;n++)work.DragTool(Vector2.up*.4f,.1f);for(int n=0;n<8;n++)work.DragTool(Vector2.right*.3f,.1f);
+                        Check(work.ToolStages==0,"A saw dragged outside the guide cannot cut wood");challengeChecks.Add(stall.kind);
+                    }
+                    else if(work.Current==VillagePhysicalWork.Step.Tie&&work.Finishing)
+                    {
+                        int knots=work.Knots;work.ReleaseTool();Check(work.Knots==knots&&work.ToolStages==0,"Releasing rope tension too early retries only the current knot");challengeChecks.Add(stall.kind);
+                    }
+                    else if(work.Current==VillagePhysicalWork.Step.FillRice&&work.ScoopLoaded)
+                    {
+                        for(int n=0;n<7;n++)work.DragTool(Vector2.up*.3f,.1f);
+                        Check(!work.ScoopLoaded&&work.RiceFill==0,"Tilting a loaded scoop before reaching the sack spills the scoop, not the entire bag");challengeChecks.Add(stall.kind);
+                    }
+                    else if(work.Current==VillagePhysicalWork.Step.Wrap&&work.Finishing)
+                    {
+                        int stages=work.ToolStages;work.ReleaseTool();Check(work.ToolStages==stages&&!work.Finishing,"Releasing a fold before pressing it does not secure the crease");challengeChecks.Add(stall.kind);
+                    }
+                }
                 if(work.Current==VillagePhysicalWork.Step.FillRice&&!riceOverflow)
                 {
                     if(work.RiceFill<.95f){stall.AdvanceTime(.1f);DriveTool(work);return;}
@@ -178,6 +214,7 @@ public static class BeachBoatPhysicalVillagePlaytest
             }
             if(phase==5)
             {
+                Check(challengeChecks.Count==4,"All four light precision challenges reject incorrect gestures and remain completable");
                 Check(VillagePreparationQuest.Instance.CompletedCount==4&&CampaignProgress.Instance.RecordedMinigames==4,"All four physical trades satisfy the supply quest and achievement list");
                 var completed=BachDangSaveSystem.Capture("Completed physical trades");var replay=VillagePreparationQuest.Instance.stalls[0];Place(replay.InteractionPosition);Check(replay.TryOpen(),"A completed trade can be replayed for save/load cleanup verification");Place(replay.Physical.RequiredApproach);replay.Physical.Interact();BachDangSaveSystem.Apply(completed);
                 Check(VillageWorkStall.Active==null&&VillagePreparationQuest.Instance.CompletedCount==4&&!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name.StartsWith("Village_3D_Work_")),"Loading while carrying cleans temporary goods and preserves completed supplies");
@@ -187,10 +224,36 @@ public static class BeachBoatPhysicalVillagePlaytest
                 progress.RecordMinigame(CampaignProgress.MiniId(1),70,75);Check(progress.MiniRecord(1).seconds==65&&progress.MiniRank(1)==3,"A slower physical replay cannot erase the player's better historical achievement");
                 progress.RecordMinigame(CampaignProgress.MiniId(1),30,75);
                 Check(progress.MiniRecord(1).seconds==30&&progress.Record.minigames.Any(m=>m.id=="village:0:1"&&m.seconds==65),"A physical record is separate from the preserved historical puzzle record");progress.Restore(current,(int)Story.Instance.currentState);
-                foreach(var p in hashes)Check(File.Exists(p.Key)&&Hash(p.Key)==p.Value,"User save unchanged: "+Path.GetFileName(p.Key));Finish(null);
+                completedCheckpoint=BachDangSaveSystem.Capture("Table view cleanup QA");OpenSawBench();phase=6;return;
+            }
+            if(phase==6)
+            {
+                Check(stall.Physical.HandsOnly,"Replay enters the hands-only view before testing ESC");
+                Check(BachDangFrontEnd.Instance.HandleEscape()&&VillageWorkStall.Active==null,"ESC closes a hands-only action without Pause");phase=7;return;
+            }
+            if(phase==7)
+            {
+                CheckRestored("ESC");OpenSawBench();phase=8;return;
+            }
+            if(phase==8)
+            {
+                Check(stall.Physical.HandsOnly,"Replay enters the hands-only view before testing load");BachDangSaveSystem.Apply(completedCheckpoint);phase=9;return;
+            }
+            if(phase==9)
+            {
+                CheckRestored("Load");foreach(var p in hashes)Check(File.Exists(p.Key)&&Hash(p.Key)==p.Value,"User save unchanged: "+Path.GetFileName(p.Key));Finish(null);
             }
         }
         catch(Exception e){Finish(e.ToString());}
+    }
+    static void OpenSawBench()
+    {
+        stall=VillagePreparationQuest.Instance.stalls.First(s=>s.kind==VillageWorkStall.WorkKind.Timber);Place(stall.InteractionPosition);
+        Check(stall.TryOpen(),"Open a completed stall for table cleanup QA");Place(stall.Physical.RequiredApproach);stall.Physical.Interact();Place(stall.Physical.RequiredApproach);stall.Physical.Interact();
+    }
+    static void CheckRestored(string reason)
+    {
+        Check(!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name=="Workbench_Hands_Only")&&BeachBoatQuestSession.Instance.player.GetComponentsInChildren<SkinnedMeshRenderer>().All(r=>!r.forceRenderingOff)&&!BeachBoatQuestSession.Instance.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().WorkFocusActive,reason+" destroys display arms and restores body visibility and orbit camera");
     }
     static void CheckAction(bool ok,string step){if(!ok)throw new Exception("Physical input failed at "+step+" phase="+stall.Phase+" elapsed="+stall.Elapsed+" time="+stall.TimeRemaining+" near="+stall.Physical.CanInteract+" held="+stall.Physical.ToolHeld+" pointer="+stall.Physical.ToolPointer+" target="+stall.Physical.RequiredApproach+" player="+BeachBoatQuestSession.Instance.player.transform.position);}
 }

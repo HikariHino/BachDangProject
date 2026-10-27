@@ -58,10 +58,10 @@ namespace BeachBoatStory
         public VillagePhysicalWork Physical {get;private set;}
         public int MistakeLimit=>kind==WorkKind.Timber||kind==WorkKind.Rice?3:Difficulty==2?2:3;
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);
-        public string Instructions=>kind==WorkKind.Timber?"Đặt gỗ lên bàn. Giữ chuột trái và kéo qua lại theo điểm sáng để cưa đủ tám nhịp; mang ba khúc đã cưa tới giá.":
-            kind==WorkKind.Rope?"Lấy cuộn dây, tới bó cọc. Kéo đầu dây quanh bốn điểm của từng nút, buộc đủ ba nút rồi giao bó cọc.":
-            kind==WorkKind.Rice?"Đặt bao lên bàn. Kéo gáo sang trái để xúc, đưa sang phải rồi đẩy chuột lên để nghiêng đổ. Ba gáo tới vạch xanh; E nhấc và giao bao.":
-            "Đặt đủ gạo, cá và muối lên khăn. Kéo từng mép khăn sáng vào giữa, gấp đủ bốn mép rồi giao gói lương.";
+        public string Instructions=>kind==WorkKind.Timber?"Đặt gỗ lên bàn để vào góc nhìn tay. Giữ chuột trái kéo qua lại, giữ cưa trong hai vạch xanh; lệch rãnh không tính nhịp. Cưa đủ tám nhịp và giao ba khúc.":
+            kind==WorkKind.Rope?"Lấy dây, đặt lên bàn. Kéo quanh bốn điểm; tiếp tục giữ để siết và THẢ chuột khi lực trong dải xanh 55–85%. Thả sớm hoặc muộn làm tuột nút này. Buộc ba nút rồi giao.":
+            kind==WorkKind.Rice?"Đặt bao lên bàn. Kéo gáo sang trái và XUỐNG để xúc, giữ ngang khi mang sang phải rồi đẩy LÊN để đổ. Nghiêng sớm làm rơi gáo gạo. Ba gáo tới vạch xanh; E nhấc và giao.":
+            "Đặt gạo, cá và muối lên khăn. Kéo mép sáng vào giữa rồi giữ yên chuột trái gần nửa giây để ép nếp. Nhả sớm chưa kín nếp. Gấp bốn mép rồi giao gói.";
         public static string IngredientName(int n)=>n==0?"GẠO":n==1?"CÁ KHÔ":"MUỐI";
         readonly bool[] soundTimber=new bool[8];
         readonly int[] timberLengths=new int[8],timberStrengths=new int[8],timberCosts=new int[8],ropePorts=new int[9],ingredients=new int[3];

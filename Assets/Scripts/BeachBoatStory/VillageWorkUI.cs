@@ -43,7 +43,13 @@ namespace BeachBoatStory
             if(s.Phase==VillageWorkStall.WorkPhase.Won)step.text="ĐỦ VẬT TƯ • ENTER nhận hàng • ESC rời đi";
             else if(s.Phase==VillageWorkStall.WorkPhase.Lost)step.text=s.Feedback+"\nR thử lại • ESC rời đi";
             else if(s.Phase==VillageWorkStall.WorkPhase.Instructions)step.text=s.Physical?.Hint+"\nWASD đi lại • Chuột xoay nhìn • ENTER tiếp tục";
-            else step.text=(s.Physical?.Hint??"")+"\nWASD di chuyển • H xem điều khiển • ESC rời sạp";
+            else
+            {
+                var work=s.Physical;
+                step.text=(work?.Hint??"")+"\n"+(work!=null&&work.AtTable?
+                    (work.Finishing&&s.kind==VillageWorkStall.WorkKind.Rope?$"Lực {work.ToolPressure*100:0}% • thả ở 55–85%":work.ToolFeedback)+" • H hướng dẫn • ESC rời sạp":
+                    "WASD di chuyển • H xem điều khiển • ESC rời sạp");
+            }
         }
         void OnDestroy(){if(instance==this)instance=null;}
     }

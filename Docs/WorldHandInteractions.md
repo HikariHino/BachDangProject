@@ -2,20 +2,29 @@
 
 ## Bốn sạp vật tư
 
-Camera tiến tới bàn khi người chơi tới vị trí làm việc; chuột điều khiển dụng cụ
-trong thế giới thay vì cùng lúc xoay camera. Rời bàn để mang hàng thì trở lại
-camera đi bộ gần vai. Mái che của sạp tạm ẩn trong lượt làm việc và khôi phục
-khi rời sạp, cùng các thiết lập camera ban đầu.
+Sau khi đặt vật lên bàn, camera chuyển tới góc nhìn sát mặt bàn. `WorkbenchHands`
+lọc các tam giác chịu ảnh hưởng của xương tay từ mesh nhân vật và tạo rig hiển thị
+riêng từ bộ xương đó, dùng lại vật liệu và dáng nắm. Cánh tay đi vào từ dưới khung
+hình, bàn tay bám điểm thao tác; đầu/thân không che công việc.
+Tay hiển thị dùng chuỗi vai–khuỷu–cổ tay có chiều dài cố định, chỉ phóng đồng đều
+toàn tay cho góc nhìn gần. Không kéo dài riêng một trục xương để với bàn. Bài thử
+đo tỉ lệ từng đoạn suốt chuyển động, sai số tối đa quan sát dưới 0,01%.
+Không thay FBX gốc. Chuột điều khiển dụng cụ; đi bộ khóa trong bước làm tại bàn.
+Rời bàn để mang hàng thì khôi phục nhân vật đầy đủ và camera đi bộ gần vai.
+Mái che sạp tạm ẩn trong lượt làm việc và khôi phục khi rời sạp, cùng camera và
+trạng thái renderer ban đầu. Mesh tay tạm được hủy khi đóng hoạt động hoặc load.
 
 | Sạp | Thao tác sau khi mang vật tới bàn |
 |---|---|
-| Gỗ | Giữ chuột trái, kéo cưa qua lại tới điểm sáng; tám nửa nhịp cưa cho mỗi khúc |
-| Dây | Giữ chuột trái, kéo đầu dây lần lượt quanh bốn vị trí của vòng buộc; ba vòng trên bó cọc |
-| Gạo | Kéo gáo sang trái để xúc, sang phải rồi lên trên để nghiêng đổ; mỗi gáo tăng 24%, ba gáo được 72% trong dải xanh 65–85% |
-| Lương khô | Đặt đủ ba nguyên liệu, kéo từng mép khăn sáng vào giữa; bốn mép tạo thành gói |
+| Gỗ | Kéo cưa qua lại, giữ trong hai vạch xanh (lệch ngang tối đa 28%); mỗi nửa nhịp ít nhất 0,3 giây, tám nửa nhịp mỗi khúc |
+| Dây | Kéo quanh bốn điểm, giữ để tăng lực siết; THẢ trong dải xanh 55–85%, tương đương cửa sổ khoảng 0,46 giây. Thả sai chỉ làm lại nút này; ba nút cho bó cọc |
+| Gạo | Kéo sang trái và xuống để xúc, giữ gáo ngang khi chuyển sang phải rồi nghiêng lên trên bao; nghiêng sớm làm rơi gáo, không mất gạo trong bao. Ba gáo 24% tạo mức đủ 72% |
+| Lương khô | Đặt đủ ba nguyên liệu, kéo mép khăn vào giữa rồi giữ yên 0,45 giây để ép kín; nhả sớm chưa tính nếp, có thể ép lại. Bốn mép tạo thành gói |
 
-Giữ chuột đứng yên không tăng tiến độ; chuyển động sai hướng không hoàn thành
-bước. E vẫn dùng để cầm, đặt, nhấc và giao vật. ESC/X rời lượt; H xem thao tác.
+Giữ chuột đứng yên từ đầu không tự làm xong; chỉ bước siết/ép sau đường kéo đúng
+mới dùng thời gian giữ. Thanh lực đặt ngay cạnh vật, màu xanh chỉ vùng nhả tốt;
+HUD hiển thị phản hồi lệch rãnh, rơi gạo hoặc nếp chưa kín. E dùng để cầm, đặt,
+nhấc và giao vật. ESC/X rời lượt; H xem thao tác.
 Các giới hạn và mốc hạng của bốn sạp giữ nguyên. Kết quả cũ vẫn giữ trong save.
 
 ## Đóng cọc trên thuyền
@@ -72,7 +81,9 @@ Tài nguyên được tạo ở `Assets/Resources/BachDang938/Player`, khoảng 
 
 ## Kiểm tra bằng Unity CLI
 
-- Bốn sạp, camera, tiếp xúc dụng cụ, thành tích và save/load: 98 kiểm tra.
+- Bốn sạp, camera chỉ hiện tay, tỉ lệ đoạn tay, thao tác sai/đúng, thành tích và
+  save/load: 135 kiểm tra. ESC và load được thử ngay trong góc nhìn bàn để xác
+  nhận xóa tay hiển thị, trả nhân vật đầy đủ và camera bình thường.
 - Tập cung, ba mức kéo dây, góc cổ tay, nắm tay, thoát và save/load: 52 kiểm tra.
 - Năm cụm cọc, cầm/nện búa, hủy, khôi phục và save/load: 67 kiểm tra. Bài đo
   lấy hơn 2.200 mẫu sau animation/IK, kiểm tra tay bám cán và cổ tay theo cẳng tay

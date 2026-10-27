@@ -9,7 +9,7 @@ Bốn sạp trong làng dùng cùng nhân vật, camera, địa hình và va ch�
 | Gạo | Mang bao rỗng lên bàn, đong tới vạch xanh, nhấc và giao; hai bao | Kéo gáo xúc gạo, đưa qua bao và nghiêng đổ; đủ thì E nhấc, dư thì E đổ lại | 75 / 45 / 60 / 71,25 giây |
 | Lương khô | Lấy lần lượt phần gạo, cá khô và muối ở kệ; mang đặt lên khăn; gấp khăn và giao; hai gói | E cầm/đặt; kéo bốn mép khăn vào giữa | 90 / 54 / 72 / 85,5 giây |
 
-WASD đi lại theo camera; chuột xoay nhìn. Vòng sáng và chữ ngắn nằm cạnh vật cần thao tác. HUD nhỏ ghi tiến độ, thời gian và điều khiển. H xem điều khiển, Enter tiếp tục. ESC/X bỏ lượt đang làm; ESC lần này không mở menu tạm dừng. Hết giờ hoặc quá ba lỗi thì R thử lại. Khi đủ hàng, Enter nhận vật tư. Có thể chơi lại sạp đã xong mà không mất vật tư đã nhận.
+WASD đi lại khi mang hàng; sau khi đặt lên bàn, camera cận mặt bàn chỉ hiện tay và dụng cụ, khóa đi bộ và xoay camera để chuột thao tác. Lệch rãnh cưa không tính nhịp; dây cần thả trong dải lực xanh; gáo gạo phải giữ ngang trước khi nghiêng; khăn cần ép nếp 0,45 giây. Sai thao tác nhẹ chỉ thử lại bước đó. HUD nhỏ ghi tiến độ, thời gian và điều khiển. H xem điều khiển, Enter tiếp tục. ESC/X bỏ lượt đang làm; ESC lần này không mở menu tạm dừng. Hết giờ hoặc quá ba lỗi thì R thử lại. Khi đủ hàng, Enter nhận vật tư. Có thể chơi lại sạp đã xong mà không mất vật tư đã nhận.
 
 Không dùng công cụ hoặc lấy/giao vật từ xa: mỗi bước kiểm tra vị trí tiếp cận, độ cao và trạng thái hiện tại. Cưa, siết dây, đong và gói cần chuyển động dụng cụ đúng; giữ chuột đứng yên không cộng tiến độ; giao vật mới tăng số đơn. Bàn và thùng có collider, vật đang cầm bám theo tư thế nhân vật. Bao gạo thiếu/đủ/dư có màu và chữ; đổ lại bao dư tính một lỗi và hai giây phạt, không cộng đơn.
 
@@ -29,6 +29,6 @@ Mã kỷ lục mới là `village3d:0` đến `village3d:3`, tách khỏi `villa
 
 Các ca chạy nền gọi cùng hàm tương tác mà input sử dụng và render ảnh bằng camera Unity. Unity batch không có cửa sổ lấy focus, vì vậy không xác nhận khóa con trỏ của hệ điều hành; phần đó chỉ kiểm khi chạy ca ESC trong Editor tương tác. Kiểm tra CLI vẫn xác nhận đóng đúng hoạt động, trả về gameplay, không mở Pause bằng cùng lần ESC và khôi phục thời gian/thiết lập camera.
 
-Kết quả kiểm tra ngày 27/10/2026: **282 kiểm tra qua** — hoạt động 3D 84, ESC/tạm dừng 92, vật tư/đóng cọc 46, Quest 3 60. Đã kiểm tra ảnh góc chơi và góc trực diện khi mang vật, cùng xác nhận bàn tay tới đúng vật đang cầm. Bộ kiểm thử kiểm SHA-256 các save thật và không sửa các file đó.
+Đợt camera chỉ hiện tay ngày 27/10/2026: **202 kiểm tra qua** — bốn sạp/camera/tỉ lệ tay/ESC/load/thành tích 135, vật tư và năm cụm đóng cọc 67. Đã kiểm tra ảnh từ camera chơi của cả bốn bàn, xác nhận đoạn tay không bị kéo giãn, nhân vật và camera được khôi phục khi giao hàng, thoát hoặc load. Bộ kiểm thử kiểm SHA-256 các save thật và không sửa các file đó.
 
 Thao tác kéo dụng cụ, camera cận bàn, đóng cọc và tập cung được mô tả thêm trong [WorldHandInteractions.md](WorldHandInteractions.md).
