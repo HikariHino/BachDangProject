@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using BeachBoatStory;
 using Newtonsoft.Json;
 using UnityEditor;
@@ -22,14 +23,17 @@ public static class BeachBoatVillageWorkPlaytest
     static bool layoutSpread,interactionClear,treesClear;
     static string failure;
     static readonly List<object> Results=new List<object>();
+    static readonly Dictionary<string,string> SaveHashes=new Dictionary<string,string>();
+    static string Hash(string p){using(var sha=SHA256.Create())return Convert.ToBase64String(sha.ComputeHash(File.ReadAllBytes(p)));}
     public static void RunAndExit(){EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;}
     static void Move(Vector3 p)
     {var player=BeachBoatQuestSession.Instance.player;player.transform.position=p;var body=player.GetComponent<Rigidbody>();body.position=p;body.linearVelocity=Vector3.zero;Physics.SyncTransforms();}
     static void Finish()
     {
+        foreach(var p in SaveHashes)if(!File.Exists(p.Key)||Hash(p.Key)!=p.Value)failure="User save changed: "+Path.GetFileName(p.Key);
         Directory.CreateDirectory("Logs");File.WriteAllText("Logs/VillageWorkPlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,timeoutChecked,wrongChecked,retryChecked,difficultyChecked,drumChecked,randomizedAttempts,uniqueTimberOrders,hardRiceOrders,exhaustiveRiceCases,layoutSpread,interactionClear,treesClear,results=Results,story=Story.Instance?.currentState.ToString()},Formatting.Indented));
-        SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(failure==null?0:1);
+        SessionState.SetBool(Flag,false);BachDangSaveSystem.TestDirectory=null;BeachBoatQAExit.AfterPlayMode(failure==null?0:1);
     }
     static void Tick()
     {
@@ -42,6 +46,8 @@ public static class BeachBoatVillageWorkPlaytest
             var quest=VillagePreparationQuest.Instance;if(quest==null||quest.stalls.Length!=4)throw new Exception("Four scene-owned market stalls missing");
             if(phase==0)
             {
+                foreach(var p in Directory.GetFiles(Application.persistentDataPath,"campaign938*"))if(p.EndsWith(".json")||p.EndsWith(".bak"))SaveHashes[p]=Hash(p);
+                BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/VillageWorkQA/"+DateTime.Now.ToString("yyyyMMdd-HHmmssfff"));BachDangAutoSave.Instance.enabled=false;
                 var sites=quest.stalls.Select(s=>s.transform.position).ToArray();
                 layoutSpread=sites.Max(p=>p.x)-sites.Min(p=>p.x)>500&&sites.Max(p=>p.z)-sites.Min(p=>p.z)>500;
                 for(int a=0;a<sites.Length;a++)for(int b=a+1;b<sites.Length;b++)layoutSpread&=QuestRowboat.FlatDistance(sites[a],sites[b])>=180;
@@ -76,6 +82,12 @@ public static class BeachBoatVillageWorkPlaytest
             {
                 Click("VillageWorkCanvas/WorkOverlay/Workbench/Instructions/Difficulty0");
                 Click("VillageWorkCanvas/WorkOverlay/Workbench/Instructions/StartWork");
+                if(stall.IsPractice)
+                {
+                    for(int i=0;i<3;i++)for(int n=0;n<stall.RequiredIngredient(i);n++)stall.SubmitOption(i);
+                    if(!stall.SubmitOption(3)||stall.Elapsed!=0||stall.CompletedLevels!=0)throw new Exception("Practice grants progress or charges time");
+                    stall.StartFromInstructions();
+                }
                 if(stall.Phase!=VillageWorkStall.WorkPhase.Playing||stall.Difficulty!=0)throw new Exception("Mouse cannot start selected difficulty");
                 float easy=stall.TimeLimit;stall.AdvanceTime(easy+1);
                 timeoutChecked=stall.Phase==VillageWorkStall.WorkPhase.Lost&&!stall.Completed&&quest.CompletedCount==index;

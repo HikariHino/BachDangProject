@@ -11,6 +11,8 @@ namespace BeachBoatStory
         GameObject shade,instructions,work,result,woodChoices,foodChoices,ropeGame,riceGame;
         TMP_Text title,rules,stats,task,feedback,resultTitle,resultBody,startLabel,timingGoals;
         TMP_Text[] difficultyLabels,woodLabels,foodLabels,riceLabels;
+        TMP_Text[] foodRecipes;
+        Image[] foodCards;
         Button[] difficultyButtons;
         GameObject[] woodButtons;
         GameObject[] woodSelectedTags;
@@ -40,6 +42,7 @@ namespace BeachBoatStory
             Click("Close",card,new Vector2(.91f,.87f),new Vector2(.98f,.96f),"X",()=>VillageWorkStall.Active?.Close());
             instructions=Box("Instructions",card,new Vector2(.05f,.06f),new Vector2(.95f,.80f),Color.clear);
             rules=Label("Rules",instructions.transform,new Vector2(.04f,.53f),new Vector2(.96f,.96f),23,Color.white);
+            rules.enableAutoSizing=true;rules.fontSizeMin=15;rules.fontSizeMax=23;
             Label("DifficultyCaption",instructions.transform,new Vector2(.04f,.40f),new Vector2(.96f,.50f),18,Gold).text="CHỌN ĐỘ KHÓ";
             difficultyLabels=new TMP_Text[3];difficultyButtons=new Button[3];
             for(int i=0;i<3;i++)
@@ -47,7 +50,7 @@ namespace BeachBoatStory
                 int level=i;var b=Click("Difficulty"+i,instructions.transform,new Vector2(.04f+i*.31f,.24f),new Vector2(.32f+i*.31f,.39f),new[]{"DỄ","VỪA","KHÓ"}[i],()=>{selectedDifficulty=level;VillageWorkStall.Active?.SelectDifficulty(level);});
                 difficultyLabels[i]=b.GetComponentInChildren<TMP_Text>();difficultyButtons[i]=b.GetComponent<Button>();
             }
-            var start=Click("StartWork",instructions.transform,new Vector2(.25f,.02f),new Vector2(.75f,.18f),"BẮT ĐẦU",()=>VillageWorkStall.Active?.StartAttempt(selectedDifficulty));startLabel=start.GetComponentInChildren<TMP_Text>();
+            var start=Click("StartWork",instructions.transform,new Vector2(.25f,.02f),new Vector2(.75f,.18f),"BẮT ĐẦU",()=>VillageWorkStall.Active?.StartFromInstructions());startLabel=start.GetComponentInChildren<TMP_Text>();
             timingGoals=Label("TimingGoals",instructions.transform,new Vector2(.04f,.18f),new Vector2(.96f,.24f),14,Gold);
             work=Box("Work",card,new Vector2(.05f,.05f),new Vector2(.95f,.80f),Color.clear);
             stats=Label("Stats",work.transform,new Vector2(0,.90f),new Vector2(1,1),19,Color.white);
@@ -72,12 +75,15 @@ namespace BeachBoatStory
                 tag.SetActive(false);woodSelectedTags[i]=tag;
             }
             Click("DeliverTimber",woodChoices.transform,new Vector2(.23f,0),new Vector2(.77f,.17f),"GIAO GỖ [ENTER]",()=>VillageWorkStall.Active?.SubmitOption(8));
-            foodChoices=Box("Ingredients",work.transform,new Vector2(0,.27f),new Vector2(1,.65f),Color.clear);foodLabels=new TMP_Text[3];
+            foodChoices=Box("Ingredients",work.transform,new Vector2(0,.27f),new Vector2(1,.65f),Color.clear);foodLabels=new TMP_Text[3];foodRecipes=new TMP_Text[3];foodCards=new Image[3];
             for(int i=0;i<3;i++)
             {
                 int option=i;var b=Click("Ingredient"+i,foodChoices.transform,new Vector2(i*.335f+.005f,.27f),new Vector2(i*.335f+.325f,1),"",()=>VillageWorkStall.Active?.SubmitOption(option));
-                Icon(b.transform,i+1,new Vector2(.10f,.30f),new Vector2(.90f,.95f));
-                foodLabels[i]=Label("Name",b.transform,new Vector2(.04f,.02f),new Vector2(.96f,.30f),17,Color.white);
+                foodCards[i]=b.GetComponent<Image>();Icon(b.transform,i+1,new Vector2(.24f,.47f),new Vector2(.76f,.94f));
+                foodRecipes[i]=Label("Recipe",b.transform,new Vector2(.03f,.25f),new Vector2(.97f,.47f),15,Gold);
+                foodRecipes[i].enableAutoSizing=true;foodRecipes[i].fontSizeMin=11;foodRecipes[i].fontSizeMax=15;
+                foodLabels[i]=Label("Name",b.transform,new Vector2(.03f,.02f),new Vector2(.97f,.25f),15,Color.white);
+                foodLabels[i].enableAutoSizing=true;foodLabels[i].fontSizeMin=11;foodLabels[i].fontSizeMax=15;
             }
             Click("PackRations",foodChoices.transform,new Vector2(.20f,0),new Vector2(.80f,.23f),"KIỂM TRA VÀ GÓI  [4]",()=>VillageWorkStall.Active?.SubmitOption(3));
             ropeGame=Box("RopeWorkbench",work.transform,new Vector2(0,.27f),new Vector2(1,.65f),Color.clear);
@@ -109,15 +115,15 @@ namespace BeachBoatStory
             var s=VillageWorkStall.Active;shade.SetActive(s!=null);if(s==null){shown=null;return;}
             if(s!=shown){shown=s;selectedDifficulty=s.Difficulty;}
             title.text=s.stallName;
-            bool intro=s.Phase==VillageWorkStall.WorkPhase.Instructions,playing=s.Phase==VillageWorkStall.WorkPhase.Playing;
+            bool intro=s.Phase==VillageWorkStall.WorkPhase.Instructions,playing=s.IsWorking;
             instructions.SetActive(intro);work.SetActive(playing);result.SetActive(!intro&&!playing);
             if(intro)
             {
                 selectedDifficulty=s.Difficulty;
                 timingGoals.text=CampaignProgress.Instance.TimingBands(1+(int)s.kind*3+selectedDifficulty);
-                rules.text=s.Instructions+"\n\nHoàn thành lần lượt Dễ → Vừa → Khó để nhận vật tư. Z: hoàn tác; C: làm lại phần này. Không hoàn thời gian/lỗi. Mỗi lỗi mất 2 giây. ESC / X: rời minigame, giữ các mức đã hoàn thành.";
+                rules.text=(s.Feedback.StartsWith("Đã hiểu")?"<color=#8CF0BD>"+s.Feedback+"</color>\n\n":"")+s.Instructions+"\n\nHoàn thành Dễ → Vừa → Khó để nhận vật tư. Z: hoàn tác; C: làm lại phần này. Mỗi lỗi mất 2 giây ở lượt tính giờ. ESC / X: rời minigame, giữ mức đã xong.";
                 for(int i=0;i<3;i++){difficultyLabels[i].color=i==selectedDifficulty?Gold:Color.white;difficultyButtons[i].interactable=i<=s.UnlockedDifficulty;difficultyLabels[i].text=new[]{"DỄ","VỪA","KHÓ"}[i]+(i<s.CompletedLevels?" • XONG":i>s.UnlockedDifficulty?" • KHÓA":"");}
-                startLabel.text="BẮT ĐẦU  •  "+new[]{"DỄ","VỪA","KHÓ"}[selectedDifficulty];return;
+                startLabel.text=s.NeedsPractice?"THỬ MẪU • KHÔNG TÍNH GIỜ":"BẮT ĐẦU  •  "+new[]{"DỄ","VỪA","KHÓ"}[selectedDifficulty];return;
             }
             if(!playing)
             {
@@ -128,17 +134,18 @@ namespace BeachBoatStory
                 result.transform.Find("ConfirmResult/Label").GetComponent<TMP_Text>().text=won?(s.Difficulty==2?"NHẬN VẬT TƯ  [ENTER]":"MỞ MỨC TIẾP THEO  [ENTER]"):"CHƠI LẠI  [R]";return;
             }
             stats.text=$"{new[]{"DỄ","VỪA","KHÓ"}[s.Difficulty]}  •  CÒN {s.TimeRemaining:0.0}s  •  XONG {s.Progress}/{s.Goal}  •  SAI {s.Mistakes}/{s.MistakeLimit}";
-            stats.text+="\n<size=14>"+CampaignProgress.Instance.TimingBands(1+(int)s.kind*3+s.Difficulty)+"</size>";
+            if(s.IsPractice)stats.text="LƯỢT TẬP • KHÔNG TÍNH GIỜ / LỖI / THÀNH TÍCH";
+            else stats.text+="\n<size=14>"+CampaignProgress.Instance.TimingBands(1+(int)s.kind*3+s.Difficulty)+"</size>";
             undoButton.interactable=s.CanUndo;restoreButton.interactable=s.CanRestore;
             stats.color=s.TimeRemaining<7?new Color(1,.4f,.3f):Color.white;
             clockFill.anchorMax=new Vector2(s.TimeRemaining/s.TimeLimit,1);progressFill.anchorMax=new Vector2(s.Progress/(float)s.Goal,1);
             woodChoices.SetActive(s.kind==VillageWorkStall.WorkKind.Timber);foodChoices.SetActive(s.kind==VillageWorkStall.WorkKind.Provisions);
             ropeGame.SetActive(s.kind==VillageWorkStall.WorkKind.Rope);riceGame.SetActive(s.kind==VillageWorkStall.WorkKind.Rice);
-            task.fontSize=s.kind==VillageWorkStall.WorkKind.Timber?19:24;
+            task.fontSize=s.kind==VillageWorkStall.WorkKind.Timber||s.kind==VillageWorkStall.WorkKind.Provisions?19:24;
             string selectionColor=s.TimberSelectedPieces==0?"B7C5C1":s.TimberSelectedPieces==s.TimberRequiredPieces?"FFE29B":"8CF0BD";
             task.text=s.kind==VillageWorkStall.WorkKind.Timber?$"CHỌN {s.TimberRequiredPieces} THANH • DÀI {s.TimberTarget} THƯỚC"+(s.TimberNeedsStrength?$" • LỰC ≥ {s.TimberStrengthTarget}":"")+$"\n<color=#{selectionColor}><b>ĐÃ CHỌN {s.TimberSelectedPieces}/{s.TimberRequiredPieces}</b> • dài {s.TimberTotal}"+(s.TimberNeedsStrength?$" • lực {s.TimberStrengthTotal}":"")+"</color>":
                 s.kind==VillageWorkStall.WorkKind.Rope?"XOAY Ô ĐỂ NỐI DÂY LIỀN TỪ VÀO ĐẾN RA":
-                s.kind==VillageWorkStall.WorkKind.Rice?$"CẦN {s.RiceTarget} ĐƠN VỊ  •  CÓ {s.RiceLoad}  •  LƯỢT {s.Moves}/{s.MoveLimit}":$"{s.People} NGƯỜI: MỖI NGƯỜI {s.RicePerPerson} GẠO + {s.FishPerPerson} CÁ; CẢ GÓI {s.SaltPerBundle} MUỐI";
+                s.kind==VillageWorkStall.WorkKind.Rice?$"CẦN {s.RiceTarget} ĐƠN VỊ  •  CÓ {s.RiceLoad}  •  LƯỢT {s.Moves}/{s.MoveLimit}":$"GÓI LƯƠNG CHO {s.People} NGƯỜI\nGẠO / CÁ: TÍNH THEO NGƯỜI • MUỐI: CHO CẢ NHÓM";
             feedback.text=s.Feedback;feedback.color=s.FeedbackVersion==0?Color.white:s.LastCorrect?Green:new Color(1,.5f,.35f);
             for(int i=0;i<8;i++)
             {
@@ -147,7 +154,13 @@ namespace BeachBoatStory
                 woodIcons[i].SetDamaged(!s.IsSoundTimber(i));woodLabels[i].text=$"{s.TimberLength(i)} thước"+(s.TimberNeedsStrength?$" • lực {s.TimberStrength(i)}":"")+(!s.IsSoundTimber(i)?" • NỨT":s.TimberUsed(i)?" • CHỌN":"");
             }
             for(int i=0;i<9;i++)ropeIcons[i].SetPorts(s.RopePorts(i));
-            for(int i=0;i<3;i++)foodLabels[i].text=$"[{i+1}] {VillageWorkStall.IngredientName(i)}: {s.IngredientCount(i)}";
+            for(int i=0;i<3;i++)
+            {
+                int have=s.IngredientCount(i),need=s.RequiredIngredient(i);
+                foodRecipes[i].text=i<2?$"{s.People} người × {(i==0?s.RicePerPerson:s.FishPerPerson)} = {need}":$"CẢ NHÓM: {need} MUỐI";
+                foodLabels[i].text=$"[{i+1}] +1 {VillageWorkStall.IngredientName(i)}\nĐÃ THÊM {have}/{need}"+(have==need?" • ĐỦ":have>need?" • THỪA":"");
+                foodCards[i].color=have==need?new Color(.10f,.36f,.27f):have>need?new Color(.48f,.17f,.12f):new Color(.17f,.20f,.20f);
+            }
             ropeMoves.text=$"SỐ LƯỢT XOAY\n{s.Moves}/{s.MoveLimit}";
             riceLabels[0].text=$"+{s.RiceSmall}  [1]";riceLabels[1].text=$"+{s.RiceLarge}  [2]";riceLabels[2].text=$"BỚT {s.RiceSmall}  [3]";riceLabels[3].text="ĐÓNG TÚI  [4]";
             riceFill.anchorMax=new Vector2(1,Mathf.Clamp01(s.RiceLoad/(float)Mathf.Max(1,s.RiceTarget)));

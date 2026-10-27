@@ -96,6 +96,13 @@ namespace BeachBoatStory
         {
             Health = maxHealth;
         }
+        public float ReportRecoveryUntil {get;private set;}
+        public void RecoverAfterReport()
+        {
+            // Only the guarded story report callbacks grant this recovery.
+            // Keep armor charges and earned stamina/training upgrades.
+            RestoreCheckpoint(ArmorCharges);ReportRecoveryUntil=Time.unscaledTime+4;
+        }
 
         public void RecoverAtDock()
         {
@@ -114,6 +121,7 @@ namespace BeachBoatStory
         }
         public void RestoreSave(BachDangSaveData data)
         {
+            ReportRecoveryUntil=0;
             maxHealth=Mathf.Max(1,data.maxHealth);maxStamina=Mathf.Max(1,data.maxStamina);
             Health=Mathf.Clamp(data.health,1,maxHealth);Stamina=Mathf.Clamp(data.stamina,0,maxStamina);
             ArmorCharges=Mathf.Max(0,data.armor);CompletedTrainingLevels=Mathf.Clamp(data.trainingLevels,0,3);

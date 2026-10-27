@@ -61,7 +61,7 @@ public class WoodCollectible : MonoBehaviour
         if (interactPromptUI != null) interactPromptUI.SetActive(isPlayerNear);
         if (!isPlayerNear) return;
 
-        story.SetInteractPrompt(true, "[E] Nhặt", this);
+        story.SetInteractPrompt(true, $"[E] Nhặt gỗ • {story.collectedWood}/{story.totalWoodRequired}", this);
         if (Input.GetKeyDown(KeyCode.E) && lastCollectFrame != Time.frameCount && StoryDialogueUI.TryConsumeInput())
         {
             lastCollectFrame = Time.frameCount;

@@ -198,7 +198,8 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
 
             case StoryState.Act2_CollectWoodInVillage:
-                desc = $"- Thăm hỏi bà con làng ven sông.\n- Thu thập cọc gỗ: ({collectedWood}/{totalWoodRequired}) khúc";
+                title = $"Gom cọc gỗ trong làng • {collectedWood}/{totalWoodRequired}";
+                desc = "- Tìm các khúc gỗ đặt quanh nhà và sân làng.\n- Lại sát khúc gỗ, nhấn E để nhặt.\n- Gom đủ 5 khúc rồi chuẩn bị vật tư ở các sạp.";
                 break;
 
             case StoryState.Act2_ReturnToCampGate:
@@ -247,14 +248,8 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
 
             case StoryState.Act3_BattleInProgress:
-                title = "Hồi 3: Đánh Giặc";
-                var fleetDirector = EnemyFleetDirector.Instance;
-                var moment = BachDangBattleTimeline.Instance != null
-                    ? BachDangBattleTimeline.Instance.CurrentMoment
-                    : BachDangBattleTimeline.BattleMoment.LureAtHighTide;
-                desc=$"Thuyền đắm: {destroyedEnemyShips}/{totalEnemyShips} • Lính địch còn: {fleetDirector?.RemainingEnemies ?? 0}.\n"+
-                    (moment<BachDangBattleTimeline.BattleMoment.TideFalling?"Nhử đội hình địch vào sâu bãi cọc, chờ nước rút.":
-                    "Dùng cung/kiếm cùng đồng minh hạ địch. SPACE leo thuyền.\nThắng khi tất cả thuyền đã đắm và không còn địch.");
+                title = RiverBattleObjective.Title;
+                desc = RiverBattleObjective.Description;
                 break;
 
             case StoryState.Act3_Victory:
@@ -321,6 +316,7 @@ public class BachDangStoryManager : MonoBehaviour
     public void OnVictoryReported()
     {
         if (currentState != StoryState.Act3_Victory) return;
+        RecoverAtReport();
         TransitionTo(StoryState.Act3_Celebration);
         StoryDialogueUI.Instance?.Show("Quân dân Bạch Đằng", "Đại thắng! Quân dân cùng trở về doanh trại, nổi trống mừng nền tự chủ của nước Việt.");
     }
@@ -332,6 +328,7 @@ public class BachDangStoryManager : MonoBehaviour
     {
         if (currentState == StoryState.Act2_ReportToNgoQuyen)
         {
+            RecoverAtReport();
             TransitionTo(StoryState.Act2_PlantStakesAtRiver);
             Debug.Log("[BachDangStory] Ngo Quyen giao lenh cam coc song Bach Dang!");
         }
@@ -352,11 +349,17 @@ public class BachDangStoryManager : MonoBehaviour
     public void OnReportStakesComplete()
     {
         if (currentState != StoryState.Act2_CompleteReturnToCamp) return;
+        RecoverAtReport();
         TransitionTo(StoryState.Act2_Completed);
         Debug.Log("[BachDangStory] Hoan tat Hoi 2: tran dia coc Bach Dang da san sang!");
     }
 
     // =================== HỒI 3: TỔNG TIẾN CÔNG ===================
+
+    void RecoverAtReport()
+    {
+        GetPlayerTransform()?.GetComponent<PlayerVitals>()?.RecoverAfterReport();
+    }
 
     /// <summary>
     /// Gọi khi gặp Ngô Quyền lần 3 để nhận lệnh tấn công

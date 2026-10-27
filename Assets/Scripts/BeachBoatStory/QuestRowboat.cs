@@ -38,6 +38,7 @@ namespace BeachBoatStory
         AmbientRiverBoat[] nearbyFriendlyBoats;
         EnemyShip[] enemyShips;
         Vector3 homePosition;
+        public Vector3 BattleLurePosition {get;private set;}
         Quaternion homeRotation;
         float nextImpactTime;
         bool battleLaunchPrepared, pendingBattleLaunch;
@@ -135,7 +136,7 @@ namespace BeachBoatStory
             vitals = session.player.GetComponent<PlayerVitals>();
             nearbyFriendlyBoats = FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             enemyShips = EnemyFleetDirector.Instance != null ? EnemyFleetDirector.Instance.enemyShips : System.Array.Empty<EnemyShip>();
-            homePosition = transform.position; homeRotation = transform.rotation;
+            homePosition = transform.position;BattleLurePosition=homePosition; homeRotation = transform.rotation;
             playerBody = session.player.GetComponent<Rigidbody>();
             playerCollider = session.player.GetComponent<CapsuleCollider>();
             animator = session.player.GetComponentInChildren<Animator>();
@@ -182,6 +183,7 @@ namespace BeachBoatStory
                     if (body != null) { body.position = candidate; body.rotation = rotation; }
                     Speed = 0; IsBoosting = false; strokePhase = 0; wedgedAtDockSeconds = 0;
                     battleLaunchPrepared = true; pendingBattleLaunch = false;
+                    BattleLurePosition=candidate;
                     Physics.SyncTransforms();
                     if (IsAboard) { AttachPlayer(); orbit.SnapToTarget(); }
                     return true;

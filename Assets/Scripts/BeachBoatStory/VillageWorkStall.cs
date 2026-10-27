@@ -7,7 +7,7 @@ namespace BeachBoatStory
     public sealed class VillageWorkStall : MonoBehaviour
     {
         public enum WorkKind { Timber, Rope, Rice, Provisions }
-        public enum WorkPhase { Instructions, Playing, Won, Lost }
+        public enum WorkPhase { Instructions, Playing, Won, Lost, Practice }
         public VillagePreparationQuest quest;
         public WorkKind kind;
         public Transform interactionPoint;
@@ -15,6 +15,9 @@ namespace BeachBoatStory
         public string stallName;
         public static VillageWorkStall Active {get;private set;}
         public WorkPhase Phase {get;private set;}
+        public bool IsPractice=>Phase==WorkPhase.Practice;
+        public bool IsWorking=>Phase==WorkPhase.Playing||IsPractice;
+        bool practicedThisVisit;
         public bool Completed {get;private set;}
         public int Difficulty {get;private set;}
         public int CompletedLevels {get;private set;}
@@ -56,7 +59,7 @@ namespace BeachBoatStory
         public string Instructions=>kind==WorkKind.Timber?"Dễ và Vừa: chọn 2 thanh đủ chiều dài. Khó: chọn 3 thanh đủ chiều dài và sức chịu lực. Chọn trong 6 thanh, loại gỗ nứt. Bấm vào thanh để chọn hoặc bỏ chọn, rồi GIAO GỖ để kiểm tra. Các số đều nhỏ để dễ nhẩm. Mỗi đơn chỉ có một tổ hợp đúng; câu mới không lặp câu đã chơi.":
             kind==WorkKind.Rope?"Bấm từng ô để xoay đoạn dây 90 độ. Nối một đường liên tục từ đầu VÀO bên trái hàng giữa sang đầu RA bên phải hàng giữa. Dây không được đứt hoặc tạo vòng kín. Số lượt xoay có hạn.":
             kind==WorkKind.Rice?"Đong đúng lượng gạo yêu cầu bằng hai gáo khác cỡ. Chỉ được thêm một gáo nhỏ, thêm một gáo lớn hoặc bớt một gáo nhỏ. Hãy tính cách đong trong số lượt cho phép rồi đóng túi.":
-            "Đọc công thức mỗi đơn hàng: số người, gạo/cá cho mỗi người và muối cho cả gói đều có thể thay đổi. Tính đủ nguyên liệu, sửa bằng Hoàn tác nếu nhầm rồi kiểm tra gói.";
+            "Gói lương cho một nhóm quân sĩ. Gạo và cá khô tính theo số người; muối chỉ thêm một lần theo yêu cầu CẢ NHÓM. Ví dụ: 2 người × 2 gạo = 4 gạo; 2 người × 1 cá = 2 cá; muối cả nhóm = 1. Bấm mỗi nguyên liệu để thêm 1, rồi KIỂM TRA VÀ GÓI. Lần đầu có lượt tập không tính giờ.";
         public static string IngredientName(int n)=>n==0?"GẠO":n==1?"CÁ KHÔ":"MUỐI";
         readonly bool[] soundTimber=new bool[8];
         readonly int[] timberLengths=new int[8],timberStrengths=new int[8],timberCosts=new int[8],ropePorts=new int[9],ingredients=new int[3];
@@ -74,8 +77,8 @@ namespace BeachBoatStory
         }
         readonly List<WorkSnapshot> history=new List<WorkSnapshot>();
         WorkSnapshot initialWork;
-        public bool CanUndo=>Active==this&&Phase==WorkPhase.Playing&&history.Count>0;
-        public bool CanRestore=>Active==this&&Phase==WorkPhase.Playing&&initialWork!=null&&history.Count>0;
+        public bool CanUndo=>Active==this&&IsWorking&&history.Count>0;
+        public bool CanRestore=>Active==this&&IsWorking&&initialWork!=null&&history.Count>0;
         WorkSnapshot CaptureWork()=>new WorkSnapshot{rice=RiceLoad,moves=Moves,total=TimberTotal,pieces=timberPieces,strength=TimberStrengthTotal,cost=TimberCostTotal,rope=(int[])ropePorts.Clone(),food=(int[])ingredients.Clone(),timber=(bool[])timberUsed.Clone()};
         void RememberWork(){if(history.Count>=128)history.RemoveAt(0);history.Add(CaptureWork());}
         void RestoreWork(WorkSnapshot saved)
@@ -104,7 +107,7 @@ namespace BeachBoatStory
             if(Active==this)
             {
                 if(Input.GetKeyDown(KeyCode.X)){Close();return;}
-                if(Phase==WorkPhase.Instructions){if(Input.GetKeyDown(KeyCode.Return))StartAttempt(Difficulty);return;}
+                if(Phase==WorkPhase.Instructions){if(Input.GetKeyDown(KeyCode.Return))StartFromInstructions();return;}
                 if(Phase==WorkPhase.Lost){if(Input.GetKeyDown(KeyCode.R))StartAttempt(Difficulty);return;}
                 if(Phase==WorkPhase.Won){if(Input.GetKeyDown(KeyCode.Return))ClaimReward();return;}
                 AdvanceTime(Time.unscaledDeltaTime);
@@ -125,7 +128,7 @@ namespace BeachBoatStory
         {
             if(player==null&&BeachBoatQuestSession.Instance!=null)player=BeachBoatQuestSession.Instance.player.transform;
             if(Active!=null||quest==null||!quest.CanWork||player==null||QuestRowboat.FlatDistance(player.position,InteractionPosition)>interactionDistance)return false;
-            savedLock=Cursor.lockState;savedCursor=Cursor.visible;Active=this;Phase=WorkPhase.Instructions;HidePrompt();
+            savedLock=Cursor.lockState;savedCursor=Cursor.visible;Active=this;Phase=WorkPhase.Instructions;practicedThisVisit=false;HidePrompt();
             Cursor.lockState=CursorLockMode.None;Cursor.visible=true;VillageWorkUI.EnsureExists();BeachBoatSoundscape.Instance?.PlayInteraction();return true;
         }
         public void SelectDifficulty(int difficulty)
@@ -137,6 +140,15 @@ namespace BeachBoatStory
             if(Active!=this||Phase==WorkPhase.Playing)return;
             Difficulty=Mathf.Clamp(difficulty,0,UnlockedDifficulty);Progress=Mistakes=RiceLoad=0;Elapsed=0;Feedback="Hãy xem yêu cầu và tính trước khi làm.";FeedbackVersion=0;
             Phase=WorkPhase.Playing;NewTask();
+        }
+        public bool NeedsPractice=>kind==WorkKind.Provisions&&CompletedLevels==0&&!practicedThisVisit;
+        public void StartFromInstructions()
+        {
+            if(Active!=this||Phase!=WorkPhase.Instructions)return;
+            if(!NeedsPractice){StartAttempt(Difficulty);return;}
+            Phase=WorkPhase.Practice;Progress=Mistakes=0;Elapsed=0;People=2;RicePerPerson=2;FishPerPerson=1;SaltPerBundle=1;
+            System.Array.Clear(ingredients,0,ingredients.Length);history.Clear();initialWork=CaptureWork();
+            Feedback="LƯỢT TẬP: thêm 4 gạo, 2 cá khô và 1 muối cho cả nhóm, rồi bấm [4]. Không tính giờ hay thành tích.";FeedbackVersion=0;
         }
         public void AdvanceTime(float dt)
         {
@@ -172,7 +184,7 @@ namespace BeachBoatStory
         }
         public bool SubmitOption(int option)
         {
-            if(Active!=this||Phase!=WorkPhase.Playing||option<0||option>(kind==WorkKind.Rope?9:kind==WorkKind.Timber?8:3))return false;
+            if(Active!=this||!IsWorking||option<0||option>(kind==WorkKind.Rope?9:kind==WorkKind.Timber?8:3))return false;
             if(kind==WorkKind.Rope)
             {
                 if(option<9){RememberWork();ropePorts[option]=RotatePorts(ropePorts[option]);Moves++;if(Moves>MoveLimit)Lose("Đã hết lượt xoay. Quan sát đường dây rồi thử lại.");return true;}
@@ -209,7 +221,7 @@ namespace BeachBoatStory
             if(correct)Score("Khẩu phần đã đủ cho cả nhóm quân sĩ.");
             else
             {
-                Fault($"Chưa đúng: mỗi người {RicePerPerson} gạo + {FishPerPerson} cá; cả gói {SaltPerBundle} muối.");
+                Fault($"Cần đủ {RequiredIngredient(0)} gạo, {RequiredIngredient(1)} cá khô và {SaltPerBundle} muối cho CẢ NHÓM. Z để bỏ lần thêm nhầm.");
                 // Keep the unsubmitted ration visible so the player can undo excess ingredients.
             }
             return correct;
@@ -217,12 +229,18 @@ namespace BeachBoatStory
         void Score(string message)
         {
             BeachBoatSoundscape.Instance?.PlayResult(true);
+            if(IsPractice)
+            {
+                practicedThisVisit=true;Phase=WorkPhase.Instructions;history.Clear();initialWork=null;
+                Feedback="Đã hiểu cách gói lương! Bấm BẮT ĐẦU để vào lượt tính giờ. Muối tính cho cả nhóm, không nhân số người.";LastCorrect=true;FeedbackVersion++;return;
+            }
             Progress++;Feedback=message;LastCorrect=true;FeedbackVersion++;
             if(Progress>=Goal){Phase=WorkPhase.Won;CampaignProgress.Instance?.RecordMinigame($"village:{(int)kind}:{Difficulty}",Elapsed,TimeLimit);return;}NewTask();
         }
         void Fault(string message)
         {
             BeachBoatSoundscape.Instance?.PlayResult(false);
+            if(IsPractice){Feedback=message+" Lượt tập không trừ giờ hay tính lỗi; Z để bớt lần thêm nhầm.";LastCorrect=false;FeedbackVersion++;return;}
             Mistakes++;Elapsed+=2;Feedback=message;LastCorrect=false;FeedbackVersion++;
             if(Mistakes>=MistakeLimit)Lose("Sai quá số lần cho phép. Chơi lại để làm chắc tay hơn.");
             else if(Elapsed>=TimeLimit)Lose("Hết giờ sau lần thao tác sai.");

@@ -197,6 +197,9 @@ namespace BeachBoatStory
                     ? vitals.LastImpact + (vitals.LastImpactDamage > 0 ? $"  -{vitals.LastImpactDamage:0} máu" : "")
                     : "";
                 if(rowboat!=null&&Time.unscaledTime<rowboat.LastHullImpactUntil&&!string.IsNullOrEmpty(rowboat.LastHullImpact))impactText.text=rowboat.LastHullImpact;
+                bool recovered=Time.unscaledTime<vitals.ReportRecoveryUntil&&Time.unscaledTime>=vitals.LastImpactUntil;
+                if(recovered)impactText.text="Đã báo cáo • Quân y hồi đầy máu và thể lực";
+                impactText.color=recovered?new Color(.45f,1,.65f):new Color(1,.5f,.35f);
             }
             if (Input.GetKeyDown(KeyCode.F9) && !InteractionBlocked && BeachBoatMinigameStation.Active == null &&
                 !(StoryDialogueUI.Instance?.IsOpen ?? false) && !(ScreenFader.Instance?.IsTransitioning ?? false)) SetStoryMode(!storyMode);

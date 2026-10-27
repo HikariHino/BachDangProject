@@ -96,7 +96,7 @@ namespace BeachBoatStory
             CampaignProgress.Instance?.BeginBattle();
             ResetForCheckpoint();wasBattle=true;nextThreat=Time.time+4;
             foreach(var guard in guards)if(guard!=null)guard.ResetGuard();
-            Tell("Nhử địch vào sâu bãi cọc. Dùng cung/kiếm phối hợp đồng minh. Thắng khi mọi thuyền đắm và không còn lính địch.");
+            Tell("Nhử địch vào vòng vây. Giữ ngoài bãi cọc, chờ nước rút và lệnh phản công rồi mới áp sát.");
         }
         public void ResetForCheckpoint()
         {

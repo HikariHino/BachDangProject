@@ -136,6 +136,7 @@ namespace BeachBoatStory
             watchedFleetIndex=0;
             if(IsShowingBattle&&fleet.Count>0)WatchShip(fleet[0]);
 
+            int shownInside=-1,shownMoment=-1;
             while(BattleStarted)
             {
                 bool anyActive=false;
@@ -149,10 +150,11 @@ namespace BeachBoatStory
                 // Retained wreck meshes are no longer active vessels. Their surviving crew swim.
                 // Surviving crew remain a combat objective after the final hull settles.
                 if(!anyActive&&RemainingEnemies==0){BachDangStoryManager.Instance?.OnBattleVictory();break;}
+                int inside=ShipsInside,moment=(int)(BachDangBattleTimeline.Instance?.CurrentMoment??BachDangBattleTimeline.BattleMoment.LureAtHighTide);
+                if(inside!=shownInside||moment!=shownMoment){shownInside=inside;shownMoment=moment;BachDangStoryManager.Instance?.UpdateUI();}
                 if(IsShowingBattle&&WatchedShip!=null&&Time.unscaledTime>=commandMessageUntil)
                 {
-                    BattleCaption=!EbbStarted ? $"Nhử địch vào sâu trận cọc • Đã vào {ShipsInside}/{ShipCount} thuyền" :
-                        $"Thuyền đắm {BachDangStoryManager.Instance?.destroyedEnemyShips ?? 0}/{ShipCount} • Địch còn lại {RemainingEnemies}\nHạ hết địch và đánh chìm toàn bộ thuyền để thắng • Q: kiếm • SPACE: leo tàu";
+                    BattleCaption=RiverBattleObjective.Title+"\n"+RiverBattleObjective.Description;
                 }
                 yield return null;
             }

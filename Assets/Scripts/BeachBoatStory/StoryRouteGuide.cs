@@ -16,6 +16,7 @@ namespace BeachBoatStory
         GameObject panel;
         TMP_Text caption, arrow;
         Transform target;
+        Transform lureWait;
         float nextRefresh;
 
         public void Initialize(BeachBoatQuestSession owner, GameObject box, TMP_Text text, TMP_Text pointer)
@@ -78,6 +79,15 @@ namespace BeachBoatStory
             }
             if (state == BachDangStoryManager.StoryState.Act3_BattleInProgress)
             {
+                if(!RiverBattleObjective.Counterattack)
+                {
+                    if(lureWait==null)
+                    {
+                        lureWait=new GameObject("Vung_Nhu_Dich_938").transform;lureWait.SetParent(transform,false);
+                    }
+                    lureWait.position=boat!=null?boat.BattleLurePosition:session.player.transform.position;
+                    title=RiverBattleObjective.DirectionTitle;return lureWait;
+                }
                 var guard=RiverPlayerCombat.Instance!=null?RiverPlayerCombat.Instance.PriorityGuard:null;
                 if(guard!=null){title="Lính Nam Hán • Dùng cung hoặc kiếm";return guard.transform;}
                 var fleet = EnemyFleetDirector.Instance;
@@ -90,7 +100,7 @@ namespace BeachBoatStory
                     foreach (var enemy in fleet.enemyShips)
                         if (enemy != null && enemy.gameObject.activeInHierarchy && !enemy.isDestroyed &&
                             (!hasReady || enemy.SignalReady))
-                            Consider(enemy.transform, "Theo thuyền địch vào sâu bãi cọc",
+                            Consider(enemy.transform, "Chiến thuyền mắc cọc • Áp sát phản công",
                                 ref best, ref distance, ref title);
                 }
                 return best;
@@ -127,7 +137,7 @@ namespace BeachBoatStory
             if (state == BachDangStoryManager.StoryState.Act2_CollectWoodInVillage)
                 foreach (var wood in session.woodItems)
                     if (wood != null && wood.isActiveAndEnabled && QuestRowboat.FlatDistance(session.player.transform.position,wood.transform.position)<=wood.interactDistance)
-                        Consider(wood.transform, "[E] Nhặt", ref best, ref distance, ref title);
+                        Consider(wood.transform, $"[E] Nhặt gỗ • {story.collectedWood}/{story.totalWoodRequired}", ref best, ref distance, ref title);
             if (state == BachDangStoryManager.StoryState.Act2_Completed || state == BachDangStoryManager.StoryState.Act3_PrepareForBattle ||
                 state == BachDangStoryManager.StoryState.Act3_Victory)
                 if (commander != null) Consider(commander.transform, "Chủ tướng Ngô Quyền", ref best, ref distance, ref title);
@@ -174,7 +184,7 @@ namespace BeachBoatStory
                 {
                     var offset = target.position - session.player.transform.position; offset.y = 0;
                     caption.text = title + "\n" + WorldDistance.Format(offset.magnitude) +
-                        (story.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress?" • Cung/kiếm • SPACE leo tàu":
+                        (story.currentState==BachDangStoryManager.StoryState.Act3_BattleInProgress?" • "+RiverBattleObjective.ControlHint:
                         InInteractionRange(target)?" • Trong tầm tương tác • Bấm E":" • Đến gần để bấm E");
                 }
             }
