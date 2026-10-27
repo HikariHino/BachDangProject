@@ -70,13 +70,10 @@ namespace BeachBoatStory
                     for(int work=0;work<4;work++)
                     {
                         var stall=VillagePreparationQuest.Instance.stalls.FirstOrDefault(s=>(int)s.kind==work);
-                        int levels=stall!=null?stall.CompletedLevels:0;bool supplied=stall!=null&&stall.Completed;
-                        Row("VẬT TƯ • "+CampaignProgress.WorkNames[work]+$" ({levels}/3)","Hoàn thành Dễ → Vừa → Khó rồi nhận vật tư.",supplied,current&&!supplied,66);
-                        for(int difficulty=0;difficulty<3;difficulty++)
-                        {
-                            int index=1+work*3+difficulty;bool completed=levels>difficulty||p.MiniRecord(index)!=null;
-                            Row("    Minigame "+CampaignProgress.DifficultyNames[difficulty],p.TimingResult(index)+"\n"+p.TimingBands(index),completed,current&&!completed&&levels==difficulty,82);
-                        }
+                        bool supplied=stall!=null&&stall.Completed;
+                        Row("VẬT TƯ • "+CampaignProgress.WorkNames[work],"Chơi một lượt mức Vừa rồi nhận vật tư.",supplied,current&&!supplied,66);
+                        int index=1+work;bool completed=supplied||p.MiniRecord(index)!=null;
+                        Row("    Minigame • Vừa",p.TimingResult(index)+"\n"+p.TimingBands(index),completed,current&&!completed,82);
                     }
                 }
                 int trained=BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().CompletedTrainingLevels;
@@ -107,7 +104,7 @@ namespace BeachBoatStory
             rank.text=IsEnding?r.finalRank:"938";rank.color=IsEnding?Gold:Muted;
             score.text=IsEnding?(r.historyIncomplete?"TẠM TÍNH • THIẾU THỐNG KÊ":"HẠNG THEO THÀNH TÍCH"):"HÀNH TRÌNH GIỮ NƯỚC";
             metrics.text=$"Trống: "+(p.MiniRecord(0)==null?"Chưa ghi":CampaignProgress.Clock(p.MiniRecord(0).seconds)+" • "+CampaignProgress.RankName(p.MiniRank(0)))+
-                $"\nMinigame vật tư: {Enumerable.Range(1,12).Count(i=>p.MiniRecord(i)!=null)}/12\nĐiều kiện S: {p.ConditionsFor(3).Count(c=>c.met)}/{p.ConditionsFor(3).Length}\nTìm gỗ: "+(r.woodStarted?CampaignProgress.Duration(r.woodSeconds):"Chưa ghi")+$"\nTự hạ địch: {r.kills.Length}/{p.KillTarget}\nĐóng cọc: "+(r.stakeStarted?CampaignProgress.Duration(r.stakeSeconds):r.stakeFinished?"Thiếu thời gian cũ":"Chưa bắt đầu")+$"\nGục ngã: {r.defeats}\nQuân ta tử trận: {r.casualties}\nThể lực phụ: {BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().CompletedTrainingLevels}/3";
+                $"\nMinigame vật tư: {Enumerable.Range(1,4).Count(i=>p.MiniRecord(i)!=null)}/4\nĐiều kiện S: {p.ConditionsFor(3).Count(c=>c.met)}/{p.ConditionsFor(3).Length}\nTìm gỗ: "+(r.woodStarted?CampaignProgress.Duration(r.woodSeconds):"Chưa ghi")+$"\nTự hạ địch: {r.kills.Length}/{p.KillTarget}\nĐóng cọc: "+(r.stakeStarted?CampaignProgress.Duration(r.stakeSeconds):r.stakeFinished?"Thiếu thời gian cũ":"Chưa bắt đầu")+$"\nGục ngã: {r.defeats}\nQuân ta tử trận: {r.casualties}\nThể lực phụ: {BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().CompletedTrainingLevels}/3";
         }
         void Row(string title,string detail,bool done,bool current=false,float height=46,bool achievement=false)
         {

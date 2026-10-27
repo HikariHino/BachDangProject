@@ -20,7 +20,7 @@ public class Camera_Script : MonoBehaviour
     public float Yaw => yaw;
     public bool IsAiming { get; private set; }
     public bool IsFreeLooking { get; private set; }
-    public bool InputCaptured => Cursor.lockState == CursorLockMode.Locked && !BeachBoatQuestSession.InputBlocked;
+    public bool InputCaptured => Cursor.lockState == CursorLockMode.Locked && (!BeachBoatQuestSession.InputBlocked||StakeConstruction.AllowsCamera);
     float yaw, pitch = 12f, normalFieldOfView, nextTargetSearch;
     bool initialized;
     Vector3 velocity, previousTarget;

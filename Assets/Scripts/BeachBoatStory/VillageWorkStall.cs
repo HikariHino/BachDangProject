@@ -18,10 +18,11 @@ namespace BeachBoatStory
         public bool IsPractice=>Phase==WorkPhase.Practice;
         public bool IsWorking=>Phase==WorkPhase.Playing||IsPractice;
         bool practicedThisVisit;
+        bool helpForAttempt;
         public bool Completed {get;private set;}
         public int Difficulty {get;private set;}
         public int CompletedLevels {get;private set;}
-        public int UnlockedDifficulty=>Mathf.Min(2,CompletedLevels);
+        public int UnlockedDifficulty=>1;
         public int Progress {get;private set;}
         public int Mistakes {get;private set;}
         public float Elapsed {get;private set;}
@@ -53,13 +54,13 @@ namespace BeachBoatStory
         public Vector3 InteractionPosition=>interactionPoint!=null?interactionPoint.position:transform.position;
         public static float LimitFor(WorkKind work,int difficulty)=>work==WorkKind.Rice?(difficulty==0?100:difficulty==1?100:110):work==WorkKind.Timber?(difficulty==0?100:difficulty==1?135:180):work==WorkKind.Rope?(difficulty==0?100:difficulty==1?75:55):(difficulty==0?90:difficulty==1?70:50);
         public float TimeLimit=>LimitFor(kind,Difficulty);
-        public int Goal=>kind==WorkKind.Rope?1:kind==WorkKind.Rice?Mathf.Min(3,2+Difficulty):2+Difficulty;
+        public int Goal=>kind==WorkKind.Rope?1:2;
         public int MistakeLimit=>kind==WorkKind.Timber||kind==WorkKind.Rice?3:Difficulty==2?2:3;
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);
-        public string Instructions=>kind==WorkKind.Timber?"Dễ và Vừa: chọn 2 thanh đủ chiều dài. Khó: chọn 3 thanh đủ chiều dài và sức chịu lực. Chọn trong 6 thanh, loại gỗ nứt. Bấm vào thanh để chọn hoặc bỏ chọn, rồi GIAO GỖ để kiểm tra. Các số đều nhỏ để dễ nhẩm. Mỗi đơn chỉ có một tổ hợp đúng; câu mới không lặp câu đã chơi.":
+        public string Instructions=>kind==WorkKind.Timber?"Chọn 2 thanh đủ chiều dài yêu cầu. Chọn trong 6 thanh, loại gỗ nứt. Bấm vào thanh để chọn hoặc bỏ chọn, rồi GIAO GỖ để kiểm tra. Các số đều nhỏ để dễ nhẩm. Mỗi đơn chỉ có một tổ hợp đúng; câu mới không lặp câu đã chơi.":
             kind==WorkKind.Rope?"Bấm từng ô để xoay đoạn dây 90 độ. Nối một đường liên tục từ đầu VÀO bên trái hàng giữa sang đầu RA bên phải hàng giữa. Dây không được đứt hoặc tạo vòng kín. Số lượt xoay có hạn.":
             kind==WorkKind.Rice?"Đong đúng lượng gạo yêu cầu bằng hai gáo khác cỡ. Chỉ được thêm một gáo nhỏ, thêm một gáo lớn hoặc bớt một gáo nhỏ. Hãy tính cách đong trong số lượt cho phép rồi đóng túi.":
-            "Gói lương cho một nhóm quân sĩ. Gạo và cá khô tính theo số người; muối chỉ thêm một lần theo yêu cầu CẢ NHÓM. Ví dụ: 2 người × 2 gạo = 4 gạo; 2 người × 1 cá = 2 cá; muối cả nhóm = 1. Bấm mỗi nguyên liệu để thêm 1, rồi KIỂM TRA VÀ GÓI. Lần đầu có lượt tập không tính giờ.";
+            "Gói lương cho một nhóm quân sĩ. Gạo và cá khô tính theo số người; muối chỉ thêm một lần theo yêu cầu CẢ NHÓM. Ví dụ: 2 người × 2 gạo = 4 gạo; 2 người × 1 cá = 2 cá; muối cả nhóm = 1. Bấm mỗi nguyên liệu để thêm 1, rồi KIỂM TRA VÀ GÓI. Vàng: thiếu • Xanh: đủ • Đỏ: dư.";
         public static string IngredientName(int n)=>n==0?"GẠO":n==1?"CÁ KHÔ":"MUỐI";
         readonly bool[] soundTimber=new bool[8];
         readonly int[] timberLengths=new int[8],timberStrengths=new int[8],timberCosts=new int[8],ropePorts=new int[9],ingredients=new int[3];
@@ -107,6 +108,7 @@ namespace BeachBoatStory
             if(Active==this)
             {
                 if(Input.GetKeyDown(KeyCode.X)){Close();return;}
+                if(Input.GetKeyDown(KeyCode.H)&&Phase==WorkPhase.Playing){ShowHelp();return;}
                 if(Phase==WorkPhase.Instructions){if(Input.GetKeyDown(KeyCode.Return))StartTimedFromInstructions();return;}
                 if(Phase==WorkPhase.Lost){if(Input.GetKeyDown(KeyCode.R))StartAttempt(Difficulty);return;}
                 if(Phase==WorkPhase.Won){if(Input.GetKeyDown(KeyCode.Return))ClaimReward();return;}
@@ -129,23 +131,24 @@ namespace BeachBoatStory
             if(player==null&&BeachBoatQuestSession.Instance!=null)player=BeachBoatQuestSession.Instance.player.transform;
             if(Active!=null||quest==null||!quest.CanWork||player==null||QuestRowboat.FlatDistance(player.position,InteractionPosition)>interactionDistance)return false;
             savedLock=Cursor.lockState;savedCursor=Cursor.visible;Active=this;Phase=WorkPhase.Instructions;practicedThisVisit=false;HidePrompt();
-            Cursor.lockState=CursorLockMode.None;Cursor.visible=true;VillageWorkUI.EnsureExists();BeachBoatSoundscape.Instance?.PlayInteraction();return true;
+            Cursor.lockState=CursorLockMode.None;Cursor.visible=true;VillageWorkUI.EnsureExists();BeachBoatSoundscape.Instance?.PlayInteraction();StartAttempt(1);return true;
         }
         public void SelectDifficulty(int difficulty)
         {
-            if(Active==this&&Phase==WorkPhase.Instructions)Difficulty=Mathf.Clamp(difficulty,0,UnlockedDifficulty);
+            if(Active==this&&Phase==WorkPhase.Instructions)Difficulty=1;
         }
         public void StartAttempt(int difficulty)
         {
             if(Active!=this||Phase==WorkPhase.Playing)return;
-            Difficulty=Mathf.Clamp(difficulty,0,UnlockedDifficulty);Progress=Mistakes=RiceLoad=0;Elapsed=0;Feedback="Hãy xem yêu cầu và tính trước khi làm.";FeedbackVersion=0;
+            Difficulty=1;Progress=Mistakes=RiceLoad=0;Elapsed=0;Feedback="Chơi mức Vừa • Z: hoàn tác • C: làm lại phần này.";FeedbackVersion=0;
             if(kind==WorkKind.Provisions)Feedback="Vàng: thiếu • Xanh: đủ • Đỏ: dư. Mỗi lần bấm thêm 1; Z: hoàn tác.";
             Phase=WorkPhase.Playing;NewTask();
         }
-        public bool NeedsPractice=>kind==WorkKind.Provisions&&CompletedLevels==0&&!practicedThisVisit;
+        public bool NeedsPractice=>false;
         public void StartTimedFromInstructions()
         {
             if(Active!=this||Phase!=WorkPhase.Instructions)return;
+            if(helpForAttempt){helpForAttempt=false;Phase=WorkPhase.Playing;return;}
             if(kind==WorkKind.Provisions)StartAttempt(Difficulty);else StartFromInstructions();
         }
         public void StartFromInstructions()
@@ -156,11 +159,12 @@ namespace BeachBoatStory
         }
         public void StartPractice()
         {
-            if(Active!=this||Phase!=WorkPhase.Instructions||kind!=WorkKind.Provisions)return;
+            if(Active!=this||Phase!=WorkPhase.Instructions||kind!=WorkKind.Provisions||helpForAttempt)return;
             Phase=WorkPhase.Practice;Progress=Mistakes=0;Elapsed=0;People=2;RicePerPerson=2;FishPerPerson=1;SaltPerBundle=1;
             System.Array.Clear(ingredients,0,ingredients.Length);history.Clear();initialWork=CaptureWork();
             Feedback="LƯỢT TẬP: thêm 4 gạo, 2 cá khô và 1 muối cho cả nhóm, rồi bấm [4]. Không tính giờ hay thành tích.";FeedbackVersion=0;
         }
+        public void ShowHelp(){if(Active==this&&Phase==WorkPhase.Playing){helpForAttempt=true;Phase=WorkPhase.Instructions;}}
         public void AdvanceTime(float dt)
         {
             if(Active!=this||Phase!=WorkPhase.Playing)return;
@@ -363,22 +367,14 @@ namespace BeachBoatStory
         public bool ClaimReward()
         {
             if(Active!=this||Phase!=WorkPhase.Won)return false;
-            if(!Completed&&Difficulty<CompletedLevels){Difficulty=CompletedLevels;Phase=WorkPhase.Instructions;return true;}
-            if(!Completed&&Difficulty==CompletedLevels)
-            {
-                CompletedLevels++;QuestCheckpoint.Instance?.RefreshVillageProgress();
-                if(CompletedLevels<3)
-                {Difficulty=CompletedLevels;Phase=WorkPhase.Instructions;history.Clear();initialWork=null;Feedback="Đã mở mức tiếp theo.";return true;}
-            }
-            if(CompletedLevels<3)return false;
             Close();quest.Collect(this);return true;
         }
         public void MarkCollected(){Completed=true;CompletedLevels=3;}
         public void ResetCollection(){RestoreLearningProgress(0);}
-        public void RestoreLearningProgress(int levels){CompletedLevels=Mathf.Clamp(levels,0,3);Completed=CompletedLevels==3;Difficulty=UnlockedDifficulty;history.Clear();initialWork=null;}
+        public void RestoreLearningProgress(int levels){Completed=levels>=3;CompletedLevels=Completed?3:0;Difficulty=1;history.Clear();initialWork=null;}
         public void Close()
         {
-            if(Active!=this)return;Active=null;history.Clear();initialWork=null;HidePrompt();Cursor.lockState=savedLock;Cursor.visible=savedCursor;
+            if(Active!=this)return;Active=null;helpForAttempt=false;history.Clear();initialWork=null;HidePrompt();Cursor.lockState=savedLock;Cursor.visible=savedCursor;
         }
         void HidePrompt(){if(prompt){BachDangStoryManager.Instance?.SetInteractPrompt(false,owner:this);prompt=false;}}
         void OnDisable(){Close();HidePrompt();}

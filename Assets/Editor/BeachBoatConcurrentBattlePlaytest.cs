@@ -78,8 +78,8 @@ public static class BeachBoatConcurrentBattlePlaytest
         var bounds=StakeZone.Instance.FieldBounds;var camera=new GameObject("QA_Concurrent_Fleet_Camera").AddComponent<Camera>();
         camera.CopyFrom(BeachBoatQuestSession.Instance.storyCamera);camera.enabled=false;camera.fieldOfView=70;
         camera.transform.position=bounds.center+new Vector3(-850,850,-1000);camera.transform.LookAt(bounds.center+Vector3.up*30);
-        var rt=new RenderTexture(1280,800,24);var pixels=new Texture2D(1280,800,TextureFormat.RGB24,false);
-        camera.targetTexture=rt;camera.Render();RenderTexture.active=rt;pixels.ReadPixels(new Rect(0,0,1280,800),0,0);pixels.Apply();
+        var rt=new RenderTexture(1280,800,24);
+        camera.targetTexture=rt;camera.Render();RenderTexture.active=rt;var pixels=new Texture2D(1280,800,TextureFormat.RGB24,false);pixels.ReadPixels(new Rect(0,0,1280,800),0,0);pixels.Apply();
         File.WriteAllBytes("Logs/Fleet_Concurrent_Exposed_Stakes.png",pixels.EncodeToPNG());RenderTexture.active=null;camera.targetTexture=null;
         Object.DestroyImmediate(pixels);Object.DestroyImmediate(rt);Object.DestroyImmediate(camera.gameObject);
     }

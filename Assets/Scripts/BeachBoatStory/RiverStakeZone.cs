@@ -191,6 +191,7 @@ namespace BeachBoatStory
             CampaignProgress.Instance?.StartStakes();
             BeachBoatSoundscape.Instance?.PlayInteraction();
             workingIndex = index;
+            var work=gameObject.AddComponent<StakeConstruction>();work.Begin(this);
             story.SetInteractPrompt(false, owner: this); story.UpdateUI();
             planting = StartCoroutine(PlantCluster(index));
             return true;
@@ -204,7 +205,9 @@ namespace BeachBoatStory
             float elapsed = 0;
             while (elapsed < duration)
             {
-                elapsed = Mathf.Min(duration, elapsed + Time.deltaTime);
+                if(StakeConstruction.Active==null)yield break;
+                elapsed = Mathf.Min(duration, StakeConstruction.Active.Progress*duration);
+                if(elapsed<=0){yield return null;continue;}
                 bool changed = false;
                 for (int n = 0; n < indices.Length; n++)
                 {
@@ -224,7 +227,6 @@ namespace BeachBoatStory
                     {
                         stake.position = finalPositions[i]; RestoreColliders(i);
                         finished[i] = true; PlantedCount++; changed = true;
-                        BeachBoatSoundscape.Instance?.PlayStake();
                     }
                 }
                 if (changed) BachDangStoryManager.Instance?.UpdateUI();
@@ -232,6 +234,7 @@ namespace BeachBoatStory
             }
             point.planted = true; point.marker.SetActive(false); CompletedClusterCount++;
             IsPlanting = false; planting = null; workingIndex = -1;
+            StakeConstruction.Active?.FinishWork();
             if (!recoveryTriggered && CompletedClusterCount == 3) BeginRecoveryIncident();
             else if (IsComplete) BachDangStoryManager.Instance?.OnPlantStakesComplete();
             else BachDangStoryManager.Instance?.UpdateUI();
@@ -293,6 +296,7 @@ namespace BeachBoatStory
         }
         public void RestoreCheckpoint(bool[] states)
         {
+            StakeConstruction.Active?.FinishWork();
             if(planting!=null)StopCoroutine(planting);planting=null;IsPlanting=false;workingIndex=-1;
             PlantedCount=CompletedClusterCount=0;RecoveryRequired=false;recoveryTriggered=false;
             if(lostStake!=null)lostStake.SetActive(false);
@@ -356,6 +360,7 @@ namespace BeachBoatStory
 
         void OnDisable()
         {
+            StakeConstruction.Active?.FinishWork();
             if (planting != null) StopCoroutine(planting);
             if (IsPlanting && workingIndex >= 0)
             {

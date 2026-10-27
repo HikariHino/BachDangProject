@@ -556,6 +556,7 @@ namespace BeachBoatStory
 
         void AttachPlayer()
         {
+            if(StakeConstruction.Active!=null)return;
             if (!IsAboard || session == null) return;
             if(RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.PlayerAway)return;
             bool aiming=RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming;
@@ -573,6 +574,7 @@ namespace BeachBoatStory
         }
         void LateUpdate()
         {
+            if(StakeConstruction.Active!=null){if(paddle!=null)paddle.gameObject.SetActive(false);return;}
             if(RiverBoardingCombat.Instance!=null&&(RiverBoardingCombat.Instance.PlayerAway||RiverBoardingCombat.Instance.SwordDrawn)){if(paddle!=null)paddle.gameObject.SetActive(false);return;}
             bool aiming=IsAboard&&RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming;
             if(paddle!=null)paddle.gameObject.SetActive(!aiming);
