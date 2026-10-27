@@ -107,7 +107,7 @@ namespace BeachBoatStory
             if(Active==this)
             {
                 if(Input.GetKeyDown(KeyCode.X)){Close();return;}
-                if(Phase==WorkPhase.Instructions){if(Input.GetKeyDown(KeyCode.Return))StartFromInstructions();return;}
+                if(Phase==WorkPhase.Instructions){if(Input.GetKeyDown(KeyCode.Return))StartTimedFromInstructions();return;}
                 if(Phase==WorkPhase.Lost){if(Input.GetKeyDown(KeyCode.R))StartAttempt(Difficulty);return;}
                 if(Phase==WorkPhase.Won){if(Input.GetKeyDown(KeyCode.Return))ClaimReward();return;}
                 AdvanceTime(Time.unscaledDeltaTime);
@@ -143,10 +143,20 @@ namespace BeachBoatStory
             Phase=WorkPhase.Playing;NewTask();
         }
         public bool NeedsPractice=>kind==WorkKind.Provisions&&CompletedLevels==0&&!practicedThisVisit;
+        public void StartTimedFromInstructions()
+        {
+            if(Active!=this||Phase!=WorkPhase.Instructions)return;
+            if(kind==WorkKind.Provisions)StartAttempt(Difficulty);else StartFromInstructions();
+        }
         public void StartFromInstructions()
         {
             if(Active!=this||Phase!=WorkPhase.Instructions)return;
             if(!NeedsPractice){StartAttempt(Difficulty);return;}
+            StartPractice();
+        }
+        public void StartPractice()
+        {
+            if(Active!=this||Phase!=WorkPhase.Instructions||kind!=WorkKind.Provisions)return;
             Phase=WorkPhase.Practice;Progress=Mistakes=0;Elapsed=0;People=2;RicePerPerson=2;FishPerPerson=1;SaltPerBundle=1;
             System.Array.Clear(ingredients,0,ingredients.Length);history.Clear();initialWork=CaptureWork();
             Feedback="LƯỢT TẬP: thêm 4 gạo, 2 cá khô và 1 muối cho cả nhóm, rồi bấm [4]. Không tính giờ hay thành tích.";FeedbackVersion=0;

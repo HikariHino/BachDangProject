@@ -23,6 +23,9 @@ namespace BeachBoatStory
         VillageWorkStall shown;
         int selectedDifficulty=1;
         Button undoButton,restoreButton;
+        GameObject videoPanel,videoControls;
+        RationsTutorialVideo tutorialVideo;
+        TMP_Text videoStatus;
         static readonly Color Gold=new Color(1,.75f,.30f),Green=new Color(.25f,.70f,.48f),Ink=new Color(.045f,.06f,.07f,.98f);
         public static void EnsureExists()
         {
@@ -43,6 +46,18 @@ namespace BeachBoatStory
             instructions=Box("Instructions",card,new Vector2(.05f,.06f),new Vector2(.95f,.80f),Color.clear);
             rules=Label("Rules",instructions.transform,new Vector2(.04f,.53f),new Vector2(.96f,.96f),23,Color.white);
             rules.enableAutoSizing=true;rules.fontSizeMin=15;rules.fontSizeMax=23;
+            videoPanel=Box("RationsVideo",instructions.transform,new Vector2(.04f,.46f),new Vector2(.96f,.99f),Color.black);
+            var screen=new GameObject("Screen",typeof(RectTransform),typeof(RawImage),typeof(AspectRatioFitter));screen.transform.SetParent(videoPanel.transform,false);
+            var aspect=screen.GetComponent<AspectRatioFitter>();aspect.aspectMode=AspectRatioFitter.AspectMode.FitInParent;aspect.aspectRatio=960f/420;
+            screen.GetComponent<RawImage>().raycastTarget=false;
+            videoStatus=Label("VideoStatus",instructions.transform,new Vector2(.04f,.40f),new Vector2(.96f,.46f),14,Gold);
+            tutorialVideo=videoPanel.AddComponent<RationsTutorialVideo>();tutorialVideo.Initialize(screen.GetComponent<RawImage>(),videoStatus);
+            videoControls=Box("VideoControls",instructions.transform,new Vector2(.04f,.32f),new Vector2(.96f,.40f),Color.clear);
+            Click("Replay",videoControls.transform,Vector2.zero,new Vector2(.31f,1),"XEM LẠI",()=>tutorialVideo.Replay());
+            Click("Pause",videoControls.transform,new Vector2(.34f,0),new Vector2(.65f,1),"DỪNG / TIẾP VIDEO",()=>tutorialVideo.TogglePause());
+            Click("Practice",videoControls.transform,new Vector2(.68f,0),Vector2.one,"TẬP THỬ",()=>VillageWorkStall.Active?.StartPractice());
+            foreach(var label in videoControls.GetComponentsInChildren<TMP_Text>())label.fontSize=15;
+            videoPanel.SetActive(false);videoControls.SetActive(false);videoStatus.gameObject.SetActive(false);
             Label("DifficultyCaption",instructions.transform,new Vector2(.04f,.40f),new Vector2(.96f,.50f),18,Gold).text="CHỌN ĐỘ KHÓ";
             difficultyLabels=new TMP_Text[3];difficultyButtons=new Button[3];
             for(int i=0;i<3;i++)
@@ -50,7 +65,7 @@ namespace BeachBoatStory
                 int level=i;var b=Click("Difficulty"+i,instructions.transform,new Vector2(.04f+i*.31f,.24f),new Vector2(.32f+i*.31f,.39f),new[]{"DỄ","VỪA","KHÓ"}[i],()=>{selectedDifficulty=level;VillageWorkStall.Active?.SelectDifficulty(level);});
                 difficultyLabels[i]=b.GetComponentInChildren<TMP_Text>();difficultyButtons[i]=b.GetComponent<Button>();
             }
-            var start=Click("StartWork",instructions.transform,new Vector2(.25f,.02f),new Vector2(.75f,.18f),"BẮT ĐẦU",()=>VillageWorkStall.Active?.StartFromInstructions());startLabel=start.GetComponentInChildren<TMP_Text>();
+            var start=Click("StartWork",instructions.transform,new Vector2(.25f,.02f),new Vector2(.75f,.18f),"BẮT ĐẦU",()=>VillageWorkStall.Active?.StartTimedFromInstructions());startLabel=start.GetComponentInChildren<TMP_Text>();
             timingGoals=Label("TimingGoals",instructions.transform,new Vector2(.04f,.18f),new Vector2(.96f,.24f),14,Gold);
             work=Box("Work",card,new Vector2(.05f,.05f),new Vector2(.95f,.80f),Color.clear);
             stats=Label("Stats",work.transform,new Vector2(0,.90f),new Vector2(1,1),19,Color.white);
@@ -119,11 +134,18 @@ namespace BeachBoatStory
             instructions.SetActive(intro);work.SetActive(playing);result.SetActive(!intro&&!playing);
             if(intro)
             {
+                bool video=s.kind==VillageWorkStall.WorkKind.Provisions;
+                videoPanel.SetActive(video);videoControls.SetActive(video);videoStatus.gameObject.SetActive(video);rules.gameObject.SetActive(!video);
+                var diffCaption=instructions.transform.Find("DifficultyCaption").GetComponent<RectTransform>();
+                diffCaption.anchorMin=new Vector2(.04f,video?.25f:.40f);diffCaption.anchorMax=new Vector2(.96f,video?.32f:.50f);
+                for(int i=0;i<3;i++){var rect=(RectTransform)difficultyButtons[i].transform;rect.anchorMin=new Vector2(.04f+i*.31f,video?.12f:.24f);rect.anchorMax=new Vector2(.32f+i*.31f,video?.25f:.39f);}
+                var startRect=(RectTransform)startLabel.transform.parent;startRect.anchorMin=new Vector2(.25f,video?0:.02f);startRect.anchorMax=new Vector2(.75f,video?.11f:.18f);
+                timingGoals.gameObject.SetActive(!video);
                 selectedDifficulty=s.Difficulty;
                 timingGoals.text=CampaignProgress.Instance.TimingBands(1+(int)s.kind*3+selectedDifficulty);
                 rules.text=(s.Feedback.StartsWith("Đã hiểu")?"<color=#8CF0BD>"+s.Feedback+"</color>\n\n":"")+s.Instructions+"\n\nHoàn thành Dễ → Vừa → Khó để nhận vật tư. Z: hoàn tác; C: làm lại phần này. Mỗi lỗi mất 2 giây ở lượt tính giờ. ESC / X: rời minigame, giữ mức đã xong.";
                 for(int i=0;i<3;i++){difficultyLabels[i].color=i==selectedDifficulty?Gold:Color.white;difficultyButtons[i].interactable=i<=s.UnlockedDifficulty;difficultyLabels[i].text=new[]{"DỄ","VỪA","KHÓ"}[i]+(i<s.CompletedLevels?" • XONG":i>s.UnlockedDifficulty?" • KHÓA":"");}
-                startLabel.text=s.NeedsPractice?"THỬ MẪU • KHÔNG TÍNH GIỜ":"BẮT ĐẦU  •  "+new[]{"DỄ","VỪA","KHÓ"}[selectedDifficulty];return;
+                startLabel.text="BẮT ĐẦU  •  "+new[]{"DỄ","VỪA","KHÓ"}[selectedDifficulty]+(video?"  [ENTER]":"");return;
             }
             if(!playing)
             {

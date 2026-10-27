@@ -20,7 +20,7 @@ namespace BeachBoatStory
         void Start(){Visit((int)BachDangStoryManager.Instance.currentState);var ui=new GameObject("CampaignJournal");ui.transform.SetParent(transform,false);ui.AddComponent<CampaignJournalUI>();}
         void Update()
         {
-            if(VillageWorkStall.Active?.IsPractice==true||Record.finished||Time.timeScale<=0||!(BachDangFrontEnd.Instance?.GameStarted??false)||OpeningEvent.IsOpeningActive||StoryDialogueUI.Instance.IsOpen||QuestCheckpoint.Instance.IsDefeated)return;
+            if(RationsTutorialVideo.IsWatching||VillageWorkStall.Active?.IsPractice==true||Record.finished||Time.timeScale<=0||!(BachDangFrontEnd.Instance?.GameStarted??false)||OpeningEvent.IsOpeningActive||StoryDialogueUI.Instance.IsOpen||QuestCheckpoint.Instance.IsDefeated)return;
             float dt=Mathf.Max(0,Time.unscaledDeltaTime);Record.seconds+=dt;
             if(Record.stakeStarted&&!Record.stakeFinished)Record.stakeSeconds+=dt;
             if(Record.woodStarted&&!Record.woodFinished&&BachDangStoryManager.Instance.currentState==BachDangStoryManager.StoryState.Act2_CollectWoodInVillage&&!(ScreenFader.Instance?.IsTransitioning??false))Record.woodSeconds+=dt;

@@ -5,13 +5,15 @@ to collect them with E. The small nearby interaction prompt includes the
 current count; distant floating wood labels remain hidden. Restoring a wood
 save preserves its collected pieces and achievement timer.
 
-The first visit to the rations stall offers a worked sample before the timed
-Easy attempt. Two people need four rice, two fish and one salt for the whole
-group. Practice uses the actual ingredient controls, supports undo/reset, has
+The rations stall now opens a short video demonstration instead of its long
+instruction paragraph. Start/ENTER can skip directly to timed play; replay,
+pause/resume and an optional worked sample are separate controls. Watching the
+video does not charge campaign achievement time. Two sample people need four
+rice, two fish and one salt for the whole group. Practice uses the actual ingredient controls, supports undo/reset, has
 no timer or mistake penalties and grants no goods, unlocked levels or ranked
 minigame result. Campaign completion time pauses during practice. After the
 sample, Start begins the normal timed attempt. Existing saved Easy/Medium
-completion skips the sample. The worked sample shows the multiplication and
+completion stays intact. The optional worked sample shows the multiplication and
 added/required counts. Timed rounds show only the original per-person rice/fish
 requirements and whole-group salt requirement. They hide calculated totals
 and added counts, including in wrong-answer feedback. Live input updates each

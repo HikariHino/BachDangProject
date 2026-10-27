@@ -51,9 +51,9 @@ public static class BeachBoatFeedbackPlaytest
         Check(story.currentState==Story.StoryState.Act2_SupplyPreparation&&CampaignProgress.Instance.Record.woodFinished,"Five wood still starts material preparation and finishes the wood achievement timer");
         food=VillagePreparationQuest.Instance.stalls.First(s=>s.kind==VillageWorkStall.WorkKind.Provisions);Move(food.InteractionPosition);Check(food.TryOpen(),"Rations opens at the actual stall");
         var ui=UnityEngine.Object.FindAnyObjectByType<VillageWorkUI>();Invoke(ui,"Update");
-        var button=ui.transform.Find("WorkOverlay/Workbench/Instructions/StartWork").GetComponent<Button>();
-        Check(button.GetComponentInChildren<TMPro.TMP_Text>().text.Contains("THỬ MẪU"),"The first rations start button offers an untimed sample");
-        button.onClick.Invoke();Check(food.IsPractice,"The actual start button opens practice before the timed attempt");
+        var button=ui.transform.Find("WorkOverlay/Workbench/Instructions/VideoControls/Practice").GetComponent<Button>();
+        Check(button.GetComponentInChildren<TMPro.TMP_Text>().text.Contains("TẬP THỬ"),"The video screen offers a separate untimed hands-on sample");
+        button.onClick.Invoke();Check(food.IsPractice,"The practice button opens the untimed sample independently of Start");
         campaignSeconds=CampaignProgress.Instance.Record.seconds;miniCount=CampaignProgress.Instance.RecordedMinigames;
     }
     static void Practice()
@@ -133,7 +133,9 @@ public static class BeachBoatFeedbackPlaytest
     }
     static void Tick()
     {
-        if(!SessionState.GetBool(Flag,false)||!EditorApplication.isPlaying||lastFrame==Time.frameCount)return;lastFrame=Time.frameCount;
+        if(!SessionState.GetBool(Flag,false)||!EditorApplication.isPlaying)return;
+        EditorApplication.QueuePlayerLoopUpdate();
+        if(lastFrame==Time.frameCount)return;lastFrame=Time.frameCount;
         if(began==0)began=EditorApplication.timeSinceStartup;if(EditorApplication.timeSinceStartup-began<3)return;
         try
         {
