@@ -11,8 +11,11 @@ toàn tay cho góc nhìn gần. Không kéo dài riêng một trục xương đ�
 đo tỉ lệ từng đoạn suốt chuyển động, sai số tối đa quan sát dưới 0,01%.
 Không thay FBX gốc. Chuột điều khiển dụng cụ; đi bộ khóa trong bước làm tại bàn.
 Rời bàn để mang hàng thì khôi phục nhân vật đầy đủ và camera đi bộ gần vai.
-Mái che sạp tạm ẩn trong lượt làm việc và khôi phục khi rời sạp, cùng camera và
-trạng thái renderer ban đầu. Mesh tay tạm được hủy khi đóng hoạt động hoặc load.
+`VillageWorkstation` dựng bàn, mái, hai thùng và nguồn vật tư một lần lúc vào
+scene. Cả bốn sạp dùng cùng các vật thể đó trước E, trong lúc chơi và sau khi
+rời sạp; mái không còn bị gỡ, bàn không bị thay bằng một bàn tạm khác. Chỉ hàng
+đang cầm/làm/giao và dụng cụ là trạng thái của lượt chơi. Mesh tay được hủy khi
+đóng hoạt động hoặc load, rồi khôi phục camera và renderer của nhân vật.
 
 | Sạp | Thao tác sau khi mang vật tới bàn |
 |---|---|
@@ -22,10 +25,24 @@ trạng thái renderer ban đầu. Mesh tay tạm được hủy khi đóng ho�
 | Lương khô | Đặt đủ ba nguyên liệu, kéo mép khăn vào giữa rồi giữ yên 0,45 giây để ép kín; nhả sớm chưa tính nếp, có thể ép lại. Bốn mép tạo thành gói |
 
 Giữ chuột đứng yên từ đầu không tự làm xong; chỉ bước siết/ép sau đường kéo đúng
-mới dùng thời gian giữ. Thanh lực đặt ngay cạnh vật, màu xanh chỉ vùng nhả tốt;
+mới dùng thời gian giữ. Thanh lực lớn nằm giữa phía dưới màn hình, ngoài vùng
+làm việc và phía trên dòng điều khiển; dải xanh chỉ vùng nhả tốt. Thanh này hiện
+suốt bước buộc dây, không bị mái, tay hay camera 3D che khuất;
 HUD hiển thị phản hồi lệch rãnh, rơi gạo hoặc nếp chưa kín. E dùng để cầm, đặt,
 nhấc và giao vật. ESC/X rời lượt; H xem thao tác.
 Các giới hạn và mốc hạng của bốn sạp giữ nguyên. Kết quả cũ vẫn giữ trong save.
+
+Tay hiển thị lấy trục cẳng tay/cổ tay từ bind pose của mesh, không kế thừa góc
+cổ tay đang bị uốn trong animation đi bộ. Khi buộc, tay trái giữ bó gỗ bên trái
+nút, tay phải nắm và kéo dây; hai bàn tay không còn chồng trên cùng một điểm.
+
+## Độ sáng doanh trại
+
+`CampReadability` tạo volume cục bộ quanh các khu nhà/lều doanh trại, với khoảng
+chuyển tiếp 55 đơn vị. Exposure 0,7 EV, contrast 4 và gamma nhẹ làm rõ giáp,
+mặt người và lối đi; không áp dụng cho làng hoặc sông. Tăng cường độ đuốc trong
+vùng 20%, tầm sáng 15%, vẫn giữ ngân sách tối đa tám đèn và không thêm đèn realtime.
+Volume và profile chỉ tồn tại trong lượt chơi, không viết vào scene hay save.
 
 ## Đóng cọc trên thuyền
 
@@ -81,8 +98,9 @@ Tài nguyên được tạo ở `Assets/Resources/BachDang938/Player`, khoảng 
 
 ## Kiểm tra bằng Unity CLI
 
-- Bốn sạp, camera chỉ hiện tay, tỉ lệ đoạn tay, thao tác sai/đúng, thành tích và
-  save/load: 135 kiểm tra. ESC và load được thử ngay trong góc nhìn bàn để xác
+- Bốn sạp, bố trí trước/trong/sau E, độ sáng doanh trại, thanh lực phía dưới,
+  tỉ lệ tay/cổ tay, thao tác sai/đúng, thành tích và save/load: 171 kiểm tra.
+  ESC và load được thử ngay trong góc nhìn bàn để xác
   nhận xóa tay hiển thị, trả nhân vật đầy đủ và camera bình thường.
 - Tập cung, ba mức kéo dây, góc cổ tay, nắm tay, thoát và save/load: 52 kiểm tra.
 - Năm cụm cọc, cầm/nện búa, hủy, khôi phục và save/load: 67 kiểm tra. Bài đo

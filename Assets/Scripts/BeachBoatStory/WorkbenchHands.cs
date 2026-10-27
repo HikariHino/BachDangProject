@@ -14,12 +14,15 @@ namespace BeachBoatStory
         {
             public Dictionary<Transform,Transform> bones;
             public Transform leftUpper,leftLower,leftHand,rightUpper,rightLower,rightHand;
+            public Quaternion leftLowerFrame,rightLowerFrame,leftUpperFrame,rightUpperFrame;
+            public Vector3 leftLowerAlong,rightLowerAlong;
         }
         readonly List<DisplayRig> rigs=new List<DisplayRig>();
         readonly BowGripProfile profile;
         public bool Visible {get;private set;}
         public int TriangleCount {get;private set;}
         public float MaxSegmentError {get;private set;}
+        public float MaxWristAngle {get;private set;}
         public WorkbenchHands(Transform player,Animator rig)
         {
             profile=BowGripProfile.Load();
@@ -54,6 +57,16 @@ namespace BeachBoatStory
                 foreach(var bone in source.bones)if(bone!=null&&!map.ContainsKey(bone))map[bone]=new GameObject(bone.name+"_Workbench").transform;
                 foreach(var item in map)item.Value.SetParent(item.Key.parent!=null&&map.TryGetValue(item.Key.parent,out var parent)?parent:go.transform,false);
                 var display=new DisplayRig{bones=map,leftUpper=rig.GetBoneTransform(HumanBodyBones.LeftUpperArm),rightUpper=rig.GetBoneTransform(HumanBodyBones.RightUpperArm),leftLower=rig.GetBoneTransform(HumanBodyBones.LeftLowerArm),rightLower=rig.GetBoneTransform(HumanBodyBones.RightLowerArm),leftHand=rig.GetBoneTransform(HumanBodyBones.LeftHand),rightHand=rig.GetBoneTransform(HumanBodyBones.RightHand)};
+                void RestFrames(bool left,out Quaternion upperFrame,out Quaternion lowerFrame,out Vector3 lowerAlong)
+                {
+                    Matrix4x4 Bind(Transform bone)=>input.bindposes[System.Array.IndexOf(bones,bone)].inverse;
+                    var u=Bind(left?display.leftUpper:display.rightUpper);var l=Bind(left?display.leftLower:display.rightLower);var h=Bind(left?display.leftHand:display.rightHand);
+                    var across=h.MultiplyVector(profile!=null?(left?profile.leftAcross:profile.rightAcross):Vector3.forward);
+                    lowerAlong=l.inverse.MultiplyVector((Vector3)h.GetColumn(3)-(Vector3)l.GetColumn(3)).normalized;
+                    lowerFrame=Quaternion.LookRotation(lowerAlong,l.inverse.MultiplyVector(across));
+                    upperFrame=Quaternion.LookRotation(u.inverse.MultiplyVector((Vector3)l.GetColumn(3)-(Vector3)u.GetColumn(3)),u.inverse.MultiplyVector(across));
+                }
+                RestFrames(true,out display.leftUpperFrame,out display.leftLowerFrame,out display.leftLowerAlong);RestFrames(false,out display.rightUpperFrame,out display.rightLowerFrame,out display.rightLowerAlong);
                 rigs.Add(display);CopyPose(display);
                 var view=go.AddComponent<SkinnedMeshRenderer>();view.sharedMesh=mesh;view.bones=source.bones.Select(b=>b!=null?map[b]:null).ToArray();view.rootBone=source.rootBone!=null&&map.TryGetValue(source.rootBone,out var root)?root:null;view.sharedMaterials=source.sharedMaterials;
                 view.localBounds=source.localBounds;view.updateWhenOffscreen=true;view.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;view.enabled=true;
@@ -109,12 +122,13 @@ namespace BeachBoatStory
             // Translate/rotate a fixed-length chain backwards from the contact.
             // Never scale an individual axis to make a distant table reachable.
             upper.localScale=originalUpper.localScale*displayScale;
-            upper.SetPositionAndRotation(shoulder,Quaternion.FromToRotation(originalLower.position-originalUpper.position,upperDirection)*originalUpper.rotation);
+            upper.SetPositionAndRotation(shoulder,Quaternion.LookRotation(upperDirection,up)*Quaternion.Inverse(left?rig.leftUpperFrame:rig.rightUpperFrame));
             lower.localScale=originalLower.localScale;lower.position=elbow;
-            lower.rotation=handRotation*Quaternion.Inverse(originalHand.rotation)*originalLower.rotation;
-            lower.rotation=Quaternion.FromToRotation(hand.position-lower.position,wrist-elbow)*lower.rotation;
+            // Use the mesh bind frame, not a bent wrist inherited from the third-person animation.
+            lower.rotation=Quaternion.LookRotation(along,up)*Quaternion.Inverse(left?rig.leftLowerFrame:rig.rightLowerFrame);
             hand.localScale=originalHand.localScale;hand.SetPositionAndRotation(wrist,handRotation);
             MaxSegmentError=Mathf.Max(MaxSegmentError,Mathf.Abs(Vector3.Distance(lower.position,hand.position)/lowerLength-1),Mathf.Abs(Vector3.Distance(upper.position,lower.position)/upperLength-1));
+            MaxWristAngle=Mathf.Max(MaxWristAngle,Vector3.Angle(hand.TransformDirection(forward),lower.TransformDirection(left?rig.leftLowerAlong:rig.rightLowerAlong)));
         }
         public void Grip(bool left,bool right)
         {

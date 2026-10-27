@@ -13,11 +13,11 @@ WASD đi lại khi mang hàng; sau khi đặt lên bàn, camera cận mặt bàn
 
 Không dùng công cụ hoặc lấy/giao vật từ xa: mỗi bước kiểm tra vị trí tiếp cận, độ cao và trạng thái hiện tại. Cưa, siết dây, đong và gói cần chuyển động dụng cụ đúng; giữ chuột đứng yên không cộng tiến độ; giao vật mới tăng số đơn. Bàn và thùng có collider, vật đang cầm bám theo tư thế nhân vật. Bao gạo thiếu/đủ/dư có màu và chữ; đổ lại bao dư tính một lỗi và hai giây phạt, không cộng đơn.
 
-Giữ renderer nhân vật và bộ điều khiển đi bộ sẵn có. Cánh tay được đặt tư thế mang/làm việc sau animation; công cụ, dây quấn, dòng gạo và các mép khăn được dựng/biến đổi trong thế giới 3D. Tạm ẩn vải phơi khi nó chắn camera trong lượt làm việc và khôi phục khi rời sạp.
+`VillageWorkstation` dựng bố trí cố định cho cả bốn sạp khi scene bắt đầu: cùng bàn, mái, thùng lấy/giao hàng và nguồn vật tư trước E, trong và sau lượt chơi. Không ẩn mái hay thay bàn lúc mở minigame. Cánh tay được đặt tư thế mang/làm việc sau animation; dụng cụ, dây quấn, dòng gạo và mép khăn biến đổi trong thế giới 3D. Thanh lực buộc dây nằm ở giữa phía dưới màn hình; tay trái giữ bó gỗ, tay phải kéo dây, cổ tay dùng trục bind pose trung tính. Vải phơi chỉ tạm ẩn khi chắn camera và khôi phục khi rời sạp.
 
 ## Lưu game và thành tích
 
-Giữ định dạng save phiên bản 1 và bốn cờ vật tư hiện tại. Save cũ đã nhận hàng vẫn giữ hàng. Lượt đang mang công cụ/vật tư là trạng thái tạm; lưu tay bị chặn và tự lưu đợi tới khi rời sạp. Khi tải checkpoint, dọn vật cầm, bàn tạm, tư thế và camera trước khi phục hồi dữ liệu.
+Giữ định dạng save phiên bản 1 và bốn cờ vật tư hiện tại. Save cũ đã nhận hàng vẫn giữ hàng. Lượt đang mang công cụ/vật tư là trạng thái tạm; lưu tay bị chặn và tự lưu đợi tới khi rời sạp. Khi tải checkpoint, dọn vật cầm, dụng cụ, tư thế và camera trước khi phục hồi dữ liệu. Bàn/mái cố định của sạp vẫn giữ nguyên.
 
 Mã kỷ lục mới là `village3d:0` đến `village3d:3`, tách khỏi `village:0:1` đến `village:3:1` của bản cũ. Không viết lại số giây cũ thành thời gian mới. Kỷ lục cũ được gắn nhãn **bản cũ** và xét theo giới hạn đã ghi trong chính kỷ lục đó. Nếu có cả hai loại kỷ lục, so sánh tỷ lệ thời gian/giới hạn để giữ kết quả tốt hơn, không làm mất thành tích vì một lượt chơi lại chậm hơn. Các việc 3D tính cả thời gian đi mang vật và phạt lỗi; mốc S/A/B lần lượt là 60%/80%/95% giới hạn. Thời gian thao tác tối thiểu cộng quãng đường trong sạp thấp hơn các mốc này, có dư để người chơi quan sát và di chuyển.
 
@@ -29,6 +29,6 @@ Mã kỷ lục mới là `village3d:0` đến `village3d:3`, tách khỏi `villa
 
 Các ca chạy nền gọi cùng hàm tương tác mà input sử dụng và render ảnh bằng camera Unity. Unity batch không có cửa sổ lấy focus, vì vậy không xác nhận khóa con trỏ của hệ điều hành; phần đó chỉ kiểm khi chạy ca ESC trong Editor tương tác. Kiểm tra CLI vẫn xác nhận đóng đúng hoạt động, trả về gameplay, không mở Pause bằng cùng lần ESC và khôi phục thời gian/thiết lập camera.
 
-Đợt camera chỉ hiện tay ngày 27/10/2026: **202 kiểm tra qua** — bốn sạp/camera/tỉ lệ tay/ESC/load/thành tích 135, vật tư và năm cụm đóng cọc 67. Đã kiểm tra ảnh từ camera chơi của cả bốn bàn, xác nhận đoạn tay không bị kéo giãn, nhân vật và camera được khôi phục khi giao hàng, thoát hoặc load. Bộ kiểm thử kiểm SHA-256 các save thật và không sửa các file đó.
+Đợt sạp cố định và cải thiện độ sáng: **238 kiểm tra qua** — bốn sạp/ánh sáng/camera/thanh lực/cổ tay/ESC/load/thành tích 171, vật tư và năm cụm đóng cọc 67. Đã so sánh chính các vật thể và ảnh sạp trước/sau E, xác nhận cột mái không xuyên thùng, chụp thanh lực và ảnh doanh trại trước/sau tăng sáng. Các đoạn tay không kéo giãn, cổ tay dùng trục bind pose; nhân vật và camera khôi phục khi giao hàng, thoát hoặc load. Bộ kiểm thử kiểm SHA-256 các save thật và không sửa các file đó.
 
 Thao tác kéo dụng cụ, camera cận bàn, đóng cọc và tập cung được mô tả thêm trong [WorldHandInteractions.md](WorldHandInteractions.md).

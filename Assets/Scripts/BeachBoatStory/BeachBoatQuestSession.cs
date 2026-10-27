@@ -79,6 +79,7 @@ namespace BeachBoatStory
             gameObject.AddComponent<CampaignProgress>();
             var frontEnd=Child("BachDangFrontEnd");frontEnd.AddComponent<BachDangFrontEnd>();
             gameObject.AddComponent<ArcheryTraining>();
+            gameObject.AddComponent<CampReadability>();
         }
 
         public bool IsPreferredGate(CampGateTransition candidate)

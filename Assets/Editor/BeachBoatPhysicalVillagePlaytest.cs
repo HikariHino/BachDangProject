@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using Object=UnityEngine.Object;
+using UnityEngine.Rendering.Universal;
 using Story=BeachBoatStory.BachDangStoryManager;
 
 public static class BeachBoatPhysicalVillagePlaytest
@@ -16,6 +17,7 @@ public static class BeachBoatPhysicalVillagePlaytest
     static VillageWorkStall stall;static bool riceOverflow;static HashSet<string> captures=new HashSet<string>();
     static readonly HashSet<VillageWorkStall.WorkKind> challengeChecks=new HashSet<VillageWorkStall.WorkKind>();
     static BachDangSaveData completedCheckpoint;
+    static string stationSnapshot;
     static readonly List<string> checks=new List<string>();static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static string Hash(string p)=>Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(File.ReadAllBytes(p)));
     static void Check(bool ok,string s){if(!ok)throw new Exception(s);checks.Add(s);}
@@ -78,6 +80,9 @@ public static class BeachBoatPhysicalVillagePlaytest
             Check(Vector3.Distance(hand.position,stall.Physical.RightGripPosition)<2.5f,"Working hand reaches the tool, not the air: "+stall.kind+" hand="+hand.position+" grip="+stall.Physical.RightGripPosition+" arm="+(Vector3.Distance(shoulder.position,elbow.position)+Vector3.Distance(elbow.position,hand.position)));
             Check(stall.Physical.HandsOnly&&stall.Physical.HandTriangles>100,"Only the player's forearms render at the bench; torso and helmet are hidden: "+stall.kind);
             Check(stall.Physical.HandSegmentError<.001f,"Display arm segments keep their original proportions throughout tool motion: "+stall.kind+" error="+stall.Physical.HandSegmentError);
+            Check(stall.Physical.HandWristAngle<1,"Display wrists use the neutral mesh bind frame throughout the gesture: "+stall.kind+" angle="+stall.Physical.HandWristAngle);
+            Check(StationSignature()==stationSnapshot,"The same table, roof and crates remain in place while manipulating tools: "+stall.kind);
+            if(stall.kind==VillageWorkStall.WorkKind.Rope)Check(Object.FindAnyObjectByType<VillageWorkUI>().TensionGaugeVisible,"Large rope tension gauge remains visible below the work area");
             Check(source.GetComponent<BeachBoatStory.Camera_Script>().TableFocusActive&&!VillagePhysicalWork.AllowsMovement,"Bench view locks walking and uses the centered tabletop camera: "+stall.kind);
             var viewport=source.WorldToViewportPoint(contact);
             Check(viewport.z>0&&viewport.x>.08f&&viewport.x<.92f&&viewport.y>.18f&&viewport.y<.88f,"Tool stays inside the unobstructed tabletop frame: "+stall.kind+" "+viewport);
@@ -125,12 +130,18 @@ public static class BeachBoatPhysicalVillagePlaytest
                 BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/PhysicalVillageQA/"+DateTime.Now.ToString("yyyyMMddHHmmssfff"));BachDangAutoSave.Instance.enabled=false;
                 BeachBoatQuestSession.Instance.player.AddComponent<VillageWorkPoseProbe>();
                 BachDangFrontEnd.Instance.Play();Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
+                CheckCampLighting();
                 Story.Instance.collectedWood=5;Story.Instance.TransitionTo(Story.StoryState.Act2_SupplyPreparation,true);phase=1;return;
             }
             if(phase==1)
             {
                 stall=VillagePreparationQuest.Instance.stalls.OrderBy(s=>s.kind).ElementAt(index);stall.RestoreLearningProgress(0);Place(stall.InteractionPosition);
+                Check(stall.Workstation!=null&&stall.Workstation.Environment!=null,"The complete working furniture is visible before pressing E: "+stall.kind);stationSnapshot=StationSignature();CaptureStation(stall.kind+"_Idle");
+                var crates=new[]{"Stock_crate","Delivery_crate"}.Select(n=>stall.Workstation.Environment.Find(n).GetComponent<Collider>());
+                var posts=stall.transform.Find("Mai_Che_Mo_Mat_Truoc").GetComponentsInChildren<Collider>().Where(c=>c.enabled&&c.name=="Cot_Sap");
+                Check(!crates.Any(crate=>posts.Any(post=>Physics.ComputePenetration(crate,crate.transform.position,crate.transform.rotation,post,post.transform.position,post.transform.rotation,out _,out _))),"Permanent canopy posts clear both supply crates: "+stall.kind);
                 Check(stall.TryOpen()&&stall.Physical!=null&&stall.Phase==VillageWorkStall.WorkPhase.Playing,"E immediately starts physical work: "+stall.kind);
+                Check(StationSignature()==stationSnapshot,"Pressing E does not replace the stall or remove its awning: "+stall.kind);CaptureStation(stall.kind+"_Opened");
                 var rig=BeachBoatQuestSession.Instance.player.GetComponentInChildren<Animator>();
                 Check(BeachBoatQuestSession.Instance.player.GetComponentsInChildren<SkinnedMeshRenderer>().Any(r=>r.bones.Contains(rig.GetBoneTransform(HumanBodyBones.RightUpperArm))),"Work pose drives the skeleton used by the visible character: "+stall.kind);
                 Check(!BachDangSaveSystem.CanSave&&VillagePhysicalWork.AllowsMovement&&VillagePhysicalWork.AllowsCamera,"Walking/camera work while saving defers during the attempt: "+stall.kind);
@@ -143,6 +154,7 @@ public static class BeachBoatPhysicalVillagePlaytest
             {
                 Check(BachDangFrontEnd.Instance.HandleEscape()&&VillageWorkStall.Active==null&&BachDangFrontEnd.Instance.Page==BachDangFrontEnd.MenuPage.None,"ESC cancels the work without opening Pause: "+stall.kind);
                 Check(!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name=="Village_3D_Work_"+stall.kind),"Temporary workstation immediately stops blocking the world: "+stall.kind);
+                Check(StationSignature()==stationSnapshot,"Leaving restores supplies while keeping the same furniture and canopy: "+stall.kind);
                 Check(!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name=="Workbench_Hands_Only")&&BeachBoatQuestSession.Instance.player.GetComponentsInChildren<SkinnedMeshRenderer>().All(r=>!r.forceRenderingOff),"ESC restores the complete player and removes the hands-only view: "+stall.kind);
                 Place(stall.InteractionPosition);phase=3;return;
             }
@@ -194,6 +206,7 @@ public static class BeachBoatPhysicalVillagePlaytest
                     int errors=stall.Mistakes;work.Interact();Check(stall.Mistakes==errors+1&&work.RiceFill==0&&stall.Progress==0,"Overfilled rice visibly resets the bag, charges one error and grants no delivery");riceOverflow=true;
                 }
                 bool action=work.Current==VillagePhysicalWork.Step.Saw||work.Current==VillagePhysicalWork.Step.Tie||work.Current==VillagePhysicalWork.Step.Wrap||work.Current==VillagePhysicalWork.Step.FillRice&&work.RiceFill<.70f;
+                if(work.Current==VillagePhysicalWork.Step.Tie&&work.Finishing&&work.ToolPressure>.38f&&!captures.Contains("Rope_Tension")){RequestCapture("Rope_Tension");return;}
                 if(action)
                 {
                     if(!work.ToolHeld)
@@ -245,6 +258,40 @@ public static class BeachBoatPhysicalVillagePlaytest
             }
         }
         catch(Exception e){Finish(e.ToString());}
+    }
+    static string StationSignature()
+    {
+        var station=stall.Workstation;var roof=stall.transform.Find("Mai_Che_Mo_Mat_Truoc");
+        return station.Environment.GetEntityId()+"|"+string.Join("|",new[]{"Solid_workbench","Stock_crate","Delivery_crate"}.Select(n=>{var t=station.Environment.Find(n);return t.GetEntityId()+":"+t.GetComponent<Renderer>().bounds.ToString("F4");}))+"|"+roof.gameObject.activeInHierarchy+"|"+roof.localToWorldMatrix.ToString("F4");
+    }
+    static Camera PreviewCamera()
+    {
+        var camera=new GameObject("Workbench_QA_Camera").AddComponent<Camera>();camera.CopyFrom(BeachBoatQuestSession.Instance.storyCamera);camera.enabled=false;CinematicQuality.ConfigureCamera(camera);return camera;
+    }
+    static float CapturePreview(Camera camera,string path)
+    {
+        var rt=new RenderTexture(1280,800,24);camera.targetTexture=rt;camera.Render();camera.Render();RenderTexture.active=rt;
+        var texture=new Texture2D(1280,800,TextureFormat.RGB24,false);texture.ReadPixels(new Rect(0,0,1280,800),0,0);texture.Apply();File.WriteAllBytes(path,texture.EncodeToPNG());
+        float mean=texture.GetPixels().Average(c=>c.grayscale);RenderTexture.active=null;camera.targetTexture=null;Object.DestroyImmediate(texture);Object.DestroyImmediate(rt);return mean;
+    }
+    static void CaptureStation(string name)
+    {
+        var camera=PreviewCamera();camera.transform.position=stall.transform.TransformPoint(new Vector3(55,55,-85));camera.transform.LookAt(stall.transform.TransformPoint(new Vector3(0,20,-5)));CapturePreview(camera,"Logs/Stall_"+name+".png");Object.DestroyImmediate(camera.gameObject);
+    }
+    static void CheckCampLighting()
+    {
+        var light=Object.FindAnyObjectByType<CampReadability>();Check(light!=null&&light.CampVolume!=null&&!light.CampVolume.isGlobal,"Camp readability uses a bounded volume, not a global exposure change");
+        var cycle=Object.FindAnyObjectByType<DayNightCycle>();float hour=cycle.timeOfDay;bool advance=cycle.autoAdvance;cycle.autoAdvance=false;cycle.SetTimeOfDay(19.5f);
+        var facility=Object.FindObjectsByType<CampFacility>(FindObjectsSortMode.None).First(f=>f.kind==CampFacility.FacilityKind.Medical);var camera=PreviewCamera();camera.transform.position=facility.transform.position+facility.transform.forward*75+facility.transform.right*30+Vector3.up*28;camera.transform.LookAt(facility.transform.position+Vector3.up*14);
+        TorchFlame.RefreshForCamera(camera);
+        foreach(var torch in Object.FindObjectsByType<TorchFlame>(FindObjectsSortMode.None))if(torch.fireLight!=null&&torch.fireLight.enabled)torch.fireLight.intensity=torch.baseIntensity;
+        try
+        {
+            light.CampVolume.weight=0;float before=CapturePreview(camera,"Logs/Camp_Readability_Before.png");light.CampVolume.weight=1;float after=CapturePreview(camera,"Logs/Camp_Readability_After.png");
+            Check(after>before*1.04f&&after<before*2.3f,"Camp night image gets a modest, measurable brightness lift: "+before+" -> "+after);
+            Check(!light.CampBounds.Contains(VillagePreparationQuest.Instance.stalls[0].transform.position),"Camp exposure region does not extend to the village minigames");
+        }
+        finally{light.CampVolume.weight=1;cycle.SetTimeOfDay(hour);cycle.autoAdvance=advance;Object.DestroyImmediate(camera.gameObject);TorchFlame.RefreshForCamera(Camera.main);}
     }
     static void OpenSawBench()
     {

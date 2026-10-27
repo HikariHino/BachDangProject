@@ -27,6 +27,7 @@ namespace BeachBoatStory
         public bool HandsOnly=>hands!=null&&hands.BodyHidden;
         public int HandTriangles=>hands?.TriangleCount??0;
         public float HandSegmentError=>hands?.MaxSegmentError??0;
+        public float HandWristAngle=>hands?.MaxWristAngle??0;
         public string ToolFeedback {get;private set;}="";
         float strokeSeconds;
         bool foldGrabbed;int sawDirection=1;
@@ -66,7 +67,7 @@ namespace BeachBoatStory
         VillageWorkStall stall;Transform player;Animator rig;Transform[] arms;Quaternion[] armRest;Quaternion spineRest;Transform rightHand,leftHand,chest,spine;
         GameObject props,held,benchLog,bag,grain,blade,sawHandle,parcel,marker,foodTray,toolCursor,spoon,ladleRice;
         LineRenderer rope,pour;TextMeshPro label;Material wood,fibre,cloth,rice,fish,salt,gold,green,red;
-        readonly List<Material> owned=new List<Material>();readonly List<GameObject> hidden=new List<GameObject>();
+        readonly List<Material> owned=new List<Material>();
         readonly List<Mesh> ownedMeshes=new List<Mesh>();
         readonly List<GameObject> placed=new List<GameObject>();readonly List<GameObject> knots=new List<GameObject>();
         readonly List<Transform> flaps=new List<Transform>();
@@ -74,7 +75,7 @@ namespace BeachBoatStory
         readonly List<GameObject> bundleLogs=new List<GameObject>();
         bool busy;float actionUntil,nextSound,pourUntil,verticalScale=1;Vector3 origin;Quaternion rotation;
         Camera_Script camera;Vector3 cameraSettings;float cameraElevation;
-        WorkbenchHands hands;BowGripProfile gripProfile;GameObject pressureRail,pressureFill,pressureBand;
+        WorkbenchHands hands;BowGripProfile gripProfile;VillageWorkstation station;
         bool tableWasActive;
         AnimatorCullingMode previousCulling;SkinnedMeshRenderer[] playerMeshes;bool[] previousOffscreen;
         Vector3 World(Vector3 local){local.y*=verticalScale;return origin+rotation*local;}
@@ -106,7 +107,7 @@ namespace BeachBoatStory
             Finish();stall=owner;player=BeachBoatQuestSession.Instance.player.transform;rig=player.GetComponentInChildren<Animator>();
             chest=rig.GetBoneTransform(HumanBodyBones.Chest)??rig.GetBoneTransform(HumanBodyBones.Spine);
             spine=rig.GetBoneTransform(HumanBodyBones.Spine);spineRest=spine.localRotation;
-            verticalScale=Mathf.Clamp((chest.position.y-owner.transform.position.y+1)/13,1,2.5f);
+            station=owner.EnsureWorkstation();verticalScale=station.HeightScale;
             previousCulling=rig.cullingMode;rig.cullingMode=AnimatorCullingMode.AlwaysAnimate;
             playerMeshes=player.GetComponentsInChildren<SkinnedMeshRenderer>();previousOffscreen=playerMeshes.Select(r=>r.updateWhenOffscreen).ToArray();
             foreach(var renderer in playerMeshes)renderer.updateWhenOffscreen=true;
@@ -114,35 +115,10 @@ namespace BeachBoatStory
             props=new GameObject("Village_3D_Work_"+stall.kind);props.transform.SetPositionAndRotation(origin,rotation);
             props.transform.localScale=new Vector3(1,verticalScale,1);
             foreach(var r in FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))if(r.name.StartsWith("Vai_Phoi_")&&QuestRowboat.FlatDistance(r.bounds.center,origin)<120)fabrics.Add((r,r.forceRenderingOff));
-            foreach(Transform child in stall.transform)
-                if(child.gameObject.activeSelf&&child.name!="Nguoi_Ban_Hang"&&child.name!="Ten_Sap"&&child!=stall.interactionPoint)
-                {hidden.Add(child.gameObject);child.gameObject.SetActive(false);}
-            wood=Resources.FindObjectsOfTypeAll<Material>().FirstOrDefault(m=>m.name.Contains("Courtyard_Weathered_Wood")&&m.mainTexture!=null)??Make("Trade wood",new Color(.32f,.20f,.1f));
+            wood=station.Wood;
             fibre=Make("Hemp",new Color(.57f,.40f,.21f));cloth=Make("Undyed linen",new Color(.62f,.54f,.36f));rice=Make("Rice",new Color(.91f,.84f,.61f));
             fish=Make("Dried fish",new Color(.39f,.23f,.1f));salt=Make("Salt",new Color(.88f,.9f,.85f));gold=Make("Work target",new Color(1,.65f,.12f));green=Make("Correct fill",new Color(.16f,.72f,.35f));red=Make("Excess fill",new Color(.8f,.14f,.06f));
-            Shape("Solid_workbench",PrimitiveType.Cube,new Vector3(0,8,-3),new Vector3(32,2,13),wood,true);
-            foreach(int x in new[]{-13,13})foreach(int z in new[]{-7,1})Shape("Table_leg",PrimitiveType.Cube,new Vector3(x,3.5f,z),new Vector3(2,7,2),wood,true);
-            Shape("Delivery_crate",PrimitiveType.Cube,new Vector3(25,3,-14),new Vector3(10,6,12),wood,true);
-            Shape("Stock_crate",PrimitiveType.Cube,new Vector3(-25,3,-14),new Vector3(10,6,12),wood,true);
-            if(stall.kind==VillageWorkStall.WorkKind.Timber)
-                for(int i=0;i<3;i++){var log=Shape("Uncut_stock",PrimitiveType.Cylinder,new Vector3(-25,7+i*1.8f,-14),new Vector3(2,7,2),wood);log.transform.localRotation=Quaternion.Euler(90,0,0);}
-            else if(stall.kind==VillageWorkStall.WorkKind.Rope)
-            {
-                for(int i=0;i<4;i++){var log=Shape("Bundle_to_tie",PrimitiveType.Cylinder,new Vector3(0,10+i/2*1.8f,-10.2f+(i%2)*1.8f-.9f),new Vector3(2,12,2),wood);log.transform.localRotation=Quaternion.Euler(0,0,90);bundleLogs.Add(log);}
-                var coil=Line("Stock_rope",fibre,.55f);coil.positionCount=65;for(int i=0;i<65;i++){float a=i*.32f;coil.SetPosition(i,World(new Vector3(-25+Mathf.Cos(a)*(2+i*.025f),7+i*.018f,-14+Mathf.Sin(a)*(2+i*.025f))));}
-            }
-            else if(stall.kind==VillageWorkStall.WorkKind.Rice)
-            {
-                Shape("Grain_basket",PrimitiveType.Cylinder,new Vector3(-5,10,-10.2f),new Vector3(9,2,9),fibre);
-                for(int i=0;i<28;i++)Shape("Grain_in_basket",PrimitiveType.Sphere,new Vector3(-5+Mathf.Sin(i*2.4f)*3,12+(i%3)*.15f,-10.2f+Mathf.Cos(i*2.4f)*3),new Vector3(.7f,.35f,1),rice);
-            }
-            else
-            {
-                for(int i=0;i<3;i++)Shape("Ingredient_tray_"+i,PrimitiveType.Cylinder,new Vector3(-28+i*3,6.7f,-18),new Vector3(3,.5f,3.5f),fibre);
-                Shape("Rice_portions",PrimitiveType.Sphere,new Vector3(-28,7.6f,-18),new Vector3(5,1.6f,3),rice);
-                Shape("Dried_fish",PrimitiveType.Sphere,new Vector3(-25,7.5f,-18),new Vector3(6,.6f,2),fish);
-                Shape("Salt_packet",PrimitiveType.Cube,new Vector3(-22,7.7f,-18),new Vector3(3,1.6f,3),salt);
-            }
+            bundleLogs.AddRange(station.BundleLogs);station.ResetDisplay();
             camera=BeachBoatQuestSession.Instance.storyCamera.GetComponent<Camera_Script>();cameraSettings=new Vector3(camera.distance,camera.heightOffset,camera.rightOffset);
             cameraElevation=camera.Elevation;camera.distance=30;camera.heightOffset=13;camera.rightOffset=8;camera.SetElevation(20);
             arms=new[]{rig.GetBoneTransform(HumanBodyBones.RightUpperArm),rig.GetBoneTransform(HumanBodyBones.RightLowerArm),rig.GetBoneTransform(HumanBodyBones.LeftUpperArm),rig.GetBoneTransform(HumanBodyBones.LeftLowerArm)};
@@ -159,9 +135,6 @@ namespace BeachBoatStory
             Shape("Ladle_bowl",PrimitiveType.Cylinder,Vector3.zero,new Vector3(3,.6f,3),wood,false,spoon.transform);
             Shape("Ladle_handle",PrimitiveType.Cube,new Vector3(0,0,-3),new Vector3(.6f,.6f,5),wood,false,spoon.transform);
             ladleRice=Shape("Rice_in_ladle",PrimitiveType.Cylinder,new Vector3(0,.5f,0),new Vector3(2.6f,.3f,2.6f),rice,false,spoon.transform);
-            pressureRail=Shape("Grip_pressure_rail",PrimitiveType.Cube,Vector3.zero,new Vector3(10,.12f,1),cloth);
-            pressureBand=Shape("Release_in_green",PrimitiveType.Cube,Vector3.zero,new Vector3(3,.15f,1.05f),green);
-            pressureFill=Shape("Grip_pressure_cursor",PrimitiveType.Cube,Vector3.zero,new Vector3(.35f,.3f,1.5f),gold);
             if(stall.kind==VillageWorkStall.WorkKind.Timber)foreach(float x in new[]{-1.6f,1.6f})Shape("Saw_guide_rail",PrimitiveType.Cube,new Vector3(x,12.5f,-10.5f),new Vector3(.18f,.15f,5),green);
             NextOrder();Physics.SyncTransforms();
         }
@@ -351,7 +324,7 @@ namespace BeachBoatStory
                 var body=player.GetComponent<Rigidbody>();if(body!=null){body.position=dock;if(!body.isKinematic)body.linearVelocity=Vector3.zero;}Physics.SyncTransforms();
             }
             tableWasActive=table;hands?.Show(table);
-            hands?.Grip(Current==Step.FillRice,Current==Step.Saw||Current==Step.FillRice);
+            hands?.Grip(Current==Step.FillRice,Current==Step.Saw||Current==Step.FillRice||Current==Step.Tie);
             if(camera!=null){if(AtTable)camera.FocusTable(World(new Vector3(Current==Step.Tie?-10+Knots*10:0,Current==Step.Saw?12:Current==Step.FillRice?12:10,-9.5f)),rotation*Vector3.forward,Current==Step.Wrap?.78f:Current==Step.Tie?.9f:1);else camera.ClearWorkFocus();}
             marker.transform.position=(ToolStep?ToolPoint(ToolGoal):TargetPosition)+Vector3.up*.3f;
             toolCursor.SetActive(ToolStep);if(ToolStep)toolCursor.transform.position=ToolPoint(ToolPointer);
@@ -361,14 +334,6 @@ namespace BeachBoatStory
             label.color=Current==Step.FillRice&&RiceFill>=.65f?(RiceFill<=.85f?new Color(.3f,1,.5f):new Color(1,.3f,.2f)):new Color(1,.82f,.37f);
             if(Camera.main!=null)label.transform.rotation=Camera.main.transform.rotation;
             label.gameObject.SetActive(!AtTable);
-            bool pressure=AtTable&&Finishing;pressureRail.SetActive(pressure);pressureBand.SetActive(pressure&&Current==Step.Tie);pressureFill.SetActive(pressure);
-            if(pressure)
-            {
-                var rail=new Vector3(Current==Step.Tie?-10+Knots*10:0,Current==Step.Tie?15:11,-5);
-                pressureRail.transform.localPosition=rail;pressureBand.transform.localPosition=rail+Vector3.up*.15f+Vector3.right*2;
-                pressureFill.transform.localPosition=rail+Vector3.up*.4f+Vector3.right*Mathf.Lerp(-5,5,ToolPressure);
-                pressureFill.GetComponent<Renderer>().sharedMaterial=ToolPressure>=.55f&&ToolPressure<=.85f?green:ToolPressure>.85f?red:gold;
-            }
             if(held!=null){held.transform.position=chest.position+player.forward*4.5f+player.right*(stall.kind==VillageWorkStall.WorkKind.Timber?2:0);held.transform.rotation=player.rotation*(stall.kind==VillageWorkStall.WorkKind.Timber?Quaternion.Euler(0,0,90):Quaternion.identity);}
             if(busy||AtTable){var facing=(AtTable?rotation*Vector3.forward:TargetPosition-player.position);facing.y=0;var body=player.GetComponent<Rigidbody>();if(body!=null&&facing.sqrMagnitude>.1f)body.MoveRotation(Quaternion.Slerp(body.rotation,Quaternion.LookRotation(facing),1-Mathf.Exp(-12*Time.deltaTime)));}
             if(Carrying||busy||AtTable)
@@ -378,7 +343,7 @@ namespace BeachBoatStory
                 var right=grip+player.right*2;var left=grip-player.right*2;
                 if(!Carrying&&Current==Step.FillRice){right=spoon.transform.TransformPoint(new Vector3(0,0,-3));left=spoon.transform.TransformPoint(new Vector3(0,0,-1.5f));}
                 else if(!Carrying&&Current==Step.Saw)left=World(new Vector3(-4,12,-10));
-                else if(!Carrying&&Current==Step.Tie){right=grip;left=grip-Vector3.up*1.5f;}
+                else if(!Carrying&&Current==Step.Tie){right=grip;left=World(new Vector3(-13.5f+Knots*10,12.5f,-10.5f));}
                 else if(!Carrying&&Current==Step.Wrap){right=grip;left=World(new Vector3(0,9.7f,-10.2f));}
                 RightGripPosition=right;
                 LeftGripPosition=left;
@@ -390,7 +355,7 @@ namespace BeachBoatStory
                     if(Current==Step.FillRice)gripProfile.Align(arms[2],arms[3],leftHand,left,arms[2].position-player.right*4-Vector3.up*3,true,false,player.forward);
                 }
             }
-            if(AtTable&&camera!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,Current!=Step.FillRice,Current==Step.Tie||Current==Step.Wrap);
+            if(AtTable&&camera!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,Current!=Step.FillRice,Current==Step.Wrap);
             if(blade!=null&&Current==Step.Saw)blade.transform.position=ToolPoint(ToolPointer);
             if(sawHandle!=null&&Current==Step.Saw)sawHandle.transform.SetPositionAndRotation(ToolPoint(ToolPointer)+player.right*2,player.rotation);
             if(grain!=null){grain.transform.localScale=new Vector3(5.4f,Mathf.Max(.05f,RiceFill*2.5f),5.4f);grain.transform.localPosition=new Vector3(4,9+RiceFill*2.5f,-10.2f);grain.GetComponent<Renderer>().sharedMaterial=RiceFill>=.65f&&RiceFill<=.85f?green:RiceFill>.85f?red:rice;}
@@ -402,17 +367,7 @@ namespace BeachBoatStory
         public void Finish()
         {
             busy=tableWasActive=false;hands?.Dispose();hands=null;if(props!=null){props.SetActive(false);Destroy(props);}props=null;
-            foreach(var go in hidden)if(go!=null)go.SetActive(true);
-            // Restoring the taller original counter must not enclose a player who
-            // climbed onto the temporary workbench during an attempt.
-            if(player!=null)
-            {
-                Physics.SyncTransforms();var capsule=player.GetComponent<CapsuleCollider>();var body=player.GetComponent<Rigidbody>();
-                if(capsule!=null)for(int pass=0;pass<3;pass++)foreach(var go in hidden)if(go!=null)foreach(var other in go.GetComponentsInChildren<Collider>())
-                    if(other.enabled&&!other.isTrigger&&Physics.ComputePenetration(capsule,capsule.transform.position,capsule.transform.rotation,other,other.transform.position,other.transform.rotation,out var direction,out float depth))
-                    {player.position+=direction*(depth+.1f);if(body!=null)body.position=player.position;Physics.SyncTransforms();}
-            }
-            hidden.Clear();
+            if(station!=null)station.ResetDisplay();station=null;
             foreach(var item in fabrics)if(item.renderer!=null)item.renderer.forceRenderingOff=item.hidden;fabrics.Clear();bundleLogs.Clear();
             foreach(var m in owned)if(m!=null)Destroy(m);owned.Clear();placed.Clear();knots.Clear();
             foreach(var mesh in ownedMeshes)if(mesh!=null)Destroy(mesh);ownedMeshes.Clear();

@@ -56,6 +56,10 @@ namespace BeachBoatStory
         public float TimeLimit=>LimitFor(kind,Difficulty);
         public int Goal=>kind==WorkKind.Timber?3:kind==WorkKind.Rope?1:2;
         public VillagePhysicalWork Physical {get;private set;}
+        public VillageWorkstation Workstation {get;private set;}
+        public VillageWorkstation EnsureWorkstation()
+        {Workstation=GetComponent<VillageWorkstation>()??gameObject.AddComponent<VillageWorkstation>();Workstation.Build(this);return Workstation;}
+        void Start(){EnsureWorkstation();}
         public int MistakeLimit=>kind==WorkKind.Timber||kind==WorkKind.Rice?3:Difficulty==2?2:3;
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);
         public string Instructions=>kind==WorkKind.Timber?"Đặt gỗ lên bàn để vào góc nhìn tay. Giữ chuột trái kéo qua lại, giữ cưa trong hai vạch xanh; lệch rãnh không tính nhịp. Cưa đủ tám nhịp và giao ba khúc.":
