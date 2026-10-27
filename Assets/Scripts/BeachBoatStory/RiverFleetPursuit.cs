@@ -85,7 +85,7 @@ namespace BeachBoatStory
                 {
                     var hold=origin;hold.z=zone.FieldBounds.max.z+900;
                     // Visible approach, but never enter the trap without the player's bait.
-                    if(FormationAnchor.z>hold.z)FormationAnchor=Vector3.MoveTowards(FormationAnchor,hold,12*dt);
+                    if(FormationAnchor.z>hold.z)FormationAnchor=Vector3.MoveTowards(FormationAnchor,hold,20*dt);
                     return;
                 }
             }
@@ -99,7 +99,7 @@ namespace BeachBoatStory
             // Do not reverse the rear ranks through the leading ranks when the bait circles.
             follow.z=Mathf.Min(follow.z,FormationAnchor.z);
             var anchor=FormationAnchor;
-            float advance=Mathf.Min(Mathf.Max(0,anchor.z-follow.z),26*dt);
+            float advance=Mathf.Min(Mathf.Max(0,anchor.z-follow.z),48*dt);
             // Course changes require forward progress, so circling bait cannot
             // make the entire formation crab sideways at a stationary marker.
             if(Mathf.Abs(follow.x-anchor.x)>12)anchor.x=Mathf.MoveTowards(anchor.x,follow.x,advance*.22f);

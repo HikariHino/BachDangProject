@@ -10,7 +10,7 @@ namespace BeachBoatStory
     public sealed class BachDangBattleTimeline : MonoBehaviour
     {
         public enum BattleMoment { Preparation, LureAtHighTide, FleetInsideStakeField, TideFalling, Ambush, Victory }
-        [Min(8)] public float battleEbbDuration = 22f;
+        [Min(2)] public float battleEbbDuration = 4f;
 
         public static BachDangBattleTimeline Instance { get; private set; }
         public BattleMoment CurrentMoment { get; private set; }
@@ -96,7 +96,13 @@ namespace BeachBoatStory
         public void BeginEbb()
         {
             SetMoment(BattleMoment.TideFalling, 10f, "Đội hình địch đã vào sâu trận địa", "TRIỀU RÚT DẦN — quân ta bắt đầu áp sát");
-            TideSystem.Instance?.BeginEbb(this, battleEbbDuration);
+            TideSystem.Instance?.BeginEbb(this, Mathf.Clamp(battleEbbDuration,2,4));
+        }
+
+        public void BeginApproachEbb(float coveredHeight)
+        {
+            SetMoment(BattleMoment.TideFalling,9.75f,"Hạm đội đang lọt vào bãi cọc — nước bắt đầu rút","TRIỀU ĐANG RÚT — giữ thuyền nhử ngoài trận địa");
+            TideSystem.Instance?.BeginEbbTo(this,4,coveredHeight);
         }
 
         public void BeginAmbush()
@@ -146,7 +152,9 @@ namespace BeachBoatStory
             {
                 case BattleMoment.LureAtHighTide:BeginLure();break;
                 case BattleMoment.FleetInsideStakeField:MarkFleetInside();break;
-                case BattleMoment.TideFalling:BeginEbb();break;
+                case BattleMoment.TideFalling:
+                    if(data.target>(TideSystem.Instance?.lowTideY??0)+.01f)BeginApproachEbb(data.target);else BeginEbb();
+                    break;
                 case BattleMoment.Ambush:BeginAmbush();break;
                 case BattleMoment.Victory:MarkVictory();break;
                 default:ApplyStoryState(BachDangStoryManager.Instance.currentState,true);break;

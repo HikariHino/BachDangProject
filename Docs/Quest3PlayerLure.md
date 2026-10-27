@@ -8,15 +8,20 @@ rowboat cannot trigger detection.
 
 The approach arrow points ahead of the nearest enemy bow, with hull clearance.
 On detection it changes to a return route through the stake field. A shared
-formation anchor follows the rower at 26 units/second; each ship retains its
+formation anchor follows the rower at 48 units/second, with each hull able to
+cruise at 62 (previously 26 and 34 respectively). Each ship retains its
 separate lane and rank. The anchor cannot reverse the ranks through one another
 when the rower circles. All actual vessel motion still uses the solid hull sweep.
 
 After detection, the player must cross the middle of the field aboard the boat.
 The pursuing formation then commits to its separate interior trap berths rather
-than crowding around the small rowboat. All full hulls must be inside before the
-controlled ebb begins. The existing common stake-contact event then catches and
-sinks the fleet together. Idle time at the dock cannot advance these stages.
+than crowding around the small rowboat. When the rear rank is within 400 units
+of full entry, water begins falling to a covered staging height computed from
+the highest planted stake and deepest enemy keel plus clearance. It stays there
+until every full hull is inside. That entry releases the final 2–4 second ebb,
+so tips catch the fleet shortly after the last rank arrives. The common physical
+stake-contact event still sinks the fleet together; no ship ignores solid stakes
+to catch up. Idle time at the dock cannot advance these stages.
 
 The full recorded pursuit order plays once after detection, behind any current
 sentence on the existing single voice channel. Save data retains pursuit stage,
@@ -27,10 +32,10 @@ their previous restore behavior.
 
 `BeachBoatConcurrentBattlePlaytest` exercises waiting without bait, detection,
 production rowing and hull sweeps on the return, pursuit/entry save restoration,
-separate hulls, all-ships-inside ebb, shared sinking, retained wrecks, victory and
+separate hulls, safe falling water during entry, prompt final exposure, shared sinking, retained wrecks, victory and
 unchanged user save files. Its temporary saves are isolated under `.utmp`.
 
-Validated in Unity 6000.6.0f1 on 2026-10-27: 41 concurrent pursuit/ambush
+Initial pursuit validation in Unity 6000.6.0f1 on 2026-10-27: 41 concurrent pursuit/ambush
 checks, 50 cinematic/voice/traversal checks and 61 player-guidance checks passed.
 The complete hull formation triggered falling water at game time 110 seconds,
 then all ten ships started sinking together at 119.3 seconds as the stakes
@@ -73,3 +78,13 @@ with separate hulls, then began sinking together. Pursuit speed survived a
 save/load, allied escorts kept their no-attack behavior, and user saves remained
 byte-for-byte unchanged. These measurements cover live hull navigation, not the
 deliberate listing and rolling animation after a ship is destroyed.
+
+The entry-synchronized ebb revision passed 60 fleet/AI/save checks and the
+51-check tide/traversal/cinematic regression on 2026-10-27. In the final fleet
+run, the visible approach ebb started at 67.126 game seconds, the rear hull
+entered at 73.651, and all ten ships were caught at 75.041 (1.390 seconds later).
+Observed hull speed reached 62; no tips emerged and no hull sank before full
+entry. Loading both the covered approach ebb and an older 22-second final-ebb
+save retained the exact saved water height. Old final-ebbs with more than four
+seconds remaining restart a short four-second descent from that height, rather
+than preserving the old wait. No user save files changed.

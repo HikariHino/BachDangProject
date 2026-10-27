@@ -94,9 +94,14 @@ public class TideSystem : MonoBehaviour
 
     /// <summary>Mission-owned ebb with a visible duration, independent of the normal tide smoothing.</summary>
     public bool BeginEbb(Object owner, float duration)
+    {return BeginEbbTo(owner,duration,lowTideY);}
+
+    /// <summary>Stage the approach ebb above the stakes before releasing the final drop.</summary>
+    public bool BeginEbbTo(Object owner,float duration,float targetHeight)
     {
         if (owner == null || (tideOwner != null && tideOwner != owner)) return false;
         HoldTide(owner, false);
+        currentTargetY=Mathf.Clamp(targetHeight,lowTideY,highTideY);
         ebbStartY = transform.position.y;
         ebbDuration = Mathf.Max(1f, duration); ebbElapsed = 0; controlledEbb = true;
         return true;
@@ -117,6 +122,13 @@ public class TideSystem : MonoBehaviour
         var p=transform.position;p.y=data.height;transform.position=p;CurrentWaterHeight=p.y;
         currentTargetY=data.target;ebbStartY=data.start;ebbElapsed=data.elapsed;ebbDuration=Mathf.Max(1,data.duration);
         isRising=data.rising;controlledEbb=data.controlled;heldHigh=data.high;
+        if(controlledEbb&&data.moment==(int)BeachBoatStory.BachDangBattleTimeline.BattleMoment.TideFalling&&
+            currentTargetY<=lowTideY+.01f&&ebbDuration-ebbElapsed>4)
+        {
+            // Old mid-ebb saves keep their actual height but adopt the shorter
+            // final drop, rather than retaining the obsolete 22-second wait.
+            ebbStartY=data.height;ebbElapsed=0;ebbDuration=4;
+        }
         tideOwner=data.locked?BeachBoatStory.BachDangBattleTimeline.Instance:null;autoCycle=false;timer=0;
     }
 
@@ -190,7 +202,8 @@ public class TideSystem : MonoBehaviour
         // 2. Chế độ Thủy Triều tự động lên xuống nhịp nhàng
         if (IsTideLocked)
         {
-            currentTargetY = heldHigh ? highTideY : lowTideY;
+            // HoldTide / BeginEbbTo own the saved target. Do not overwrite a
+            // covered approach-ebb target with low water on the next frame.
             isRising = heldHigh;
         }
         else if (autoCycle)
@@ -207,7 +220,7 @@ public class TideSystem : MonoBehaviour
         if (controlledEbb)
         {
             ebbElapsed = Mathf.Min(ebbDuration, ebbElapsed + deltaTime);
-            pos.y = Mathf.Lerp(ebbStartY, lowTideY, Mathf.SmoothStep(0, 1, ebbElapsed / ebbDuration));
+            pos.y = Mathf.Lerp(ebbStartY, currentTargetY, Mathf.SmoothStep(0, 1, ebbElapsed / ebbDuration));
             if (ebbElapsed >= ebbDuration) controlledEbb = false;
         }
         else

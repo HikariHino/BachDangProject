@@ -168,7 +168,7 @@ namespace BeachBoatStory
             var rotation=distance>8?Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),10*dt):transform.rotation;
             float alignment=distance>8?Mathf.Max(0,Vector3.Dot(rotation*Vector3.forward,direction.normalized)):0;
             float wantedSpeed=distance>8?Mathf.Min(moveSpeed,(distance-8)*1.2f)*alignment:0;
-            forwardSpeed=Mathf.MoveTowards(forwardSpeed,wantedSpeed,18*dt);
+            forwardSpeed=Mathf.MoveTowards(forwardSpeed,wantedSpeed,28*dt);
             float step=distance>8?Mathf.Min(distance-8,forwardSpeed*dt):0;
             // A hull advances along its bow, never sideways toward a moving marker.
             var next=pos+rotation*Vector3.forward*step;

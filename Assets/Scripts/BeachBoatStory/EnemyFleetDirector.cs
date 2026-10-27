@@ -170,7 +170,7 @@ namespace BeachBoatStory
         {
             while(BattleStarted&&!EbbStarted&&EbbTriggerShip==null)
             {
-                if(Pursuit.HasEnteredTrap&&ShipsInside>=ShipCount)
+                if(Pursuit.HasEnteredTrap&&ShipsInside>0&&EntryDistance(fleet)<=400)
                     foreach(var ship in fleet)
                         if(ship!=null&&ship.gameObject.activeInHierarchy&&!ship.isDestroyed&&ship.IsHullInsideStakeField)
                         {EbbTriggerShip=ship;break;}
@@ -178,8 +178,19 @@ namespace BeachBoatStory
             }
             if(!BattleStarted)yield break;
             var timeline=BachDangBattleTimeline.Instance;
-            if(!EbbStarted){timeline?.MarkFleetInside();timeline?.BeginEbb();EbbStarted=true;}
+            if(!EbbStarted)
+            {
+                if(ShipsInside>=ShipCount){timeline?.MarkFleetInside();timeline?.BeginEbb();}
+                else timeline?.BeginApproachEbb(CoveredWaterHeight(fleet));
+                EbbStarted=true;
+            }
             BachDangStoryManager.Instance?.UpdateUI();
+            // The visible ebb overlaps the last rank's entry, but the water stays
+            // above every keel/stake pair until the complete formation is inside.
+            while(BattleStarted&&ShipsInside<ShipCount)yield return null;
+            if(!BattleStarted)yield break;
+            if(TideSystem.Instance.TargetWaterHeight>TideSystem.Instance.lowTideY+.01f)
+            {timeline?.MarkFleetInside();timeline?.BeginEbb();BachDangStoryManager.Instance?.UpdateUI();}
             // Counterattack becomes available as tips emerge, while the ebb is still in progress.
             while(BattleStarted)
             {
@@ -195,6 +206,29 @@ namespace BeachBoatStory
             foreach(var ship in fleet)if(ship!=null&&!ship.isDestroyed&&RiverStakeZone.Instance.TryHullContact(ship.transform.position,ship.transform.position,ship.transform.forward,ship.hullHalfLength,ship.stakeHitDistance,true,out var point))ship.TakeDamage(point);
             choreography=GetComponent<RiverBattleChoreography>();choreography?.BeginAmbush(fleet);
             BachDangStoryManager.Instance?.UpdateUI();tideLoop=null;
+        }
+        float EntryDistance(System.Collections.Generic.List<EnemyShip> fleet)
+        {
+            var field=RiverStakeZone.Instance.FieldBounds;float remaining=0;
+            foreach(var ship in fleet)
+            {
+                if(ship==null||ship.isDestroyed)continue;
+                if(!ship.gameObject.activeInHierarchy)return float.PositiveInfinity;
+                var b=BoatHullCollision.Get(ship.transform).SolidHull.bounds;
+                remaining=Mathf.Max(remaining,Mathf.Max(Mathf.Max(b.max.z-field.max.z+8,field.min.z+8-b.min.z),
+                    Mathf.Max(field.min.x+8-b.min.x,b.max.x-field.max.x+8)));
+            }
+            return remaining;
+        }
+        float CoveredWaterHeight(System.Collections.Generic.List<EnemyShip> fleet)
+        {
+            float top=float.NegativeInfinity,depth=0;
+            foreach(var stake in RiverStakeZone.Instance.fieldStakes)
+                if(stake!=null&&stake.gameObject.activeInHierarchy)
+                    foreach(var r in stake.GetComponentsInChildren<Renderer>())top=Mathf.Max(top,r.bounds.max.y);
+            foreach(var ship in fleet)if(ship!=null&&!ship.isDestroyed)
+                depth=Mathf.Max(depth,ship.transform.position.y-BoatHullCollision.Get(ship.transform).SolidHull.bounds.min.y);
+            return Mathf.Min(TideSystem.CurrentWaterHeight,top+depth+1.5f);
         }
         int ReadyWave(System.Collections.Generic.List<EnemyShip> fleet,int waveSize)
         {
