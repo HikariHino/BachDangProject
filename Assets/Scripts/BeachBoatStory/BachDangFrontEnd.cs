@@ -279,7 +279,10 @@ namespace BeachBoatStory
             Label("Mouse",settings.transform,new Vector2(.10f,.40f),new Vector2(.72f,.50f),22,Cream,"ĐỘ NHẠY CHUỘT");mouseValue=Label("MouseValue",settings.transform,new Vector2(.75f,.40f),new Vector2(.90f,.50f),22,Gold,"");
             mouseSlider=MakeSlider("MouseSlider",settings.transform,new Vector2(.10f,.31f),new Vector2(.90f,.38f),.25f,2.5f,BachDangPreferences.Sensitivity);
             mouseSlider.onValueChanged.AddListener(v=>{BachDangPreferences.SetSensitivity(v);RefreshSettingsLabels();BachDangMenuAudio.SliderChanged();});
-            Label("Applied",settings.transform,new Vector2(.10f,.20f),new Vector2(.90f,.28f),14,new Color(.65f,.74f,.67f),"Áp dụng ngay • Tự nhớ cho lần chơi sau",TextAlignmentOptions.Center);
+            TMP_Text graphicsLabel=null;
+            var graphicsButton=Click("GraphicsQuality",settings.transform,new Vector2(.10f,.215f),new Vector2(.90f,.29f),"ĐỒ HỌA: "+CinematicQuality.Label,()=>{CinematicQuality.Cycle();graphicsLabel.text="ĐỒ HỌA: "+CinematicQuality.Label;});
+            graphicsLabel=graphicsButton.GetComponentInChildren<TMP_Text>();graphicsLabel.fontSize=18;
+            Label("Applied",settings.transform,new Vector2(.10f,.17f),new Vector2(.90f,.21f),12,new Color(.65f,.74f,.67f),"Áp dụng ngay • Tự nhớ cho lần chơi sau",TextAlignmentOptions.Center);
             Click("Back",settings.transform,new Vector2(.24f,.07f),new Vector2(.76f,.17f),"QUAY LẠI",BackFromSettings,true);
             confirm=Card("ConfirmExit","LƯU TRƯỚC KHI THOÁT?");
             confirmText=Label("Message",confirm.transform,new Vector2(.10f,.43f),new Vector2(.90f,.78f),23,Cream,"",TextAlignmentOptions.Center);

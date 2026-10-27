@@ -59,6 +59,7 @@ public class BachDangWorldScale : MonoBehaviour
         if (!Application.isPlaying || gameObject.scene != SceneManager.GetActiveScene() || Mathf.Approximately(unitsPerReferenceUnit, 1f)) return;
         previousPipeline = QualitySettings.renderPipeline;
         var source = (previousPipeline != null ? previousPipeline : GraphicsSettings.defaultRenderPipeline) as UniversalRenderPipelineAsset;
+        source=BeachBoatStory.CinematicQuality.Select(source);
         if (source != null)
         {
             privatePipeline = Instantiate(source);

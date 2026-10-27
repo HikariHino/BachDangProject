@@ -1,0 +1,3 @@
+https://github.com/Whinarn/UnityMeshSimplifier
+Commit: 53fdb3122645bcd3ad2c258235200dff3dfbaa9b
+MIT license. Editor-only offline mesh authoring.

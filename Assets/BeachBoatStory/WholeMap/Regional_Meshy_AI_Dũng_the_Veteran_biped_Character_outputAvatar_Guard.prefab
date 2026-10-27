@@ -610,6 +610,7 @@ GameObject:
   m_Component:
   - component: {fileID: 96179481074184276}
   - component: {fileID: 3849801451616065434}
+  - component: {fileID: 367197726606009764}
   m_Layer: 0
   m_Name: output_unwrapped
   m_TagString: Untagged
@@ -657,7 +658,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: ab99f2dc21dcc6b4d9a6ee4a7cca35a1, type: 2}
+  - {fileID: 2100000, guid: 31a7fdce9e52b824bbb16d384887e4dd, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -725,6 +726,23 @@ SkinnedMeshRenderer:
     m_Center: {x: -0.00020259991, y: -0.0009611021, z: -0.0010283581}
     m_Extent: {x: 0.0053747455, y: 0.008946905, z: 0.004353353}
   m_DirtyAABB: 0
+--- !u!114 &367197726606009764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3444372371871477557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcf9eebce1e8b0c49be72114365719dc, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::BeachBoatStory.CinematicCharacterLOD
+  target: {fileID: 3849801451616065434}
+  closeMesh: {fileID: -9037851627997230718, guid: 0c6d42aee5700e744b964b1852ab6c63, type: 3}
+  middleMesh: {fileID: 4300000, guid: fcebc568282022743aa0cc6713a20401, type: 2}
+  farMesh: {fileID: 4300000, guid: 8b24657cd4cef6d4b8c5de461f49fd70, type: 2}
+  important: 0
 --- !u!1 &3782061595295652814
 GameObject:
   m_ObjectHideFlags: 0

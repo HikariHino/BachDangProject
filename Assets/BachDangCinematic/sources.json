@@ -1,0 +1,319 @@
+{
+  "poweredBy": "https://polyhaven.com",
+  "files": [
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/weathered_brown_planks/Albedo.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/weathered_brown_planks/weathered_brown_planks_diff_2k.jpg",
+      "md5": "31317a56abbee4fbf7018d9f41180827",
+      "bytes": 911358
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/weathered_brown_planks/Normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/weathered_brown_planks/weathered_brown_planks_nor_gl_2k.jpg",
+      "md5": "d6720855901b27dbdd209942f327b795",
+      "bytes": 1029733
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/weathered_brown_planks/Roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/weathered_brown_planks/weathered_brown_planks_rough_2k.jpg",
+      "md5": "4dd58553f1d0f76bf883b71aa9fc89ea",
+      "bytes": 944154
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/weathered_brown_planks/AO.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/weathered_brown_planks/weathered_brown_planks_ao_2k.jpg",
+      "md5": "afbfe9f3308edd0d532badf095ce7ca9",
+      "bytes": 600648
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/brown_mud_02/Albedo.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_mud_02/brown_mud_02_diff_2k.jpg",
+      "md5": "a2dd06f0df9ce45cc0c5abdd6c1629b2",
+      "bytes": 2163682
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/brown_mud_02/Normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_mud_02/brown_mud_02_nor_gl_2k.jpg",
+      "md5": "4b3d0c1b97e25041c988ee3000c5aac4",
+      "bytes": 4234657
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/brown_mud_02/Roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_mud_02/brown_mud_02_rough_2k.jpg",
+      "md5": "c758a09a088ad35f98d4fb6103f1b9ff",
+      "bytes": 1662813
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/brown_mud_02/AO.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/brown_mud_02/brown_mud_02_ao_2k.jpg",
+      "md5": "ab730efa39475187962896412bc80191",
+      "bytes": 1611911
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/forest_floor/Albedo.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_floor/forest_floor_diff_2k.jpg",
+      "md5": "a93f845fca105e6cabc82853161ff7b6",
+      "bytes": 5452936
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/forest_floor/Normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_floor/forest_floor_nor_gl_2k.jpg",
+      "md5": "41e49ec58f74a749e325f59290266e9d",
+      "bytes": 5367757
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/forest_floor/Roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_floor/forest_floor_rough_2k.jpg",
+      "md5": "4d8070c33b0daf195fd2a054faa2a491",
+      "bytes": 3242269
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/forest_floor/AO.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_floor/forest_floor_ao_2k.jpg",
+      "md5": "387e168f68b204dd627df124c048b196",
+      "bytes": 2929991
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/rock_boulder_dry/Albedo.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rock_boulder_dry/rock_boulder_dry_diff_2k.jpg",
+      "md5": "fbc9cf377db427f54381f463c0639e1f",
+      "bytes": 3437626
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/rock_boulder_dry/Normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rock_boulder_dry/rock_boulder_dry_nor_gl_2k.jpg",
+      "md5": "513ef3fdaadd106c38a9c40919918cc0",
+      "bytes": 3307320
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/rock_boulder_dry/Roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rock_boulder_dry/rock_boulder_dry_rough_2k.jpg",
+      "md5": "f69a2caafb58d427cb17cab31c202e0e",
+      "bytes": 2706723
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/rock_boulder_dry/AO.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rock_boulder_dry/rock_boulder_dry_ao_2k.jpg",
+      "md5": "1b45230f78f21c791ca81f7bb5d7265f",
+      "bytes": 2182922
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/sandy_gravel_02/Albedo.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sandy_gravel_02/sandy_gravel_02_diff_2k.jpg",
+      "md5": "0ae7373189752d85642f589c12093ec2",
+      "bytes": 4097984
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/sandy_gravel_02/Normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sandy_gravel_02/sandy_gravel_02_nor_gl_2k.jpg",
+      "md5": "795860c61dd2ae8fb06c90f7cf2a7e39",
+      "bytes": 5311499
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/sandy_gravel_02/Roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sandy_gravel_02/sandy_gravel_02_rough_2k.jpg",
+      "md5": "753a7d079971702788c0b2501de65b1a",
+      "bytes": 1732319
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/sandy_gravel_02/AO.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sandy_gravel_02/sandy_gravel_02_ao_2k.jpg",
+      "md5": "6188df2a268304c03feb9f0224eb9700",
+      "bytes": 3736230
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/aerial_grass_rock/Albedo.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_diff_2k.jpg",
+      "md5": "024018554c0002620127749d1f585f3d",
+      "bytes": 2624635
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/aerial_grass_rock/Normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_nor_gl_2k.jpg",
+      "md5": "0c5423ce365169df7c242933b5137696",
+      "bytes": 3799025
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/aerial_grass_rock/Roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_rough_2k.jpg",
+      "md5": "8d181000237d420a73f99dfc260dab17",
+      "bytes": 1495844
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/aerial_grass_rock/AO.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_ao_2k.jpg",
+      "md5": "9af2f43497a01ddd406f7b36d718fca4",
+      "bytes": 2162395
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/tree_stump_01/Albedo.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/tree_stump_01/tree_stump_01_diff_2k.jpg",
+      "md5": "5e061f6985b34f3c36824e63473ed1c9",
+      "bytes": 3189746
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/tree_stump_01/Normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/tree_stump_01/tree_stump_01_nor_gl_2k.jpg",
+      "md5": "78c30fd8b3b070596e92e7969c78eaa7",
+      "bytes": 4415649
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/tree_stump_01/Roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/tree_stump_01/tree_stump_01_rough_2k.jpg",
+      "md5": "af71291163e3100bc443d36cd85f03ba",
+      "bytes": 1718834
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/tree_stump_01/AO.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/tree_stump_01/tree_stump_01_ao_2k.jpg",
+      "md5": "6fa1403188d3b21fd3b5f5c44e65014d",
+      "bytes": 2516829
+    },
+    {
+      "path": "Assets/BachDangCinematic/Models/tree_stump_01.fbx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/fbx/1k/tree_stump_01/tree_stump_01_1k.fbx",
+      "md5": "0356305935a31f7ca47900fa8338109d",
+      "bytes": 2871068
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/rock_moss_set_01/Albedo.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/rock_moss_set_01/rock_moss_set_01_diff_2k.jpg",
+      "md5": "d3e1292c9e34bd6b4a236698a1b41290",
+      "bytes": 649415
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/rock_moss_set_01/Normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/rock_moss_set_01/rock_moss_set_01_nor_gl_2k.jpg",
+      "md5": "88be6d9cf2927a09182e2bfccc9b8b56",
+      "bytes": 840957
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/rock_moss_set_01/Roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/rock_moss_set_01/rock_moss_set_01_rough_2k.jpg",
+      "md5": "f7b3045b503fbde038598f8586ac25ef",
+      "bytes": 293827
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/rock_moss_set_01/AO.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/rock_moss_set_01/rock_moss_set_01_ao_2k.jpg",
+      "md5": "58d0054a58727fd08bdc1553d7ba90b1",
+      "bytes": 282220
+    },
+    {
+      "path": "Assets/BachDangCinematic/Models/rock_moss_set_01.fbx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/fbx/1k/rock_moss_set_01/rock_moss_set_01_1k.fbx",
+      "md5": "3f82316eb266746b71ae287f5609bafb",
+      "bytes": 2652988
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/wicker_basket_01/Albedo.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/wicker_basket_01/wicker_basket_01_diff_2k.jpg",
+      "md5": "b5fa48725aabd3ae05b4be3091e3ac40",
+      "bytes": 2606521
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/wicker_basket_01/Normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/wicker_basket_01/wicker_basket_01_nor_gl_2k.jpg",
+      "md5": "113d914fb3f1ff9eba2e497860005af9",
+      "bytes": 2229761
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/wicker_basket_01/Roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/wicker_basket_01/wicker_basket_01_rough_2k.jpg",
+      "md5": "54cd6b4547d2665bd5a485fdad1624a7",
+      "bytes": 1925598
+    },
+    {
+      "path": "Assets/BachDangCinematic/Surfaces/wicker_basket_01/AO.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/wicker_basket_01/wicker_basket_01_ao_2k.jpg",
+      "md5": "5d7e9ffe244ff288e39b4c575a927357",
+      "bytes": 2225484
+    },
+    {
+      "path": "Assets/BachDangCinematic/Models/wicker_basket_01.fbx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/fbx/1k/wicker_basket_01/wicker_basket_01_1k.fbx",
+      "md5": "72d88094a41563c22dbfca200f1cc981",
+      "bytes": 703484
+    }
+  ],
+  "characters": [
+    {
+      "model": "Assets/Model_NPC/DanThuongLonTuoi/Meshy_AI_Wandering_Peasant_biped_Character_output.fbx",
+      "albedo": "Assets/Model_NPC/DanThuongLonTuoi/Meshy_AI_Wandering_Peasant_biped_texture_0.png",
+      "normal": "Assets/Model_NPC/DanThuongLonTuoi/Meshy_AI_Wandering_Peasant_biped_texture_0_normal.png",
+      "mask": "Assets/BachDangCinematic/Characters/Meshy_AI_Wandering_Peasant_biped/Surface.png"
+    },
+    {
+      "model": "Assets/Model_NPC/Enemy/EnemyLead/Meshy_AI_Crimson_Imperial_Guar_biped/Meshy_AI_Crimson_Imperial_Guar_biped_Character_output.fbx",
+      "albedo": "Assets/Model_NPC/Enemy/EnemyLead/Meshy_AI_Crimson_Imperial_Guar_biped/Meshy_AI_Crimson_Imperial_Guar_biped_texture_0.png",
+      "normal": "Assets/Model_NPC/Enemy/EnemyLead/Meshy_AI_Crimson_Imperial_Guar_biped/Meshy_AI_Crimson_Imperial_Guar_biped_texture_0_normal.png",
+      "mask": "Assets/BachDangCinematic/Characters/Meshy_AI_Crimson_Imperial_Guar_biped/Surface.png"
+    },
+    {
+      "model": "Assets/Model_NPC/Enemy/LinhDich/Meshy_AI_Black_Armored_General_biped/Meshy_AI_Black_Armored_General_biped_Character_output.fbx",
+      "albedo": "Assets/Model_NPC/Enemy/LinhDich/Meshy_AI_Black_Armored_General_biped/Meshy_AI_Black_Armored_General_biped_texture_0.png",
+      "normal": "Assets/Model_NPC/Enemy/LinhDich/Meshy_AI_Black_Armored_General_biped/Meshy_AI_Black_Armored_General_biped_texture_0_normal.png",
+      "mask": "Assets/BachDangCinematic/Characters/Meshy_AI_Black_Armored_General_biped/Surface.png"
+    },
+    {
+      "model": "Assets/Model_NPC/FemalePea/FemalePea/Meshy_AI_Brown_Tunic_Figure_biped_Character_output.fbx",
+      "albedo": "Assets/Model_NPC/FemalePea/FemalePea/Meshy_AI_Brown_Tunic_Figure_biped_texture_0.png",
+      "normal": "Assets/Model_NPC/FemalePea/FemalePea/Meshy_AI_Brown_Tunic_Figure_biped_texture_0_normal.png",
+      "mask": "Assets/BachDangCinematic/Characters/Meshy_AI_Brown_Tunic_Figure_biped/Surface.png"
+    },
+    {
+      "model": "Assets/Model_NPC/MalePea/MalePea/Meshy_AI_Blue_Scrub_Figure_biped_Character_output.fbx",
+      "albedo": "Assets/Model_NPC/MalePea/MalePea/Meshy_AI_Blue_Scrub_Figure_biped_texture_0.png",
+      "normal": "Assets/Model_NPC/MalePea/MalePea/Meshy_AI_Blue_Scrub_Figure_biped_texture_0_normal.png",
+      "mask": "Assets/BachDangCinematic/Characters/Meshy_AI_Blue_Scrub_Figure_biped/Surface.png"
+    },
+    {
+      "model": "Assets/Model_NPC/NgoQuyen/NgoQuyenModel/Meshy_AI_Ngo_Quyen_938_AD_biped_Character_output.fbx",
+      "albedo": "Assets/Model_NPC/NgoQuyen/NgoQuyenModel/Meshy_AI_Ngo_Quyen_938_AD_biped_texture_0.png",
+      "normal": "Assets/Model_NPC/NgoQuyen/NgoQuyenModel/Meshy_AI_Ngo_Quyen_938_AD_biped_texture_0_normal.png",
+      "mask": "Assets/BachDangCinematic/Characters/Meshy_AI_Ngo_Quyen_938_AD_biped/Surface.png"
+    },
+    {
+      "model": "Assets/Model_NPC/OldSoldier/Meshy_AI_Dũng_the_Veteran_biped/Meshy_AI_Dũng_the_Veteran_biped_Character_output.fbx",
+      "albedo": "Assets/Model_NPC/OldSoldier/Meshy_AI_Dũng_the_Veteran_biped/Meshy_AI_Dũng_the_Veteran_biped_texture_0.png",
+      "normal": "Assets/Model_NPC/OldSoldier/Meshy_AI_Dũng_the_Veteran_biped/Meshy_AI_Dũng_the_Veteran_biped_texture_0_normal.png",
+      "mask": "Assets/BachDangCinematic/Characters/Meshy_AI_Dũng_the_Veteran_biped/Surface.png"
+    },
+    {
+      "model": "Assets/Model_NPC/YoungPea/Young_Pea/Meshy_AI_Silent_Young_Disciple_biped_Character_output.fbx",
+      "albedo": "Assets/Model_NPC/YoungPea/Young_Pea/Meshy_AI_Silent_Young_Disciple_biped_texture_0.png",
+      "normal": "Assets/Model_NPC/YoungPea/Young_Pea/Meshy_AI_Silent_Young_Disciple_biped_texture_0_normal.png",
+      "mask": "Assets/BachDangCinematic/Characters/Meshy_AI_Silent_Young_Disciple_biped/Surface.png"
+    },
+    {
+      "model": "Assets/Main_Character/Meshy_AI_Steppe_Ironclad_biped/Meshy_AI_Steppe_Ironclad_biped/Meshy_AI_Steppe_Ironclad_biped_Character_output.fbx",
+      "albedo": "Assets/Main_Character/Meshy_AI_Steppe_Ironclad_biped/Meshy_AI_Steppe_Ironclad_biped/Meshy_AI_Steppe_Ironclad_biped_texture_0.png",
+      "normal": "Assets/Main_Character/Meshy_AI_Steppe_Ironclad_biped/Meshy_AI_Steppe_Ironclad_biped/Meshy_AI_Steppe_Ironclad_biped_texture_0_normal.png",
+      "mask": "Assets/BachDangCinematic/Characters/Meshy_AI_Steppe_Ironclad_biped/Surface.png"
+    }
+  ],
+  "environment": [
+    {
+      "material": "Assets/BeachBoatStory/Camp/CampMaterial_204e62d8bdf3e9b43bf9287a60609d8f.mat",
+      "albedo": "Assets/Models/ModelAI/Meshy_AI_Bound_Relic_1009054857_texture_fbx/Meshy_AI_Bound_Relic_1009054857_texture.png",
+      "normal": "Assets/Models/ModelAI/Meshy_AI_Bound_Relic_1009054857_texture_fbx/Meshy_AI_Bound_Relic_1009054857_texture_normal.png",
+      "roughness": "Assets/Models/ModelAI/Meshy_AI_Bound_Relic_1009054857_texture_fbx/Meshy_AI_Bound_Relic_1009054857_texture_roughness.png",
+      "mask": "Assets/BachDangCinematic/Environment/b23dbdb88da6/Surface.png"
+    },
+    {
+      "material": "Assets/BeachBoatStory/Camp/CampMaterial_89989688032b89a4a93170ab1cb58790.mat",
+      "albedo": "Assets/Models/ModelAI/Meshy_AI_Rustic_Wooden_Stage_1009055412_texture_fbx/Meshy_AI_Rustic_Wooden_Stage_1009055412_texture.png",
+      "normal": "Assets/Models/ModelAI/Meshy_AI_Rustic_Wooden_Stage_1009055412_texture_fbx/Meshy_AI_Rustic_Wooden_Stage_1009055412_texture_normal.png",
+      "roughness": "Assets/Models/ModelAI/Meshy_AI_Rustic_Wooden_Stage_1009055412_texture_fbx/Meshy_AI_Rustic_Wooden_Stage_1009055412_texture_roughness.png",
+      "mask": "Assets/BachDangCinematic/Environment/e77ce6ce5756/Surface.png"
+    },
+    {
+      "material": "Assets/BeachBoatStory/StakeQuest/Thai_QuestStake.mat",
+      "albedo": "Assets/Models/ModelAI/CayGo/CayGo/Meshy_AI_Fallen_Forest_Giant_1009055522_texture.png",
+      "normal": "Assets/Models/ModelAI/CayGo/CayGo/Meshy_AI_Fallen_Forest_Giant_1009055522_texture_normal.png",
+      "roughness": "Assets/Models/ModelAI/CayGo/CayGo/Meshy_AI_Fallen_Forest_Giant_1009055522_texture_roughness.png",
+      "mask": "Assets/BachDangCinematic/Environment/c7cb959781a6/Surface.png"
+    }
+  ],
+  "externalAssetLicense": "CC0-1.0"
+}

@@ -21,9 +21,16 @@ namespace BeachBoatStory
             {
                 if (camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection) continue;
                 camera.farClipPlane = Mathf.Max(camera.farClipPlane, cameraDistance);
+                CinematicQuality.ConfigureCamera(camera);
             }
             foreach (var terrain in FindObjectsByType<Terrain>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
+                if(CinematicQuality.High)
+                {
+                    terrain.treeDistance=2800;terrain.treeBillboardDistance=650;terrain.treeCrossFadeLength=90;
+                    terrain.treeMaximumFullLODCount=1400;terrain.detailObjectDistance=100;terrain.detailObjectDensity=.6f;
+                    terrain.heightmapPixelError=4;terrain.basemapDistance=1800;continue;
+                }
                 terrain.treeDistance = Mathf.Min(terrain.treeDistance, treeDistance);
                 terrain.treeBillboardDistance = Mathf.Min(terrain.treeBillboardDistance, treeBillboardDistance);
                 terrain.treeCrossFadeLength = Mathf.Min(terrain.treeCrossFadeLength, 60);
@@ -33,9 +40,11 @@ namespace BeachBoatStory
                 terrain.basemapDistance = Mathf.Min(terrain.basemapDistance, 1200);
             }
             QualitySettings.streamingMipmapsActive = true;
-            QualitySettings.streamingMipmapsMemoryBudget = textureStreamingBudgetMB;
-            QualitySettings.streamingMipmapsMaxLevelReduction = Mathf.Max(2, QualitySettings.streamingMipmapsMaxLevelReduction);
-            QualitySettings.lodBias = Mathf.Min(QualitySettings.lodBias, .9f);
+            QualitySettings.globalTextureMipmapLimit=CinematicQuality.High?0:1;
+            QualitySettings.streamingMipmapsMemoryBudget = CinematicQuality.High?2048:textureStreamingBudgetMB;
+            QualitySettings.streamingMipmapsMaxLevelReduction = CinematicQuality.High?1:2;
+            QualitySettings.lodBias = CinematicQuality.High?1.4f:.9f;
+            QualitySettings.anisotropicFiltering=CinematicQuality.High?AnisotropicFiltering.ForceEnable:AnisotropicFiltering.Enable;
         }
     }
 }

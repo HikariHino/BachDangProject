@@ -13,7 +13,7 @@ namespace BeachBoatStory
         void OnEnable(){originalQuality=lastApplied=QualitySettings.GetQualityLevel();warmup=10;elapsed=0;frames=slowWindows=0;}
         void Update()
         {
-            if(!autoAdjustQuality||!Application.isFocused)return;
+            if(!autoAdjustQuality||!Application.isFocused||CinematicQuality.High)return;
             if(warmup>0){warmup-=Time.unscaledDeltaTime;return;}
             elapsed+=Time.unscaledDeltaTime;frames++;
             if(elapsed<5)return;
