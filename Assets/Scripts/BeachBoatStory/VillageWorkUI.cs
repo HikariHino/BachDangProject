@@ -157,9 +157,10 @@ namespace BeachBoatStory
             for(int i=0;i<3;i++)
             {
                 int have=s.IngredientCount(i),need=s.RequiredIngredient(i);
-                foodRecipes[i].text=i<2?$"{s.People} người × {(i==0?s.RicePerPerson:s.FishPerPerson)} = {need}":$"CẢ NHÓM: {need} MUỐI";
-                foodLabels[i].text=$"[{i+1}] +1 {VillageWorkStall.IngredientName(i)}\nĐÃ THÊM {have}/{need}"+(have==need?" • ĐỦ":have>need?" • THỪA":"");
-                foodCards[i].color=have==need?new Color(.10f,.36f,.27f):have>need?new Color(.48f,.17f,.12f):new Color(.17f,.20f,.20f);
+                foodRecipes[i].text=i<2?(s.IsPractice?$"{s.People} người × {(i==0?s.RicePerPerson:s.FishPerPerson)} = {need}":$"MỖI NGƯỜI: {(i==0?s.RicePerPerson:s.FishPerPerson)} {VillageWorkStall.IngredientName(i)}"):$"CẢ NHÓM: {s.SaltPerBundle} MUỐI";
+                string state=have==need?"ĐỦ":have>need?"DƯ":"THIẾU";
+                foodLabels[i].text=$"[{i+1}] +1 {VillageWorkStall.IngredientName(i)}\n"+(s.IsPractice?$"ĐÃ THÊM {have}/{need} • ":"")+state;
+                foodCards[i].color=have==need?new Color(.10f,.36f,.27f):have>need?new Color(.48f,.17f,.12f):new Color(.43f,.32f,.08f);
             }
             ropeMoves.text=$"SỐ LƯỢT XOAY\n{s.Moves}/{s.MoveLimit}";
             riceLabels[0].text=$"+{s.RiceSmall}  [1]";riceLabels[1].text=$"+{s.RiceLarge}  [2]";riceLabels[2].text=$"BỚT {s.RiceSmall}  [3]";riceLabels[3].text="ĐÓNG TÚI  [4]";

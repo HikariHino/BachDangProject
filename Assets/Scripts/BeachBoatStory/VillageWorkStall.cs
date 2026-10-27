@@ -139,6 +139,7 @@ namespace BeachBoatStory
         {
             if(Active!=this||Phase==WorkPhase.Playing)return;
             Difficulty=Mathf.Clamp(difficulty,0,UnlockedDifficulty);Progress=Mistakes=RiceLoad=0;Elapsed=0;Feedback="Hãy xem yêu cầu và tính trước khi làm.";FeedbackVersion=0;
+            if(kind==WorkKind.Provisions)Feedback="Vàng: thiếu • Xanh: đủ • Đỏ: dư. Mỗi lần bấm thêm 1; Z: hoàn tác.";
             Phase=WorkPhase.Playing;NewTask();
         }
         public bool NeedsPractice=>kind==WorkKind.Provisions&&CompletedLevels==0&&!practicedThisVisit;
@@ -221,7 +222,7 @@ namespace BeachBoatStory
             if(correct)Score("Khẩu phần đã đủ cho cả nhóm quân sĩ.");
             else
             {
-                Fault($"Cần đủ {RequiredIngredient(0)} gạo, {RequiredIngredient(1)} cá khô và {SaltPerBundle} muối cho CẢ NHÓM. Z để bỏ lần thêm nhầm.");
+                Fault(IsPractice?$"Cần đủ {RequiredIngredient(0)} gạo, {RequiredIngredient(1)} cá khô và {SaltPerBundle} muối cho CẢ NHÓM. Z để bỏ lần thêm nhầm.":"Chưa đúng khẩu phần. Vàng: thiếu • Xanh: đủ • Đỏ: dư. Thêm phần thiếu hoặc dùng Z để hoàn tác phần dư.");
                 // Keep the unsubmitted ration visible so the player can undo excess ingredients.
             }
             return correct;

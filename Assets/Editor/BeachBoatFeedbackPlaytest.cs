@@ -74,7 +74,9 @@ public static class BeachBoatFeedbackPlaytest
         Check(food.SubmitOption(3)&&food.Phase==VillageWorkStall.WorkPhase.Instructions&&!food.NeedsPractice,"Completing the sample returns to instructions for the real attempt");
         Check(food.Progress==0&&food.CompletedLevels==0&&CampaignProgress.Instance.RecordedMinigames==miniCount,"Practice grants no supplies, levels or achievement record");
         food.StartFromInstructions();Check(food.Phase==VillageWorkStall.WorkPhase.Playing&&food.Elapsed==0,"The real attempt starts its own timer at zero");
+        CheckRationColors();
         food.AdvanceTime(.2f);food.SubmitOption(3);Check(food.Elapsed>=2.2f&&food.Mistakes==1,"The timed attempt still applies the normal mistake penalty");
+        Check(!food.Feedback.Contains("Cần đủ")&&!food.Feedback.Contains(food.RequiredIngredient(0)+" gạo"),"A wrong timed ration gives color guidance without revealing calculated totals");
         while(food.Phase==VillageWorkStall.WorkPhase.Playing)
         {
             for(int i=0;i<3;i++)for(int n=food.IngredientCount(i);n<food.RequiredIngredient(i);n++)food.SubmitOption(i);
@@ -85,6 +87,26 @@ public static class BeachBoatFeedbackPlaytest
         var saved=BachDangSaveSystem.Capture("QA learned rations");BachDangSaveSystem.Apply(saved);Move(food.InteractionPosition);Check(food.TryOpen()&&!food.NeedsPractice&&food.CompletedLevels==1,"Old learning progress survives load without forcing the sample again");food.Close();
         ReportHealing();BattleGuide();
         foreach(var p in hashes)Check(File.Exists(p.Key)&&Hash(p.Key)==p.Value,"User save unchanged: "+Path.GetFileName(p.Key));
+    }
+    static void CheckRationColors()
+    {
+        // Construct three real input states: missing rice, enough fish, excess salt.
+        for(int n=0;n<food.RequiredIngredient(1);n++)food.SubmitOption(1);
+        for(int n=0;n<=food.RequiredIngredient(2);n++)food.SubmitOption(2);
+        var ui=UnityEngine.Object.FindAnyObjectByType<VillageWorkUI>();Invoke(ui,"Update");
+        var cards=ui.transform.Find("WorkOverlay/Workbench/Work/Ingredients");
+        var colors=new Color[3];
+        for(int i=0;i<3;i++)
+        {
+            var card=cards.Find("Ingredient"+i);var recipe=card.Find("Recipe").GetComponent<TMPro.TMP_Text>().text;
+            var label=card.Find("Name").GetComponent<TMPro.TMP_Text>().text;colors[i]=card.GetComponent<Image>().color;
+            Check(!recipe.Contains("=")&&!label.Contains("ĐÃ THÊM")&&!label.Contains("/"),"Timed card hides computed answers and quantity counters: "+i);
+            Check(label.Contains(new[]{"THIẾU","ĐỦ","DƯ"}[i]),"Live inputs display the matching missing/enough/excess status: "+i);
+        }
+        Check(colors[0].r>colors[0].g&&colors[0].g>colors[0].b*2&&colors[1].g>colors[1].r*2&&colors[2].r>colors[2].g*2,"Missing is yellow, enough green and excess red");
+        Check(cards.Find("Ingredient2/Recipe").GetComponent<TMPro.TMP_Text>().text=="CẢ NHÓM: "+food.SaltPerBundle+" MUỐI","Timed salt retains the unmultiplied whole-group requirement");
+        typeof(BeachBoatVillageWorkPlaytest).GetMethod("Capture",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,new object[]{"RationsColorFeedback"});
+        Check(food.RestoreCurrentTask()&&food.IngredientCount(0)==0&&food.IngredientCount(1)==0&&food.IngredientCount(2)==0,"Reset clears the sample inputs without changing the live recipe");
     }
     static void ReportHealing()
     {
