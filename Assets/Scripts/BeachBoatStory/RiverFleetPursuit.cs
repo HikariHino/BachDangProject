@@ -33,6 +33,26 @@ namespace BeachBoatStory
             }
         }
         EnemyFleetDirector Fleet=>GetComponent<EnemyFleetDirector>();
+        public bool TryEscortGoal(AmbientRiverBoat escort,out Vector3 goal)
+        {
+            goal=default;
+            var player=QuestRowboat.Instance;var zone=RiverStakeZone.Instance;
+            if(!Fleet.BattleStarted||RiverBattleObjective.Counterattack||!escort.lightPatrol||player==null||zone==null)return false;
+            var boats=RiverBoardingCombat.Instance?.friendlyBoats;
+            if(boats==null)return false;
+            int slot=0;bool registered=false;
+            foreach(var boat in boats)
+            {if(boat==escort){registered=true;break;}if(boat!=null&&boat.lightPatrol)slot++;}
+            if(!registered)return false;
+            // Keep the lure flotilla on the western flank, leaving both the player's
+            // bow and every incoming enemy lane clear. Rear ranks have separate stations.
+            float edge=float.PositiveInfinity;
+            foreach(var ship in Fleet.enemyShips)if(ship!=null)edge=Mathf.Min(edge,ship.spawnPoint.x-ship.stakeHitDistance-120);
+            float radius=BoatHullCollision.Get(escort.transform).Radius;
+            float x=Mathf.Min(player.transform.position.x-260,edge-radius-escort.trafficPadding-180)-(slot%2)*240;
+            float z=Mathf.Max(player.transform.position.z-220,zone.FieldBounds.max.z+320)+(slot/2)*280;
+            goal=new Vector3(x,TideSystem.CurrentWaterHeight,z);return true;
+        }
         Vector3 origin;
         bool initialized;
         public void ResetLure()

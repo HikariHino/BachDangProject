@@ -19,6 +19,7 @@ public static class BeachBoatConcurrentBattlePlaytest
     static float launched,ebbTime,ambushTime,highWater;
     static float phaseTime,boatDistance;
     static Vector3 chaseStart;
+    static Dictionary<string,Vector3> escortStarts;
     static int lastFrame=-1;
     static string runtimeError;
     static Vector3[] berths;
@@ -95,7 +96,7 @@ public static class BeachBoatConcurrentBattlePlaytest
                 Check(probe.IsHullInsideStakeField,"Full hull inside the stake field is recognized before the final 55-unit waypoint radius");
                 probe.transform.SetPositionAndRotation(old,rotation);Physics.SyncTransforms();
                 RiverPlayerCombat.Instance.ReturnFireEnabled=false;
-                RiverBoardingCombat.Instance.enabled=false;fleet.StartBattle();fleet.GetComponent<RiverInvasionIntro>().Cancel();highWater=TideSystem.CurrentWaterHeight;launched=Time.time;Time.timeScale=4;phase=1;return;
+                RiverBoardingCombat.Instance.enabled=true;fleet.StartBattle();fleet.GetComponent<RiverInvasionIntro>().Cancel();highWater=TideSystem.CurrentWaterHeight;launched=Time.time;Time.timeScale=4;phase=1;return;
             }
             if(phase==1)
             {
@@ -105,12 +106,17 @@ public static class BeachBoatConcurrentBattlePlaytest
                 Check(fleet.enemyShips.Select((s,i)=>Vector3.Distance(s.targetPoint.position,berths[i])<.01f).All(v=>v),"Existing dispersed enemy wreck berths stay unchanged");
                 Check(!fleet.BattleCaption.Contains("Đợt"),"Fleet entry no longer announces timed waves");
                 Check(fleet.enemyShips.Min(s=>s.spawnPoint.z)>zone.FieldBounds.max.z+1400,"Enemy fleet spawns far upstream for the rower to sail out and bait it");
+                escortStarts=RiverBoardingCombat.Instance.friendlyBoats.Where(b=>b.lightPatrol).ToDictionary(b=>b.name,b=>b.transform.position);
                 phaseTime=Time.time;phase=10;return;
             }
             if(phase==10)
             {
                 if(Time.time-phaseTime<20)return;
                 Check(!fleet.Pursuit.IsPursuing&&!fleet.EbbStarted&&fleet.ShipsInside==0,"Waiting near home cannot automatically lure the fleet or trigger falling tide");
+                var escorts=RiverBoardingCombat.Instance.friendlyBoats.Where(b=>b.lightPatrol).ToArray();
+                Check(escorts.Length>0&&escorts.All(b=>b.IsEscortingLure),"All light boats adopt lure escort orders before the player meets the enemy");
+                Check(escorts.Any(b=>QuestRowboat.FlatDistance(escortStarts[b.name],b.transform.position)>40),"Lure escorts physically row toward their flank formation");
+                Check(RiverBoardingCombat.Instance.CaptureSave().allies.All(a=>a.state==0&&a.arrows==2),"Allied crew remain aboard with their arrows unspent throughout the initial lure");
                 var boat=QuestRowboat.Instance;var p=fleet.Pursuit.GuidePosition;
                 Check(boat.CanOccupy(p,Quaternion.Euler(0,180,0)),"The approach arrow offers a navigable position outside the nearest enemy hull");
                 var voices=fleet.GetComponent<RiverBattleVoices>();voices.ResetForNewBattle();voices.PlayInvasionIntroduction();
@@ -135,8 +141,19 @@ public static class BeachBoatConcurrentBattlePlaytest
                 Check(HullsSeparate(fleet),"The pursuing enemy fleet retains separate solid hulls");
                 Check(!fleet.Pursuit.HasEnteredTrap&&!fleet.EbbStarted,"Pursuit outside the stake field does not trigger the ambush");
                 Check(fleet.GetComponent<RiverBattleVoices>().PursuitPlayed,"The pursuit cry is issued after the enemy meets the bait");
+                var boarding=RiverBoardingCombat.Instance;var crew=boarding.CaptureSave().allies;
+                Check(crew.All(a=>a.state==0&&a.arrows==2)&&boarding.AlliedArrowHits==0&&boarding.AlliedSwordHits==0,"Live allied AI cannot shoot, board or attack during pursuit");
+                Check(boarding.HostileBoardings==0,"Enemy boarding parties do not leave the pursuing fleet before the ambush");
+                var lights=boarding.friendlyBoats.Where(b=>b.lightPatrol).ToArray();
+                float left=fleet.enemyShips.Min(s=>s.transform.position.x-s.stakeHitDistance);
+                Check(lights.All(b=>b.LureEscortGoal.x<left-200&&b.LureEscortGoal.z>zone.FieldBounds.max.z+250),"Escort goals stay outside the incoming enemy lanes and the stake entrance");
                 var save=BachDangSaveSystem.Capture("QA pursuit");var anchor=fleet.Pursuit.FormationAnchor;var positions=fleet.enemyShips.Select(s=>s.transform.position).ToArray();
-                BachDangSaveSystem.Apply(save);RiverBoardingCombat.Instance.enabled=false;RiverPlayerCombat.Instance.ReturnFireEnabled=false;
+                // Reproduce an older save with an ally already sent to an enemy deck.
+                save.boarding.allies[0].state=3;save.boarding.allies[0].boat=fleet.enemyShips[0].name;
+                save.boarding.allies[0].target=BachDangSaveSystem.GuardId(RiverPlayerCombat.Instance.guards.First(g=>g.IsAlive));
+                BachDangSaveSystem.Apply(save);RiverBoardingCombat.Instance.enabled=true;RiverPlayerCombat.Instance.ReturnFireEnabled=false;
+                boarding.StepAllies(.05f);
+                Check(boarding.CaptureSave().allies.All(a=>a.state==0&&a.arrows==2),"Loading an old premature allied assault returns its crew to escort duty without shooting");
                 Check(fleet.Pursuit.Stage==RiverFleetPursuit.LureStage.Pursuit&&Vector3.Distance(fleet.Pursuit.FormationAnchor,anchor)<.01f,"A pursuit save restores the stage and formation anchor");
                 Check(fleet.enemyShips.Select((s,i)=>Vector3.Distance(positions[i],s.transform.position)<.01f).All(v=>v),"Loading pursuit preserves all physical ship positions without respawning them");
                 Check(fleet.GetComponent<RiverBattleVoices>().PursuitPlayed,"Loading pursuit retains the spoken order so it is not repeated");
@@ -162,7 +179,7 @@ public static class BeachBoatConcurrentBattlePlaytest
                 else if(phaseTime>=0)
                 {
                     Check(!boat.IsBroken,"The rower can pass across the submerged stakes before the falling tide");
-                    var save=BachDangSaveSystem.Capture("QA entering trap");BachDangSaveSystem.Apply(save);RiverBoardingCombat.Instance.enabled=false;RiverPlayerCombat.Instance.ReturnFireEnabled=false;
+                    var save=BachDangSaveSystem.Capture("QA entering trap");BachDangSaveSystem.Apply(save);RiverBoardingCombat.Instance.enabled=true;RiverPlayerCombat.Instance.ReturnFireEnabled=false;
                     Check(fleet.Pursuit.HasEnteredTrap,"A save after leading the fleet inside does not restart baiting");phaseTime=-1;
                 }
                 if(!fleet.EbbStarted)return;phase=2;
@@ -173,12 +190,22 @@ public static class BeachBoatConcurrentBattlePlaytest
                 Check(fleet.ShipsInside==fleet.ShipCount,"The complete physical formation enters deeply before the ebb begins");
                 Check(HullsSeparate(fleet),"The entire baited formation reaches the trap without overlapping hulls");
                 Check(TideSystem.Instance.IsControlledEbb&&TideSystem.Instance.TargetWaterHeight==TideSystem.Instance.lowTideY,"Entire fleet inside actually starts controlled falling water");phase=3;
+                Check(RiverBoardingCombat.Instance.CaptureSave().allies.All(a=>a.state==0&&a.arrows==2),"Falling water alone still does not authorize allied attacks before exposed stakes");
             }
             if(phase==3)
             {
                 if(!fleet.AmbushStarted)return;ambushTime=Time.time;
                 Check(TideSystem.CurrentWaterHeight<highWater-5&&zone.ExposedStakeCount>0,"Falling water visibly exposes the planted stakes");
                 Check(fleet.enemyShips.All(s=>s.isDestroyed),"The whole fleet is caught and starts sinking in one ambush event");phase=4;
+                var boarding=RiverBoardingCombat.Instance;var ally=boarding.CaptureSave().allies.First(a=>a.health>0&&a.arrows>0);
+                var guard=RiverPlayerCombat.Instance.guards.FirstOrDefault(g=>g.IsAlive);
+                if(guard!=null)
+                {
+                    var old=guard.transform.position;guard.transform.position=ally.position+Vector3.forward*100;
+                    int arrows=boarding.CaptureSave().allies.Sum(a=>a.arrows);boarding.StepAllies(.05f);
+                    Check(boarding.CaptureSave().allies.Sum(a=>a.arrows)<arrows,"The exposed-stake ambush actually releases allied bow fire again");guard.transform.position=old;
+                }
+                boarding.enabled=false;
             }
             if(phase==4)
             {

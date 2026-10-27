@@ -551,6 +551,17 @@ namespace BeachBoatStory
             {
                 if(a.health<=0){a.go.SetActive(false);continue;}
                 var body=a.go.GetComponent<ActorSolidBody>();body.Carrier=a.state==0?a.home.transform:a.state==3||a.state==4?a.carrier:null;
+                if(!RiverBattleObjective.Counterattack)
+                {
+                    // During the lure, crew stay aboard and never order their helmsman
+                    // to chase a guard, shoot, or jump overboard. Repair old premature assaults too.
+                    if(a.state!=0){a.pose.FinishTraversal();a.state=0;a.travel=0;}
+                    a.target=null;a.carrier=a.home.transform;body.Carrier=a.carrier;
+                    var station=HomeStation(a);var hull=BoatHullCollision.Get(a.carrier);
+                    if(hull.TryDeckSurface(station,out var floor))station.y=floor.y+AllyRootOffset(a)+.15f;
+                    a.local=a.carrier.InverseTransformPoint(station);a.go.transform.position=station;
+                    a.pose.SetSword(false);a.pose.SetRanged(false);a.pose.Walk(false);a.home.SetBattleTarget(null);continue;
+                }
                 var candidate=TargetFor(a);
                 if(a.target==null||!a.target.IsAlive||candidate!=null&&(candidate.transform.position-a.go.transform.position).sqrMagnitude<(a.target.transform.position-a.go.transform.position).sqrMagnitude*.5f)a.target=candidate;
                 var home=HomeStation(a);
@@ -698,6 +709,12 @@ namespace BeachBoatStory
         public void StepHostiles(float dt)
         {
             if(!AlliedAIEnabled){foreach(var h in hostiles)h.go.SetActive(false);return;}
+            if(!RiverBattleObjective.Counterattack)
+            {
+                foreach(var h in hostiles)if(h.source!=null&&h.state!=0&&!h.fromWreck)
+                {h.state=0;h.boat=null;h.pose.FinishTraversal();h.pose.SetSword(false);h.guard.IsIndependentBoarder=false;h.go.GetComponent<ActorSolidBody>().Carrier=h.source.transform;h.go.transform.position=h.source.transform.position+Vector3.up*22;}
+                return;
+            }
             foreach(var h in hostiles)
             {
                 if(h.source==null)
@@ -814,7 +831,7 @@ namespace BeachBoatStory
         }
         public void StepDefenders()
         {
-            if(!AlliedAIEnabled)return;
+            if(!AlliedAIEnabled||!RiverBattleObjective.Counterattack)return;
             foreach(var defender in defenders)
             {
                 if(defender.health<=0||!defender.soldier.gameObject.activeInHierarchy)continue;

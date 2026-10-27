@@ -38,3 +38,21 @@ emerged. These are test-run observations, not a timed trigger: gameplay still
 requires player detection, returning through the field and every hull inside.
 The 3.07-second pursuit clip decodes successfully, matches its manifest digest
 and peaks below 0.656. All checked user save files remained byte-for-byte intact.
+
+Light allied boats escort the player on the western flank during approach,
+pursuit and falling water. Their separate stations leave the incoming enemy
+lanes, the player's bow and the stake entrance clear. They wait outside the
+stake field as the player leads the enemy inside. Large patrol craft retain
+their normal routes. Escort movement uses the same solid hull sweep and water
+path planner; slow frames advance in small time slices rather than losing time.
+
+Allied crew cannot assign enemy targets, shoot or board during the lure. Enemy
+boarding parties also remain aboard until the ambush. Crew from an older save
+that prematurely launched an assault return to their own escort stations with
+their saved health intact. Once stakes emerge and the ambush begins, ranged
+attacks and boarding resume normally; victory still orders withdrawal.
+
+The live-AI pursuit regression passed 51 checks on 2026-10-27, including actual
+escort movement, unspent allied arrows throughout pursuit and ebb, no premature
+enemy boarding, old-save assault recovery, resumption of allied bow fire at the
+ambush, the complete physical fleet sinking together, and unchanged user saves.

@@ -69,7 +69,7 @@ namespace BeachBoatStory
         void Update()
         {
             UpdateShots(Time.deltaTime);
-            if (!fighting) return;
+            if (!fighting||!RiverBattleObjective.Counterattack) return;
             if (Time.time >= nextAssignment) { nextAssignment = Time.time + 1.2f; AssignTargets(); }
             if (Time.time < nextVolley) return;
             nextVolley = Time.time + volleyInterval;

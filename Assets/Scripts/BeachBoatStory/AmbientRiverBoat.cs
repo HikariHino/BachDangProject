@@ -17,6 +17,8 @@ namespace BeachBoatStory
         public bool IsReturningToHarbor {get;private set;}
         public bool HasReturnedToHarbor {get;private set;}
         public bool IsAtBattleStation {get;private set;}
+        public bool IsEscortingLure {get;private set;}
+        public Vector3 LureEscortGoal {get;private set;}
         public Vector3 ReturnBerth=>returnBerth;
         public int PlannedDetours {get;private set;}
         public bool HasNavigableRoute {get;private set;}
@@ -55,6 +57,7 @@ namespace BeachBoatStory
         }
         public void SetBattleTarget(Transform value)
         {
+            if(EnemyFleetDirector.Instance?.BattleStarted==true&&!RiverBattleObjective.Counterattack)value=null;
             battleTarget=value;pause=0;
             if(value!=null){IsReturningToHarbor=HasReturnedToHarbor=false;}
         }
@@ -74,7 +77,7 @@ namespace BeachBoatStory
         }
         public void ReturnToHarbor(int slot)
         {
-            battleTarget=null;IsAtBattleStation=false;HasReturnedToHarbor=false;
+            battleTarget=null;IsAtBattleStation=IsEscortingLure=false;HasReturnedToHarbor=false;
             var dock=QuestRowboat.Instance!=null?QuestRowboat.Instance.dockPoint.position:checkpointHome;
             var used=new List<Vector3>();if(QuestRowboat.Instance!=null)used.Add(QuestRowboat.Instance.transform.position);
             foreach(var other in RiverBoardingCombat.Instance?.friendlyBoats??Array.Empty<AmbientRiverBoat>())
@@ -102,17 +105,25 @@ namespace BeachBoatStory
         }
         public void ResetForCheckpoint()
         {
-            if(!ready)return;battleTarget=null;IsReturningToHarbor=HasReturnedToHarbor=IsAtBattleStation=false;
+            if(!ready)return;battleTarget=null;IsReturningToHarbor=HasReturnedToHarbor=IsAtBattleStation=IsEscortingLure=false;
             var p=checkpointHome;p.y=TideSystem.CurrentWaterHeight+waterlineOffset;RestorePosition(p,checkpointRotation);target=NearestNextPoint();pause=blocked=0;SetRowing(true);
         }
         void Update(){liveUpdate=true;Step(Time.deltaTime);liveUpdate=false;}
         public void Step(float dt)
         {
             if(!ready||dt<=0)return;
+            if(dt>.05f)
+            {
+                int slices=Mathf.CeilToInt(Mathf.Min(dt,.25f)/.05f);float slice=Mathf.Min(dt,.25f)/slices;
+                for(int i=0;i<slices;i++)Step(slice);return;
+            }
             // Water level is the support plane, even while an order/dialogue pauses navigation.
             var afloat=transform.position;afloat.y=TideSystem.CurrentWaterHeight+waterlineOffset;transform.position=afloat;
             if(BeachBoatQuestSession.InteractionBlocked)return;
             dt=Mathf.Min(dt,.05f);clock+=dt;
+            var pursuit=EnemyFleetDirector.Instance?.Pursuit;
+            var escortGoal=Vector3.zero;
+            IsEscortingLure=pursuit!=null&&pursuit.TryEscortGoal(this,out escortGoal);
             if(YieldFromTraffic(dt))return;
             var story=BachDangStoryManager.Instance;
             if(story!=null&&(story.currentState==BachDangStoryManager.StoryState.Act3_Victory||story.currentState==BachDangStoryManager.StoryState.Act3_Celebration)&&!IsReturningToHarbor&&!HasReturnedToHarbor)
@@ -122,6 +133,12 @@ namespace BeachBoatStory
             {
                 if(MoveTo(returnBerth,dt,Mathf.Max(24,cruiseSpeed*1.25f)))
                 {IsReturningToHarbor=false;HasReturnedToHarbor=true;SetRowing(false);}return;
+            }
+            if(IsEscortingLure)
+            {
+                LureEscortGoal=escortGoal;
+                battleTarget=null;IsAtBattleStation=false;
+                MoveTo(escortGoal,dt,Mathf.Max(64,cruiseSpeed*1.8f));return;
             }
             if(battleTarget!=null&&battleTarget.gameObject.activeInHierarchy)
             {
