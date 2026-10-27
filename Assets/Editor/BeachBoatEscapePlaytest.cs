@@ -25,7 +25,9 @@ public static class BeachBoatEscapePlaytest
     static void Leave(BachDangFrontEnd front,string label)
     {
         Check(front.HandleEscape(),label+": Escape is handled");
-        Check(front.Page==BachDangFrontEnd.MenuPage.None&&Time.timeScale==1&&Cursor.lockState==CursorLockMode.Locked,label+": return directly to world controls without Pause");
+        // Headless Unity reports CursorLockMode.None even immediately after a
+        // Locked request because there is no focused interactive window.
+        Check(front.Page==BachDangFrontEnd.MenuPage.None&&Time.timeScale==1&&(Application.isBatchMode||Cursor.lockState==CursorLockMode.Locked),label+": return directly to world controls without Pause; page="+front.Page+", scale="+Time.timeScale+", cursor="+Cursor.lockState);
         Check(!front.HandleEscape()&&front.Page==BachDangFrontEnd.MenuPage.None,label+": the same key press cannot also open Pause");
     }
     static CampRecoveryGame StartTraining(bool win)
@@ -42,7 +44,7 @@ public static class BeachBoatEscapePlaytest
     }
     static void Finish(string failure)
     {
-        File.WriteAllText("Logs/EscapePlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=failure==null,error=failure,phase,checks},Newtonsoft.Json.Formatting.Indented));SessionState.SetBool(Flag,false);Time.timeScale=1;EditorApplication.isPlaying=false;
+        File.WriteAllText("Logs/EscapePlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=failure==null,error=failure,phase,checks},Newtonsoft.Json.Formatting.Indented));SessionState.SetBool(Flag,false);Time.timeScale=1;EditorApplication.isPlaying=false;BachDangSaveSystem.TestDirectory=null;
     }
     static void Tick()
     {
@@ -56,8 +58,10 @@ public static class BeachBoatEscapePlaytest
             switch(phase)
             {
                 case 0:
-                    front.Play();Object.FindAnyObjectByType<Intro>().SkipOpening();Dialogue.Instance.DismissForCheckpoint();story.TransitionTo(Story.StoryState.Act1_Training,true);Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;break;
+                    BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/PhysicalEscapeQA/"+DateTime.Now.ToString("yyyyMMddHHmmssfff"));BachDangAutoSave.Instance.enabled=false;
+                    front.Play();Object.FindAnyObjectByType<Intro>().SkipOpening();Dialogue.Instance.DismissForCheckpoint();story.TransitionTo(Story.StoryState.Act1_Training,true);Dialogue.Instance.DismissForCheckpoint();Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;break;
                 case 1:
+                    Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;
                     Move(drum.GetComponentInParent<DrumTrainingGround>().Approach);drum.BeginActivity();Check(BeachBoatMinigameStation.Active==drum,"Open the mandatory first drum attempt");Leave(front,"Mandatory drum cancel");Check(BeachBoatMinigameStation.Active==null&&!drum.HasCompleted&&story.currentState==Story.StoryState.Act1_Training,"Cancelling never completes the mandatory drum quest");break;
                 case 2:
                     Check(!BeachBoatMinigameUI.Instance.transform.Find("DrumMinigame").gameObject.activeSelf,"Cancelled drum screen disappears on the next rendered frame");Check(front.HandleEscape()&&front.Page==BachDangFrontEnd.MenuPage.Pause&&Time.timeScale==0,"A new Escape press while playing the world opens the real Pause menu");break;
@@ -70,13 +74,13 @@ public static class BeachBoatEscapePlaytest
                 case 6:
                     Move(drum.GetComponentInParent<DrumTrainingGround>().Approach);drum.BeginActivity();Check(BeachBoatMinigameStation.Active==drum,"A completed drum can be replayed");Leave(front,"Accidental drum replay");Check(drum.HasCompleted&&drum.BestTime==best&&CampaignProgress.Instance.MiniRecord(0)!=null,"Leaving a replay preserves the completed drum, achievement and best time");index=0;break;
                 case 7:
-                    {var stall=VillagePreparationQuest.Instance.stalls[index];stall.RestoreLearningProgress(1);Move(stall.InteractionPosition);Check(stall.TryOpen(),"Open instructions at "+stall.kind);Leave(front,"Trade instructions "+stall.kind);Check(VillageWorkStall.Active==null&&stall.CompletedLevels==1,"Leaving instructions keeps the earned level at "+stall.kind);if(++index<4)return;index=0;break;}
+                    {var stall=VillagePreparationQuest.Instance.stalls[index];stall.RestoreLearningProgress(1);Move(stall.InteractionPosition);Check(stall.TryOpen(),"Open instructions at "+stall.kind);Leave(front,"Trade instructions "+stall.kind);Check(VillageWorkStall.Active==null&&stall.CompletedLevels==0,"Leaving instructions keeps the earned level at "+stall.kind);if(++index<4)return;index=0;break;}
                 case 8:
                     {var stall=VillagePreparationQuest.Instance.stalls[index];stall.RestoreLearningProgress(3);Move(stall.InteractionPosition);Check(stall.TryOpen(),"Replay a completed trade "+stall.kind);stall.StartAttempt(0);Leave(front,"Trade replay "+stall.kind);Check(VillageWorkStall.Active==null&&stall.Completed&&stall.CompletedLevels==3,"Leaving an active replay preserves collected material at "+stall.kind);if(++index<4)return;break;}
                 case 9:
-                    {var stall=VillagePreparationQuest.Instance.stalls.First(s=>s.kind==VillageWorkStall.WorkKind.Timber);stall.RestoreLearningProgress(1);Move(stall.InteractionPosition);Check(stall.TryOpen(),"Open a new medium timber attempt");stall.StartAttempt(1);for(int task=0;task<stall.Goal;task++){int mask=Enumerable.Range(0,1<<stall.TimberOptions).First(stall.TimberSelectionValid);for(int bit=0;bit<stall.TimberOptions;bit++)if((mask&(1<<bit))!=0)stall.SubmitOption(bit);stall.SubmitOption(8);}Check(stall.Phase==VillageWorkStall.WorkPhase.Won,"Actually solve the timber tasks before leaving the result screen");Leave(front,"Trade won screen");Check(stall.CompletedLevels==1,"Escape does not claim an unconfirmed material reward");break;}
+                    {var stall=VillagePreparationQuest.Instance.stalls.First(s=>s.kind==VillageWorkStall.WorkKind.Timber);stall.RestoreLearningProgress(1);Move(stall.InteractionPosition);Check(stall.TryOpen(),"Open a new medium timber attempt");stall.StartAttempt(1);BeachBoatPhysicalVillagePlaytest.SolveAttempt(stall);Check(stall.Phase==VillageWorkStall.WorkPhase.Won,"Actually complete the physical timber tasks before leaving the result screen");Leave(front,"Trade won screen");Check(stall.CompletedLevels==0,"Escape does not claim an unconfirmed material reward");break;}
                 case 10:
-                    {var stall=VillagePreparationQuest.Instance.stalls.First(s=>s.kind==VillageWorkStall.WorkKind.Timber);Move(stall.InteractionPosition);stall.TryOpen();stall.StartAttempt(1);stall.AdvanceTime(stall.TimeLimit+1);Check(stall.Phase==VillageWorkStall.WorkPhase.Lost,"Reach the actual timeout screen");Leave(front,"Trade lost screen");Check(stall.CompletedLevels==1,"Escape on failure keeps previous completed levels");break;}
+                    {var stall=VillagePreparationQuest.Instance.stalls.First(s=>s.kind==VillageWorkStall.WorkKind.Timber);Move(stall.InteractionPosition);stall.TryOpen();stall.StartAttempt(1);stall.AdvanceTime(stall.TimeLimit+1);Check(stall.Phase==VillageWorkStall.WorkPhase.Lost,"Reach the actual timeout screen");Leave(front,"Trade lost screen");Check(stall.CompletedLevels==0,"Escape on failure keeps previous completed levels");break;}
                 case 11:
                     stamina=vitals.maxStamina;trained=vitals.CompletedTrainingLevels;Move(Armory.transform.position);CampRecoveryGame.Open(Armory);Leave(front,"Stamina instructions");Check(CampRecoveryGame.Active==null&&vitals.maxStamina==stamina,"Leaving optional training instructions grants no reward");break;
                 case 12:

@@ -18,9 +18,12 @@ public class Camera_Script : MonoBehaviour
     public bool enableShoulderAim = false;
     public float aimDistance = 14f, aimFieldOfView = 48f;
     public float Yaw => yaw;
+    public float Elevation=>pitch;
+    public void SetElevation(float degrees)
+    {pitch=Mathf.Clamp(degrees,yMinAngle,yMaxAngle);if(initialized&&target!=null)ApplyPose(true);}
     public bool IsAiming { get; private set; }
     public bool IsFreeLooking { get; private set; }
-    public bool InputCaptured => Cursor.lockState == CursorLockMode.Locked && (!BeachBoatQuestSession.InputBlocked||StakeConstruction.AllowsCamera);
+    public bool InputCaptured => Cursor.lockState == CursorLockMode.Locked && (!BeachBoatQuestSession.InputBlocked||StakeConstruction.AllowsCamera||VillagePhysicalWork.AllowsCamera);
     float yaw, pitch = 12f, normalFieldOfView, nextTargetSearch;
     bool initialized;
     Vector3 velocity, previousTarget;

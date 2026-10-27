@@ -71,9 +71,9 @@ namespace BeachBoatStory
                     {
                         var stall=VillagePreparationQuest.Instance.stalls.FirstOrDefault(s=>(int)s.kind==work);
                         bool supplied=stall!=null&&stall.Completed;
-                        Row("VẬT TƯ • "+CampaignProgress.WorkNames[work],"Chơi một lượt mức Vừa rồi nhận vật tư.",supplied,current&&!supplied,66);
+                        Row("VẬT TƯ • "+CampaignProgress.WorkNames[work],"Thao tác trực tiếp tại sạp, giao hàng rồi nhận vật tư.",supplied,current&&!supplied,66);
                         int index=1+work;bool completed=supplied||p.MiniRecord(index)!=null;
-                        Row("    Minigame • Vừa",p.TimingResult(index)+"\n"+p.TimingBands(index),completed,current&&!completed,82);
+                        Row("    Thành tích chuẩn bị",p.TimingResult(index)+"\n"+p.TimingBands(index),completed,current&&!completed,82);
                     }
                 }
                 int trained=BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().CompletedTrainingLevels;

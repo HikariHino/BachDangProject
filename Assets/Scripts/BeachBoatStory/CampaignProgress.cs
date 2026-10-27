@@ -11,9 +11,9 @@ namespace BeachBoatStory
         public BachDangSaveData.Campaign Record {get;private set;}=new BachDangSaveData.Campaign();
         public static readonly int[] StoryOrder={0,12,1,2,13,3,4,5,6,7,8,9,10,11,14};
         public static readonly string[] MissionTitles={"Nhận lệnh Ngô Quyền","Luyện hiệu lệnh trống trận","Rời doanh trại tới làng","Thu gom cọc gỗ","Chuẩn bị đủ bốn loại vật tư","Trở về doanh trại","Báo cáo vật tư với Ngô Quyền","Dựng đủ năm cụm cọc","Báo cáo hoàn thành trận địa","Chờ lệnh xuất chiến","Nhận lệnh đánh giặc","Xuất chiến trên sông","Đánh chìm hạm đội và hạ hết địch","Báo công với Ngô Quyền","Hoàn thành chiến dịch Bạch Đằng"};
-        public const int ScoredMinigames=5; // Drum plus one medium attempt at each of the four trades.
-        public const int RankRulesVersion=4;
-        public static readonly string[] WorkNames={"Sạp gỗ","Nối dây","Hàng gạo","Gói lương khô"};
+        public const int ScoredMinigames=5; // Drum plus one completed physical attempt at each trade.
+        public const int RankRulesVersion=5;
+        public static readonly string[] WorkNames={"Cưa và vác gỗ","Buộc bó cọc","Đong bao gạo","Gói lương khô"};
         public static readonly string[] DifficultyNames={"Dễ","Vừa","Khó"};
         float stakeTarget;
         void Awake(){Instance=this;}
@@ -73,9 +73,9 @@ namespace BeachBoatStory
                 stakeTarget=Mathf.Max(180,distance/Mathf.Max(1,boat.maxSpeed*.65f)+zone.ClusterCount*14+90);return stakeTarget;
             }
         }
-        public static string MiniId(int index)=>index==0?"drum":$"village:{index-1}:1";
+        public static string MiniId(int index)=>index==0?"drum":$"village3d:{index-1}";
         public static int MiniIndex(string id){for(int i=0;i<ScoredMinigames;i++)if(MiniId(i)==id)return i;return -1;}
-        public static string MiniName(int index)=>index==0?"Hiệu lệnh trống trận":WorkNames[index-1]+" • Vừa";
+        public static string MiniName(int index)=>index==0?"Hiệu lệnh trống trận":WorkNames[index-1];
         public static float MiniLimit(int index)=>index==0?BeachBoatMinigameStation.WarDrumTimeLimit:VillageWorkStall.LimitFor((VillageWorkStall.WorkKind)(index-1),1);
         public static string RankName(int tier)=>tier==3?"S":tier==2?"A":tier==1?"B":"C";
         public static float MiniTarget(int index,int tier)=>Mathf.Round(MiniLimit(index)*(index==0?(tier==3?.4f:tier==2?.6f:.8f):(tier==3?.6f:tier==2?.8f:.95f))*100)/100;
@@ -88,12 +88,21 @@ namespace BeachBoatStory
         public string WoodResult=>WoodTimeKnown?$"Đủ 5 khúc: {Clock(Record.woodSeconds)} • Hạng {RankName(WoodRank)}":Record.woodStarted?"Đang tìm: "+Clock(Record.woodSeconds):"Chưa ghi thời gian tìm gỗ";
         public int KillRequirement(int tier)=>Mathf.Max(1,Mathf.CeilToInt(KillTarget*(tier==3?1:tier==2?.75f:.5f)));
         static bool FinitePositive(float n)=>!float.IsNaN(n)&&!float.IsInfinity(n)&&n>0;
-        public BachDangSaveData.MiniRecord MiniRecord(int index)=>Record.minigames.FirstOrDefault(m=>m!=null&&m.id==MiniId(index)&&!float.IsNaN(m.seconds)&&!float.IsInfinity(m.seconds)&&m.seconds>=0&&m.seconds<MiniLimit(index));
-        public bool MeetsMini(int index,int tier){var m=MiniRecord(index);return m!=null&&m.seconds<=MiniTarget(index,tier)+.0001f;}
+        public BachDangSaveData.MiniRecord MiniRecord(int index)
+        {
+            bool Valid(BachDangSaveData.MiniRecord m)=>m!=null&&!float.IsNaN(m.seconds)&&!float.IsInfinity(m.seconds)&&m.seconds>=0&&FinitePositive(m.limit)&&m.seconds<m.limit;
+            var current=Record.minigames.FirstOrDefault(m=>Valid(m)&&m.id==MiniId(index));
+            // Historical results keep their actual times and original limits; a new
+            // physical run gets its own record rather than rewriting a puzzle time.
+            var legacy=index==0?null:Record.minigames.FirstOrDefault(m=>Valid(m)&&m.id==$"village:{index-1}:1");
+            return current==null?legacy:legacy==null||current.seconds/current.limit<=legacy.seconds/legacy.limit?current:legacy;
+        }
+        float RecordedTarget(int index,int tier){var m=MiniRecord(index);return index>0&&m!=null&&m.id!=MiniId(index)?m.limit*(tier==3?.6f:tier==2?.8f:.95f):MiniTarget(index,tier);}
+        public bool MeetsMini(int index,int tier){var m=MiniRecord(index);return m!=null&&m.seconds<=RecordedTarget(index,tier)+.0001f;}
         public int MiniRank(int index){for(int tier=3;tier>=1;tier--)if(MeetsMini(index,tier))return tier;return 0;}
         public int RecordedMinigames=>Enumerable.Range(0,ScoredMinigames).Count(i=>MiniRecord(i)!=null);
-        public string TimingBands(int index)=>$"S ≤ {Clock(MiniTarget(index,3))}  •  A ≤ {Clock(MiniTarget(index,2))}  •  B ≤ {Clock(MiniTarget(index,1))}";
-        public string TimingResult(int index){var m=MiniRecord(index);return m==null?"Chưa ghi thời gian":$"Kỷ lục {Clock(m.seconds)} • "+(MiniRank(index)>0?"Hạng "+RankName(MiniRank(index)):"Chưa đạt mốc B");}
+        public string TimingBands(int index)=>$"S ≤ {Clock(RecordedTarget(index,3))}  •  A ≤ {Clock(RecordedTarget(index,2))}  •  B ≤ {Clock(RecordedTarget(index,1))}";
+        public string TimingResult(int index){var m=MiniRecord(index);return m==null?"Chưa ghi thời gian":$"Kỷ lục {Clock(m.seconds)} • "+(MiniRank(index)>0?"Hạng "+RankName(MiniRank(index)):"Chưa đạt mốc B")+(index>0&&m.id!=MiniId(index)?" • bản cũ":"");}
         public sealed class RankCondition
         {
             public readonly string name,detail;public readonly bool met;
@@ -106,7 +115,7 @@ namespace BeachBoatStory
             for(int work=0;work<4;work++)
             {
                 int index=1+work;var m=MiniRecord(index);
-                conditions[work+1]=new RankCondition(WorkNames[work]+" • Vừa",(m==null?"Chưa ghi":Clock(m.seconds))+$" / cần ≤ {Clock(MiniTarget(index,tier))}",MeetsMini(index,tier));
+                conditions[work+1]=new RankCondition(WorkNames[work],TimingResult(index)+$" / cần ≤ {Clock(RecordedTarget(index,tier))}",MeetsMini(index,tier));
             }
             bool stakeKnown=Record.stakeStarted&&Record.stakeFinished&&!float.IsNaN(Record.stakeSeconds)&&!float.IsInfinity(Record.stakeSeconds)&&Record.stakeSeconds>=0;
             conditions[5]=new RankCondition("Dựng đủ năm cụm cọc",(stakeKnown?Clock(Record.stakeSeconds):Record.stakeFinished?"Thiếu thời gian cũ":Record.stakeStarted?"Đang làm "+Clock(Record.stakeSeconds):"Chưa làm")+$" / cần ≤ {Clock(StakeTarget(tier))}",stakeKnown&&Record.stakeSeconds<=StakeTarget(tier)+.0001f);
@@ -155,7 +164,7 @@ namespace BeachBoatStory
                     foreach(var c in conditions)text.Append(c.met?"<color=#79E9AC>ĐẠT</color> ":"<color=#C0AAA0>CHƯA ĐẠT</color> ").Append(c.name).Append("\n").Append(c.detail).Append("\n");
                     text.Append("\n");
                 }
-                text.Append("CÁCH TÍNH THỜI GIAN\nTrống trận và mức Vừa tại bốn sạp: lấy lần thắng nhanh nhất, gồm thời gian phạt lỗi. Mốc trống S/A/B là 40%/60%/80% giới hạn; vật tư là 60%/80%/95% giới hạn mức Vừa. Thắng một lượt Vừa ở mỗi sạp và nhận vật tư để hoàn thành nhiệm vụ.\n\nĐóng cọc: từ bắt đầu cụm đầu đến xong cả năm, gồm chèo và vớt cọc. Mốc S tính theo tuyến đi, tốc độ thuyền, thời gian thao tác và 90 giây dự phòng; tối thiểu 3 phút. A/B cho phép 1,5/2 lần mốc S.\n\nHạ địch: mỗi mã địch chỉ tính một lần. Mốc S là 25% quân địch đầu trận; A/B là 75%/50% mốc S, làm tròn lên. Quân ta hạ không cộng vào số bạn tự hạ.\n\nToàn chiến dịch: gồm thời gian chơi, minigame, chèo và chiến đấu; bỏ qua sảnh, tạm dừng, bảng Tab, dẫn truyện, thoại và màn hình thất bại. Lưu/tải giữ nguyên đồng hồ.\n\nLUYỆN THỂ LỰC — TÙY CHỌN\nBa cấp, mỗi cấp tăng 20 thể lực tối đa, tổng +60. Có thể bỏ qua hoàn toàn; không khóa nhiệm vụ chính và không tham gia xét hạng.\n\nHạng chốt khi thắng và báo công với Ngô Quyền. Có thể chơi lại trống và các sạp để cải thiện kỷ lục trước khi kết thúc; đồng hồ chiến dịch vẫn chạy. Save cũ thiếu thời gian ghi CHƯA GHI, kết quả TẠM TÍNH; thành tích thời gian chỉ được xác nhận bằng kỷ lục thật.");
+                text.Append("CÁCH TÍNH THỜI GIAN\nTrống trận và bốn việc chuẩn bị: lấy lần hoàn thành nhanh nhất, gồm đi mang vật và thời gian phạt lỗi. Mốc trống S/A/B là 40%/60%/80% giới hạn; vật tư là 60%/80%/95% giới hạn. Cưa/vác ba khúc gỗ, siết ba nút buộc bó cọc, đong/giao hai bao gạo đúng vạch và gói/giao hai gói lương. Kỷ lục bản cũ giữ nguyên thời gian và xét theo giới hạn cũ; lấy kết quả tốt hơn để giữ thành tích.\n\nĐóng cọc: từ bắt đầu cụm đầu đến xong cả năm, gồm chèo và vớt cọc. Mốc S tính theo tuyến đi, tốc độ thuyền, thời gian thao tác và 90 giây dự phòng; tối thiểu 3 phút. A/B cho phép 1,5/2 lần mốc S.\n\nHạ địch: mỗi mã địch chỉ tính một lần. Mốc S là 25% quân địch đầu trận; A/B là 75%/50% mốc S, làm tròn lên. Quân ta hạ không cộng vào số bạn tự hạ.\n\nToàn chiến dịch: gồm thời gian chơi, minigame, chèo và chiến đấu; bỏ qua sảnh, tạm dừng, bảng Tab, dẫn truyện, thoại và màn hình thất bại. Lưu/tải giữ nguyên đồng hồ.\n\nLUYỆN THỂ LỰC — TÙY CHỌN\nBa cấp, mỗi cấp tăng 20 thể lực tối đa, tổng +60. Có thể bỏ qua hoàn toàn; không khóa nhiệm vụ chính và không tham gia xét hạng.\n\nHạng chốt khi thắng và báo công với Ngô Quyền. Có thể chơi lại trống và các sạp để cải thiện kỷ lục trước khi kết thúc; đồng hồ chiến dịch vẫn chạy. Save cũ thiếu thời gian ghi CHƯA GHI, kết quả TẠM TÍNH; thành tích thời gian chỉ được xác nhận bằng kỷ lục thật.");
                 text.Append("\n\nTÌM GỖ TRONG LÀNG\nMỗi hành trình có đúng 5 khúc ở vị trí ngẫu nhiên. Đồng hồ từ lúc nhận nhiệm vụ ở làng đến lúc nhặt khúc thứ năm; tạm dừng, Tab, thoại và chuyển cảnh không tính. Mốc S dùng thứ tự ghé 5 khúc ngắn nhất, tốc độ đi bộ, hệ số đi vòng nhà 1,8 và 100 giây tìm kiếm; tối thiểu 3 phút. A/B cho phép 1,5/2 lần mốc S. Lưu/tải giữ vị trí, gỗ đã nhặt và thời gian, không bốc lại để tìm nhanh hơn. Save cũ không có thời gian tìm gỗ không được tự gán thành tích.");
                 return text.ToString();
             }

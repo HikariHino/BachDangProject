@@ -1,5 +1,10 @@
 # Opening camp, village supplies and physical stake work
 
+The four village puzzles described below have since been replaced by physical
+third-person trades. See [PhysicalVillageTrades.md](PhysicalVillageTrades.md)
+for the current controls, timing targets and save compatibility. Camp lighting
+and the boat-based stake construction remain as described here.
+
 The opening camp contains 26 additional fireposts on path shoulders, near the
 tent rows, gate and command stairs. They reuse the existing torch mesh and flame
 atlas. Warm point lights cast no shadows; the existing scene budget still enables

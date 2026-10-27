@@ -52,15 +52,16 @@ namespace BeachBoatStory
         public bool LastCorrect {get;private set;}
         public int FeedbackVersion {get;private set;}
         public Vector3 InteractionPosition=>interactionPoint!=null?interactionPoint.position:transform.position;
-        public static float LimitFor(WorkKind work,int difficulty)=>work==WorkKind.Rice?(difficulty==0?100:difficulty==1?100:110):work==WorkKind.Timber?(difficulty==0?100:difficulty==1?135:180):work==WorkKind.Rope?(difficulty==0?100:difficulty==1?75:55):(difficulty==0?90:difficulty==1?70:50);
+        public static float LimitFor(WorkKind work,int difficulty)=>work==WorkKind.Timber?75:work==WorkKind.Rope?60:work==WorkKind.Rice?75:90;
         public float TimeLimit=>LimitFor(kind,Difficulty);
-        public int Goal=>kind==WorkKind.Rope?1:2;
+        public int Goal=>kind==WorkKind.Timber?3:kind==WorkKind.Rope?1:2;
+        public VillagePhysicalWork Physical {get;private set;}
         public int MistakeLimit=>kind==WorkKind.Timber||kind==WorkKind.Rice?3:Difficulty==2?2:3;
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);
-        public string Instructions=>kind==WorkKind.Timber?"Chọn 2 thanh đủ chiều dài yêu cầu. Chọn trong 6 thanh, loại gỗ nứt. Bấm vào thanh để chọn hoặc bỏ chọn, rồi GIAO GỖ để kiểm tra. Các số đều nhỏ để dễ nhẩm. Mỗi đơn chỉ có một tổ hợp đúng; câu mới không lặp câu đã chơi.":
-            kind==WorkKind.Rope?"Bấm từng ô để xoay đoạn dây 90 độ. Nối một đường liên tục từ đầu VÀO bên trái hàng giữa sang đầu RA bên phải hàng giữa. Dây không được đứt hoặc tạo vòng kín. Số lượt xoay có hạn.":
-            kind==WorkKind.Rice?"Đong đúng lượng gạo yêu cầu bằng hai gáo khác cỡ. Chỉ được thêm một gáo nhỏ, thêm một gáo lớn hoặc bớt một gáo nhỏ. Hãy tính cách đong trong số lượt cho phép rồi đóng túi.":
-            "Gói lương cho một nhóm quân sĩ. Gạo và cá khô tính theo số người; muối chỉ thêm một lần theo yêu cầu CẢ NHÓM. Ví dụ: 2 người × 2 gạo = 4 gạo; 2 người × 1 cá = 2 cá; muối cả nhóm = 1. Bấm mỗi nguyên liệu để thêm 1, rồi KIỂM TRA VÀ GÓI. Vàng: thiếu • Xanh: đủ • Đỏ: dư.";
+        public string Instructions=>kind==WorkKind.Timber?"Cầm gỗ ở chồng bên trái, đặt lên bàn, giữ chuột trái cưa rồi vác sang giá giao hàng. Làm ba khúc.":
+            kind==WorkKind.Rope?"Cầm cuộn dây, tới bó cọc, đi lần lượt tới ba nút đang sáng và giữ chuột trái siết dây. Mang bó đã buộc sang giá giao hàng.":
+            kind==WorkKind.Rice?"Mang bao rỗng lên bàn, giữ chuột trái đong. Nhả khi gạo tới vạch xanh rồi E nhấc và mang bao tới giá. Đầy quá thì E đổ lại.":
+            "Cầm từng phần gạo, cá khô, muối ở kệ trái, mang đặt lên khăn. Giữ chuột trái gấp khăn rồi giao gói lương. Làm hai gói.";
         public static string IngredientName(int n)=>n==0?"GẠO":n==1?"CÁ KHÔ":"MUỐI";
         readonly bool[] soundTimber=new bool[8];
         readonly int[] timberLengths=new int[8],timberStrengths=new int[8],timberCosts=new int[8],ropePorts=new int[9],ingredients=new int[3];
@@ -104,7 +105,7 @@ namespace BeachBoatStory
         bool savedCursor,prompt;
         void Update()
         {
-            if(BachDangFrontEnd.IsBlocking||StoryDialogueUI.InputConsumedThisFrame)return;
+            if(BachDangFrontEnd.IsBlocking||StoryDialogueUI.InputConsumedThisFrame||Time.timeScale<=0)return;
             if(Active==this)
             {
                 if(Input.GetKeyDown(KeyCode.X)){Close();return;}
@@ -113,13 +114,7 @@ namespace BeachBoatStory
                 if(Phase==WorkPhase.Lost){if(Input.GetKeyDown(KeyCode.R))StartAttempt(Difficulty);return;}
                 if(Phase==WorkPhase.Won){if(Input.GetKeyDown(KeyCode.Return))ClaimReward();return;}
                 AdvanceTime(Time.unscaledDeltaTime);
-                if(Input.GetKeyDown(KeyCode.Z)){Undo();return;}
-                if(Input.GetKeyDown(KeyCode.C)){RestoreCurrentTask();return;}
-                if(kind==WorkKind.Rope){if(Input.GetKeyDown(KeyCode.Space))SubmitOption(9);}
-                else if(kind==WorkKind.Timber)
-                {for(int i=0;i<TimberOptions;i++)if(Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1+i)))SubmitOption(i);if(Input.GetKeyDown(KeyCode.Return))SubmitOption(8);}
-                else for(int i=0;i<4;i++)if(Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1+i)))SubmitOption(i);
-                return;
+                Physical?.Tick();return;
             }
             if(player==null&&BeachBoatQuestSession.Instance!=null)player=BeachBoatQuestSession.Instance.player.transform;
             if(Active!=null||quest==null||!quest.CanWork||player==null||QuestRowboat.FlatDistance(player.position,InteractionPosition)>interactionDistance){HidePrompt();return;}
@@ -131,7 +126,7 @@ namespace BeachBoatStory
             if(player==null&&BeachBoatQuestSession.Instance!=null)player=BeachBoatQuestSession.Instance.player.transform;
             if(Active!=null||quest==null||!quest.CanWork||player==null||QuestRowboat.FlatDistance(player.position,InteractionPosition)>interactionDistance)return false;
             savedLock=Cursor.lockState;savedCursor=Cursor.visible;Active=this;Phase=WorkPhase.Instructions;practicedThisVisit=false;HidePrompt();
-            Cursor.lockState=CursorLockMode.None;Cursor.visible=true;VillageWorkUI.EnsureExists();BeachBoatSoundscape.Instance?.PlayInteraction();StartAttempt(1);return true;
+            Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;VillageWorkUI.EnsureExists();BeachBoatSoundscape.Instance?.PlayInteraction();StartAttempt(1);return true;
         }
         public void SelectDifficulty(int difficulty)
         {
@@ -140,9 +135,9 @@ namespace BeachBoatStory
         public void StartAttempt(int difficulty)
         {
             if(Active!=this||Phase==WorkPhase.Playing)return;
-            Difficulty=1;Progress=Mistakes=RiceLoad=0;Elapsed=0;Feedback="Chơi mức Vừa • Z: hoàn tác • C: làm lại phần này.";FeedbackVersion=0;
-            if(kind==WorkKind.Provisions)Feedback="Vàng: thiếu • Xanh: đủ • Đỏ: dư. Mỗi lần bấm thêm 1; Z: hoàn tác.";
-            Phase=WorkPhase.Playing;NewTask();
+            Difficulty=1;Progress=Mistakes=RiceLoad=0;Elapsed=0;Feedback="Đi tới vật đang sáng • E cầm/đặt • Giữ chuột trái làm việc.";FeedbackVersion=0;
+            Phase=WorkPhase.Playing;helpForAttempt=false;Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;
+            Physical=GetComponent<VillagePhysicalWork>()??gameObject.AddComponent<VillagePhysicalWork>();Physical.Begin(this);
         }
         public bool NeedsPractice=>false;
         public void StartTimedFromInstructions()
@@ -167,7 +162,7 @@ namespace BeachBoatStory
         public void ShowHelp(){if(Active==this&&Phase==WorkPhase.Playing){helpForAttempt=true;Phase=WorkPhase.Instructions;}}
         public void AdvanceTime(float dt)
         {
-            if(Active!=this||Phase!=WorkPhase.Playing)return;
+            if(Active!=this||Phase!=WorkPhase.Playing||Time.timeScale<=0||BachDangFrontEnd.IsBlocking)return;
             Elapsed+=Mathf.Max(0,dt);
             if(Elapsed>=TimeLimit)Lose("Hết giờ. Vật tư chưa chuẩn bị đủ.");
         }
@@ -199,48 +194,16 @@ namespace BeachBoatStory
         }
         public bool SubmitOption(int option)
         {
-            if(Active!=this||!IsWorking||option<0||option>(kind==WorkKind.Rope?9:kind==WorkKind.Timber?8:3))return false;
-            if(kind==WorkKind.Rope)
-            {
-                if(option<9){RememberWork();ropePorts[option]=RotatePorts(ropePorts[option]);Moves++;if(Moves>MoveLimit)Lose("Đã hết lượt xoay. Quan sát đường dây rồi thử lại.");return true;}
-                if(RopeConnected()){Score("Dây đã nối liền từ đầu vào tới đầu ra.");return true;}
-                Fault("Đường dây còn đứt hoặc đi ra ngoài khung. Kiểm tra các đầu nối.");return false;
-            }
-            if(kind==WorkKind.Timber)
-            {
-                if(option==8)
-                {
-                    int mask=0;for(int i=0;i<TimberOptions;i++)if(timberUsed[i])mask|=1<<i;
-                    if(TimberSelectionValid(mask)){Score("Đơn gỗ đáp ứng đủ các điều kiện.");return true;}
-                    Fault(TimberNeedsStrength?"Kiểm tra lại số thanh, chiều dài và sức chịu lực. Bấm thanh đã chọn để bỏ.":"Kiểm tra lại số thanh và chiều dài. Bấm thanh đã chọn để bỏ.");return false;
-                }
-                if(option>=TimberOptions)return false;
-                if(!soundTimber[option]){Fault("Gỗ nứt không chịu được tải. Hãy chọn thanh nguyên vẹn.");return false;}
-                RememberWork();int sign=timberUsed[option]?-1:1;timberUsed[option]=!timberUsed[option];
-                TimberTotal+=sign*timberLengths[option];TimberStrengthTotal+=sign*timberStrengths[option];TimberCostTotal+=sign*timberCosts[option];timberPieces+=sign;
-                return true;
-            }
-            if(kind==WorkKind.Rice)
-            {
-                if(option<3&&(option!=2||RiceLoad>=RiceSmall))RememberWork();
-                if(option==0)RiceLoad+=RiceSmall;
-                else if(option==1)RiceLoad+=RiceLarge;
-                else if(option==2){if(RiceLoad<RiceSmall){Fault("Không đủ gạo để bớt một gáo nhỏ.");return false;}RiceLoad-=RiceSmall;}
-                else if(RiceLoad==RiceTarget){Score("Đã đong chính xác và đóng một túi gạo.");return true;}
-                else {Fault("Lượng gạo chưa đúng. Đong thêm hoặc bớt trước khi đóng túi.");return false;}
-                Moves++;if(Moves>MoveLimit){RiceLoad=Moves=0;Fault("Quá số lượt đong. Hãy tính đường đi ngắn hơn.");return false;}
-                return true;
-            }
-            if(option<3){RememberWork();ingredients[option]++;return true;}
-            bool correct=true;for(int i=0;i<3;i++)correct&=ingredients[i]==RequiredIngredient(i);
-            if(correct)Score("Khẩu phần đã đủ cho cả nhóm quân sĩ.");
-            else
-            {
-                Fault(IsPractice?$"Cần đủ {RequiredIngredient(0)} gạo, {RequiredIngredient(1)} cá khô và {SaltPerBundle} muối cho CẢ NHÓM. Z để bỏ lần thêm nhầm.":"Chưa đúng khẩu phần. Vàng: thiếu • Xanh: đủ • Đỏ: dư. Thêm phần thiếu hoặc dùng Z để hoàn tác phần dư.");
-                // Keep the unsubmitted ration visible so the player can undo excess ingredients.
-            }
-            return correct;
+            return false; // Screen-space puzzle submissions cannot advance the 3D tasks.
         }
+        public void CompletePhysicalOrder()
+        {
+            if(Active!=this||Phase!=WorkPhase.Playing)return;
+            Progress++;Feedback="Đã giao vật tư.";LastCorrect=true;FeedbackVersion++;BeachBoatSoundscape.Instance?.PlayResult(true);
+            if(Progress>=Goal){Phase=WorkPhase.Won;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;CampaignProgress.Instance?.RecordMinigame(CampaignProgress.MiniId((int)kind+1),Elapsed,TimeLimit);}
+            else Physical.NextOrder();
+        }
+        public void PhysicalMistake(string message){if(Active==this&&Phase==WorkPhase.Playing)Fault(message);}
         void Score(string message)
         {
             BeachBoatSoundscape.Instance?.PlayResult(true);
@@ -363,7 +326,7 @@ namespace BeachBoatStory
             }
             return 8;
         }
-        void Lose(string message){Phase=WorkPhase.Lost;Feedback=message;LastCorrect=false;}
+        void Lose(string message){Phase=WorkPhase.Lost;Feedback=message;LastCorrect=false;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}
         public bool ClaimReward()
         {
             if(Active!=this||Phase!=WorkPhase.Won)return false;
@@ -374,7 +337,7 @@ namespace BeachBoatStory
         public void RestoreLearningProgress(int levels){Completed=levels>=3;CompletedLevels=Completed?3:0;Difficulty=1;history.Clear();initialWork=null;}
         public void Close()
         {
-            if(Active!=this)return;Active=null;helpForAttempt=false;history.Clear();initialWork=null;HidePrompt();Cursor.lockState=savedLock;Cursor.visible=savedCursor;
+            if(Active!=this)return;Physical?.Finish();Active=null;helpForAttempt=false;history.Clear();initialWork=null;HidePrompt();Cursor.lockState=savedLock;Cursor.visible=savedCursor;
         }
         void HidePrompt(){if(prompt){BachDangStoryManager.Instance?.SetInteractPrompt(false,owner:this);prompt=false;}}
         void OnDisable(){Close();HidePrompt();}
