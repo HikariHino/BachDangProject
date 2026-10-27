@@ -18,6 +18,7 @@ namespace BeachBoatStory
         public bool EbbStarted {get;private set;}
         public bool AmbushStarted {get;private set;}
         public EnemyShip EbbTriggerShip {get;private set;}
+        public RiverFleetPursuit Pursuit {get;private set;}
         Coroutine battleLoop;
         Coroutine tideLoop;
         Camera battleCamera;
@@ -71,7 +72,7 @@ namespace BeachBoatStory
                 return null;
             }
         }
-        void Awake(){Instance=this;if(GetComponent<RiverInvasionIntro>()==null)gameObject.AddComponent<RiverInvasionIntro>();}
+        void Awake(){Instance=this;Pursuit=GetComponent<RiverFleetPursuit>()??gameObject.AddComponent<RiverFleetPursuit>();if(GetComponent<RiverInvasionIntro>()==null)gameObject.AddComponent<RiverInvasionIntro>();}
         void Start()=>RiverFleetLayout.Configure(this);
         void OnDestroy(){if(Instance==this)Instance=null;}
         void OnDisable(){StopBattle();}
@@ -82,6 +83,7 @@ namespace BeachBoatStory
             if(zone==null||!zone.IsComplete)return;
             RiverFleetLayout.Configure(this);
             BattleStarted=true;
+            Pursuit.ResetLure();
             GetComponent<RiverInvasionIntro>().Queue();
             GetComponent<RiverBattleVoices>()?.ResetForNewBattle();
             CommandScore=0;
@@ -96,12 +98,13 @@ namespace BeachBoatStory
         public BachDangSaveData.Fleet CaptureSave()
         {
             var data=new BachDangSaveData.Fleet{active=BattleStarted,ebb=EbbStarted,commands=CommandScore,scored=new System.Collections.Generic.List<int>(scoredWaves).ToArray()};
-            RiverPlayerCombat.Instance?.FillSave(data);GetComponent<RiverBattleVoices>()?.FillSave(data);return data;
+            Pursuit.FillSave(data);RiverPlayerCombat.Instance?.FillSave(data);GetComponent<RiverBattleVoices>()?.FillSave(data);return data;
         }
         public void RestoreSave(BachDangSaveData.Fleet data)
         {
             GetComponent<RiverBattleVoices>()?.RestoreSave(data);
             BattleStarted=data.active;EbbStarted=data.ebb;CommandScore=data.commands;scoredWaves.Clear();
+            Pursuit.RestoreSave(data);
             foreach(int wave in data.scored??System.Array.Empty<int>())scoredWaves.Add(wave);
             if(BattleStarted){BeginBattleView();battleLoop=StartCoroutine(SpawnWaves(true));}
         }
@@ -131,7 +134,7 @@ namespace BeachBoatStory
             if(!BattleStarted)yield break;
             foreach(var ship in pending){var p=ship.spawnPoint+Vector3.forward*shift;p.y=TideSystem.CurrentWaterHeight;ship.transform.position=p;ship.Activate();}
             if(!resume&&fleet.Count>0)GetComponent<RiverInvasionIntro>().Begin(fleet[0]);
-            BattleCaption=$"Toàn hạm đội Nam Hán tiến vào trận địa • {fleet.Count} thuyền";
+            BattleCaption=$"Hạm đội Nam Hán xuất hiện ngoài cửa sông • {fleet.Count} thuyền";
 
             watchedFleetIndex=0;
             if(IsShowingBattle&&fleet.Count>0)WatchShip(fleet[0]);
@@ -167,7 +170,7 @@ namespace BeachBoatStory
         {
             while(BattleStarted&&!EbbStarted&&EbbTriggerShip==null)
             {
-                if(ShipsInside>=ShipCount)
+                if(Pursuit.HasEnteredTrap&&ShipsInside>=ShipCount)
                     foreach(var ship in fleet)
                         if(ship!=null&&ship.gameObject.activeInHierarchy&&!ship.isDestroyed&&ship.IsHullInsideStakeField)
                         {EbbTriggerShip=ship;break;}
@@ -222,7 +225,7 @@ namespace BeachBoatStory
             if(playerCamera!=null)playerCamera.enabled=true;
             QuestRowboat.Instance?.UseSoldierBattleCamera();
             Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;
-            BattleCaption="Quân Nam Hán tiến vào bãi cọc...";
+            BattleCaption="Chèo ra cửa sông tiếp cận hạm đội Nam Hán...";
             IsShowingBattle=true;
         }
         void WatchShip(EnemyShip ship)
@@ -257,6 +260,7 @@ namespace BeachBoatStory
             if(battleLoop!=null){StopCoroutine(battleLoop);battleLoop=null;}
             if(tideLoop!=null){StopCoroutine(tideLoop);tideLoop=null;}
             BattleStarted=false;
+            Pursuit.ResetLure();
             foreach(var ship in enemyShips??System.Array.Empty<EnemyShip>())if(ship!=null){ship.ClearWreck();ship.gameObject.SetActive(false);}
         }
         public void ResetForCheckpoint()

@@ -14,7 +14,7 @@ OUT=Path('Assets/Resources/BachDang938/BattleVoices')
 RATE=32000
 CLIPS=[
     ('Enemy_Advance_1','ok_KBwgS9eg',99.03,102.55),
-    ('Enemy_Advance_2','ok_KBwgS9eg',231.32,233.35), # legacy resource; no longer in the playlist
+    ('Enemy_Advance_2','ok_KBwgS9eg',230.28,233.35), # complete pursuit order, only when the bait engages
     ('Enemy_Cheer_Crowd','ok_KBwgS9eg',212.20,214.40),
     ('Enemy_Panic_1','ok_KBwgS9eg',308.35,310.10),
     ('Enemy_Panic_2','ok_KBwgS9eg',283.10,284.80),

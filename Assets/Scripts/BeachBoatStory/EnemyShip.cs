@@ -162,6 +162,9 @@ namespace BeachBoatStory
                 }
             bool finalLeg=destination==targetPoint;
             var end=destination.position;end.y=pos.y;
+            var pursuit=EnemyFleetDirector.Instance?.Pursuit;
+            if(pursuit!=null&&pursuit.TryDestination(this,out var chaseEnd,out var chaseFinal))
+            {end=chaseEnd;end.y=pos.y;finalLeg=chaseFinal;}
             float distance=Vector3.Distance(pos,end);
             // Orders control the allied volley, never the physics of an enemy hull.
             // Keep testing a stationary hull too: falling water can expose a stake underneath it.

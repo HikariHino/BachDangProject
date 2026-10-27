@@ -8,18 +8,20 @@ namespace BeachBoatStory
     public sealed class RiverBattleVoices : MonoBehaviour
     {
         AudioSource speech;
-        AudioClip[] advances,panics;AudioClip ambushCommand,attackCommand;
+        AudioClip[] advances,panics;AudioClip ambushCommand,attackCommand,pursuitCommand;
         TMP_Text caption;
-        bool invasionPlayed,ambushPlayed,counterattackPlayed,active,paused,secondCommand;
+        bool invasionPlayed,ambushPlayed,counterattackPlayed,pursuitPlayed,active,paused,secondCommand;
         float nextEnemy,commandTime,nextCommand,busy;
         int advanceMask,panicMask;
         const string InvasionLine="Đây là cơ hội tốt để ta xâm lược và đô hộ Giao Châu!";
         public int InvasionCues {get;private set;}
         public int PanicCues {get;private set;}
         public int CommanderCues {get;private set;}
+        public int PursuitCues {get;private set;}
+        public bool PursuitPlayed=>pursuitPlayed;
         public AudioSource SpeechSource=>speech;
         public float VoiceBusySeconds=>busy;
-        public bool AssetsReady=>ambushCommand!=null&&attackCommand!=null&&
+        public bool AssetsReady=>ambushCommand!=null&&attackCommand!=null&&pursuitCommand!=null&&
             System.Array.TrueForAll(advances,c=>c!=null)&&System.Array.TrueForAll(panics,c=>c!=null);
         public bool InvasionPlayed=>invasionPlayed;
         public bool AmbushPlayed=>ambushPlayed;
@@ -28,9 +30,9 @@ namespace BeachBoatStory
         {
             var channel=new GameObject("BattleVoice_SingleChannel");channel.transform.SetParent(transform,false);speech=channel.AddComponent<AudioSource>();
             speech.playOnAwake=false;speech.loop=false;speech.dopplerLevel=0;speech.rolloffMode=AudioRolloffMode.Linear;speech.minDistance=250;speech.maxDistance=5000;
-            // The old second advance asset repeated the end of the first line.
-            // Keep one complete order followed by a distinct crowd response.
+            // Approach and pursuit are separate events on the same voice channel.
             advances=new[]{Cue("Enemy_Advance_1"),Cue("Enemy_Cheer_Crowd")};
+            pursuitCommand=Cue("Enemy_Advance_2");
             panics=new[]{Cue("Enemy_Panic_1"),Cue("Enemy_Panic_2"),Cue("Enemy_Panic_3")};
             ambushCommand=Cue("NgoQuyen_Ambush");attackCommand=Cue("NgoQuyen_Attack");
             var canvas=new GameObject("BattleCommanderCaption",typeof(RectTransform),typeof(Canvas),typeof(CanvasScaler));canvas.transform.SetParent(transform,false);
@@ -44,15 +46,17 @@ namespace BeachBoatStory
         public void FillSave(BachDangSaveData.Fleet data)
         {
             data.invasionVoiced=invasionPlayed;data.ambushVoiced=ambushPlayed;data.counterattackVoiced=counterattackPlayed;
+            data.pursuitVoiced=pursuitPlayed;
             data.counterattackDelay=secondCommand?Mathf.Max(.5f,nextCommand):0;data.voiceAdvanceMask=advanceMask;data.voicePanicMask=panicMask;
         }
         public void RestoreSave(BachDangSaveData.Fleet data)
         {
             Silence();invasionPlayed=data.invasionVoiced;ambushPlayed=data.ambushVoiced;counterattackPlayed=data.counterattackVoiced;
+            pursuitPlayed=data.pursuitVoiced||(data.lureVersion==0&&data.active);
             secondCommand=ambushPlayed&&!counterattackPlayed;nextCommand=Mathf.Max(.5f,data.counterattackDelay);nextEnemy=3;
             advanceMask=data.voiceAdvanceMask&3;panicMask=data.voicePanicMask&7;
         }
-        public void ResetForNewBattle(){Silence();invasionPlayed=ambushPlayed=counterattackPlayed=false;advanceMask=panicMask=0;InvasionCues=PanicCues=CommanderCues=0;nextEnemy=0;}
+        public void ResetForNewBattle(){Silence();invasionPlayed=ambushPlayed=counterattackPlayed=pursuitPlayed=false;advanceMask=panicMask=0;InvasionCues=PanicCues=CommanderCues=PursuitCues=0;nextEnemy=0;}
         public void Silence(){speech.Stop();caption.gameObject.SetActive(false);commandTime=busy=0;secondCommand=false;active=false;paused=false;}
         public void RequestWreckCry(){nextEnemy=Mathf.Min(nextEnemy,.5f);}
         public void PlayInvasionIntroduction()
@@ -115,6 +119,8 @@ namespace BeachBoatStory
                 secondCommand=true;nextCommand=busy+2.5f;nextEnemy=busy+1.25f;
             }
             else if(!ambush&&!invasionPlayed){invasionPlayed=true;EnemyCue(false);}
+            else if(!ambush&&!pursuitPlayed&&fleet.Pursuit.IsPursuing&&busy<=0)
+            {pursuitPlayed=true;PursuitCues++;Play(pursuitCommand,false,"Giết! Đuổi theo bọn chúng cho ta!");nextEnemy=busy+4;}
             else if(busy<=0&&secondCommand&&nextCommand<=0)
             {secondCommand=false;counterattackPlayed=true;Play(attackCommand,true,"Hỡi ba quân tướng sĩ! Đánh cho Nam quốc sơn hà rạng danh ngàn đời!");nextEnemy=busy+1.25f;}
             else if(busy<=0&&nextEnemy<=0)EnemyCue(ambush);

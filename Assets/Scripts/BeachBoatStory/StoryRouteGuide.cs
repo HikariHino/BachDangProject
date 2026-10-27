@@ -85,7 +85,9 @@ namespace BeachBoatStory
                     {
                         lureWait=new GameObject("Vung_Nhu_Dich_938").transform;lureWait.SetParent(transform,false);
                     }
-                    lureWait.position=boat!=null?boat.BattleLurePosition:session.player.transform.position;
+                    var pursuing=EnemyFleetDirector.Instance?.Pursuit;
+                    lureWait.position=!RiverBattleObjective.WaitingForEbb&&pursuing!=null?pursuing.GuidePosition:
+                        boat!=null?boat.BattleLurePosition:session.player.transform.position;
                     title=RiverBattleObjective.DirectionTitle;return lureWait;
                 }
                 var guard=RiverPlayerCombat.Instance!=null?RiverPlayerCombat.Instance.PriorityGuard:null;

@@ -124,8 +124,9 @@ public static class BeachBoatFeedbackPlaytest
     {
         var fleet=EnemyFleetDirector.Instance;var story=Story.Instance;var timeline=BachDangBattleTimeline.Instance;var guide=UnityEngine.Object.FindAnyObjectByType<StoryRouteGuide>();
         story.TransitionTo(Story.StoryState.Act3_BattleInProgress,true);Set(fleet,"<BattleStarted>k__BackingField",true);Set(fleet,"<EbbStarted>k__BackingField",false);Set(fleet,"<AmbushStarted>k__BackingField",false);timeline.BeginLure(true);story.UpdateUI();
-        var target=guide.ResolveTarget(out var title);Check(target!=null&&target.GetComponent<EnemyDeckGuard>()==null&&title.Contains("Vùng nhử"),"The lure arrow points to a staging area rather than an enemy soldier");
-        Check(story.objectiveTitleText.text.Contains("Nhử")&&story.objectiveDescText.text.Contains("Chưa tấn công")&&!RiverBattleObjective.ControlHint.Contains("Cung"),"Lure HUD explains waiting for the trap instead of attacking");
+        fleet.Pursuit.ResetLure();story.UpdateUI();
+        var target=guide.ResolveTarget(out var title);Check(target!=null&&target.GetComponent<EnemyDeckGuard>()==null&&title.Contains("Tiếp cận hạm đội"),"The lure arrow points toward the distant fleet rather than an enemy soldier");
+        Check(story.objectiveTitleText.text.Contains("nhử")&&story.objectiveDescText.text.Contains("Chưa tấn công")&&!RiverBattleObjective.ControlHint.Contains("Cung"),"Lure HUD explains approaching and baiting the fleet before attacking");
         timeline.BeginEbb();story.UpdateUI();guide.ResolveTarget(out title);Check(title.Contains("Chờ nước rút")&&story.objectiveTitleText.text.Contains("Chờ nước rút")&&!RiverBattleObjective.Counterattack,"Falling water keeps the waiting objective until the actual ambush");
         var save=BachDangSaveSystem.Capture("QA waiting phase");save.fleet.active=false;BachDangSaveSystem.Apply(save);guide.ResolveTarget(out title);Check(title.Contains("Chờ nước rút"),"Loading a falling-water save retains the waiting instructions");
         timeline.BeginAmbush();story.UpdateUI();Check(RiverBattleObjective.Counterattack&&story.objectiveTitleText.text.Contains("Phản công")&&RiverBattleObjective.ControlHint.Contains("Cung/kiếm"),"Only the exposed-stake ambush shows combat controls");
