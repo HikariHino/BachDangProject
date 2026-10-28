@@ -91,6 +91,7 @@ public static class BeachBoatPhysicalVillagePlaytest
             Check(stall.Physical.HandsOnly&&stall.Physical.HandTriangles>100,"Only the player's forearms render at the bench; torso and helmet are hidden: "+stall.kind);
             Check(stall.Physical.HandSegmentError<.001f,"Display arm segments keep their original proportions throughout tool motion: "+stall.kind+" error="+stall.Physical.HandSegmentError);
             Check(stall.Physical.HandWristAngle<1,"Display wrists use the neutral mesh bind frame throughout the gesture: "+stall.kind+" angle="+stall.Physical.HandWristAngle);
+            Check(stall.Physical.HandGripWeight>85,"Segmented finger grips are applied to the visible work hands: "+stall.kind);
             CheckScreenDirections(stall.Physical,source);
             if(stall.Physical.Current==VillagePhysicalWork.Step.Wrap)
             {
@@ -152,8 +153,13 @@ public static class BeachBoatPhysicalVillagePlaytest
             {
                 foreach(VillageWorkFoley.Cue cue in Enum.GetValues(typeof(VillageWorkFoley.Cue)))
                 {
-                    var clip=Resources.Load<AudioClip>("BachDang938/WorkAudio/Trade_"+cue);Check(clip!=null&&clip.samples>1000&&clip.channels==1,"Original work foley loads as a valid mono clip: "+cue);
+                    var clip=Resources.Load<AudioClip>("BachDang938/WorkAudio/Trade_"+cue);Check(clip!=null&&clip.samples>1000&&clip.channels==1,"Recorded work foley loads as a valid mono clip: "+cue);
+                    var samples=new float[clip.samples];Check(clip.GetData(samples,0),"Recorded sample data is preloaded: "+cue);
+                    float rms=Mathf.Sqrt(samples.Average(v=>v*v));float peak=samples.Max(v=>Mathf.Abs(v));
+                    Check(rms>.005f&&rms<.035f&&peak<=.225f,"Work clip has audible recorded content with bounded RMS and peaks: "+cue+" rms="+rms+" peak="+peak);
                 }
+                var workHands=Resources.Load<Mesh>("BachDang938/Player/WorkbenchHandGrips");Check(workHands!=null&&workHands.blendShapeCount==6,"Work hands have independent left/right rod, pinch and support shapes");
+                for(int n=0;n<workHands.blendShapeCount;n++){var delta=new Vector3[workHands.vertexCount];workHands.GetBlendShapeFrameVertices(n,0,delta,null,null);Check(delta.Count(v=>v.sqrMagnitude>1e-12f)>200,"Finger flexion changes actual mesh vertices: "+workHands.GetBlendShapeName(n));}
                 foreach(var p in Directory.GetFiles(Application.persistentDataPath,"campaign938*"))hashes[p]=Hash(p);
                 BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/PhysicalVillageQA/"+DateTime.Now.ToString("yyyyMMddHHmmssfff"));BachDangAutoSave.Instance.enabled=false;
                 BeachBoatQuestSession.Instance.player.AddComponent<VillageWorkPoseProbe>();
@@ -235,8 +241,13 @@ public static class BeachBoatPhysicalVillagePlaytest
                         for(int n=0;n<7;n++)work.DragTool(Vector2.up*.3f,.1f);
                         work.ReleaseTool();Check(work.ScoopLoaded&&work.RiceFill==0&&work.ToolFeedback.Contains("miệng bao"),"Releasing outside the sack keeps the rice in the scoop and explains where to drop it");challengeChecks.Add(stall.kind);
                     }
-                    else if(work.Current==VillagePhysicalWork.Step.Wrap&&work.Finishing)
+                    else if(work.Current==VillagePhysicalWork.Step.Wrap)
                     {
+                        var camera=BeachBoatQuestSession.Instance.storyCamera;
+                        Check(work.PressPointer((Vector2)camera.WorldToScreenPoint(ToolWorld(work,work.ToolGrabPoint))+new Vector2(12,-7)),"A slightly off-centre click catches the highlighted cloth edge");
+                        Check(work.DragPointer(camera.WorldToScreenPoint(ToolWorld(work,new Vector2(0,.75f))),.1f)&&work.Finishing,"Dragging across the centre with vertical wobble catches the fold");
+                        foreach(var wobble in new[]{Vector2.one,Vector2.down,Vector2.right})Check(work.DragPointer(camera.WorldToScreenPoint(ToolWorld(work,wobble)),.1f)&&work.Finishing&&work.ToolPointer==Vector2.zero,"Caught cloth stays at the centre despite mouse overshoot: "+wobble);
+                        work.AdvanceTool(.1f);Check(work.ToolPressure>0,"Crease pressure survives mouse wobble");
                         int stages=work.ToolStages;work.ReleaseTool();Check(work.ToolStages==stages&&!work.Finishing,"Releasing a fold before pressing it does not secure the crease");challengeChecks.Add(stall.kind);
                     }
                 }

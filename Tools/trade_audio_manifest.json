@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Saw",
+    "source": "https://www.youtube.com/watch?v=UJ72WfPN4ek",
+    "start": 14.05,
+    "end": 15.25,
+    "rms": 0.02244,
+    "peak": 0.22,
+    "sha256": "210170305980ffce61e9c8ffbc3e33e79a3755d614de77a41c9cea7c11c35e73"
+  },
+  {
+    "name": "Rope",
+    "source": "https://www.youtube.com/watch?v=3XnP7nX_Z_s",
+    "start": 12.0,
+    "end": 13.1,
+    "rms": 0.01095,
+    "peak": 0.22,
+    "sha256": "77944ec3c12be5a762f1a19b0c092c8e911b1b3b8183ad6d26586c82f9d03b74"
+  },
+  {
+    "name": "Cloth",
+    "source": "https://www.youtube.com/watch?v=5JhQIIPQaE0",
+    "start": 1.35,
+    "end": 2.35,
+    "rms": 0.01997,
+    "peak": 0.21613,
+    "sha256": "743cb63f46b445c3e097e7fac051dcf52348017ae3134b1c88ae1bb5c42225f6"
+  },
+  {
+    "name": "Scoop",
+    "source": "https://www.youtube.com/watch?v=s2-CF2g5_q0",
+    "start": 1.15,
+    "end": 1.57,
+    "rms": 0.02456,
+    "peak": 0.10924,
+    "sha256": "491814dcd65892998fa0aefce0bfdb80ff1294e70fda17c7b710c702c987f60f"
+  },
+  {
+    "name": "Pour",
+    "source": "https://www.youtube.com/watch?v=s2-CF2g5_q0",
+    "start": 5.05,
+    "end": 5.82,
+    "rms": 0.02685,
+    "peak": 0.17572,
+    "sha256": "bd7a2c80e307295240bc54495c0da33833818395b8624f08002126f672d61bda"
+  },
+  {
+    "name": "Crease",
+    "source": "https://www.youtube.com/watch?v=5JhQIIPQaE0",
+    "start": 2.45,
+    "end": 2.8,
+    "rms": 0.01948,
+    "peak": 0.19777,
+    "sha256": "d984f1f70284e5b32e6981fdcf26f2b1e6613c39fd43500ff1f78f1174dd5a40"
+  },
+  {
+    "name": "Knot",
+    "source": "https://www.youtube.com/watch?v=3XnP7nX_Z_s",
+    "start": 14.15,
+    "end": 14.55,
+    "rms": 0.01581,
+    "peak": 0.11961,
+    "sha256": "13ce5710fbb9e0b6ff8c3b8253ee8fc595a6c80086fbf30f208481744a5ef3a4"
+  },
+  {
+    "name": "SetDown",
+    "source": "https://www.youtube.com/watch?v=5JhQIIPQaE0",
+    "start": 2.05,
+    "end": 2.35,
+    "rms": 0.02001,
+    "peak": 0.13318,
+    "sha256": "2411185705998180ba8861d7b6e1e60053a70988df445e632b2691f974d9b4c6"
+  }
+]

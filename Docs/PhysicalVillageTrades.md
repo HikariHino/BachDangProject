@@ -17,9 +17,9 @@ Không dùng công cụ hoặc lấy/giao vật từ xa: mỗi bước kiểm tr
 
 ## Âm thanh thao tác
 
-`VillageWorkFoley` dùng một kênh ma sát (cưa/dây/vải) và một kênh thao tác ngắn (xúc, đổ gạo, ép nếp, siết nút, đặt hàng). Ma sát chỉ phát khi kéo hoặc siết/ép và giảm nhanh khi ngừng; giúp tránh chồng nhiều tiếng. Help/tạm dừng ngừng cả hai kênh; ESC/load hủy nguồn phát. Tuân theo master volume, F10 và âm lượng người chơi.
+`VillageWorkFoley` dùng một kênh ma sát (cưa/dây/vải) và cặp kênh thao tác ngắn có fade (xúc, đổ gạo, ép nếp, siết nút, đặt hàng). Ma sát chỉ phát khi kéo hoặc siết/ép và giảm nhanh khi ngừng; số nguồn phát được giới hạn. Help/tạm dừng ngừng cả ba nguồn; ESC/load hủy nguồn phát. Tuân theo master volume, F10 và âm lượng người chơi.
 
-Tám WAV mono 32 kHz (khoảng 307 KiB) do `Tools/author_trade_foley.py` tự tổng hợp từ nhiễu lọc, hạt va chạm và cộng hưởng; không lấy bản ghi bên ngoài. Có fade đầu/cuối và đỉnh 0,62 để tránh clipping. File nằm trong `Assets/Resources/BachDang938/WorkAudio`.
+Tám WAV mono 32 kHz hiện lấy từ bản thu thật tìm trên YouTube, thay bộ nhiễu tổng hợp cũ. Có fade đầu/cuối, lọc bớt dải chói và đỉnh không quá 0,22. File nằm trong `Assets/Resources/BachDang938/WorkAudio`; nguồn, quyền dùng do tác giả nêu và quy trình cắt nằm trong [TradeAudioSources.md](TradeAudioSources.md).
 
 `VillageWorkstation` dựng bố trí cố định cho cả bốn sạp khi scene bắt đầu: cùng bàn, mái, thùng lấy/giao hàng và nguồn vật tư trước E, trong và sau lượt chơi. Không ẩn mái hay thay bàn lúc mở minigame. Cánh tay được đặt tư thế mang/làm việc sau animation; dụng cụ, dây quấn, dòng gạo và mép khăn biến đổi trong thế giới 3D. Thanh lực buộc dây nằm ở giữa phía dưới màn hình; tay trái giữ bó gỗ, tay phải kéo dây, cổ tay dùng trục bind pose trung tính. Vải phơi chỉ tạm ẩn khi chắn camera và khôi phục khi rời sạp.
 
@@ -58,3 +58,11 @@ Rice_Excess, Rice_Ready. SHA-256 các save thật giữ nguyên.
 và dựng năm cụm cọc. Tổng hai bộ: **425**; 13 file save thật được kiểm hash
 trong mỗi bộ và không thay đổi. Hai bộ chạy bằng Unity 6000.6.0f1 / DX11;
 không phát sinh lỗi C# hoặc exception trong log của lượt chạy đạt.
+
+Đợt clip 15:00, dáng ngón và âm thanh thu thật ngày 28/10: **470 kiểm tra qua**
+(403 minigame, 67 vật tư/đóng cọc). Có ca bắt mép lệch 12/7 pixel, kéo ngang
+với lệch dọc, rê quá tâm theo ba hướng và giữ nếp không bật lại. Kiểm mesh có
+sáu dáng ngón, đốt ngón thực sự biến dạng, tư thế hiển thị đúng ở cả bốn sạp,
+tay giữ nguyên chiều dài/cổ tay trung tính, đủ tám clip thu thật có dữ liệu
+âm khác im lặng và mức RMS/peak nằm trong giới hạn. Đã render xem lại ảnh tay
+ở bàn. Save tạm riêng; 13 file save thật giữ nguyên SHA-256 trong mỗi bộ.

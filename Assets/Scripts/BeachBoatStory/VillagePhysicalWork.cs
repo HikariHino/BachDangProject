@@ -29,6 +29,7 @@ namespace BeachBoatStory
         public float HandSegmentError=>hands?.MaxSegmentError??0;
         public float HandWristAngle=>hands?.MaxWristAngle??0;
         public float HandContactError=>hands?.MaxContactError??0;
+        public float HandGripWeight=>hands?.ActiveGripWeight??0;
         public bool SawGuidesVisible=>sawGuides.Count>0&&sawGuides.TrueForAll(g=>g!=null&&g.activeInHierarchy);
         public Vector3 ToolWorldPosition=>ToolPoint(ToolPointer);
         public bool RiceReady=>Current==Step.FillRice&&RiceFill>=.65f&&RiceFill<=.85f;
@@ -87,7 +88,7 @@ namespace BeachBoatStory
         Camera_Script camera;Vector3 cameraSettings;float cameraElevation;
         WorkbenchHands hands;BowGripProfile gripProfile;VillageWorkstation station;
         bool tableWasActive;
-        AnimatorCullingMode previousCulling;SkinnedMeshRenderer[] playerMeshes;bool[] previousOffscreen;
+        AnimatorCullingMode previousCulling;SkinnedMeshRenderer[] playerMeshes;bool[] previousOffscreen;float[][] previousFingerWeights;
         Vector3 World(Vector3 local){local.y*=verticalScale;return origin+rotation*local;}
         Material Make(string name,Color color)
         {var m=new Material(Shader.Find("Universal Render Pipeline/Lit")){name=name,color=color};m.SetFloat("_Smoothness",.12f);owned.Add(m);return m;}
@@ -120,6 +121,7 @@ namespace BeachBoatStory
             station=owner.EnsureWorkstation();verticalScale=station.HeightScale;
             previousCulling=rig.cullingMode;rig.cullingMode=AnimatorCullingMode.AlwaysAnimate;
             playerMeshes=player.GetComponentsInChildren<SkinnedMeshRenderer>();previousOffscreen=playerMeshes.Select(r=>r.updateWhenOffscreen).ToArray();
+            previousFingerWeights=playerMeshes.Select(r=>Enumerable.Range(0,r.sharedMesh.blendShapeCount).Select(r.GetBlendShapeWeight).ToArray()).ToArray();
             foreach(var renderer in playerMeshes)renderer.updateWhenOffscreen=true;
             origin=stall.transform.position;rotation=Quaternion.Euler(0,stall.transform.eulerAngles.y,0);
             props=new GameObject("Village_3D_Work_"+stall.kind);props.transform.SetPositionAndRotation(origin,rotation);
@@ -168,7 +170,7 @@ namespace BeachBoatStory
             ToolHeld=true;busy=true;actionUntil=Time.time+.12f;
             if(Current==Step.FillRice)LoadRiceScoop();
             if(Current==Step.Wrap&&!foldGrabbed&&Vector2.Distance(ToolPointer,ToolGoal)<.3f)foldGrabbed=true;
-            if(Current==Step.Wrap&&foldGrabbed&&ToolPointer.magnitude<.2f){Finishing=true;ToolPressure=0;}
+            if(Current==Step.Wrap&&foldGrabbed&&ToolPointer.magnitude<.3f){Finishing=true;ToolPointer=Vector2.zero;ToolPressure=0;}
             return true;
         }
         public void ReleaseTool()
@@ -195,10 +197,12 @@ namespace BeachBoatStory
             if(Current==Step.Tie){ToolPressure=Mathf.Min(1,ToolPressure+seconds*.65f);Foley?.Move(VillageWorkFoley.Cue.Rope,.5f);}
             else if(Current==Step.Wrap)
             {
-                if(ToolPointer.magnitude>.25f){Finishing=false;ToolPressure=0;return;}
+                // Once the edge reaches the centre it stays caught under the hand.
+                // Mouse overshoot must not unfold it again while the button is held.
+                ToolPointer=Vector2.zero;
                 ToolPressure=Mathf.Min(1,ToolPressure+seconds/.45f);
                 Foley?.Move(VillageWorkFoley.Cue.Cloth,.35f);
-                if(ToolPressure>=1){Foley?.Play(VillageWorkFoley.Cue.Crease);Finishing=false;ToolStages++;ActionProgress=ToolStages/4f;foldGrabbed=false;ToolPressure=0;ToolFeedback="Nếp đã kín • bấm giữ mép sáng tiếp theo";if(ToolStages==4)CompleteTool();}
+                if(ToolPressure>=1){Foley?.Play(VillageWorkFoley.Cue.Crease);Finishing=false;ToolStages++;ActionProgress=ToolStages/4f;foldGrabbed=false;ToolHeld=PointerDragging=busy=false;ToolPressure=0;ToolFeedback="Nếp đã kín • bấm giữ mép sáng tiếp theo";if(ToolStages==4)CompleteTool();}
             }
         }
         Vector3 ToolPoint(Vector2 point)
@@ -249,12 +253,22 @@ namespace BeachBoatStory
             var projected=(Vector2)camera.GetComponent<Camera>().WorldToScreenPoint(ToolPoint(pick));
             if(Vector2.Distance(screen,projected)>Mathf.Max(45,Screen.height*128f/720)){ToolFeedback=Current==Step.Wrap?"Bấm giữ ngay mép khăn có vòng sáng":"Bấm giữ ngay dụng cụ đang cầm";return false;}
             if(Current==Step.Wrap&&!foldGrabbed)ToolPointer=pick;
-            grabOffset=ToolPointer-point;PointerDragging=PressTool();return PointerDragging;
+            // A forgiving pick must not preserve a large invisible offset, which
+            // previously made reaching the visible centre almost impossible.
+            grabOffset=Vector2.ClampMagnitude(ToolPointer-point,.1f);PointerDragging=PressTool();return PointerDragging;
         }
         public bool DragPointer(Vector2 screen,float seconds)
         {
             if(!PointerDragging||!ToolHeld||!PointerCoordinates(screen,out var point))return false;
+            if(Finishing&&(Current==Step.Wrap||Current==Step.Tie))return true;
             var goal=point+grabOffset;goal=new Vector2(Mathf.Clamp(goal.x,-1,1),Mathf.Clamp(goal.y,-1,1));
+            if(Current==Step.Saw)goal.y=Mathf.Clamp(goal.y,-.2f,.2f);
+            if(Current==Step.Wrap&&foldGrabbed)
+            {
+                var edge=Corners[Mathf.Min(3,ToolStages)];float outward=Vector2.Dot(goal,edge);
+                goal=edge*Mathf.Clamp01(outward);
+                if(outward<=.3f){Finishing=true;ToolPressure=0;goal=Vector2.zero;ToolFeedback="Đã giữ mép ở giữa • tiếp tục giữ để ép kín";}
+            }
             return MoveTool(goal-ToolPointer,seconds,true);
         }
         public bool DragTool(Vector2 delta,float seconds)
@@ -277,7 +291,7 @@ namespace BeachBoatStory
             else if(Current==Step.Tie)
             {
                 if(motion.magnitude>.001f)Foley?.Move(VillageWorkFoley.Cue.Rope,motion.magnitude/Mathf.Max(.01f,seconds)/4);
-                if(motion.sqrMagnitude>0&&Vector2.Distance(ToolPointer,ToolGoal)<.25f)
+                if(motion.sqrMagnitude>0&&Vector2.Distance(ToolPointer,ToolGoal)<.35f)
                 {ToolStages++;ActionProgress=ToolStages/4f;if(ToolStages==4){Finishing=true;ToolPressure=0;ToolFeedback="Siết dây rồi THẢ trong dải xanh";}}
             }
             else if(Current==Step.FillRice)
@@ -288,8 +302,8 @@ namespace BeachBoatStory
             {
                 if(motion.magnitude>.001f)Foley?.Move(VillageWorkFoley.Cue.Cloth,motion.magnitude/Mathf.Max(.01f,seconds)/4);
                 if(!foldGrabbed&&Vector2.Distance(ToolPointer,ToolGoal)<.25f)foldGrabbed=true;
-                else if(foldGrabbed&&!Finishing&&ToolPointer.magnitude<.2f&&motion.sqrMagnitude>0)
-                {Finishing=true;ToolPressure=0;ToolFeedback="Giữ yên để ép kín nếp";}
+                else if(foldGrabbed&&!Finishing&&ToolPointer.magnitude<.3f&&motion.sqrMagnitude>0)
+                {Finishing=true;ToolPointer=Vector2.zero;ToolPressure=0;ToolFeedback="Giữ yên để ép kín nếp";}
             }
             return true;
         }
@@ -408,7 +422,7 @@ namespace BeachBoatStory
                 foreach(var item in fabrics)if(item.renderer!=null)
                 {var cameraPosition=Camera.main.transform.position;bool Blocks(Vector3 target){var delta=target-cameraPosition;return item.renderer.bounds.IntersectRay(new Ray(cameraPosition,delta.normalized),out float distance)&&distance<delta.magnitude;}item.renderer.forceRenderingOff=item.hidden||(item.renderer.bounds.ClosestPoint(cameraPosition)-cameraPosition).sqrMagnitude<400||Blocks(player.position+Vector3.up*10)||Blocks(TargetPosition);}
             bool table=AtTable;
-            if(table&&!tableWasActive)camera.CaptureCursor(false);
+            if(table&&!tableWasActive){camera.CaptureCursor(false);Cursor.lockState=CursorLockMode.Confined;}
             else if(!table&&tableWasActive&&stall.Phase==VillageWorkStall.WorkPhase.Playing&&!BachDangFrontEnd.IsBlocking&&!CampaignJournalUI.IsOpen)camera.CaptureCursor(true);
             if(table&&(!tableWasActive||QuestRowboat.FlatDistance(player.position,RequiredApproach)>.1f))
             {
@@ -416,8 +430,15 @@ namespace BeachBoatStory
                 var body=player.GetComponent<Rigidbody>();if(body!=null){body.position=dock;if(!body.isKinematic)body.linearVelocity=Vector3.zero;}Physics.SyncTransforms();
             }
             tableWasActive=table;hands?.Show(table);
+            for(int i=0;i<playerMeshes.Length;i++)foreach(string pose in new[]{"LeftBowGrip","RightBowHook"})
+            {
+                var renderer=playerMeshes[i];int shape=renderer.sharedMesh.GetBlendShapeIndex(pose);if(shape<0)continue;
+                float goal=Carrying?(stall.kind==VillageWorkStall.WorkKind.Rope?85:stall.kind==VillageWorkStall.WorkKind.Timber?55:35):previousFingerWeights[i][shape];
+                renderer.SetBlendShapeWeight(shape,Mathf.MoveTowards(renderer.GetBlendShapeWeight(shape),goal,Time.unscaledDeltaTime*600));
+            }
             foreach(var guide in sawGuides)guide.SetActive(table&&Current==Step.Saw&&benchLog!=null);
-            hands?.Grip(false,Current==Step.Saw||Current==Step.FillRice||Current==Step.Tie);
+            hands?.Grip(Current==Step.Wrap?(ToolStages==0||ToolStages==2?WorkbenchHands.GripPose.Pinch:WorkbenchHands.GripPose.Support):Current==Step.Tie?WorkbenchHands.GripPose.Pinch:WorkbenchHands.GripPose.Support,
+                Current==Step.Wrap?(ToolStages==0||ToolStages==2?WorkbenchHands.GripPose.Support:WorkbenchHands.GripPose.Pinch):Current==Step.Tie?WorkbenchHands.GripPose.Pinch:WorkbenchHands.GripPose.Rod);
             if(camera!=null){if(AtTable)camera.FocusTable(World(new Vector3(Current==Step.Tie?-10+Knots*10:0,Current==Step.Saw?12:Current==Step.FillRice?12:10,-9.5f)),rotation*Vector3.forward,Current==Step.Wrap?.78f:Current==Step.Tie?.9f:1);else camera.ClearWorkFocus();}
             marker.transform.position=(ToolStep?ToolPoint(ToolGoal):TargetPosition)+Vector3.up*.3f;
             toolCursor.SetActive(ToolStep);if(ToolStep)toolCursor.transform.position=ToolPoint(ToolPointer);
@@ -435,12 +456,23 @@ namespace BeachBoatStory
                 var grip=Carrying?held.transform.position:ToolPoint(ToolPointer);
                 // Cloth can lift in 3D while the pointer keeps following the table
                 // plane; baking that lift into pointer coordinates inverted drags.
-                if(!Carrying&&Current==Step.Wrap&&foldGrabbed)grip+=Vector3.up*(Mathf.Max(0,1-ToolPointer.magnitude)*1.5f*verticalScale);
+                if(!Carrying&&Current==Step.Wrap)
+                {
+                    var flap=flaps[Mathf.Min(3,ToolStages)];
+                    float a=(foldGrabbed?1-Mathf.Clamp01(ToolPointer.magnitude):0)*130;
+                    var r=ToolStages<2?Quaternion.Euler(0,0,ToolStages==0?-a:a):Quaternion.Euler(ToolStages==2?a:-a,0,0);
+                    var local=ToolStages<2?new Vector3(ToolStages==0?-1.5f:1.5f,.18f,0):new Vector3(0,.18f,ToolStages==2?-1.5f:1.5f);
+                    grip=flap.parent.TransformPoint(flap.localPosition+r*local);
+                }
                 var right=grip+player.right*2;var left=grip-player.right*2;
                 if(!Carrying&&Current==Step.FillRice){right=spoon.transform.TransformPoint(new Vector3(0,0,-3));left=World(new Vector3(.5f,13,-11.8f));}
                 else if(!Carrying&&Current==Step.Saw)left=World(new Vector3(-4,12,-10));
                 else if(!Carrying&&Current==Step.Tie){right=grip;left=World(new Vector3(-13.5f+Knots*10,12.5f,-10.5f));}
-                else if(!Carrying&&Current==Step.Wrap){right=grip;left=World(new Vector3(0,9.7f,-10.2f));}
+                else if(!Carrying&&Current==Step.Wrap)
+                {
+                    bool leftWorks=ToolStages==0||ToolStages==2;
+                    left=leftWorks?grip:World(new Vector3(-3,9.7f,-8.8f));right=leftWorks?World(new Vector3(3,9.7f,-8.8f)):grip;
+                }
                 RightGripPosition=right;
                 LeftGripPosition=left;
                 QuestRowboat.SolveArm(arms[0],arms[1],rightHand,right,arms[0].position+player.right*4-Vector3.up*3);
@@ -450,7 +482,7 @@ namespace BeachBoatStory
                     if(Current==Step.Saw||Current==Step.FillRice)gripProfile.Align(arms[0],arms[1],rightHand,right,arms[0].position+player.right*4-Vector3.up*3,false,true,Current==Step.Saw?player.right:player.forward);
                 }
             }
-            if(AtTable&&camera!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,true,Current==Step.Wrap);
+            if(AtTable&&camera!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,true,Current==Step.Wrap,Current==Step.Saw?player.right:Current==Step.FillRice?spoon.transform.forward:Vector3.zero);
             if(blade!=null&&Current==Step.Saw)blade.transform.position=ToolPoint(ToolPointer);
             if(sawHandle!=null&&Current==Step.Saw)sawHandle.transform.SetPositionAndRotation(ToolPoint(ToolPointer)+player.right*2,player.rotation);
             if(grain!=null){float level=Mathf.Clamp01(RiceFill);grain.transform.localScale=new Vector3(5.4f,Mathf.Max(.05f,level*2.5f),5.4f);grain.transform.localPosition=new Vector3(4,9+level*2.5f,-10.2f);grain.GetComponent<Renderer>().sharedMaterial=rice;}
@@ -471,7 +503,7 @@ namespace BeachBoatStory
             if(camera!=null){camera.ClearWorkFocus();camera.distance=cameraSettings.x;camera.heightOffset=cameraSettings.y;camera.rightOffset=cameraSettings.z;camera.SetElevation(cameraElevation);}camera=null;
             if(arms!=null&&armRest!=null)for(int i=0;i<arms.Length;i++)if(arms[i]!=null)arms[i].localRotation=armRest[i];
             if(spine!=null)spine.localRotation=spineRest;
-            if(rig!=null&&playerMeshes!=null){rig.cullingMode=previousCulling;for(int i=0;i<playerMeshes.Length;i++)if(playerMeshes[i]!=null)playerMeshes[i].updateWhenOffscreen=previousOffscreen[i];}playerMeshes=null;
+            if(rig!=null&&playerMeshes!=null){rig.cullingMode=previousCulling;for(int i=0;i<playerMeshes.Length;i++)if(playerMeshes[i]!=null){playerMeshes[i].updateWhenOffscreen=previousOffscreen[i];for(int n=0;n<previousFingerWeights[i].Length;n++)playerMeshes[i].SetBlendShapeWeight(n,previousFingerWeights[i][n]);}}playerMeshes=null;
             stall=null;held=null;
         }
         void OnDisable(){Finish();}

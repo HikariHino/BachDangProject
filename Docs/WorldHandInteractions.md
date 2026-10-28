@@ -39,6 +39,21 @@ con trỏ được mở khóa và hiện rõ; bấm giữ dụng cụ rồi kéo
 Mouse X/Y gây lệch hướng và phụ thuộc độ nhạy. Con trỏ gói lương luôn nằm trên mặt bàn;
 độ nâng tay/khăn là chuyển động 3D riêng, không làm đảo hướng kéo.
 
+Sửa theo clip 15:00 ngày 28/10: khoảng lệch lúc bắt dụng cụ được giới hạn, tránh
+con trỏ ở giữa nhưng vật vẫn nằm ngoài vùng đích. Cưa bám rãnh ở chế độ chuột;
+dây có vùng bắt điểm rộng hơn và giữ vị trí khi siết. Khăn kéo theo trục của mép
+đang chọn; khi qua vùng giữa thì chốt ở giữa trong lúc giữ để ép, không bật lại
+vì rê quá tay. Cần nhả và bấm giữ mép tiếp theo. Tay đang kẹp mép bám chính điểm
+trên cánh khăn quay, tay còn lại giữ phía đối diện, tránh bắt chéo hai tay.
+
+`WorkbenchHandGrips` có sáu dáng mesh riêng: trái/phải × nắm cán/kẹp/giữ.
+Model gốc không có rig từng ngón, nên `BeachBoatWorkbenchGripAuthoring` tạo các
+vùng gập đốt gốc/giữa/đầu và khép ngón cái trực tiếp trên mesh tay, giữ nguyên
+FBX và tư thế cung. Chỉ giữ mesh hai cánh tay để giảm dung lượng. Chuyển dáng
+được blend, cán cưa/gáo quyết định trục nắm; lúc mang vật, tay nhân vật khép theo
+loại vật tư rồi khôi phục khi rời lượt hoặc load. Âm thanh đã đổi sang bản thu
+thật và cân mức nhỏ hơn; xem [TradeAudioSources.md](TradeAudioSources.md).
+
 Tay hiển thị lấy trục cẳng tay/cổ tay từ bind pose của mesh, không kế thừa góc
 cổ tay đang bị uốn trong animation đi bộ. Khi buộc, tay trái giữ bó gỗ bên trái
 nút, tay phải nắm và kéo dây; hai bàn tay không còn chồng trên cùng một điểm.
