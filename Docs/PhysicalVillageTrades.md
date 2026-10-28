@@ -4,7 +4,7 @@ Bốn sạp trong làng dùng cùng nhân vật, camera, địa hình và va ch�
 
 | Sạp | Việc phải làm | Điều khiển | Giới hạn / S / A / B |
 |---|---|---|---|
-| Gỗ | Lấy gỗ bên trái, mang đặt lên bàn, cưa, vác sang giá phải; ba khúc | E cầm/đặt; giữ chuột trái và kéo cưa qua lại | 75 / 45 / 60 / 71,25 giây |
+| Gỗ | Lấy gỗ bên trái, mang đặt lên bàn, cưa, vác sang giá phải; ba khúc | E cầm/đặt; giữ chuột trái kéo LÊN/XUỐNG dọc rãnh; rê ngang căn giữa | 75 / 45 / 60 / 71,25 giây |
 | Dây | Lấy cuộn dây, mang tới bó cọc, tới và siết ba nút, giao bó đã buộc | E cầm/đặt; kéo dây quanh bốn điểm của mỗi nút | 60 / 36 / 48 / 57 giây |
 | Gạo | Mang bao rỗng lên bàn, đong tới vạch xanh, nhấc và giao; hai bao | Kéo gáo xúc gạo, đưa qua bao và nghiêng đổ; đủ thì E nhấc, dư thì E đổ lại | 75 / 45 / 60 / 71,25 giây |
 | Lương khô | Lấy lần lượt phần gạo, cá khô và muối ở kệ; mang đặt lên khăn; gấp khăn và giao; hai gói | E cầm/đặt; kéo bốn mép khăn vào giữa | 90 / 54 / 72 / 85,5 giây |
@@ -32,3 +32,9 @@ Các ca chạy nền gọi cùng hàm tương tác mà input sử dụng và ren
 Đợt sạp cố định và cải thiện độ sáng: **238 kiểm tra qua** — bốn sạp/ánh sáng/camera/thanh lực/cổ tay/ESC/load/thành tích 171, vật tư và năm cụm đóng cọc 67. Đã so sánh chính các vật thể và ảnh sạp trước/sau E, xác nhận cột mái không xuyên thùng, chụp thanh lực và ảnh doanh trại trước/sau tăng sáng. Các đoạn tay không kéo giãn, cổ tay dùng trục bind pose; nhân vật và camera khôi phục khi giao hàng, thoát hoặc load. Bộ kiểm thử kiểm SHA-256 các save thật và không sửa các file đó.
 
 Thao tác kéo dụng cụ, camera cận bàn, đóng cọc và tập cung được mô tả thêm trong [WorldHandInteractions.md](WorldHandInteractions.md).
+
+Đợt sửa hướng chuột và chân Ngô Quyền: 202 kiểm tra qua. Xác nhận bốn hướng
+trên ảnh chiếu thật của cả bốn minigame, bao gồm lúc đang nâng khăn; vạch xanh
+ẩn ở bước lấy hàng và chỉ hiện khi cưa; đế giày Ngô Quyền chạm sàn trước/sau
+load. Chụp ảnh sau khi camera đã chuyển góc ổn định, dùng save tạm và giữ nguyên
+SHA-256 của các save thật.

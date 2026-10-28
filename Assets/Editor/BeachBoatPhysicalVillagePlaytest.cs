@@ -13,16 +13,17 @@ using Story=BeachBoatStory.BachDangStoryManager;
 public static class BeachBoatPhysicalVillagePlaytest
 {
     const string Flag="PhysicalVillage938QA";
-    static int phase,index,lastFrame,captureFrame;static double began;static string runtimeError,pendingCapture;static bool capturing,captureReady;
+    static int phase,index,lastFrame,captureFrame;static float captureAt;static double began;static string runtimeError,pendingCapture;static bool capturing,captureReady;
     static VillageWorkStall stall;static bool riceOverflow;static HashSet<string> captures=new HashSet<string>();
     static readonly HashSet<VillageWorkStall.WorkKind> challengeChecks=new HashSet<VillageWorkStall.WorkKind>();
     static BachDangSaveData completedCheckpoint;
     static string stationSnapshot;
+    static bool commanderCaptured;
     static readonly List<string> checks=new List<string>();static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static string Hash(string p)=>Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(File.ReadAllBytes(p)));
     static void Check(bool ok,string s){if(!ok)throw new Exception(s);checks.Add(s);}
     public static void RunBatch(){EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
-    public static void RunInEditor(){phase=index=0;lastFrame=-1;began=0;runtimeError=pendingCapture=null;capturing=captureReady=false;riceOverflow=false;checks.Clear();hashes.Clear();captures.Clear();challengeChecks.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){phase=index=0;lastFrame=-1;began=0;runtimeError=pendingCapture=null;capturing=captureReady=commanderCaptured=false;riceOverflow=false;checks.Clear();hashes.Clear();captures.Clear();challengeChecks.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Log;Application.logMessageReceived+=Log;}
     static void Log(string m,string stack,LogType t){if(SessionState.GetBool(Flag,false)&&(t==LogType.Error||t==LogType.Exception))runtimeError=m+"\n"+stack;}
     public static void Place(Vector3 p)
@@ -59,7 +60,7 @@ public static class BeachBoatPhysicalVillagePlaytest
         if(captures.Contains(name)||pendingCapture!=null)return;
         var player=BeachBoatQuestSession.Instance.player;var direction=stall.Physical.TargetPosition-player.transform.position;direction.y=0;
         player.transform.rotation=Quaternion.LookRotation(direction);player.GetComponent<Rigidbody>().rotation=player.transform.rotation;
-        var orbit=BeachBoatQuestSession.Instance.storyCamera.GetComponent<BeachBoatStory.Camera_Script>();if(!stall.Physical.ToolStep){float elevation=orbit.Elevation;orbit.SnapToTarget();orbit.SetElevation(elevation);}pendingCapture=name;captureFrame=Time.frameCount;
+        var orbit=BeachBoatQuestSession.Instance.storyCamera.GetComponent<BeachBoatStory.Camera_Script>();if(!stall.Physical.ToolStep){float elevation=orbit.Elevation;orbit.SnapToTarget();orbit.SetElevation(elevation);}pendingCapture=name;captureFrame=Time.frameCount;captureAt=Time.unscaledTime;
     }
     static void Capture(string name)
     {
@@ -81,6 +82,13 @@ public static class BeachBoatPhysicalVillagePlaytest
             Check(stall.Physical.HandsOnly&&stall.Physical.HandTriangles>100,"Only the player's forearms render at the bench; torso and helmet are hidden: "+stall.kind);
             Check(stall.Physical.HandSegmentError<.001f,"Display arm segments keep their original proportions throughout tool motion: "+stall.kind+" error="+stall.Physical.HandSegmentError);
             Check(stall.Physical.HandWristAngle<1,"Display wrists use the neutral mesh bind frame throughout the gesture: "+stall.kind+" angle="+stall.Physical.HandWristAngle);
+            CheckScreenDirections(stall.Physical,source);
+            if(stall.Physical.Current==VillagePhysicalWork.Step.Wrap)
+            {
+                var grabbed=typeof(VillagePhysicalWork).GetField("foldGrabbed",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);bool previous=(bool)grabbed.GetValue(stall.Physical);
+                try{grabbed.SetValue(stall.Physical,true);CheckScreenDirections(stall.Physical,source);}finally{grabbed.SetValue(stall.Physical,previous);}
+            }
+            if(stall.kind==VillageWorkStall.WorkKind.Timber)Check(stall.Physical.SawGuidesVisible,"Saw guides appear only after the log is placed and the table camera is active");
             Check(StationSignature()==stationSnapshot,"The same table, roof and crates remain in place while manipulating tools: "+stall.kind);
             if(stall.kind==VillageWorkStall.WorkKind.Rope)Check(Object.FindAnyObjectByType<VillageWorkUI>().TensionGaugeVisible,"Large rope tension gauge remains visible below the work area");
             Check(source.GetComponent<BeachBoatStory.Camera_Script>().TableFocusActive&&!VillagePhysicalWork.AllowsMovement,"Bench view locks walking and uses the centered tabletop camera: "+stall.kind);
@@ -109,6 +117,7 @@ public static class BeachBoatPhysicalVillagePlaytest
         SessionState.SetBool(Flag,false);VillageWorkStall.Active?.Close();
         File.WriteAllText("Logs/PhysicalVillagePlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,phase,index,checks},Newtonsoft.Json.Formatting.Indented));
         BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
+        if(Application.isBatchMode)EditorApplication.Exit(error==null?0:1);
     }
     public static void CaptureAfterPose()
     {
@@ -123,7 +132,7 @@ public static class BeachBoatPhysicalVillagePlaytest
         try
         {
             if(runtimeError!=null)throw new Exception(runtimeError);if(EditorApplication.timeSinceStartup-began>120)throw new Exception("Physical village QA timeout");
-            if(pendingCapture!=null){if(Time.frameCount>=captureFrame+(stall.Physical.ToolStep?20:3))captureReady=true;return;}
+            if(pendingCapture!=null){if(Time.frameCount>=captureFrame+3&&Time.unscaledTime>=captureAt+(stall.Physical.ToolStep?.55f:.1f))captureReady=true;return;}
             if(phase==0)
             {
                 foreach(var p in Directory.GetFiles(Application.persistentDataPath,"campaign938*"))hashes[p]=Hash(p);
@@ -131,6 +140,7 @@ public static class BeachBoatPhysicalVillagePlaytest
                 BeachBoatQuestSession.Instance.player.AddComponent<VillageWorkPoseProbe>();
                 BachDangFrontEnd.Instance.Play();Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 CheckCampLighting();
+                CheckCommanderFloor();
                 Story.Instance.collectedWood=5;Story.Instance.TransitionTo(Story.StoryState.Act2_SupplyPreparation,true);phase=1;return;
             }
             if(phase==1)
@@ -141,6 +151,7 @@ public static class BeachBoatPhysicalVillagePlaytest
                 var posts=stall.transform.Find("Mai_Che_Mo_Mat_Truoc").GetComponentsInChildren<Collider>().Where(c=>c.enabled&&c.name=="Cot_Sap");
                 Check(!crates.Any(crate=>posts.Any(post=>Physics.ComputePenetration(crate,crate.transform.position,crate.transform.rotation,post,post.transform.position,post.transform.rotation,out _,out _))),"Permanent canopy posts clear both supply crates: "+stall.kind);
                 Check(stall.TryOpen()&&stall.Physical!=null&&stall.Phase==VillageWorkStall.WorkPhase.Playing,"E immediately starts physical work: "+stall.kind);
+                Check(!stall.Physical.SawGuidesVisible,"Opening a stall before picking up goods does not show green cutting guides: "+stall.kind);
                 Check(StationSignature()==stationSnapshot,"Pressing E does not replace the stall or remove its awning: "+stall.kind);CaptureStation(stall.kind+"_Opened");
                 var rig=BeachBoatQuestSession.Instance.player.GetComponentInChildren<Animator>();
                 Check(BeachBoatQuestSession.Instance.player.GetComponentsInChildren<SkinnedMeshRenderer>().Any(r=>r.bones.Contains(rig.GetBoneTransform(HumanBodyBones.RightUpperArm))),"Work pose drives the skeleton used by the visible character: "+stall.kind);
@@ -254,10 +265,33 @@ public static class BeachBoatPhysicalVillagePlaytest
             }
             if(phase==9)
             {
-                CheckRestored("Load");foreach(var p in hashes)Check(File.Exists(p.Key)&&Hash(p.Key)==p.Value,"User save unchanged: "+Path.GetFileName(p.Key));Finish(null);
+                CheckRestored("Load");CheckCommanderFloor();foreach(var p in hashes)Check(File.Exists(p.Key)&&Hash(p.Key)==p.Value,"User save unchanged: "+Path.GetFileName(p.Key));Finish(null);
             }
         }
         catch(Exception e){Finish(e.ToString());}
+    }
+    static void CheckScreenDirections(VillagePhysicalWork work,Camera camera)
+    {
+        var point=typeof(VillagePhysicalWork).GetMethod("ToolPoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);
+        Vector3 World(Vector2 p)=>(Vector3)point.Invoke(work,new object[]{p});
+        var origin=(Vector2)camera.WorldToScreenPoint(World(Vector2.zero));
+        foreach(var direction in new[]{Vector2.up,Vector2.down,Vector2.right,Vector2.left})
+        {
+            var logical=work.ScreenToToolDelta(direction*.02f);var moved=(Vector2)camera.WorldToScreenPoint(World(logical))-origin;
+            Check(moved.magnitude>.05f&&Vector2.Dot(moved.normalized,direction)>.9f,"Screen drag follows the visible tool direction: "+work.Current+" "+direction+" -> "+moved);
+        }
+    }
+    static void CheckCommanderFloor()
+    {
+        var actor=Object.FindAnyObjectByType<BeachBoatStory.NPCQuestGiver>();var rig=actor.GetComponent<Animator>();
+        var info=Newtonsoft.Json.Linq.JObject.FromObject(BeachBoatCommanderFloorAudit.Inspect(actor.gameObject,rig));
+        float sole=(float)info["sole"];float floor=info["floors"].SelectMany(f=>f["hits"]).Where(h=>(string)h["type"]!="TerrainCollider"&&(float)h["y"]<=sole+1).Max(h=>(float)h["y"]);
+        Check(sole-floor>=-.15f&&sole-floor<.45f,"Commander boots rest on the actual command deck before and after load: gap="+(sole-floor));
+        if(!commanderCaptured)
+        {
+            commanderCaptured=true;var camera=PreviewCamera();camera.transform.position=actor.transform.position+actor.transform.forward*35+actor.transform.right*25+Vector3.up*15;
+            camera.transform.LookAt(actor.transform.position+Vector3.up*12);CapturePreview(camera,"Logs/Commander_Grounded.png");Object.DestroyImmediate(camera.gameObject);
+        }
     }
     static string StationSignature()
     {

@@ -19,7 +19,7 @@ rời sạp; mái không còn bị gỡ, bàn không bị thay bằng một bàn
 
 | Sạp | Thao tác sau khi mang vật tới bàn |
 |---|---|
-| Gỗ | Kéo cưa qua lại, giữ trong hai vạch xanh (lệch ngang tối đa 28%); mỗi nửa nhịp ít nhất 0,3 giây, tám nửa nhịp mỗi khúc |
+| Gỗ | Kéo LÊN/XUỐNG trên màn hình dọc rãnh xanh; rê ngang để căn giữa (lệch ngang tối đa 28%); mỗi nửa nhịp ít nhất 0,3 giây, tám nửa nhịp mỗi khúc |
 | Dây | Kéo quanh bốn điểm, giữ để tăng lực siết; THẢ trong dải xanh 55–85%, tương đương cửa sổ khoảng 0,46 giây. Thả sai chỉ làm lại nút này; ba nút cho bó cọc |
 | Gạo | Kéo sang trái và xuống để xúc, giữ gáo ngang khi chuyển sang phải rồi nghiêng lên trên bao; nghiêng sớm làm rơi gáo, không mất gạo trong bao. Ba gáo 24% tạo mức đủ 72% |
 | Lương khô | Đặt đủ ba nguyên liệu, kéo mép khăn vào giữa rồi giữ yên 0,45 giây để ép kín; nhả sớm chưa tính nếp, có thể ép lại. Bốn mép tạo thành gói |
@@ -32,6 +32,12 @@ HUD hiển thị phản hồi lệch rãnh, rơi gạo hoặc nếp chưa kín. 
 nhấc và giao vật. ESC/X rời lượt; H xem thao tác.
 Các giới hạn và mốc hạng của bốn sạp giữ nguyên. Kết quả cũ vẫn giữ trong save.
 
+Vạch xanh chỉ hiện sau khi đặt gỗ lên bàn, trong đúng bước cưa và góc nhìn bàn;
+không hiện khi vừa mở sạp, đang lấy/vác gỗ hoặc đã giao hàng. `DragScreen` đổi
+chuyển động chuột qua phép chiếu thật của hai trục dụng cụ, giữ cả hướng và tỷ lệ
+trục thay vì gán trực tiếp Mouse X/Y. Con trỏ gói lương luôn nằm trên mặt bàn;
+độ nâng tay/khăn là chuyển động 3D riêng, không làm đảo hướng kéo.
+
 Tay hiển thị lấy trục cẳng tay/cổ tay từ bind pose của mesh, không kế thừa góc
 cổ tay đang bị uốn trong animation đi bộ. Khi buộc, tay trái giữ bó gỗ bên trái
 nút, tay phải nắm và kéo dây; hai bàn tay không còn chồng trên cùng một điểm.
@@ -43,6 +49,14 @@ chuyển tiếp 55 đơn vị. Exposure 0,7 EV, contrast 4 và gamma nhẹ làm 
 mặt người và lối đi; không áp dụng cho làng hoặc sông. Tăng cường độ đuốc trong
 vùng 20%, tầm sáng 15%, vẫn giữ ngân sách tối đa tám đèn và không thêm đèn realtime.
 Volume và profile chỉ tồn tại trong lượt chơi, không viết vào scene hay save.
+
+## Chân Ngô Quyền trên sàn chỉ huy
+
+Đã đo các đỉnh đế giày trên mesh sau skinning và raycast xuống MeshCollider sàn.
+Vị trí Y của riêng `NgoQuyen_QuestGiver` được chỉnh từ 157,48978 xuống 155,04704;
+đế giày cách điểm sàn cao nhất khoảng 0,05 đơn vị. Không sửa tỉ lệ NPC hay sàn.
+Kiểm tra lại trong Play Mode và sau load. Save không lưu vị trí Ngô Quyền nên
+slot cũ nhận vị trí scene đã sửa. Công cụ đo: `BeachBoatCommanderFloorAudit`.
 
 ## Đóng cọc trên thuyền
 
@@ -99,7 +113,8 @@ Tài nguyên được tạo ở `Assets/Resources/BachDang938/Player`, khoảng 
 ## Kiểm tra bằng Unity CLI
 
 - Bốn sạp, bố trí trước/trong/sau E, độ sáng doanh trại, thanh lực phía dưới,
-  tỉ lệ tay/cổ tay, thao tác sai/đúng, thành tích và save/load: 171 kiểm tra.
+  tỉ lệ tay/cổ tay, bốn hướng kéo chuột (kể cả lúc nâng khăn), vạch cưa chỉ hiện
+  đúng bước, chân Ngô Quyền, thành tích và save/load: 202 kiểm tra.
   ESC và load được thử ngay trong góc nhìn bàn để xác
   nhận xóa tay hiển thị, trả nhân vật đầy đủ và camera bình thường.
 - Tập cung, ba mức kéo dây, góc cổ tay, nắm tay, thoát và save/load: 52 kiểm tra.
