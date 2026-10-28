@@ -48,6 +48,15 @@ namespace BeachBoatStory
         int routePoint;
         float blockedTime,nextReplan;
         public int RoutesPlanned {get;private set;}
+        public bool IsResting=>idleRemaining>0;
+        public bool IsRaisedPatrol=>raisedPatrol;
+        NPCDailyActivity dailyWork;string workLabel;
+        static CampGateTransition[] circulationGates;
+        public static bool AtGate(Vector3 p)
+        {
+            if(circulationGates==null||circulationGates.Length==0||circulationGates[0]==null)circulationGates=FindObjectsByType<CampGateTransition>(FindObjectsSortMode.None);
+            foreach(var gate in circulationGates)if(gate!=null&&QuestRowboat.FlatDistance(p,gate.transform.position)<30)return true;return false;
+        }
 
         public static bool IsEligible(Animator a)
         {
@@ -64,9 +73,9 @@ namespace BeachBoatStory
         void Start()
         {
             if (animator == null) animator = GetComponent<Animator>();
+            if(animator!=null&&GetComponent<NPCCampPose>()==null&&!name.Contains("Lookout"))CivilianMovementProfile.Apply(animator);
             // Reject group roots/buildings accidentally selected by the old name-based tool.
             if (!IsEligible(animator) || animator.transform != transform) { enabled = false; return; }
-            CivilianMovementProfile.Apply(animator);
             ActorSolidBody.Ensure(gameObject,animator);
             home = transform.position; terrain = Terrain.activeTerrain;
             scale = Mathf.Max(1, BachDangWorldScale.ForScene(gameObject.scene));
@@ -83,6 +92,7 @@ namespace BeachBoatStory
             groundOffset = terrain != null ? Mathf.Clamp(home.y - Ground(home), 0, scale * 5f) : 0;
             raisedPatrol=groundOffset>scale*1.5f;
             navigation=new NPCWalkNavigation(this,terrain,scale,raisedPatrol);
+            dailyWork=GetComponent<NPCDailyActivity>()??gameObject.AddComponent<NPCDailyActivity>();dailyWork.Initialize(this,animator);
             if(navigation.FindSpawn(home,out var spawn)){transform.position=home=spawn;}
             Physics.SyncTransforms();
             animator.applyRootMotion = false;
@@ -142,9 +152,12 @@ namespace BeachBoatStory
         void PickTarget()
         {
             IsSleeping=false;Pose(false,false); target = home;route.Clear();routePoint=0;blockedTime=0;
+            dailyWork?.ReleaseWorksite();workLabel=null;
+            if(!raisedPatrol&&dailyWork!=null&&dailyWork.TryChooseWorksite(out var job,out var label)&&SetDestination(job)){targetIndex=-1;workLabel=label;CurrentActivity="Đang tới chỗ làm • "+label;return;}
+            dailyWork?.ReleaseWorksite();
             // Alternate jobs with longer trips along clear village/camp lanes. Platform
             // sentries retain their authored route and never step off their guard post.
-            if(!raisedPatrol&&UnityEngine.Random.value<.65f&&TryNeighbourhoodTrip())return;
+            if(!raisedPatrol&&UnityEngine.Random.value<.2f&&TryNeighbourhoodTrip())return;
             for(int attempt=0;attempt<8;attempt++)
             {
                 Vector3 candidate;
@@ -169,7 +182,7 @@ namespace BeachBoatStory
                     if(wp==null)continue;candidate=wp.position;
                 }
                 else {var offset=UnityEngine.Random.insideUnitCircle.normalized*UnityEngine.Random.Range(wanderRadius*.45f,wanderRadius);candidate=home+new Vector3(offset.x,0,offset.y);}
-                if(!ValidGround(candidate)||QuestRowboat.FlatDistance(candidate,transform.position)<scale*.5f)continue;
+                if(AtGate(candidate)||!ValidGround(candidate)||QuestRowboat.FlatDistance(candidate,transform.position)<scale*.5f)continue;
                 if(!SetDestination(candidate))continue;
                 CurrentActivity="Đang đi làm";return;
             }
@@ -193,7 +206,7 @@ namespace BeachBoatStory
                 {var stop=neighbourhoodStops[UnityEngine.Random.Range(0,neighbourhoodStops.Length)];if(stop==null)continue;candidate=stop.position;}
                 else {var offset=UnityEngine.Random.insideUnitCircle.normalized*UnityEngine.Random.Range(PatrolRadius*.4f,PatrolRadius);candidate=home+new Vector3(offset.x,0,offset.y);}
                 float distance=QuestRowboat.FlatDistance(candidate,transform.position);
-                if(distance<NominalStrideSpeed*3||QuestRowboat.FlatDistance(candidate,home)>PatrolRadius||!ValidGround(candidate))continue;
+                if(AtGate(candidate)||distance<NominalStrideSpeed*3||QuestRowboat.FlatDistance(candidate,home)>PatrolRadius||!ValidGround(candidate))continue;
                 if(terrain!=null)candidate.y=Ground(candidate)+groundOffset;
                 var direction=candidate-transform.position;direction.y=0;direction.Normalize();
                 bool clear=true;
@@ -220,6 +233,8 @@ namespace BeachBoatStory
             if(!navigation.Route(transform.position,destination,route))return false;
             target=route[route.Count-1];routePoint=0;RoutesPlanned++;return true;
         }
+        public bool TryWorkDestination(Vector3 candidate,out Vector3 point)
+        {point=candidate;return navigation!=null&&navigation.Project(candidate,out point)&&!navigation.Occupied(point,true)&&navigation.Route(transform.position,point,new System.Collections.Generic.List<Vector3>());}
         void Idle()
         {
             idleRemaining=UnityEngine.Random.Range(Mathf.Max(.1f,minIdleTime),Mathf.Max(minIdleTime,maxIdleTime));
@@ -241,6 +256,8 @@ namespace BeachBoatStory
                 transform.rotation=idleFacing=waypoints[targetIndex].rotation;
             CurrentActivity=targetIndex>=0&&activityLabels!=null&&targetIndex<activityLabels.Length&&!string.IsNullOrWhiteSpace(activityLabels[targetIndex])
                 ?activityLabels[targetIndex]:"Đang nghỉ chân";
+            if(!string.IsNullOrEmpty(workLabel)){CurrentActivity=workLabel;idleRemaining=UnityEngine.Random.Range(14f,26f);}
+            if(AtGate(transform.position))idleRemaining=.1f;
         }
         public void PauseForConversation(Transform visitor)
         {
@@ -289,7 +306,7 @@ namespace BeachBoatStory
             {
                 currentSpeed=0;blockedTime+=dt;Pose(false,false);CurrentActivity="Đang tránh vật cản";
                 if(blockedTime>.8f&&Time.time>=nextReplan)
-                {nextReplan=Time.time+UnityEngine.Random.Range(.8f,1.4f);blockedTime=0;if(!SetDestination(target))PickTarget();}
+                {nextReplan=Time.time+UnityEngine.Random.Range(.8f,1.4f);blockedTime=0;PickTarget();}
                 return;
             }
             // Turn before translating. A near-180-degree avoidance heading used
@@ -298,7 +315,8 @@ namespace BeachBoatStory
             if(Vector3.Angle(transform.forward,heading)>38){currentSpeed=0;Pose(false,false);return;}
             var facing=transform.forward;facing.y=0;facing.Normalize();
             var next=transform.position+facing*Mathf.Min(remaining,currentSpeed*dt);
-            if(!navigation.Project(next,out next)||!navigation.Clear(transform.position,next,true)){currentSpeed=0;Pose(false,false);return;}
+            if(!navigation.Project(next,out next)||!navigation.Clear(transform.position,next,true))
+            {currentSpeed=0;Pose(false,false);blockedTime+=dt;if(blockedTime>1.5f){blockedTime=0;PickTarget();}return;}
             blockedTime=0;
             DistanceTravelled+=Vector3.Distance(transform.position,next);
             transform.position=next;

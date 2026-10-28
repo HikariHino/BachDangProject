@@ -199,45 +199,16 @@ namespace BeachBoatStory
 
         IEnumerator PlantCluster(int index)
         {
-            var point = placements[index];
-            var indices = point.stakeIndices;
-            float duration = Mathf.Max(1, plantingDuration), stroke = Mathf.Min(1.25f, duration);
-            float elapsed = 0;
-            while (elapsed < duration)
+            while(StakeConstruction.Active!=null&&StakeConstruction.Active.Step!=StakeConstruction.WorkStep.Finished)yield return null;
+            if(StakeConstruction.Active==null)yield break;
+            StakeConstruction.Active.FinishWork();planting=null;workingIndex=-1;
+            void CompleteField()
             {
-                if(StakeConstruction.Active==null)yield break;
-                elapsed = Mathf.Min(duration, StakeConstruction.Active.Progress*duration);
-                if(elapsed<=0){yield return null;continue;}
-                bool changed = false;
-                for (int n = 0; n < indices.Length; n++)
-                {
-                    int i = indices[n];
-                    float delay = indices.Length <= 1 ? 0 : (duration - stroke) * n / (indices.Length - 1);
-                    if (elapsed < delay || finished[i]) continue;
-                    var stake = fieldStakes[i];
-                    if (!stake.gameObject.activeSelf)
-                    {
-                        foreach (var c in colliders[i]) if (c != null) c.enabled = false;
-                        stake.position = finalPositions[i] + Vector3.up * 12;
-                        stake.gameObject.SetActive(true);
-                    }
-                    float amount = Mathf.Clamp01((elapsed - delay) / stroke);
-                    stake.position = finalPositions[i] + Vector3.up * (12 * (1 - Mathf.SmoothStep(0, 1, amount)));
-                    if (elapsed >= duration || amount >= 1)
-                    {
-                        stake.position = finalPositions[i]; RestoreColliders(i);
-                        finished[i] = true; PlantedCount++; changed = true;
-                    }
-                }
-                if (changed) BachDangStoryManager.Instance?.UpdateUI();
-                yield return null;
+                var all=new bool[placements.Length];for(int i=0;i<all.Length;i++)all[i]=true;
+                RestoreCheckpoint(all);BachDangStoryManager.Instance?.OnPlantStakesComplete();
             }
-            point.planted = true; point.marker.SetActive(false); CompletedClusterCount++;
-            IsPlanting = false; planting = null; workingIndex = -1;
-            StakeConstruction.Active?.FinishWork();
-            if (!recoveryTriggered && CompletedClusterCount == 3) BeginRecoveryIncident();
-            else if (IsComplete) BachDangStoryManager.Instance?.OnPlantStakesComplete();
-            else BachDangStoryManager.Instance?.UpdateUI();
+            if(ScreenFader.Instance!=null)ScreenFader.Instance.FadeTransition("VÀI NGÀY SAU…\nTheo ba cọc mẫu, quân dân ngày đêm hoàn thành trận địa Bạch Đằng.",CompleteField,.7f,2.8f);
+            else CompleteField();
         }
 
         void BeginRecoveryIncident()
@@ -353,7 +324,7 @@ namespace BeachBoatStory
             if (index < 0 || QuestRowboat.FlatDistance(boat.transform.position, placements[index].approach.position) > interactDistance) return;
             string prompt = Mathf.Abs(boat.Speed) > 8 ? "Thả W/S để dừng thuyền và đóng cọc" :
                 !HasBoatClearance(boat.transform.position) ? "Lùi thuyền một chút để chừa chỗ dựng bãi cọc" :
-                $"[E] Dựng cụm {index + 1} ({placements[index].stakeIndices.Length} cọc) • Đã xong {CompletedClusterCount}/{ClusterCount} cụm";
+                "[E] Dựng ba cọc mẫu tại đây • Quân dân sẽ hoàn thiện trận địa";
             story.SetInteractPrompt(true, prompt, this);
             if (!StoryDialogueUI.InputConsumedThisFrame && Input.GetKeyDown(KeyCode.E) && StoryDialogueUI.TryConsumeInput()) TryPlant(index);
         }

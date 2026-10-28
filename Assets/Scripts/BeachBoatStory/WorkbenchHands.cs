@@ -27,6 +27,8 @@ namespace BeachBoatStory
         public float MaxWristAngle {get;private set;}
         public float MaxContactError {get;private set;}
         public float ActiveGripWeight {get;private set;}
+        public Vector3 RightPalmNormal {get;private set;}
+        public Vector3 LeftPalmNormal {get;private set;}
         public WorkbenchHands(Transform player,Animator rig)
         {
             profile=BowGripProfile.Load();
@@ -99,22 +101,23 @@ namespace BeachBoatStory
                 else {dst.SetPositionAndRotation(src.position,src.rotation);dst.localScale=Divide(src.lossyScale,dst.parent.lossyScale);}
             }
         }
-        public void Pose(Transform camera,Vector3 rightContact,Vector3 leftContact,bool flatLeft,bool flatRight,Vector3 rightShaft=default)
+        public void Pose(Transform camera,Vector3 rightContact,Vector3 leftContact,bool flatLeft,bool flatRight,Vector3 rightShaft=default,Vector3 leftShaft=default,bool twoHandedRod=false)
         {
             if(!Visible||camera==null)return;
             foreach(var rig in rigs)
             {
                 CopyPose(rig);
-                PoseArm(rig,rig.rightUpper,rig.rightLower,rig.rightHand,rightContact,camera,false,flatRight,rightShaft);
-                PoseArm(rig,rig.leftUpper,rig.leftLower,rig.leftHand,leftContact,camera,true,flatLeft,Vector3.zero);
+                PoseArm(rig,rig.rightUpper,rig.rightLower,rig.rightHand,rightContact,camera,false,flatRight,rightShaft,twoHandedRod);
+                PoseArm(rig,rig.leftUpper,rig.leftLower,rig.leftHand,leftContact,camera,true,flatLeft,leftShaft,twoHandedRod);
             }
         }
-        void PoseArm(DisplayRig rig,Transform originalUpper,Transform originalLower,Transform originalHand,Vector3 contact,Transform camera,bool left,bool flat,Vector3 shaft)
+        void PoseArm(DisplayRig rig,Transform originalUpper,Transform originalLower,Transform originalHand,Vector3 contact,Transform camera,bool left,bool flat,Vector3 shaft,bool twoHandedRod)
         {
             if(!rig.bones.TryGetValue(originalUpper,out var upper)||!rig.bones.TryGetValue(originalLower,out var lower)||!rig.bones.TryGetValue(originalHand,out var hand))return;
             // Keep a natural bent arm below each contact, with the shoulder cap at the lower edge.
             const float displayScale=1.65f;
-            var along=(camera.up*.82f+camera.forward*.57f+camera.right*(left?.05f:-.05f)).normalized;
+            float spread=twoHandedRod?.45f:.05f;
+            var along=(camera.up*.82f+camera.forward*.57f+camera.right*(left?spread:-spread)).normalized;
             var forward=profile!=null?(left?profile.leftForward:profile.rightForward):Vector3.up;
             var across=profile!=null?(left?profile.leftAcross:profile.rightAcross):Vector3.forward;
             var up=shaft.sqrMagnitude>.1f?shaft.normalized:flat?(left?Vector3.Cross(along,Vector3.down):Vector3.Cross(Vector3.down,along)):camera.up;
@@ -130,7 +133,8 @@ namespace BeachBoatStory
             float lowerLength=Vector3.Distance(originalLower.position,originalHand.position)*displayScale;
             float upperLength=Vector3.Distance(originalUpper.position,originalLower.position)*displayScale;
             var elbow=wrist-along*lowerLength;
-            var upperDirection=(camera.up*.9f+camera.forward*.42f+camera.right*(left?.1f:-.1f)).normalized;
+            float shoulderSpread=twoHandedRod?.35f:.1f;
+            var upperDirection=(camera.up*.9f+camera.forward*.42f+camera.right*(left?shoulderSpread:-shoulderSpread)).normalized;
             var shoulder=elbow-upperDirection*upperLength;
             // Translate/rotate a fixed-length chain backwards from the contact.
             // Never scale an individual axis to make a distant table reachable.
@@ -140,6 +144,7 @@ namespace BeachBoatStory
             // Use the mesh bind frame, not a bent wrist inherited from the third-person animation.
             lower.rotation=Quaternion.LookRotation(along,up)*Quaternion.Inverse(left?rig.leftLowerFrame:rig.rightLowerFrame);
             hand.localScale=originalHand.localScale;hand.SetPositionAndRotation(wrist,handRotation);
+            var palmNormal=hand.TransformDirection(Vector3.Cross(forward,across)*(left?-1:1)).normalized;if(left)LeftPalmNormal=palmNormal;else RightPalmNormal=palmNormal;
             MaxContactError=Mathf.Max(MaxContactError,Vector3.Distance(hand.TransformPoint(center),contact));
             MaxSegmentError=Mathf.Max(MaxSegmentError,Mathf.Abs(Vector3.Distance(lower.position,hand.position)/lowerLength-1),Mathf.Abs(Vector3.Distance(upper.position,lower.position)/upperLength-1));
             MaxWristAngle=Mathf.Max(MaxWristAngle,Vector3.Angle(hand.TransformDirection(forward),lower.TransformDirection(left?rig.leftLowerAlong:rig.rightLowerAlong)));

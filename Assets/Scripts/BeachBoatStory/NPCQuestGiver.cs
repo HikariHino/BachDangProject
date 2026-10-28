@@ -68,7 +68,7 @@ public class NPCQuestGiver : MonoBehaviour
                   story.currentState == BachDangStoryManager.StoryState.Act3_PrepareForBattle))
         {
             canTalk = true;
-            prompt = "[E] Nhận lệnh TỔNG TIẾN CÔNG";
+            prompt = ArcheryTraining.Instance?.Completed==true?"[E] Nhận lệnh XUẤT QUÂN":"[E] Nhận hướng dẫn TẬP CUNG trước xuất quân";
         }
         else if (story.currentState == BachDangStoryManager.StoryState.Act3_Victory)
         {
@@ -116,7 +116,7 @@ public class NPCQuestGiver : MonoBehaviour
                 }
                 else if (story.currentState == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen)
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Tốt lắm. Mang năm cọc này qua cổng ra bến, rồi lên thuyền. Chèo tới năm điểm đánh dấu ngoài sông. Ở mỗi điểm, dừng thuyền và bấm E để cùng quân sĩ dựng một cụm cọc. Làm đủ cả năm cụm rồi chèo về bến báo cáo. Triều rút sẽ lộ cọc, triều lên sẽ giấu kín trận địa. Việc này quyết định thắng bại.", story.OnReportToNgoQuyenAct2,transform);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Tốt lắm. Mang cọc qua cổng ra bến, lên thuyền tới một điểm đánh dấu ngoài sông. Hãy dựng ba cọc mẫu đúng độ nghiêng và nện chắc xuống lòng sông. Quân dân sẽ theo mẫu đó hoàn thiện cả trận địa trong những ngày tới. Xong việc, trở về báo cáo với ta.", story.OnReportToNgoQuyenAct2,transform);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }
@@ -130,7 +130,7 @@ public class NPCQuestGiver : MonoBehaviour
                          (story.currentState == BachDangStoryManager.StoryState.Act2_Completed ||
                           story.currentState == BachDangStoryManager.StoryState.Act3_PrepareForBattle))
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Quân Nam Hán đã kéo thuyền đến xâm phạm. Trận địa cọc đã sẵn sàng. Hãy lên thuyền chỉ huy, chờ thủy triều rút - bãi cọc sẽ lộ ra đâm thủng thuyền giặc. Ta sẽ đại thắng ngay trên sông Bạch Đằng hôm nay!", story.OnTalkToNgoQuyenAct3,transform);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", ArcheryTraining.Instance?.Completed==true?"Trận địa đã sẵn sàng. Hãy chèo thuyền nhẹ ra nhử giặc, dẫn chúng theo vào bãi cọc rồi cùng quân ta phản công!":"Trước khi xuất quân, ngươi phải luyện cung. Đến bãi tập trong doanh trại, đứng trong vòng vàng rồi bấm E. Bắn sáu mũi, trúng ít nhất bốn bia, sau đó quay lại nhận lệnh.", story.OnTalkToNgoQuyenAct3,transform);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }

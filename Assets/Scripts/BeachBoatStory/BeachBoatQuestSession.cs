@@ -80,6 +80,7 @@ namespace BeachBoatStory
             var frontEnd=Child("BachDangFrontEnd");frontEnd.AddComponent<BachDangFrontEnd>();
             gameObject.AddComponent<ArcheryTraining>();
             gameObject.AddComponent<CampReadability>();
+            StartCoroutine(NPCDailyActivity.AttachFixedWorkers());
         }
 
         public bool IsPreferredGate(CampGateTransition candidate)

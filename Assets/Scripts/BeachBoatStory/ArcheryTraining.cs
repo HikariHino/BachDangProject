@@ -6,6 +6,7 @@ using UnityEngine;
 namespace BeachBoatStory
 {
     /// <summary>A physical camp range using the same drawn bow and travelling arrows as battle.</summary>
+    [DefaultExecutionOrder(-70)]
     public sealed class ArcheryTraining : MonoBehaviour
     {
         public static ArcheryTraining Instance {get;private set;}
@@ -14,6 +15,8 @@ namespace BeachBoatStory
         public int BestScore {get;private set;}public bool Completed {get;private set;}
         public bool Finished=>Shots>=6&&Time.time-lastShot>1;
         public Vector3 Approach=>origin-forward*8;
+        public bool Available=>built&&BachDangStoryManager.Instance!=null&&BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_BattleInProgress&&BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_Victory&&BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_Celebration&&(BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_WaitForLowTide||QuestRowboat.Instance?.IsAboard!=true);
+        public bool Required=>!Completed&&(BachDangStoryManager.Instance?.currentState==BachDangStoryManager.StoryState.Act2_Completed||BachDangStoryManager.Instance?.currentState==BachDangStoryManager.StoryState.Act3_PrepareForBattle||BachDangStoryManager.Instance?.currentState==BachDangStoryManager.StoryState.Act3_WaitForLowTide);
         public ArcheryPracticeTarget[] Targets {get;private set;}
         public ArcheryPracticeTarget NextTarget=>Targets==null?null:Targets[order[Mathf.Min(5,Shots)]];
         readonly int[] order={0,1,2,0,2,1};
@@ -67,31 +70,39 @@ namespace BeachBoatStory
                 for(int n=0;n<49;n++){float a=n/48f*Mathf.PI*2;line.SetPosition(n,new Vector3(Mathf.Cos(a)*5.6f,Mathf.Sin(a)*5.6f,1.5f));}target.highlight=halo;
             }
             var board=new GameObject("Huong_dan_ban_cung");board.transform.SetParent(transform);board.transform.SetPositionAndRotation(origin+Vector3.up*10,Quaternion.LookRotation(forward));
-            sign=board.AddComponent<TextMeshPro>();StoryFont.Apply(sign);sign.fontSize=4;sign.alignment=TextAlignmentOptions.Center;sign.rectTransform.sizeDelta=new Vector2(40,14);
+            sign=board.AddComponent<TextMeshPro>();StoryFont.Apply(sign);sign.fontSize=10;sign.alignment=TextAlignmentOptions.Center;sign.rectTransform.sizeDelta=new Vector2(65,24);sign.color=new Color(1,.82f,.35f);
             built=true;Physics.SyncTransforms();
+            var circle=new GameObject("Vi_tri_dung_tap_cung").AddComponent<LineRenderer>();circle.transform.SetParent(transform,false);circle.sharedMaterial=gold;circle.useWorldSpace=true;circle.widthMultiplier=.4f;circle.positionCount=49;
+            for(int n=0;n<49;n++){float a=n/48f*Mathf.PI*2;var p=Approach+new Vector3(Mathf.Cos(a)*7,.25f,Mathf.Sin(a)*7);p.y=Ground(p)+.25f;circle.SetPosition(n,p);}
         }
         GameObject Part(string name,Transform parent,Vector3 p,Vector3 scale,Material m,PrimitiveType type,bool solid)
         {var go=GameObject.CreatePrimitive(type);go.name=name;go.transform.SetParent(parent,false);go.transform.localPosition=p;go.transform.localScale=scale;go.GetComponent<Renderer>().sharedMaterial=m;if(!solid){go.GetComponent<Collider>().enabled=false;Destroy(go.GetComponent<Collider>());}else if(type==PrimitiveType.Cylinder){go.GetComponent<Collider>().enabled=false;Destroy(go.GetComponent<Collider>());go.AddComponent<MeshCollider>().sharedMesh=go.GetComponent<MeshFilter>().sharedMesh;}return go;}
         public bool Begin()
         {
-            if(!built||Active!=null||BeachBoatQuestSession.InteractionBlocked||QuestRowboat.FlatDistance(player.position,Approach)>20||BeachBoatMinigameStation.Active!=null||BachDangStoryManager.Instance.currentState>=BachDangStoryManager.StoryState.Act3_WaitForLowTide)return false;
+            if(!Available||Active!=null||BeachBoatQuestSession.InteractionBlocked||QuestRowboat.FlatDistance(player.position,Approach)>24||BeachBoatMinigameStation.Active!=null)return false;
             Active=this;Shots=Score=Hits=0;lastShot=0;priorArrows=RiverPlayerCombat.Instance.Arrows;priorDistance=orbit.distance;priorHeight=orbit.heightOffset;priorRight=orbit.rightOffset;
             foreach(var go in embedded)if(go!=null)Destroy(go);embedded.Clear();
-            orbit.distance=32;orbit.heightOffset=14;orbit.rightOffset=7;RiverPlayerCombat.Instance.BeginPractice();return true;
+            player.rotation=Quaternion.LookRotation(forward);var body=player.GetComponent<Rigidbody>();if(body!=null)body.rotation=player.rotation;
+            orbit.distance=32;orbit.heightOffset=14;orbit.rightOffset=7;orbit.SnapToTarget();RiverPlayerCombat.Instance.BeginPractice();return true;
         }
         void Update()
         {
             if(!built)return;
-            bool near=QuestRowboat.FlatDistance(player.position,Approach)<20;
+            bool near=QuestRowboat.FlatDistance(player.position,Approach)<24;
             sign.gameObject.SetActive(Active!=this);
-            sign.text=Active==this?"LUYỆN CUNG • BẮN BIA ĐANG SÁNG":near?"LUYỆN CUNG 3D\n[E] 6 mũi tên • Kỷ lục "+BestScore+"/60":"BÃI TẬP CUNG";
+            sign.text=near?"BÃI TẬP CUNG\n[E] BẮT ĐẦU • TRÚNG 4/6 BIA":"BÃI TẬP CUNG\nĐẾN VÒNG BẮN PHÍA TRƯỚC";
             sign.transform.rotation=BeachBoatQuestSession.Instance.storyCamera.transform.rotation;
             for(int i=0;i<Targets.Length;i++)Targets[i].highlight.SetActive(Active==this&&Shots<6&&i==order[Shots]);
-            if(Active==null&&near&&Input.GetKeyDown(KeyCode.E))Begin();
+            if(Active==null&&Available&&near&&!BeachBoatQuestSession.InteractionBlocked)
+            {
+                BachDangStoryManager.Instance.SetInteractPrompt(true,"[E] TẬP BẮN CUNG • 6 mũi, trúng ít nhất 4 bia"+(Required?" • BẮT BUỘC TRƯỚC XUẤT QUÂN":""),this);
+                if(Input.GetKeyDown(KeyCode.E)&&StoryDialogueUI.TryConsumeInput())Begin();
+            }
+            else BachDangStoryManager.Instance.SetInteractPrompt(false,owner:this);
             if(Active!=this)return;
-            if(BachDangStoryManager.Instance.currentState>=BachDangStoryManager.StoryState.Act3_WaitForLowTide||QuestRowboat.FlatDistance(player.position,Approach)>55){Close();return;}
+            if(!Available||QuestRowboat.FlatDistance(player.position,Approach)>55){Close();return;}
             if(BeachBoatQuestSession.InteractionBlocked){Close();return;}
-            if(Finished){BestScore=Mathf.Max(BestScore,Score);Completed|=Hits>=4;if(Input.GetKeyDown(KeyCode.Return))Close();else if(Input.GetKeyDown(KeyCode.R)){Close();Begin();}}
+            if(Finished){BestScore=Mathf.Max(BestScore,Score);bool prior=Completed;Completed|=Hits>=4;if(Completed&&!prior)BachDangStoryManager.Instance.UpdateUI();if(Input.GetKeyDown(KeyCode.Return))Close();else if(Input.GetKeyDown(KeyCode.R)){Close();Begin();}}
         }
         public Vector3 ResolveShot(Ray ray,out ArcheryPracticeTarget target,out int score)
         {
@@ -119,7 +130,14 @@ namespace BeachBoatStory
         }
         void OnGUI()
         {
-            if(Active!=this||BachDangFrontEnd.IsBlocking||CampaignJournalUI.IsOpen)return;
+            if(!built||BachDangFrontEnd.IsBlocking||CampaignJournalUI.IsOpen)return;
+            if(Active!=this)
+            {
+                if(!Available||QuestRowboat.FlatDistance(player.position,Approach)>100)return;
+                var label=new GUIStyle(GUI.skin.box){fontSize=Mathf.Max(17,Mathf.RoundToInt(Screen.height*.026f)),alignment=TextAnchor.MiddleCenter,wordWrap=true};
+                float metres=QuestRowboat.FlatDistance(player.position,Approach)/Mathf.Max(1,BeachBoatQuestSession.Instance.WorldUnitsPerMetre);
+                GUI.Box(new Rect(Screen.width*.28f,Screen.height*.69f,Screen.width*.44f,Screen.height*.1f),(Required?"BẮT BUỘC • ":"")+"TẬP BẮN CUNG\n"+(metres<3?"Bấm E tại vị trí bắn • Trúng ít nhất 4/6 bia":$"Đi tới vị trí bắn • Còn {metres:0} m"),label);return;
+            }
             var style=new GUIStyle(GUI.skin.box){fontSize=Mathf.RoundToInt(Screen.height*.023f),wordWrap=true,alignment=TextAnchor.MiddleCenter};
             string text=Finished?$"LUYỆN CUNG • {Score}/60 điểm • Trúng {Hits}/6 • {(Hits>=4?"ĐẠT":"CẦN LUYỆN THÊM")}\nR: tập lại • ENTER / ESC: rời bãi tập":$"LUYỆN CUNG • {Shots}/6 mũi • {Score} điểm • Bia {order[Mathf.Min(5,Shots)]+1}\nGiữ chuột phải ngắm • Giữ chuột trái kéo dây, THẢ để bắn • ESC: rời bãi tập";
             GUI.Box(new Rect(Screen.width*.2f,Screen.height*.82f,Screen.width*.6f,Screen.height*.12f),text,style);

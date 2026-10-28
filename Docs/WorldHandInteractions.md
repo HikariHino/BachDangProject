@@ -76,15 +76,17 @@ slot cũ nhận vị trí scene đã sửa. Công cụ đo: `BeachBoatCommanderF
 
 ## Đóng cọc trên thuyền
 
-Lấy bó cọc, W vác ra mạn. Rê chuột chọn vị trí đặt trong vùng với tay; cuộn
-chuột chỉnh độ nghiêng. Mẫu cọc xanh là chỗ đặt được; đỏ là vướng vật thể hoặc
-đất khô. Phải ngắm vị trí trước khi E dựng cọc. Giữ chuột trái và kéo lên để
-nâng búa, thả để nện; nâng chưa đủ không tính nhát. Ba nhát cho mỗi bó, ba bó
-cho một cụm. Tiến độ này tiếp tục dựng dần các cọc thật của cụm ngoài sông.
+Lấy cọc, W vác ra mạn. Rê chọn vị trí không vướng; cuộn chuột chỉnh nghiêng
+theo góc được chỉ dẫn rồi E dựng. Giữ chuột trái, kéo ngang căn tâm búa và kéo
+lên nâng; thả khi lực trong dải xanh 65–95%. Lực sai hoặc lệch tâm không tăng
+tiến độ. Tự dựng ba cọc mẫu, mỗi cọc ba nhát đạt. Sau đó chuyển cảnh “Vài ngày
+sau…” và quân dân hoàn thiện cả năm cụm ngoài sông. Xem thêm
+[PreparationAndVillageLife.md](PreparationAndVillageLife.md).
 
 Hai tay đỡ bó cọc nằm ngang trước ngực bằng IK, thay cho xoay cánh tay bằng
-góc cố định. Lúc nện búa, tay bám cán búa, cọc lún dần, có tiếng đóng gỗ và
-nước bắn. Hủy/load kết thúc công việc và khôi phục camera, nhân vật, chèo thuyền.
+góc cố định. Lúc nện búa chuyển sang góc nhìn chỉ có tay để không che đầu cọc;
+búa chạm đúng vị trí 3D, cọc lún dần, có tiếng gỗ và nước bắn. Hủy/load kết thúc
+công việc và khôi phục camera, nhân vật, chèo thuyền.
 
 ## Luyện cung trước trận
 
@@ -99,8 +101,8 @@ Tay trái giữ cán cung, tay phải kéo dây về má; mũi tên hiện trên
 thân cung biến dạng theo lực kéo và có chuyển động nhả dây. Giữ chuột phải
 mà không kéo chuột trái không tự tích lực bắn.
 
-Luyện cung là mục phụ trong nhật ký, có kỷ lục riêng 0–60 và cờ hoàn thành
-trong save. Không cộng vào số lần bắn, độ chính xác hay số hạ địch của trận
+Luyện cung là nhiệm vụ bắt buộc trước xuất quân trong nhật ký, có kỷ lục riêng
+0–60 và cờ hoàn thành trong save. Không cộng vào số lần bắn, độ chính xác hay số hạ địch của trận
 thật; kết thúc luyện tập hoàn lại lượng tên trước đó. Autosave đợi kết thúc
 lượt. Save cũ không có trường luyện cung được hiểu là chưa luyện.
 
@@ -117,16 +119,20 @@ má. Bàn tay không còn lấy hướng từ thuyền hay giữ nguyên dáng m
 Mesh có dáng nắm chỉ được dùng khi ngắm, rồi trả về mesh gốc khi hạ cung.
 LOD giữ nguyên mesh nắm trong lúc ngắm để tránh đổi mesh liên tục.
 
-Khi đóng cọc, cùng hai dáng nắm được áp dụng lên cán búa. Nhân vật quay về
-phía cọc; tay phải nắm điểm trên, tay trái nắm thấp hơn 1,8 đơn vị thế giới.
-Trục bàn tay và tâm lòng nắm khớp với hướng cán; vị trí đầu búa vẫn hướng
-tới đầu cọc. Rời thao tác búa sẽ trả bàn tay về mesh gốc như khi hạ cung.
+Khi đóng cọc, tay hiển thị dùng dáng nắm cán riêng của `WorkbenchHands`.
+Tay phải nắm điểm trên, tay trái nắm thấp hơn 3,6 đơn vị thế giới; khuỷu tay
+mở sang hai bên. Cổ tay thẳng theo cẳng tay, các ngón ôm cán dài 11 đơn vị.
+Đầu búa tới đúng đầu cọc. Rời thao tác búa sẽ trả nhân vật và camera bình thường.
 
 Tài nguyên được tạo ở `Assets/Resources/BachDang938/Player`, khoảng 13,3 MiB.
 Ảnh kiểm chứng trước/sau và báo cáo nằm trong `Logs/ArcheryTraining_Front.png`,
 `Logs/ArcheryTraining_Draw.png` và `Logs/ArcheryPlaytest.json` (không đưa vào Git).
 
 ## Kiểm tra bằng Unity CLI
+
+Các số dưới đây là kết quả của đợt thao tác 3D trước. Kết quả cho bài cọc mẫu,
+bắt buộc tập cung, tay múc và sinh hoạt NPC mới nằm trong
+[PreparationAndVillageLife.md](PreparationAndVillageLife.md).
 
 - Bốn sạp, bố trí trước/trong/sau E, độ sáng doanh trại, thanh lực phía dưới,
   tỉ lệ tay/cổ tay, bốn hướng kéo chuột (kể cả lúc nâng khăn), vạch cưa chỉ hiện

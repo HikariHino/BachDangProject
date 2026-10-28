@@ -62,7 +62,13 @@ namespace BeachBoatStory
                 if(local.x<0||local.z<0||local.x>size.x||local.z>size.z||Ground(point)<=TideSystem.CurrentWaterHeight+1)return false;
                 result.y=Ground(point)+groundOffset;
             }
-            if(!raised)return true;
+            if(!raised)
+            {
+                // Planks and low thresholds in a village lane are floor support,
+                // not walls. Keep the capsule above their solid top surface.
+                if(TryFloor(result,out float lowFloor)&&(terrain==null||lowFloor-Ground(result)<=scale*.6f))result.y=lowFloor+surfaceOffset;
+                return true;
+            }
             if(!TryFloor(result,out float floor))return false;
             result.y=floor+surfaceOffset;
             // A capsule must fit on the deck, including when turning by the edge.
@@ -88,7 +94,8 @@ namespace BeachBoatStory
         {
             var direction=to-from;direction.y=0;float length=direction.magnitude;
             if(length<.001f)return !Occupied(to,people);
-            Capsule(from,out var lower,out var upper);
+            float rise=to.y-from.y;if(rise>scale*.6f)return false;
+            Capsule(from+Vector3.up*Mathf.Max(0,rise),out var lower,out var upper);
             int count=Physics.CapsuleCastNonAlloc(lower,upper,Radius,direction/length,hits,length+.08f,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
             for(int i=0;i<count;i++)
             {
@@ -111,6 +118,7 @@ namespace BeachBoatStory
                 // Include the navigation clearance too. Stopping at zero physical
                 // penetration leaves a pair inside the cast's safety margin.
                 var delta=result-other.bounds.center;delta.y=0;
+                if(delta.sqrMagnitude<=.001f){var root=other.GetComponentInParent<ActorSolidBody>()?.gameObject??other.gameObject;delta=(actor.gameObject.GetEntityId().GetHashCode()>root.GetEntityId().GetHashCode()?Vector3.right:Vector3.left)*.1f;}
                 float clearance=Radius+Mathf.Max(other.bounds.extents.x,other.bounds.extents.z)+.2f-delta.magnitude;
                 if(clearance>0&&delta.sqrMagnitude>.001f){push+=delta.normalized*clearance;continue;}
                 if(!Physics.ComputePenetration(own,own.transform.position,own.transform.rotation,other,other.transform.position,other.transform.rotation,out var direction,out float depth)||depth<.06f)continue;

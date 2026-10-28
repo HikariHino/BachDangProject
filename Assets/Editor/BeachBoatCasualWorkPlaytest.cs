@@ -12,13 +12,13 @@ using Zone=BeachBoatStory.RiverStakeZone;
 public static class BeachBoatCasualWorkPlaytest
 {
     const string Flag="CasualWork938QA";
-    static int phase,lastFrame,cluster,hammerFrame;static double began;static bool captured,capturedHammer,impactTimingChecked,hammerCaptureReady;static string runtimeError;
+    static int phase,lastFrame,cluster,hammerFrame,badStrikePhase;static double began;static bool captured,capturedHammer,impactTimingChecked,hammerCaptureReady,leanChecked;static string runtimeError;
     static readonly List<string> checks=new List<string>();static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static float maxHammerGripError,maxHammerWristAngle;static int hammerSamples;
     static string Hash(string p)=>Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(File.ReadAllBytes(p)));
     static void Check(bool ok,string message){if(!ok)throw new Exception(message);checks.Add(message);}
     public static void RunBatch(){UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
-    public static void RunInEditor(){phase=cluster=0;lastFrame=-1;began=0;runtimeError=null;hammerFrame=hammerSamples=0;maxHammerGripError=maxHammerWristAngle=0;captured=capturedHammer=impactTimingChecked=hammerCaptureReady=false;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){phase=cluster=badStrikePhase=0;lastFrame=-1;began=0;runtimeError=null;hammerFrame=hammerSamples=0;maxHammerGripError=maxHammerWristAngle=0;captured=capturedHammer=impactTimingChecked=hammerCaptureReady=leanChecked=false;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Log;Application.logMessageReceived+=Log;}
     static void Log(string m,string stack,LogType kind){if(SessionState.GetBool(Flag,false)&&(kind==LogType.Error||kind==LogType.Exception))runtimeError=m+"\n"+stack;}
     static void PlacePlayer(Vector3 p){var player=BeachBoatQuestSession.Instance.player;player.transform.position=p;player.GetComponent<Rigidbody>().position=p;Physics.SyncTransforms();}
@@ -54,16 +54,14 @@ public static class BeachBoatCasualWorkPlaytest
             var player=BeachBoatQuestSession.Instance.player;var rig=player.GetComponentInChildren<Animator>();var profile=RiverPlayerCombat.Instance.GripProfile;
             var hammer=GameObject.Find("Bua_go").transform;var right=rig.GetBoneTransform(HumanBodyBones.RightHand);var left=rig.GetBoneTransform(HumanBodyBones.LeftHand);
             var rc=right.TransformPoint(profile.rightRodCenter);var lc=left.TransformPoint(profile.leftCenter);
-            maxHammerGripError=Mathf.Max(maxHammerGripError,Vector3.Distance(rc,hammer.position),Vector3.Distance(lc,hammer.position-hammer.up*1.8f));
-            maxHammerWristAngle=Mathf.Max(maxHammerWristAngle,Vector3.Angle(right.TransformDirection(profile.rightForward),right.position-rig.GetBoneTransform(HumanBodyBones.RightLowerArm).position),Vector3.Angle(left.TransformDirection(profile.leftForward),left.position-rig.GetBoneTransform(HumanBodyBones.LeftLowerArm).position));hammerSamples++;
+            maxHammerGripError=Mathf.Max(maxHammerGripError,StakeConstruction.Active.HandContactError);
+            maxHammerWristAngle=Mathf.Max(maxHammerWristAngle,StakeConstruction.Active.HandWristAngle);hammerSamples++;
             if(!hammerCaptureReady)return;hammerCaptureReady=false;
             File.WriteAllText("Logs/HammerGripContact.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{right=rc.ToString(),left=lc.ToString(),shaft=hammer.position.ToString(),direction=hammer.up.ToString(),leftShoulder=rig.GetBoneTransform(HumanBodyBones.LeftUpperArm).position.ToString(),rightShoulder=rig.GetBoneTransform(HumanBodyBones.RightUpperArm).position.ToString(),leftWrist=left.position.ToString(),rightWrist=right.position.ToString()},Newtonsoft.Json.Formatting.Indented));
-            Check(Vector3.Distance(rc,hammer.position)<.8f,"Upper fist holds the actual hammer shaft");
-            Check(Vector3.Distance(lc,hammer.position-hammer.up*1.8f)<.8f,"Lower fist holds the same shaft below the upper fist (error "+Vector3.Distance(lc,hammer.position-hammer.up*1.8f)+")");
-            float rightAngle=Vector3.Angle(right.TransformDirection(profile.rightForward),right.position-rig.GetBoneTransform(HumanBodyBones.RightLowerArm).position);
-            float leftAngle=Vector3.Angle(left.TransformDirection(profile.leftForward),left.position-rig.GetBoneTransform(HumanBodyBones.LeftLowerArm).position);
-            Check(rightAngle<12&&leftAngle<12,"Both hammer wrists follow the forearms without a bent cuff: "+rightAngle+" / "+leftAngle);
-            Check(player.GetComponentsInChildren<SkinnedMeshRenderer>().Any(r=>r.sharedMesh==profile.posed&&r.GetBlendShapeWeight(0)>99&&r.GetBlendShapeWeight(1)>99),"Both visible hands close around the hammer, rather than staying open");
+            Check(StakeConstruction.Active.HandsOnly,"Only work hands render while hammering, leaving the stake unobstructed");
+            Check(StakeConstruction.Active.HandContactError<.02f&&StakeConstruction.Active.HandSegmentError<.001f,"Both fixed-length display arms hold the actual hammer shaft");
+            Check(StakeConstruction.Active.HandWristAngle<1&&StakeConstruction.Active.DisplayedGripWeight>90,"Hammer wrists stay neutral and fingers close around the shaft");
+            Check(StakeConstruction.Active.HammerHeadError<.02f,"The hammer head reaches its real stake target instead of stopping short");
             foreach(var r in player.GetComponentsInChildren<SkinnedMeshRenderer>())r.forceMatrixRecalculationPerRender=true;
             CaptureCarry("Hammer");
             var source=BeachBoatQuestSession.Instance.storyCamera;var chest=rig.GetBoneTransform(HumanBodyBones.Chest);var preview=new GameObject("HammerGripFrontProof").AddComponent<Camera>();preview.CopyFrom(source);preview.enabled=false;preview.transform.position=chest.position+player.transform.forward*22+player.transform.right*24+Vector3.up*9;preview.transform.LookAt(Vector3.Lerp(chest.position,hammer.position,.7f));
@@ -114,51 +112,41 @@ public static class BeachBoatCasualWorkPlaytest
                 var work=StakeConstruction.Active;
                 if(work==null)
                 {
-                    if(phase==2)
-                    {
-                        Check(Zone.Instance.CompletedClusterCount==cluster+1,"The 3D carry and hammer loop completes cluster "+(cluster+1));
-                        if(Zone.Instance.RecoveryRequired)
-                        {
-                            BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
-                            QuestRowboat.Instance.RestoreSave(true,Zone.Instance.RecoveryTarget.position,Quaternion.identity);
-                            Check(Zone.Instance.TryRecoverLostStake(),"The lost-bundle recovery remains playable between the 3D work clusters");BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
-                        }
-                        cluster++;
-                        if(cluster<5){StartCluster(cluster);return;}
-                        Check(Zone.Instance.IsComplete&&Zone.Instance.PlantedCount==Zone.Instance.RequiredCount,"All physical field stakes and the return-to-camp quest complete after five 3D work clusters");
-                        Check(hammerSamples>100&&maxHammerGripError<.8f&&maxHammerWristAngle<12,"Hands stay on the shaft and wrists stay neutral throughout every lift and impact: "+hammerSamples+" samples, grip "+maxHammerGripError+", wrist "+maxHammerWristAngle);
-                        var final=BachDangSaveSystem.Capture("QA all physical stakes");BachDangSaveSystem.Apply(final);
-                        Check(Zone.Instance.IsComplete&&StakeConstruction.Active==null,"Loading the full completed field restores all stakes without a construction lock");
-                        foreach(var p in hashes)Check(File.Exists(p.Key)&&Hash(p.Key)==p.Value,"User save unchanged: "+Path.GetFileName(p.Key));Finish(null);return;
-                    }
-                    Check(Zone.Instance.CompletedClusterCount==1&&Zone.Instance.PlantedCount==Zone.Instance.placements[0].stakeIndices.Length,"Three carried bundles and nine strikes build exactly the chosen saved cluster");
-                    Check(BachDangSaveSystem.CanSave,"Construction releases save and rowing controls after completion");
-                    var save=BachDangSaveSystem.Capture("QA finished construction");BachDangSaveSystem.Apply(save);
-                    Check(Zone.Instance.CompletedClusterCount==1&&StakeConstruction.Active==null,"Loading a completed cluster does not recreate carried props or lock the player");
-                    StartCluster(1);Zone.Instance.RestoreCheckpoint(Zone.Instance.CaptureCheckpoint());
-                    Check(!Zone.Instance.IsPlanting&&StakeConstruction.Active==null&&Zone.Instance.CompletedClusterCount==1,"Cancelling unfinished 3D work keeps completed clusters and releases the avatar");
-                    cluster=1;phase=2;StartCluster(cluster);return;
+                    if(BeachBoatStory.ScreenFader.Instance.IsTransitioning||Zone.Instance.IsPlanting)return;
+                    Check(Zone.Instance.IsComplete&&Zone.Instance.CompletedClusterCount==Zone.Instance.ClusterCount,"Three sample stakes followed by the narrative reveal complete the entire field");
+                    Check(Story.Instance.currentState==Story.StoryState.Act2_CompleteReturnToCamp,"The days-later reveal resumes the return-to-camp mission");
+                    Check(BachDangSaveSystem.CanSave,"Construction and the narrative release save and rowing controls");
+                    Check(hammerSamples>50&&maxHammerGripError<.02f&&maxHammerWristAngle<1,"Displayed hammer hands stay on the shaft with neutral wrists through the sample exercise");
+                    var final=BachDangSaveSystem.Capture("QA three samples and time skip");BachDangSaveSystem.Apply(final);
+                    Check(Zone.Instance.IsComplete&&StakeConstruction.Active==null,"Loading the finished time skip restores the full field without work locks");
+                    Check(CampaignProgress.Instance.Record.stakeTargetSeconds==90&&CampaignProgress.Instance.StakeTarget(3)==90,"The new three-stake exercise keeps its recorded 90-second S target after load");
+                    foreach(var pair in hashes)Check(File.Exists(pair.Key)&&Hash(pair.Key)==pair.Value,"User save unchanged: "+Path.GetFileName(pair.Key));Finish(null);return;
                 }
                 if(work.Step==StakeConstruction.WorkStep.TakeBundle)work.Interact();
                 else if(work.Step==StakeConstruction.WorkStep.CarryBundle)
                 {
                     work.WalkBundle(Time.deltaTime);
-                    if(!captured&&work.CarryProgress>.5f){captured=true;CaptureCarry();Check(GameObject.Find("Bo_coc_dang_vac")!=null,"The player visibly carries a bundle in the live 3D scene");}
+                    if(!captured&&work.CarryProgress>.5f){captured=true;CaptureCarry();Check(GameObject.Find("Bo_coc_dang_vac")!=null,"The player carries the sample stake in the actual world");}
                     if(work.CarryProgress>=1)
                     {
-                        if(!work.HasAimedStake){Check(!work.Interact(),"Placing a stake requires aiming, not only E");work.AimStake(Vector2.right*.02f);}
+                        if(!work.HasAimedStake){Check(!work.Interact(),"Placing a stake requires aiming");work.AimStake(Vector2.right*.02f);}
                         else if(!work.PlacementValid)work.AimStake(new Vector2(Mathf.Cos(Time.time*2),Mathf.Sin(Time.time*2))*.12f);
-                        else work.Interact();
+                        else {if(!leanChecked){work.AdjustLean(work.RequiredLean+8-work.StakeLean);Check(!work.Interact(),"A visibly incorrect stake inclination cannot skip placement alignment");leanChecked=true;}work.AdjustLean(work.RequiredLean-work.StakeLean);work.Interact();}
                     }
                 }
                 else if(work.Step==StakeConstruction.WorkStep.Hammer)
                 {
+                    if(badStrikePhase==0){for(int n=0;n<3;n++)work.LiftHammer(.15f);if(work.Strike()){badStrikePhase=1;Check(work.Progress==0,"Releasing weakly starts a visible swing without awarding progress");}return;}
+                    if(badStrikePhase==1){if(work.IsSwinging)return;Check(work.Misses==1&&work.Progress==0,"A weak impact does not advance the stake");badStrikePhase=2;}
+                    if(badStrikePhase==2){work.AimHammer(.2f);if(work.HammerLift<.8f)work.LiftHammer(.15f);else if(work.Strike())badStrikePhase=3;return;}
+                    if(badStrikePhase==3){if(work.IsSwinging)return;Check(work.Misses==2&&work.Progress==0,"A strong but off-centre strike also fails to drive the stake");badStrikePhase=4;}
+                    work.AimHammer(-work.AimError);
                     if(work.HammerLift<.8f)work.LiftHammer(.15f);
                     else
                     {
                         if(!capturedHammer){if(hammerFrame==0)hammerFrame=Time.frameCount;if(Time.frameCount>hammerFrame+20)hammerCaptureReady=true;return;}
                         float before=work.Progress;
-                        if(work.Strike()&&!impactTimingChecked){Check(work.Progress==before,"Releasing the hammer counts progress only when its physical downswing lands");impactTimingChecked=true;}
+                        if(work.Strike()&&!impactTimingChecked){Check(work.Progress==before,"Progress is awarded only when a well-aimed downswing lands");impactTimingChecked=true;}
                     }
                 }
             }

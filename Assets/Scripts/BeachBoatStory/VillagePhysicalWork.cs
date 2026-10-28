@@ -30,6 +30,7 @@ namespace BeachBoatStory
         public float HandWristAngle=>hands?.MaxWristAngle??0;
         public float HandContactError=>hands?.MaxContactError??0;
         public float HandGripWeight=>hands?.ActiveGripWeight??0;
+        public float RightPalmDown=>hands==null?0:Vector3.Dot(hands.RightPalmNormal,Vector3.down);
         public bool SawGuidesVisible=>sawGuides.Count>0&&sawGuides.TrueForAll(g=>g!=null&&g.activeInHierarchy);
         public Vector3 ToolWorldPosition=>ToolPoint(ToolPointer);
         public bool RiceReady=>Current==Step.FillRice&&RiceFill>=.65f&&RiceFill<=.85f;
@@ -465,7 +466,7 @@ namespace BeachBoatStory
                     grip=flap.parent.TransformPoint(flap.localPosition+r*local);
                 }
                 var right=grip+player.right*2;var left=grip-player.right*2;
-                if(!Carrying&&Current==Step.FillRice){right=spoon.transform.TransformPoint(new Vector3(0,0,-3));left=World(new Vector3(.5f,13,-11.8f));}
+                if(!Carrying&&Current==Step.FillRice){right=spoon.transform.TransformPoint(new Vector3(0,0,-3));left=World(new Vector3(-8.6f,12.1f,-10.2f));}
                 else if(!Carrying&&Current==Step.Saw)left=World(new Vector3(-4,12,-10));
                 else if(!Carrying&&Current==Step.Tie){right=grip;left=World(new Vector3(-13.5f+Knots*10,12.5f,-10.5f));}
                 else if(!Carrying&&Current==Step.Wrap)
@@ -482,7 +483,7 @@ namespace BeachBoatStory
                     if(Current==Step.Saw||Current==Step.FillRice)gripProfile.Align(arms[0],arms[1],rightHand,right,arms[0].position+player.right*4-Vector3.up*3,false,true,Current==Step.Saw?player.right:player.forward);
                 }
             }
-            if(AtTable&&camera!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,true,Current==Step.Wrap,Current==Step.Saw?player.right:Current==Step.FillRice?spoon.transform.forward:Vector3.zero);
+            if(AtTable&&camera!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,true,Current==Step.Wrap||Current==Step.FillRice,Current==Step.Saw?player.right:Vector3.zero);
             if(blade!=null&&Current==Step.Saw)blade.transform.position=ToolPoint(ToolPointer);
             if(sawHandle!=null&&Current==Step.Saw)sawHandle.transform.SetPositionAndRotation(ToolPoint(ToolPointer)+player.right*2,player.rotation);
             if(grain!=null){float level=Mathf.Clamp01(RiceFill);grain.transform.localScale=new Vector3(5.4f,Mathf.Max(.05f,level*2.5f),5.4f);grain.transform.localPosition=new Vector3(4,9+level*2.5f,-10.2f);grain.GetComponent<Renderer>().sharedMaterial=rice;}

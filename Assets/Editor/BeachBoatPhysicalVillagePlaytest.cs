@@ -105,6 +105,9 @@ public static class BeachBoatPhysicalVillagePlaytest
             {
                 var hud=Object.FindAnyObjectByType<VillageWorkUI>();typeof(VillageWorkUI).GetMethod("Update",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(hud,null);
                 Check(hud.RiceGaugeVisible&&hud.RiceStatus.Contains(stall.Physical.RiceReady?"ĐỦ GẠO":stall.Physical.RiceExcess?"DƯ GẠO":"THIẾU GẠO"),"Rice controls show the actual missing/ready/excess state: "+name);
+                Check(stall.Physical.RightPalmDown>.65f,"Scooping hand faces downward rather than exposing the palm upward");
+                var basket=stall.Workstation.Environment.Find("Grain_basket").GetComponent<Renderer>().bounds;
+                Check(Vector3.Distance(basket.ClosestPoint(stall.Physical.LeftGripPosition),stall.Physical.LeftGripPosition)<1.5f,"The stationary left hand braces the source basket on the left");
             }
             var foley=stall.Physical.Foley;foley.Tick(.1f,true);Check(!foley.IsPlaying,"Help/pause suspends both tool sound channels: "+stall.kind);foley.Tick(.1f,false);
             Check(source.GetComponent<BeachBoatStory.Camera_Script>().TableFocusActive&&!VillagePhysicalWork.AllowsMovement,"Bench view locks walking and uses the centered tabletop camera: "+stall.kind);

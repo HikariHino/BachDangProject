@@ -10,7 +10,7 @@ namespace BeachBoatStory
         public static CampaignProgress Instance {get;private set;}
         public BachDangSaveData.Campaign Record {get;private set;}=new BachDangSaveData.Campaign();
         public static readonly int[] StoryOrder={0,12,1,2,13,3,4,5,6,7,8,9,10,11,14};
-        public static readonly string[] MissionTitles={"Nhận lệnh Ngô Quyền","Luyện hiệu lệnh trống trận","Rời doanh trại tới làng","Thu gom cọc gỗ","Chuẩn bị đủ bốn loại vật tư","Trở về doanh trại","Báo cáo vật tư với Ngô Quyền","Dựng đủ năm cụm cọc","Báo cáo hoàn thành trận địa","Chờ lệnh xuất chiến","Nhận lệnh đánh giặc","Xuất chiến trên sông","Đánh chìm hạm đội và hạ hết địch","Báo công với Ngô Quyền","Hoàn thành chiến dịch Bạch Đằng"};
+        public static readonly string[] MissionTitles={"Nhận lệnh Ngô Quyền","Luyện hiệu lệnh trống trận","Rời doanh trại tới làng","Thu gom cọc gỗ","Chuẩn bị đủ bốn loại vật tư","Trở về doanh trại","Báo cáo vật tư với Ngô Quyền","Dựng cọc mẫu, hoàn thiện trận địa","Báo cáo hoàn thành trận địa","Chờ lệnh xuất chiến","Nhận lệnh đánh giặc","Xuất chiến trên sông","Đánh chìm hạm đội và hạ hết địch","Báo công với Ngô Quyền","Hoàn thành chiến dịch Bạch Đằng"};
         public const int ScoredMinigames=5; // Drum plus one completed physical attempt at each trade.
         public const int RankRulesVersion=5;
         public static readonly string[] WorkNames={"Cưa và vác gỗ","Buộc bó cọc","Đong bao gạo","Gói lương khô"};
@@ -44,7 +44,7 @@ namespace BeachBoatStory
         }
         public bool MissionCurrent(int index)=>BachDangStoryManager.Instance!=null&&(int)BachDangStoryManager.Instance.currentState==StoryOrder[index]&&!MissionDone(index);
         public int CompletedMissions=>Enumerable.Range(0,StoryOrder.Length).Count(MissionDone);
-        public void StartStakes(){if(!Record.finished)Record.stakeStarted=true;}
+        public void StartStakes(){if(!Record.finished){if(!Record.stakeStarted){Record.stakeTargetSeconds=90;stakeTarget=0;}Record.stakeStarted=true;}}
         public void RecordDefeat(){if(!Record.finished)Record.defeats++;}
         public void RecordCasualty(){if(!Record.finished)Record.casualties++;}
         public void RecordFriendlyBoarding(){if(!Record.finished)Record.friendlyBoardings++;}
@@ -66,6 +66,7 @@ namespace BeachBoatStory
         {
             get
             {
+                if(FinitePositive(Record.stakeTargetSeconds))return Record.stakeTargetSeconds;
                 if(stakeTarget>0)return stakeTarget;
                 var zone=RiverStakeZone.Instance;var boat=QuestRowboat.Instance;if(zone==null||boat==null||zone.ClusterCount==0)return 180;
                 var remaining=zone.placements.Where(p=>p?.approach!=null).Select(p=>p.approach.position).ToList();float distance=0;
@@ -118,7 +119,7 @@ namespace BeachBoatStory
                 conditions[work+1]=new RankCondition(WorkNames[work],TimingResult(index)+$" / cần ≤ {Clock(RecordedTarget(index,tier))}",MeetsMini(index,tier));
             }
             bool stakeKnown=Record.stakeStarted&&Record.stakeFinished&&!float.IsNaN(Record.stakeSeconds)&&!float.IsInfinity(Record.stakeSeconds)&&Record.stakeSeconds>=0;
-            conditions[5]=new RankCondition("Dựng đủ năm cụm cọc",(stakeKnown?Clock(Record.stakeSeconds):Record.stakeFinished?"Thiếu thời gian cũ":Record.stakeStarted?"Đang làm "+Clock(Record.stakeSeconds):"Chưa làm")+$" / cần ≤ {Clock(StakeTarget(tier))}",stakeKnown&&Record.stakeSeconds<=StakeTarget(tier)+.0001f);
+            conditions[5]=new RankCondition("Dựng cọc mẫu, hoàn thiện trận địa",(stakeKnown?Clock(Record.stakeSeconds):Record.stakeFinished?"Thiếu thời gian cũ":Record.stakeStarted?"Đang làm "+Clock(Record.stakeSeconds):"Chưa làm")+$" / cần ≤ {Clock(StakeTarget(tier))}",stakeKnown&&Record.stakeSeconds<=StakeTarget(tier)+.0001f);
             conditions[6]=new RankCondition("Tự hạ địch quest 3",$"{Record.kills.Length}/{KillRequirement(tier)} địch • tính cả cung và kiếm",Record.kills.Length>=KillRequirement(tier));
             bool reported=Record.finished||(Record.completedMask&(1<<(int)BachDangStoryManager.StoryState.Act3_Victory))!=0;
             conditions[7]=new RankCondition("Thời gian chiến dịch",(Record.historyIncomplete?"Thiếu thời gian cũ":(reported?"":"Đang chơi ")+Duration(Record.seconds))+$" / hoàn thành ≤ {Duration(CampaignTarget(tier))}",reported&&!Record.historyIncomplete&&!float.IsNaN(Record.seconds)&&!float.IsInfinity(Record.seconds)&&Record.seconds>=0&&Record.seconds<=CampaignTarget(tier));

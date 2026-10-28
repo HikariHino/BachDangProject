@@ -31,7 +31,7 @@ namespace BeachBoatStory
         [Serializable] public sealed class MiniRecord {public string id;public float seconds,limit;}
         [Serializable] public sealed class Campaign
         {
-            public float seconds,stakeSeconds;public int completedMask,visitedMask,defeats,casualties,friendlyBoardings,enemyCount=64,finalScore,rankRulesVersion;
+            public float seconds,stakeSeconds,stakeTargetSeconds;public int completedMask,visitedMask,defeats,casualties,friendlyBoardings,enemyCount=64,finalScore,rankRulesVersion;
             public bool stakeStarted,stakeFinished,finished,historyIncomplete;public string finalRank;
             public bool woodStarted,woodFinished;public float woodSeconds,woodTargetSeconds;
             public MiniRecord[] minigames=Array.Empty<MiniRecord>();public string[] kills=Array.Empty<string>();

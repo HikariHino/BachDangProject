@@ -14,6 +14,7 @@ namespace BeachBoatStory
         Renderer[][] renderers;
         NPCAmbientDialogue[] talkers;
         float[] distances;
+        float[] actualDistances;NPCDailyActivity[] dailyActivities;
         int[] order;
         int[] activeActors;
         float nextCheck;
@@ -22,7 +23,7 @@ namespace BeachBoatStory
         void OnDestroy(){if(Instance==this)Instance=null;}
         void Start()
         {
-            int n=citizens.Length;animators=new Animator[n];renderers=new Renderer[n][];talkers=new NPCAmbientDialogue[n];distances=new float[n];order=new int[n];activeActors=new int[n];
+            int n=citizens.Length;animators=new Animator[n];renderers=new Renderer[n][];talkers=new NPCAmbientDialogue[n];distances=new float[n];actualDistances=new float[n];dailyActivities=new NPCDailyActivity[n];order=new int[n];activeActors=new int[n];
             for(int i=0;i<n;i++){animators[i]=citizens[i].GetComponent<Animator>();renderers[i]=citizens[i].GetComponentsInChildren<Renderer>();talkers[i]=citizens[i].GetComponent<NPCAmbientDialogue>();order[i]=i;}
             Refresh();
         }
@@ -30,13 +31,18 @@ namespace BeachBoatStory
         public void Refresh()
         {
             if(animators==null)return;nextCheck=Time.unscaledTime+.6f;var camera=Camera.main;if(camera==null)return;
-            for(int i=0;i<citizens.Length;i++)distances[i]=(citizens[i].transform.position-camera.transform.position).sqrMagnitude;
+            for(int i=0;i<citizens.Length;i++)
+            {
+                float raw=(citizens[i].transform.position-camera.transform.position).sqrMagnitude;actualDistances[i]=raw;
+                if(raw<activeDistance*activeDistance&&dailyActivities[i]==null)dailyActivities[i]=citizens[i].GetComponent<NPCDailyActivity>();
+                distances[i]=raw*(dailyActivities[i]!=null&&dailyActivities[i].HasWorksite?.5f:1);
+            }
             Array.Sort(distances,order);ActiveCount=0;
             // Restore the distances by actor after sorting indices; no scene queries or allocations.
             for(int rank=0;rank<order.Length;rank++)
             {
-                int i=order[rank];bool visible=distances[rank]<visibleDistance*visibleDistance;
-                bool active=visible&&distances[rank]<activeDistance*activeDistance&&ActiveCount<maximumAnimated;
+                int i=order[rank];bool visible=actualDistances[i]<visibleDistance*visibleDistance;
+                bool active=visible&&actualDistances[i]<activeDistance*activeDistance&&ActiveCount<maximumAnimated;
                 if(active)activeActors[ActiveCount++]=i;
                 citizens[i].enabled=active;talkers[i].enabled=active;animators[i].enabled=active;
                 // Never leave an unanimated walking pose visible beyond the simulation budget.

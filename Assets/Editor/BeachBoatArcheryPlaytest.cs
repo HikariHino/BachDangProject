@@ -62,6 +62,7 @@ public static class BeachBoatArcheryPlaytest
                 Check(player.GetComponentsInChildren<SkinnedMeshRenderer>().Any(r=>r.sharedMesh==profile.source),"Lowering the bow restores the original character mesh and open-hand pose");
                 var data=BachDangSaveSystem.Capture("Archery training result");Check(data.archeryBestScore==60&&data.archeryTrainingCompleted,"The save captures the practice record");
                 range.Restore(0,false);BachDangSaveSystem.Apply(data);Check(range.BestScore==60&&range.Completed&&ArcheryTraining.Active==null,"Save/load restores the result without reopening a training round");
+                BeachBoatStory.BachDangStoryManager.Instance.OnTalkToNgoQuyenAct3();Check(BeachBoatStory.BachDangStoryManager.Instance.currentState==BeachBoatStory.BachDangStoryManager.StoryState.Act3_WaitForLowTide,"Passing the required range unlocks actual battle orders");
                 foreach(var p in hashes)Check(File.Exists(p.Key)&&Hash(p.Key)==p.Value,"User save unchanged: "+Path.GetFileName(p.Key));Finish(null);
         }
         catch(Exception e){Finish(e.ToString());}
@@ -81,6 +82,12 @@ public static class BeachBoatArcheryPlaytest
                 BachDangFrontEnd.Instance.Play();UnityEngine.Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();BeachBoatStory.BachDangStoryManager.Instance.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act2_Completed,true);BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 Check(range!=null&&range.Targets?.Length==3,"Camp contains three physical near/far targets");
                 Check(range.Targets.All(t=>t.GetComponentInChildren<MeshCollider>()!=null),"Arrows hit the thin target surface rather than an oversized sphere");
+                BeachBoatStory.RiverStakeZone.Instance.RestoreCheckpoint(Enumerable.Repeat(true,BeachBoatStory.RiverStakeZone.Instance.ClusterCount).ToArray());
+                var story=BeachBoatStory.BachDangStoryManager.Instance;story.OnTalkToNgoQuyenAct3();
+                Check(story.currentState==BeachBoatStory.BachDangStoryManager.StoryState.Act3_PrepareForBattle&&!range.Completed,"Battle orders require passing archery first");
+                story.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act2_SupplyPreparation,true);BeachBoatPhysicalVillagePlaytest.Place(range.Approach);
+                Check(range.Begin(),"Training is available in supply state 13; numerical state order cannot disable it");range.Close();story.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act3_PrepareForBattle,true);
+                story.currentState=BeachBoatStory.BachDangStoryManager.StoryState.Act3_WaitForLowTide;Check(range.Begin(),"A pre-battle legacy save can still train after returning to shore");range.Close();story.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act3_PrepareForBattle,true);
                 BeachBoatPhysicalVillagePlaytest.Place(range.Approach+Vector3.right*80);Check(!range.Begin(),"Training cannot start remotely");
                 BeachBoatPhysicalVillagePlaytest.Place(range.Approach);ammo=combat.Arrows;battleShots=combat.ShotsFired;battleHits=combat.Hits;
                 Check(range.Begin()&&!BachDangSaveSystem.CanSave,"Training starts in the world and defers saving during a round");

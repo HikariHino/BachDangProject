@@ -222,8 +222,8 @@ public class BachDangStoryManager : MonoBehaviour
                 desc = zone != null && zone.RecoveryRequired
                     ? "SỰ CỐ: Một bó cọc bị trôi!\n- Chèo tới bó cọc, dừng thuyền và vớt lại."
                     : zone != null && zone.IsPlanting
-                    ? $"Đang đóng cụm cọc...\nCụm đã xong: {zone.CompletedClusterCount}/{zone.ClusterCount} • Cọc: {zone.PlantedCount}/{zone.RequiredCount}"
-                    : $"- Qua cổng ra bến và lên thuyền.\n- Tới đủ 5 điểm để dựng từng cụm.\n- Cụm: {zone?.CompletedClusterCount ?? 0}/{zone?.ClusterCount ?? 5} • Cọc: {zone?.PlantedCount ?? 0}/{zone?.RequiredCount ?? 48}";
+                    ? $"Tự dựng ba cọc mẫu • {StakeConstruction.Active?.CompletedBundles??0}/3\nChọn chỗ, chỉnh nghiêng, căn búa và thả đúng lực."
+                    : "- Qua cổng ra bến và lên thuyền.\n- Chèo tới một điểm đánh dấu, dừng và bấm E.\n- Dựng ba cọc mẫu; quân dân sẽ hoàn thiện trận địa trong những ngày tiếp theo.";
                 break;
 
             case StoryState.Act2_CompleteReturnToCamp:
@@ -233,18 +233,18 @@ public class BachDangStoryManager : MonoBehaviour
             case StoryState.Act2_Completed:
                 title = "Hồi 2 hoàn tất";
                 desc = EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsConfigured
-                    ? "Trận địa cọc đã sẵn sàng.\n- Nói chuyện với Ngô Quyền lần nữa để nhận nhiệm vụ 3."
+                    ? (ArcheryTraining.Instance?.Completed==true?"Đã đạt bài tập cung.\n- Gặp Ngô Quyền nhận lệnh xuất quân.":"Trận địa cọc đã sẵn sàng.\n- Đến bãi tập cung trong doanh trại.\n- Trúng ít nhất 4/6 bia trước khi xuất quân.")
                     : "Trận địa cọc Bạch Đằng đã sẵn sàng. Quân ta chờ thời cơ đánh giặc.";
                 break;
 
             case StoryState.Act3_PrepareForBattle:
                 title = "Hồi 3: Tổng Tiến Công";
-                desc = "- Quân Nam Hán kéo thuyền đến xâm phạm bờ cõi.\n- Gặp Chủ tướng Ngô Quyền nhận lệnh tấn công.\n- Chuẩn bị xuất chiến tại bến thuyền.";
+                desc = ArcheryTraining.Instance?.Completed==true?"- Đã đạt bài tập cung.\n- Gặp Ngô Quyền nhận lệnh xuất quân.":"- Tập cung bắt buộc trước khi xuất quân.\n- Đến bãi tập, bấm E tại vị trí bắn.\n- Bắn 6 mũi, trúng ít nhất 4 bia.";
                 break;
 
             case StoryState.Act3_WaitForLowTide:
                 title = "Nhiệm vụ 3: Nhử địch vào trận địa";
-                desc = "- Triều cao đang che kín bãi cọc.\n- Qua cổng ra bến và lên thuyền nhẹ.\n- Nhử hạm đội Nam Hán tiến sâu vào cửa sông.";
+                desc = ArcheryTraining.Instance?.Completed==true?"- Triều cao đang che kín bãi cọc.\n- Qua cổng ra bến và lên thuyền nhẹ.\n- Nhử hạm đội Nam Hán tiến sâu vào cửa sông.":"- Cần đạt bài tập cung trước khi xuất chiến.\n- Về doanh trại, đứng tại vòng bắn và bấm E.\n- Bắn trúng ít nhất 4/6 bia rồi trở lại thuyền.";
                 break;
 
             case StoryState.Act3_BattleInProgress:
@@ -370,6 +370,7 @@ public class BachDangStoryManager : MonoBehaviour
             RiverStakeZone.Instance == null || !RiverStakeZone.Instance.IsComplete) return;
         if (currentState == StoryState.Act2_Completed || currentState == StoryState.Act3_PrepareForBattle)
         {
+            if(ArcheryTraining.Instance?.Completed!=true){TransitionTo(StoryState.Act3_PrepareForBattle);return;}
             TransitionTo(StoryState.Act3_WaitForLowTide);
             Debug.Log("[BachDangStory] Ngo Quyen ra lenh tong tan cong! Hay len thuyen cho trieu rut.");
         }
@@ -385,6 +386,7 @@ public class BachDangStoryManager : MonoBehaviour
             RiverStakeZone.Instance == null || !RiverStakeZone.Instance.IsComplete) return;
         if (currentState == StoryState.Act3_WaitForLowTide)
         {
+            if(ArcheryTraining.Instance?.Completed!=true){UpdateUI();return;}
             totalEnemyShips = director.ShipCount; destroyedEnemyShips = 0;
             TransitionTo(StoryState.Act3_BattleInProgress);
             director.StartBattle();
