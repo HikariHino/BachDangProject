@@ -59,6 +59,9 @@ public static class BeachBoatCasualWorkPlaytest
             if(!hammerCaptureReady)return;hammerCaptureReady=false;
             File.WriteAllText("Logs/HammerGripContact.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{right=rc.ToString(),left=lc.ToString(),shaft=hammer.position.ToString(),direction=hammer.up.ToString(),leftShoulder=rig.GetBoneTransform(HumanBodyBones.LeftUpperArm).position.ToString(),rightShoulder=rig.GetBoneTransform(HumanBodyBones.RightUpperArm).position.ToString(),leftWrist=left.position.ToString(),rightWrist=right.position.ToString()},Newtonsoft.Json.Formatting.Indented));
             Check(StakeConstruction.Active.HandsOnly,"Only work hands render while hammering, leaving the stake unobstructed");
+            Check(StakeConstruction.Active.SupportedOnDeck,"The work position keeps both boots over the actual plank deck");
+            Check(StakeConstruction.Active.StakeMesh==Zone.Instance.fieldStakes[0].GetComponentInChildren<MeshFilter>(true).sharedMesh,"The sampled stake uses the completed field's pointed timber mesh");
+            Check(StakeConstruction.Active.WorkingCrew>=4,"At least four other soldiers visibly construct stakes from separate boats");
             Check(StakeConstruction.Active.HandContactError<.02f&&StakeConstruction.Active.HandSegmentError<.001f,"Both fixed-length display arms hold the actual hammer shaft");
             Check(StakeConstruction.Active.HandWristAngle<1&&StakeConstruction.Active.DisplayedGripWeight>90,"Hammer wrists stay neutral and fingers close around the shaft");
             Check(StakeConstruction.Active.HammerHeadError<.02f,"The hammer head reaches its real stake target instead of stopping short");
@@ -126,7 +129,7 @@ public static class BeachBoatCasualWorkPlaytest
                 else if(work.Step==StakeConstruction.WorkStep.CarryBundle)
                 {
                     work.WalkBundle(Time.deltaTime);
-                    if(!captured&&work.CarryProgress>.5f){captured=true;CaptureCarry();Check(GameObject.Find("Bo_coc_dang_vac")!=null,"The player carries the sample stake in the actual world");}
+                    if(!captured&&work.CarryProgress>.5f){captured=true;CaptureCarry();Check(GameObject.Find("Bo_coc_dang_vac")!=null,"The player carries the sample stake in the actual world");Check(work.SupportedOnDeck,"Carrying stays on supported planks before reaching the work position");}
                     if(work.CarryProgress>=1)
                     {
                         if(!work.HasAimedStake){Check(!work.Interact(),"Placing a stake requires aiming");work.AimStake(Vector2.right*.02f);}

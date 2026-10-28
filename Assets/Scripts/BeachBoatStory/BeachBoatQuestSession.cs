@@ -141,7 +141,7 @@ namespace BeachBoatStory
             if (tourAudio != null) tourAudio.enabled = !value;
             var audio = storyCamera.GetComponent<AudioListener>(); if (audio != null) audio.enabled = value;
             for (int i = 0; i < tourControls.Length; i++) if (tourControls[i] != null) tourControls[i].enabled = !value && savedControls[i];
-            bool aboard = QuestRowboat.Instance != null && QuestRowboat.Instance.BlocksGroundInteractions;
+            bool aboard = (QuestRowboat.Instance != null && QuestRowboat.Instance.BlocksGroundInteractions)||(RiverBoardingCombat.Instance?.FreeSwimming??false);
             player.GetComponent<Character_Movement>().enabled = value && !aboard;
             var body = player.GetComponent<Rigidbody>();
             if (!body.isKinematic) body.linearVelocity = Vector3.zero;

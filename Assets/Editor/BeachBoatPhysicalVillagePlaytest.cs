@@ -107,6 +107,14 @@ public static class BeachBoatPhysicalVillagePlaytest
                 Check(hud.RiceGaugeVisible&&hud.RiceStatus.Contains(stall.Physical.RiceReady?"ĐỦ GẠO":stall.Physical.RiceExcess?"DƯ GẠO":"THIẾU GẠO"),"Rice controls show the actual missing/ready/excess state: "+name);
                 Check(stall.Physical.RightPalmDown>.65f,"Scooping hand faces downward rather than exposing the palm upward");
                 var basket=stall.Workstation.Environment.Find("Grain_basket").GetComponent<Renderer>().bounds;
+                var table=stall.Workstation.Environment.Find("Solid_workbench");
+                foreach(var nameOfItem in new[]{"Grain_basket","Sack_at_fill_station"})
+                {
+                    var item=nameOfItem=="Grain_basket"?stall.Workstation.Environment.Find(nameOfItem):GameObject.Find(nameOfItem).transform;var b=item.GetComponent<MeshFilter>().sharedMesh.bounds;
+                    foreach(int x in new[]{-1,1})foreach(int z in new[]{-1,1}){var p=table.InverseTransformPoint(item.TransformPoint(b.center+new Vector3(b.extents.x*x,0,b.extents.z*z)));Check(Mathf.Abs(p.x)<.49f&&Mathf.Abs(p.z)<.49f,"Rice container footprint stays inside the table: "+nameOfItem);}
+                }
+                Check(stall.Workstation.Environment.Find("Grain_basket").GetComponent<MeshFilter>().sharedMesh.name=="Open woven rice basket","The source is an open woven basket with a continuous rice mound");
+                Check(GameObject.Find("Hand_tool_contact")?.GetComponent<Renderer>()==null,"Tool contact has no visible debug sphere");
                 Check(Vector3.Distance(basket.ClosestPoint(stall.Physical.LeftGripPosition),stall.Physical.LeftGripPosition)<1.5f,"The stationary left hand braces the source basket on the left");
             }
             var foley=stall.Physical.Foley;foley.Tick(.1f,true);Check(!foley.IsPlaying,"Help/pause suspends both tool sound channels: "+stall.kind);foley.Tick(.1f,false);

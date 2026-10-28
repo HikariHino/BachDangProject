@@ -18,7 +18,8 @@ namespace BeachBoatStory
         public PlayerState State {get;private set;}
         public bool SwordDrawn {get;private set;}
         public bool PlayerAway=>State!=PlayerState.Rowboat;
-        public bool TraversalActive=>QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard;
+        public bool TraversalActive=>freeWater||(QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard);
+        public bool FreeSwimming=>freeWater;
         public Transform PlayerDeckCarrier=>(State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck)?deckAnchor:null;
         bool OnSolidDeck=>State==PlayerState.FriendlyDeck||(State==PlayerState.EnemyDeck&&deckShip!=null&&!deckShip.isDestroyed);
         public bool IsTraversing=>State==PlayerState.Swimming||State==PlayerState.Climbing;
@@ -60,6 +61,22 @@ namespace BeachBoatStory
         EnemyShip deckShip;Transform deckAnchor;Vector3 deckLocal,climbStart,climbLocalStart;float climbTime,nextSlash;
         readonly RaycastHit[] meleeHits=new RaycastHit[32];
         bool wasBattle;int traversalInputFrame=-1;
+        bool freeWater,shoreMotor,shoreCollider,shoreKinematic;RigidbodyInterpolation shoreInterpolation;
+        Vector3 shoreCamera;
+        void BeginFreeWater()
+        {
+            if(freeWater)return;freeWater=true;var actor=session.player;var body=actor.GetComponent<Rigidbody>();var capsule=actor.GetComponent<CapsuleCollider>();var motor=actor.GetComponent<Character_Movement>();
+            shoreMotor=motor.enabled;shoreCollider=capsule.enabled;shoreKinematic=body.isKinematic;shoreInterpolation=body.interpolation;var camera=session.storyCamera.GetComponent<Camera_Script>();shoreCamera=new Vector3(camera.distance,camera.heightOffset,camera.rightOffset);
+            motor.enabled=false;if(!body.isKinematic){body.linearVelocity=Vector3.zero;body.angularVelocity=Vector3.zero;}body.isKinematic=true;body.interpolation=RigidbodyInterpolation.None;capsule.enabled=false;
+        }
+        public void EndFreeWater()
+        {
+            if(!freeWater)return;freeWater=false;playerPose.FinishTraversal();var actor=session.player;var body=actor.GetComponent<Rigidbody>();
+            body.isKinematic=shoreKinematic||!session.storyMode;body.interpolation=shoreInterpolation;actor.GetComponent<CapsuleCollider>().enabled=shoreCollider;actor.GetComponent<Character_Movement>().enabled=shoreMotor&&session.storyMode;
+            var camera=session.storyCamera.GetComponent<Camera_Script>();camera.distance=shoreCamera.x;camera.heightOffset=shoreCamera.y;camera.rightOffset=shoreCamera.z;
+            playerPose.Animator.enabled=true;playerPose.Animator.runtimeAnimatorController=FootController;playerPose.Animator.Rebind();playerPose.Animator.Update(0);
+        }
+        public void PrepareRowboatBoarding(){EndFreeWater();playerPose?.FinishTraversal();State=PlayerState.Rowboat;deckShip=null;deckAnchor=null;}
         public bool UsedTraversalThisFrame=>traversalInputFrame==Time.frameCount;
         public BachDangSaveData.Boarding CaptureSave()
         {
@@ -71,6 +88,7 @@ namespace BeachBoatStory
         }
         public void RestoreSave(BachDangSaveData.Boarding data)
         {
+            EndFreeWater();
             if(data==null)return;
             EnemyDeckGuard Guard(string id)=>archery.guards.FirstOrDefault(g=>BachDangSaveSystem.GuardId(g)==id);
             EnemyShip Ship(string id)=>EnemyFleetDirector.Instance.enemyShips.FirstOrDefault(s=>s.name==id);
@@ -106,6 +124,7 @@ namespace BeachBoatStory
             deckLocal=data.deckLocal;climbLocalStart=data.climbLocalStart;climbTime=data.climbTime;
             playerPose.FinishTraversal();playerPose.SetSword(SwordDrawn);
             if((State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck||State==PlayerState.Land)&&!SwordDrawn)playerPose.Animator.runtimeAnimatorController=FootController;
+            if(!QuestRowboat.Instance.IsAboard&&IsTraversing)BeginFreeWater();
             if(State==PlayerState.Swimming)playerPose.Traversal=RiverFighterPose.Motion.Swim;else if(State==PlayerState.Climbing)playerPose.Traversal=RiverFighterPose.Motion.Climb;
             QuestRowboat.Instance.SetShoreWalking(State==PlayerState.Land);
             if(State==PlayerState.Land&&SwordDrawn)playerPose.Animator.runtimeAnimatorController=swordController;
@@ -239,6 +258,7 @@ namespace BeachBoatStory
         }
         public void ResetBattle(bool preserveWrecks=false)
         {
+            if(!preserveWrecks)EndFreeWater();
             bool keepTraversal=preserveWrecks&&TraversalActive;
             bool keepLand=keepTraversal&&State==PlayerState.Land;
             if(TraversalActive)QuestRowboat.Instance.SetShoreWalking(keepLand);
@@ -264,7 +284,8 @@ namespace BeachBoatStory
             if(!battle)
             {
                 if(wasBattle)ResetBattle(true);
-                if(!TraversalActive||BeachBoatQuestSession.InputBlocked)return;
+                if(BeachBoatQuestSession.InputBlocked||playerPose==null)return;
+                if(!TraversalActive){TryEnterWaterFromShore();return;}
                 ReadTraversalInput();StepPlayer(Time.deltaTime);return;
             }
             if(!wasBattle)
@@ -352,6 +373,7 @@ namespace BeachBoatStory
         }
         void BeginSwim(Vector3 p)
         {
+            if(!QuestRowboat.Instance.IsAboard)BeginFreeWater();
             archery.SetAim(false);playerPose.SetSword(false);SwordDrawn=false;QuestRowboat.Instance.SetShoreWalking(false);
             deckShip=null;deckAnchor=null;p.y=TideSystem.CurrentWaterHeight-5;MovePlayer(p,session.player.transform.rotation);State=PlayerState.Swimming;playerPose.Traversal=RiverFighterPose.Motion.Swim;SwimsStarted++;
             BeachBoatSoundscape.Instance?.PlayWaterEntry();
@@ -381,7 +403,8 @@ namespace BeachBoatStory
         public float SwimEntryDepth=>PlayerBodyHeight*.65f;
         public bool TryEnterWaterFromShore()
         {
-            if(State!=PlayerState.Land)return false;
+            if(State!=PlayerState.Land&&!(State==PlayerState.Rowboat&&!QuestRowboat.Instance.IsAboard))return false;
+            if(BeachBoatQuestSession.InteractionBlocked||ArcheryTraining.Active!=null)return false;
             var at=session.player.transform.position;
             if(!GroundAt(at,out float floor)||floor>=TideSystem.CurrentWaterHeight-SwimEntryDepth||
                 at.y+FeetOffset()>=TideSystem.CurrentWaterHeight-SwimEntryDepth+1)return false;
@@ -400,7 +423,7 @@ namespace BeachBoatStory
             foreach(var hit in hits)if(!(hit is TerrainCollider)&&!hit.transform.IsChildOf(session.player.transform))return false;
             playerPose.FinishTraversal();State=PlayerState.Land;deckShip=null;deckAnchor=null;
             MovePlayer(landing,Quaternion.Euler(0,session.player.transform.eulerAngles.y,0));
-            QuestRowboat.Instance.SetShoreWalking(true);Physics.SyncTransforms();return true;
+            if(freeWater)EndFreeWater();else QuestRowboat.Instance.SetShoreWalking(true);Physics.SyncTransforms();return true;
         }
         void MovePlayer(Vector3 p,Quaternion rotation)
         {session.player.transform.SetPositionAndRotation(p,rotation);var body=session.player.GetComponent<Rigidbody>();body.position=p;body.rotation=rotation;}

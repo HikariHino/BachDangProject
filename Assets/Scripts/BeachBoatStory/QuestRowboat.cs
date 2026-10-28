@@ -220,6 +220,7 @@ namespace BeachBoatStory
         }
         bool BoardPlayer(bool advanceStory)
         {
+            RiverBoardingCombat.Instance?.PrepareRowboatBoarding();
             var story=BachDangStoryManager.Instance;
             motorEnabled = motor.enabled; bodyKinematic = playerBody.isKinematic; colliderEnabled = playerCollider.enabled;
             originalController = animator.runtimeAnimatorController; originalRootMotion = animator.applyRootMotion;

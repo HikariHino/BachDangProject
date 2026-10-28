@@ -90,13 +90,14 @@ namespace BeachBoatStory
         WorkbenchHands hands;BowGripProfile gripProfile;VillageWorkstation station;
         bool tableWasActive;
         AnimatorCullingMode previousCulling;SkinnedMeshRenderer[] playerMeshes;bool[] previousOffscreen;float[][] previousFingerWeights;
-        Vector3 World(Vector3 local){local.y*=verticalScale;return origin+rotation*local;}
+        Vector3 WorkLocal(Vector3 local){if(stall!=null&&stall.kind==VillageWorkStall.WorkKind.Rice&&local.x>-18&&local.x<18)local.z+=5.7f;return local;}
+        Vector3 World(Vector3 local){local=WorkLocal(local);local.y*=verticalScale;return origin+rotation*local;}
         Material Make(string name,Color color)
         {var m=new Material(Shader.Find("Universal Render Pipeline/Lit")){name=name,color=color};m.SetFloat("_Smoothness",.12f);owned.Add(m);return m;}
         GameObject Shape(string name,PrimitiveType type,Vector3 p,Vector3 size,Material material,bool solid=false,Transform parent=null)
         {
             var go=GameObject.CreatePrimitive(type);go.name=name;go.transform.SetParent(parent??props.transform,false);go.transform.localPosition=p;go.transform.localScale=size;
-            go.GetComponent<Renderer>().sharedMaterial=material;
+            if(parent==null)go.transform.localPosition=WorkLocal(p);go.GetComponent<Renderer>().sharedMaterial=material;
             if(!solid){var collider=go.GetComponent<Collider>();collider.enabled=false;Destroy(collider);}return go;
         }
         LineRenderer Line(string name,Material material,float width)
@@ -144,7 +145,7 @@ namespace BeachBoatStory
             label=new GameObject("Context_prompt").AddComponent<TextMeshPro>();label.transform.SetParent(props.transform,false);StoryFont.Apply(label);label.fontSize=6.5f;label.alignment=TextAlignmentOptions.Center;label.rectTransform.sizeDelta=new Vector2(55,10);label.color=new Color(1,.82f,.37f);
             label.transform.localScale=new Vector3(1,1/verticalScale,1);
             rope=Line("Rope_pulled_around_bundle",fibre,.5f);pour=Line("Rice_pour",rice,.3f);pour.enabled=false;
-            toolCursor=Shape("Hand_tool_contact",PrimitiveType.Sphere,Vector3.zero,Vector3.one*.8f,gold);
+            toolCursor=new GameObject("Hand_tool_contact");toolCursor.transform.SetParent(props.transform,false);
             spoon=new GameObject("Rice_ladle");spoon.transform.SetParent(props.transform,false);
             Shape("Ladle_bowl",PrimitiveType.Cylinder,Vector3.zero,new Vector3(3,.6f,3),wood,false,spoon.transform);
             Shape("Ladle_handle",PrimitiveType.Cube,new Vector3(0,0,-3),new Vector3(.6f,.6f,5),wood,false,spoon.transform);
@@ -441,7 +442,7 @@ namespace BeachBoatStory
             hands?.Grip(Current==Step.Wrap?(ToolStages==0||ToolStages==2?WorkbenchHands.GripPose.Pinch:WorkbenchHands.GripPose.Support):Current==Step.Tie?WorkbenchHands.GripPose.Pinch:WorkbenchHands.GripPose.Support,
                 Current==Step.Wrap?(ToolStages==0||ToolStages==2?WorkbenchHands.GripPose.Support:WorkbenchHands.GripPose.Pinch):Current==Step.Tie?WorkbenchHands.GripPose.Pinch:WorkbenchHands.GripPose.Rod);
             if(camera!=null){if(AtTable)camera.FocusTable(World(new Vector3(Current==Step.Tie?-10+Knots*10:0,Current==Step.Saw?12:Current==Step.FillRice?12:10,-9.5f)),rotation*Vector3.forward,Current==Step.Wrap?.78f:Current==Step.Tie?.9f:1);else camera.ClearWorkFocus();}
-            marker.transform.position=(ToolStep?ToolPoint(ToolGoal):TargetPosition)+Vector3.up*.3f;
+            marker.SetActive(!ToolStep);marker.transform.position=(ToolStep?ToolPoint(ToolGoal):TargetPosition)+Vector3.up*.3f;
             toolCursor.SetActive(ToolStep);if(ToolStep)toolCursor.transform.position=ToolPoint(ToolPointer);
             spoon.SetActive(Current==Step.FillRice);if(spoon.activeSelf)spoon.transform.SetPositionAndRotation(ToolPoint(ToolPointer),rotation*Quaternion.Euler(Time.time<pourUntil?55:0,0,0));
             ladleRice.SetActive(ScoopLoaded);
@@ -486,7 +487,7 @@ namespace BeachBoatStory
             if(AtTable&&camera!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,true,Current==Step.Wrap||Current==Step.FillRice,Current==Step.Saw?player.right:Vector3.zero);
             if(blade!=null&&Current==Step.Saw)blade.transform.position=ToolPoint(ToolPointer);
             if(sawHandle!=null&&Current==Step.Saw)sawHandle.transform.SetPositionAndRotation(ToolPoint(ToolPointer)+player.right*2,player.rotation);
-            if(grain!=null){float level=Mathf.Clamp01(RiceFill);grain.transform.localScale=new Vector3(5.4f,Mathf.Max(.05f,level*2.5f),5.4f);grain.transform.localPosition=new Vector3(4,9+level*2.5f,-10.2f);grain.GetComponent<Renderer>().sharedMaterial=rice;}
+            if(grain!=null){float level=Mathf.Clamp01(RiceFill);grain.transform.localScale=new Vector3(5.4f,Mathf.Max(.05f,level*2.5f),5.4f);grain.transform.localPosition=WorkLocal(new Vector3(4,9+level*2.5f,-10.2f));grain.GetComponent<Renderer>().sharedMaterial=rice;}
             if(fillBand!=null)fillBand.sharedMaterial=RiceReady?green:RiceExcess?red:gold;
             if(pour!=null){pour.enabled=Current==Step.FillRice&&Time.time<pourUntil;if(pour.enabled){pour.positionCount=9;for(int i=0;i<9;i++){float t=i/8f;pour.SetPosition(i,World(Vector3.Lerp(new Vector3(4,14,-10.2f),new Vector3(4,12,-10.2f),t)));}}}
             if(rope!=null&&stall.kind==VillageWorkStall.WorkKind.Rope)

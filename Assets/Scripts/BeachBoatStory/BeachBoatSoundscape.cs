@@ -82,6 +82,7 @@ namespace BeachBoatStory
         {
             if(Input.GetKeyDown(KeyCode.F10))SetMuted(!Muted);
             float volume=Muted?0:masterVolume;
+            if(OpeningEvent.IsOpeningActive){RiverSource.volume=WindSource.volume=0;birds.Stop();nextBird=Time.time+6;previous=session.player.transform.position;return;}
             bool dead=QuestCheckpoint.Instance!=null&&QuestCheckpoint.Instance.IsDefeated;
             if(Time.unscaledTime>=nextShoreCheck)
             {nextShoreCheck=Time.unscaledTime+.5f;DistanceToWater=MeasureWaterDistance(session.player.transform.position);}

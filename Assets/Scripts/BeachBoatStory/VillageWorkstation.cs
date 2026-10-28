@@ -13,6 +13,7 @@ namespace BeachBoatStory
         public Transform Environment {get;private set;}
         readonly List<GameObject> hidden=new List<GameObject>();
         readonly List<Material> materials=new List<Material>();
+        readonly List<Mesh> meshes=new List<Mesh>();
         Transform awning;Vector3 awningScale;
         Material Make(string name,Color color)
         {var m=new Material(Shader.Find("Universal Render Pipeline/Lit")){name=name,color=color};m.SetFloat("_Smoothness",.12f);materials.Add(m);return m;}
@@ -52,8 +53,7 @@ namespace BeachBoatStory
             else if(owner.kind==VillageWorkStall.WorkKind.Rice)
             {
                 for(int i=0;i<3;i++)Shape("Folded_empty_sack",PrimitiveType.Cube,new Vector3(-25,6.4f+i*.55f,-14),new Vector3(6,.5f,7),fibre);
-                Shape("Grain_basket",PrimitiveType.Cylinder,new Vector3(-5,10,-10.2f),new Vector3(9,2,9),fibre);
-                for(int i=0;i<28;i++)Shape("Grain_in_basket",PrimitiveType.Sphere,new Vector3(-5+Mathf.Sin(i*2.4f)*3,12+(i%3)*.15f,-10.2f+Mathf.Cos(i*2.4f)*3),new Vector3(.7f,.35f,1),rice);
+                BuildRiceBasket(fibre,rice);
             }
             else
             {
@@ -65,12 +65,44 @@ namespace BeachBoatStory
             Physics.SyncTransforms();
         }
         public void ResetDisplay(){foreach(var log in BundleLogs)if(log!=null)log.SetActive(true);}
+        void BuildRiceBasket(Material fibre,Material rice)
+        {
+            var basket=new GameObject("Grain_basket",typeof(MeshFilter),typeof(MeshRenderer));basket.transform.SetParent(Environment,false);basket.transform.localPosition=new Vector3(-5,9,-4.5f);
+            var vertices=new List<Vector3>();var triangles=new List<int>();
+            Vector3 P(int i,float radius,float y){float a=i*Mathf.PI/24;return new Vector3(Mathf.Cos(a)*radius,y,Mathf.Sin(a)*radius);}
+            void Quad(Vector3 a,Vector3 b,Vector3 c,Vector3 d){int n=vertices.Count;vertices.AddRange(new[]{a,b,c,d});triangles.AddRange(new[]{n,n+1,n+2,n,n+2,n+3});}
+            for(int i=0;i<48;i++)
+            {
+                Quad(P(i,3.5f,0),P(i+1,3.5f,0),P(i+1,4.5f,3.2f),P(i,4.5f,3.2f));
+                Quad(P(i,4.2f,3.2f),P(i+1,4.2f,3.2f),P(i+1,3.3f,.2f),P(i,3.3f,.2f));
+                Quad(P(i,4.5f,3.2f),P(i+1,4.5f,3.2f),P(i+1,4.2f,3.2f),P(i,4.2f,3.2f));
+            }
+            var mesh=new Mesh{name="Open woven rice basket"};mesh.SetVertices(vertices);mesh.SetTriangles(triangles,0);mesh.RecalculateNormals();mesh.RecalculateBounds();meshes.Add(mesh);basket.GetComponent<MeshFilter>().sharedMesh=mesh;basket.GetComponent<Renderer>().sharedMaterial=fibre;
+            for(int row=0;row<7;row++)
+            {
+                float y=.3f+row*.48f;var weave=new GameObject("Woven_basket_band").AddComponent<LineRenderer>();weave.transform.SetParent(basket.transform,false);weave.useWorldSpace=false;weave.sharedMaterial=fibre;weave.widthMultiplier=.14f;weave.positionCount=49;
+                for(int i=0;i<49;i++)weave.SetPosition(i,P(i,Mathf.Lerp(3.5f,4.5f,y/3.2f)+.025f,y));
+            }
+            // A continuous pale mound reads as loose rice; tiny grains add texture
+            // instead of the old ring of oversized bean-like spheres.
+            Shape("Rice_heap_in_basket",PrimitiveType.Sphere,new Vector3(-5,11.55f,-4.5f),new Vector3(8.2f,1.5f,8.2f),Make("Rice mound base",new Color(.76f,.70f,.5f)));
+            var grainVertices=new List<Vector3>();var grainTriangles=new List<int>();
+            for(int i=0;i<220;i++)
+            {
+                float radius=3.9f*Mathf.Sqrt((i+.5f)/220);float angle=i*2.399963f;float y=11.55f+.75f*Mathf.Sqrt(1-radius*radius/(4.1f*4.1f))+.045f;var p=new Vector3(Mathf.Cos(angle)*radius,y,Mathf.Sin(angle)*radius);
+                int n=grainVertices.Count;var along=new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle))*.17f;var across=Vector3.Cross(along,Vector3.up).normalized*.065f;
+                grainVertices.AddRange(new[]{p-along,p+across,p+along,p-across,p+Vector3.up*.06f});grainTriangles.AddRange(new[]{n,n+1,n+4,n+1,n+2,n+4,n+2,n+3,n+4,n+3,n,n+4});
+            }
+            var grains=new GameObject("Loose_rice_grains",typeof(MeshFilter),typeof(MeshRenderer));grains.transform.SetParent(Environment,false);grains.transform.localPosition=new Vector3(-5,0,-4.5f);
+            var grainMesh=new Mesh{name="Small rice grains"};grainMesh.SetVertices(grainVertices);grainMesh.SetTriangles(grainTriangles,0);grainMesh.RecalculateNormals();grainMesh.RecalculateBounds();meshes.Add(grainMesh);grains.GetComponent<MeshFilter>().sharedMesh=grainMesh;grains.GetComponent<Renderer>().sharedMaterial=rice;
+        }
         void OnDestroy()
         {
             if(Environment!=null)Destroy(Environment.gameObject);
             foreach(var go in hidden)if(go!=null)go.SetActive(true);
             if(awning!=null)awning.localScale=awningScale;
             foreach(var m in materials)if(m!=null)Destroy(m);
+            foreach(var mesh in meshes)if(mesh!=null)Destroy(mesh);
         }
     }
 }
