@@ -10,11 +10,11 @@ using UnityEngine;
 public static class BeachBoatArcheryPlaytest
 {
     const string Flag="ArcheryRange938QA";static int phase,lastFrame,poseFrame,poseStage;static double started;static float nextShot;static bool poseReady;
-    static string failure;static int battleShots,battleHits,ammo;static float campaignSeconds;static readonly List<string> checks=new List<string>();
+    static string failure;static int battleShots,battleHits,ammo;static float campaignSeconds;static ArcheryPracticeTarget lastFallen;static readonly List<string> checks=new List<string>();
     static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static string Hash(string path)=>Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(File.ReadAllBytes(path)));
     static void Check(bool ok,string name){if(!ok)throw new Exception(name);checks.Add(name);}
-    public static void RunInEditor(){phase=poseStage=0;lastFrame=-1;started=0;failure=null;poseReady=false;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/ArcheryQA/PrePlay");EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){phase=poseStage=0;lastFallen=null;lastFrame=-1;started=0;failure=null;poseReady=false;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/ArcheryQA/PrePlay");EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Log;Application.logMessageReceived+=Log;}
     static void Log(string m,string stack,LogType t){if(SessionState.GetBool(Flag,false)&&(t==LogType.Error||t==LogType.Exception))failure=m+"\n"+stack;}
     static void Finish(string error)
@@ -23,9 +23,12 @@ public static class BeachBoatArcheryPlaytest
         File.WriteAllText("Logs/ArcheryPlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,phase,checks},Newtonsoft.Json.Formatting.Indented));
         BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
     }
-    static void Capture(Camera c,string name="Draw")
+    static void Capture(Camera c,string name="Draw",bool includeHUD=false)
     {
+        var canvas=ArcheryTraining.Instance.HudCanvas;var mode=canvas.renderMode;var world=canvas.worldCamera;
+        if(includeHUD){canvas.renderMode=RenderMode.ScreenSpaceCamera;canvas.worldCamera=c;canvas.planeDistance=1;Canvas.ForceUpdateCanvases();}
         var rt=new RenderTexture(1280,800,24);c.targetTexture=rt;c.Render();RenderTexture.active=rt;var t=new Texture2D(1280,800,TextureFormat.RGB24,false);t.ReadPixels(new Rect(0,0,1280,800),0,0);t.Apply();File.WriteAllBytes("Logs/ArcheryTraining_"+name+".png",t.EncodeToPNG());RenderTexture.active=null;c.targetTexture=null;UnityEngine.Object.DestroyImmediate(t);UnityEngine.Object.DestroyImmediate(rt);
+        if(includeHUD){canvas.renderMode=mode;canvas.worldCamera=world;Canvas.ForceUpdateCanvases();}
     }
     public static void ObserveAfterPose()
     {
@@ -91,6 +94,17 @@ public static class BeachBoatArcheryPlaytest
                 BeachBoatPhysicalVillagePlaytest.Place(range.Approach+Vector3.right*80);Check(!range.Begin(),"Training cannot start remotely");
                 BeachBoatPhysicalVillagePlaytest.Place(range.Approach);ammo=combat.Arrows;battleShots=combat.ShotsFired;battleHits=combat.Hits;
                 Check(range.Begin()&&!BachDangSaveSystem.CanSave,"Training starts in the world and defers saving during a round");
+                phase=4;return;
+            }
+            if(phase==4)
+            {
+                if(BeachBoatQuestSession.InputBlocked)return;
+                combat.SetAim(true);Check(combat.TryFire(new Ray(player.transform.position+Vector3.up*20,Vector3.up),1),"A genuine missed arrow can launch during practice");combat.StepArrows(1);
+                Check(range.Shots==1&&range.ResolvedShots==1&&range.ShotScore(0)==0&&range.Score==0,"A miss resolves a red zero-point shot instead of hanging the results screen");range.Replay();
+                combat.SetAim(true);var wrong=range.Targets[2];var wrongOrigin=player.transform.position+Vector3.up*14;Check(combat.TryFire(new Ray(wrongOrigin,(wrong.transform.position-wrongOrigin).normalized),1),"A wrong highlighted-target choice still consumes one arrow");combat.StepArrows(1);
+                Check(wrong.IsDown&&range.Hits==0&&range.Score==0&&range.ShotScore(0)==0,"A struck wrong target falls physically but awards no score");range.Replay();
+                Check(range.Targets.All(t=>t.IsReady&&t.FallAngle==0)&&range.Shots==0,"Replay resets the target poses and all six shot slots");
+                Check(range.HudCanvas.gameObject.activeInHierarchy&&range.HudCanvas.GetComponentsInChildren<TMPro.TMP_Text>().Any(t=>t.text.Contains("60 ĐIỂM")),"The dedicated scoreboard visibly shows the sixty-point round");
                 campaignSeconds=CampaignProgress.Instance.Record.seconds;
                 Check(!combat.TryFire(new Ray(player.transform.position,Vector3.up),1),"Aiming is required before firing");
                 phase=1;return;
@@ -99,16 +113,22 @@ public static class BeachBoatArcheryPlaytest
             {
                 if(range.Shots==6){nextShot=Time.time+1.1f;phase=2;return;}
                 if(Time.time<nextShot)return;
+                if(lastFallen!=null){Check(lastFallen.FallAngle>80,"The previous hit target actually falls onto its base, not only a logical down flag");lastFallen=null;}
+                if(!range.CanFire)return;
+                if(range.Shots==0)Capture(BeachBoatQuestSession.Instance.storyCamera,"Scoreboard",true);
                 var target=range.NextTarget;var origin=player.transform.position+Vector3.up*14;var direction=(target.transform.position-origin).normalized;
                 combat.SetAim(true);Physics.SyncTransforms();var end=range.ResolveShot(new Ray(origin,direction),out var actual,out int points);
                 Check(actual==target&&points==10,"A clear shot at the highlighted bullseye scores ten points: "+range.Shots+" (hit "+actual?.name+") obstacles="+string.Join(",",Physics.RaycastAll(new Ray(origin,direction),220).OrderBy(h=>h.distance).Take(5).Select(h=>h.collider.name+":"+h.distance))+" approach="+range.Approach+" target="+target.transform.position);
                 Check(combat.TryFire(new Ray(origin,direction),1),"The normal bow launches a training arrow");combat.StepArrows(1);
+                Check(target.IsDown&&range.ShotScore(range.Shots-1)==10,"A real arriving bullseye arrow scores its own slot and knocks down its target");lastFallen=target;
+                int score=range.Score;range.RegisterShotResult(range.Shots-1,target,target.transform.position,10);Check(range.Score==score,"A duplicate projectile result cannot score twice");
                 nextShot=Time.time+.65f;return;
             }
             if(phase==2)
             {
                 if(Time.time<nextShot)return;
                 Check(range.Finished&&range.Score==60&&range.Hits==6&&range.Completed&&range.BestScore==60,"Six arriving arrows complete the physical round and record its result");
+                Check(range.Grade=="S"&&range.ResolvedShots==6&&range.HudCanvas.transform.Find("Round_results").gameObject.activeInHierarchy,"Final results show the local practice grade and all resolved arrows");Capture(BeachBoatQuestSession.Instance.storyCamera,"Results",true);
                 combat.SetAim(true);Check(!combat.TryFire(new Ray(player.transform.position,Vector3.up),1),"A completed round cannot fire a seventh scoring arrow");
                 Check(combat.ShotsFired==battleShots&&combat.Hits==battleHits,"Training does not inflate battle accuracy or kills");
                 Check(CampaignProgress.Instance.Record.seconds==campaignSeconds,"Optional practice does not penalize the campaign rank timer");

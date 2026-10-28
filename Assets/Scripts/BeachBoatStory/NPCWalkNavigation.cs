@@ -80,7 +80,10 @@ namespace BeachBoatStory
             return Mathf.Abs(result.y-point.y)<scale;
         }
         public bool Occupied(Vector3 p,bool people)
+            =>Occupied(p,people,true);
+        bool Occupied(Vector3 p,bool people,bool range)
         {
+            if(range&&ArcheryTraining.Instance?.ContainsLane(p,Radius)==true)return true;
             Capsule(p,out var lower,out var upper);
             int count=Physics.OverlapCapsuleNonAlloc(lower,upper,Radius,overlaps,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
             for(int i=0;i<count;i++)
@@ -92,6 +95,8 @@ namespace BeachBoatStory
         }
         public bool Clear(Vector3 from,Vector3 to,bool people)
         {
+            if(ArcheryTraining.Instance?.BlocksNPCPath(from,to,Radius)==true)return false;
+            bool exitingRange=ArcheryTraining.Instance?.ContainsLane(from,Radius)==true;
             var direction=to-from;direction.y=0;float length=direction.magnitude;
             if(length<.001f)return !Occupied(to,people);
             float rise=to.y-from.y;if(rise>scale*.6f)return false;
@@ -104,7 +109,7 @@ namespace BeachBoatStory
                 if(h.normal.y>.65f&&h.point.y<=Mathf.Max(from.y,to.y)+feetOffset+.2f)continue;
                 return false;
             }
-            return count<hits.Length&&!Occupied(to,people);
+            return count<hits.Length&&!Occupied(to,people,!exitingRange);
         }
         public bool SeparateActors(float maximumStep,out Vector3 result)
         {
@@ -118,22 +123,33 @@ namespace BeachBoatStory
                 // Include the navigation clearance too. Stopping at zero physical
                 // penetration leaves a pair inside the cast's safety margin.
                 var delta=result-other.bounds.center;delta.y=0;
-                if(delta.sqrMagnitude<=.001f){var root=other.GetComponentInParent<ActorSolidBody>()?.gameObject??other.gameObject;delta=(actor.gameObject.GetEntityId().GetHashCode()>root.GetEntityId().GetHashCode()?Vector3.right:Vector3.left)*.1f;}
+                if(delta.sqrMagnitude<=.001f)
+                {
+                    var root=other.GetComponentInParent<ActorSolidBody>()?.gameObject??other.gameObject;int a=actor.gameObject.GetEntityId().GetHashCode(),b=root.GetEntityId().GetHashCode();
+                    int seed=unchecked(Mathf.Min(a,b)*397^Mathf.Max(a,b));float angle=(seed&1023)*(Mathf.PI*2/1024);
+                    delta=new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle))*(a>b?.1f:-.1f);
+                }
                 float clearance=Radius+Mathf.Max(other.bounds.extents.x,other.bounds.extents.z)+.2f-delta.magnitude;
                 if(clearance>0&&delta.sqrMagnitude>.001f){push+=delta.normalized*clearance;continue;}
                 if(!Physics.ComputePenetration(own,own.transform.position,own.transform.rotation,other,other.transform.position,other.transform.rotation,out var direction,out float depth)||depth<.06f)continue;
                 direction.y=0;if(direction.sqrMagnitude>.01f)push+=direction.normalized*(depth+.1f);
             }
             if(push.sqrMagnitude<.001f)return false;
-            var candidate=result+Vector3.ClampMagnitude(push,maximumStep);
-            if(!Project(candidate,out candidate)||!Clear(result,candidate,false))return false;
-            result=candidate;return true;
+            for(int option=0;option<5;option++)
+            {
+                float turn=option==0?0:(option%2==1?1:-1)*((option+1)/2)*45;
+                var candidate=result+Quaternion.Euler(0,turn,0)*Vector3.ClampMagnitude(push,maximumStep);
+                if(!Project(candidate,out candidate)||!Clear(result,candidate,false))continue;
+                result=candidate;return true;
+            }
+            return false;
         }
         // Only used once at spawn: old authored actors can start inside newly solid props.
         public bool FindSpawn(Vector3 original,out Vector3 clear)
         {
             if(Project(original,out clear)&&!Occupied(clear,true))return true;
-            for(int ring=1;ring<=5;ring++)for(int i=0;i<24;i++)
+            int rings=ArcheryTraining.Instance?.ContainsLane(original,Radius)==true?24:5;
+            for(int ring=1;ring<=rings;ring++)for(int i=0;i<24;i++)
             {
                 float angle=i*Mathf.PI/12;
                 var p=original+new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle))*Radius*ring*1.25f;

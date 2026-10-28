@@ -40,3 +40,17 @@ Kết quả ngày 28/10/2026:
 - NPC ở cổng và sinh hoạt: 22 kiểm tra đạt. Quan sát được bảo dưỡng, lấy nước, phơi vải, chuyển hàng, vá lưới và làm vườn trong lượt cuối; buôn bán đã quan sát trong lượt trước. Kiểm tra làm vườn yêu cầu tới đúng vườn thật, không nhận một điểm dừng bị chặn là chỗ làm.
 
 Cả bốn bộ kiểm thử xác nhận 13 file save thật không đổi. Không sửa scene hoặc ProjectSettings. Ảnh kiểm tra tay búa: `Logs/StakeConstruction_Hammer.png` và `Logs/StakeConstruction_Hammer_GripClose.png`; sinh hoạt: `Logs/DailyLife_*.png`. Đây là chuyển động sinh hoạt bằng IK và vật dụng của dự án, không phải bộ motion capture mới.
+
+## Bãi tập cung có điểm và làn bắn riêng
+
+Làn bắn được dành riêng cả trước và trong lượt chơi. NPC tránh toàn bộ đoạn đường cắt ngang làn, không chỉ tránh tọa độ của bia. Khi tạo bãi tập trong lúc khởi tạo scene, người đứng trong làn được đặt lại vào vị trí khô, trống bên ngoài bằng kiểm tra collider. Việc này diễn ra trước khi chơi; sau đó NPC đi bằng đường tuần tra thật. Dây và cọc thấp đánh dấu hai bên làn, không chặn người chơi.
+
+Điểm dừng của mỗi NPC được giữ khoảng cách với điểm dừng của người khác. Nếu các waypoint cũ đều bận hoặc thuộc làn bắn, NPC tìm một điểm trống ở vòng ngoài. Nhóm trùng tọa độ tách theo các hướng đối xứng khác nhau; khi sát tường, thử cả hướng chéo thay vì tiếp tục ép một đường.
+
+`ArcheryTrainingHUD` hiện điểm /60, số bia trúng và mục tiêu 4/6, bia cần ngắm và sáu ô kết quả từng mũi. Mũi đang bay có trạng thái riêng; trượt hiện đỏ, trúng hiện điểm xanh. Tâm 10, vòng giữa 7, vòng ngoài 4; bắn nhầm bia vòng vàng không có điểm. Mọi mũi đều phải tới đích hoặc trượt xong mới hiện bảng kết quả. Kết quả trùng của cùng một mũi không được cộng hai lần.
+
+Bia trúng tên đổ về sau quanh chân trụ, mũi tên cắm theo bia. Khi tới lượt dùng lại, bia dựng lên, xong mới được bắn. Bảng kết quả có tổng điểm, số trúng, thời gian lượt, kỷ lục và nút tập lại/rời bãi. Hạng **luyện tập** là S ≥50, A ≥40, B ≥25, còn lại C; đây là hạng riêng của lượt bắn, không thay phép xếp hạng chiến dịch. Điều kiện bắt buộc trước xuất quân vẫn là trúng ít nhất bốn trong sáu mũi.
+
+Đợt kiểm thử bãi tập: `ArcheryPlaytest.json` đạt 80 kiểm tra; `RangeCrowdPlaytest.json` đặt tám lính thật chồng tọa độ rồi quan sát 30 giây, tất cả đi tiếp, độ chồng collider sau ổn định bằng 0; 1.003 mẫu quan sát NPC gần bãi đều ở ngoài làn. Ảnh giao diện: `Logs/ArcheryTraining_Scoreboard.png`, `Logs/ArcheryTraining_Results.png`. Báo cáo và ảnh QA không đưa vào Git.
+
+Kiểm tra hồi quy sinh hoạt sau khi thay đường đi: `DailyLifePlaytest.json` đạt 22 kiểm tra, quan sát bảo dưỡng, lấy nước, buôn bán, chuyển hàng, phơi vải và làm vườn. Cả ba bộ mới (80 + 21 + 22 = 123 kiểm tra) giữ nguyên SHA-256 của 13 file save thật. Lượt bắn cuối xác nhận bia có góc đổ thực tế trên 80°, dựng lại mới nhận mũi kế tiếp và kết quả được giữ qua lưu/tải.

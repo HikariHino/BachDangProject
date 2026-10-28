@@ -51,6 +51,8 @@ namespace BeachBoatStory
         public bool IsResting=>idleRemaining>0;
         public bool IsRaisedPatrol=>raisedPatrol;
         NPCDailyActivity dailyWork;string workLabel;
+        static readonly System.Collections.Generic.List<NPCWander> walkers=new System.Collections.Generic.List<NPCWander>();
+        static UnityEngine.SceneManagement.Scene walkingScene;
         static CampGateTransition[] circulationGates;
         public static bool AtGate(Vector3 p)
         {
@@ -92,6 +94,7 @@ namespace BeachBoatStory
             groundOffset = terrain != null ? Mathf.Clamp(home.y - Ground(home), 0, scale * 5f) : 0;
             raisedPatrol=groundOffset>scale*1.5f;
             navigation=new NPCWalkNavigation(this,terrain,scale,raisedPatrol);
+            if(walkingScene!=gameObject.scene){walkers.Clear();walkingScene=gameObject.scene;}walkers.Add(this);
             dailyWork=GetComponent<NPCDailyActivity>()??gameObject.AddComponent<NPCDailyActivity>();dailyWork.Initialize(this,animator);
             if(navigation.FindSpawn(home,out var spawn)){transform.position=home=spawn;}
             Physics.SyncTransforms();
@@ -186,7 +189,32 @@ namespace BeachBoatStory
                 if(!SetDestination(candidate))continue;
                 CurrentActivity="Đang đi làm";return;
             }
+            // Authored stops can all belong to the reserved range or another resting
+            // patrol. Find a nearby free stop rather than queueing at the same doorway.
+            if(!raisedPatrol)for(int attempt=0;attempt<8;attempt++)
+            {
+                var offset=UnityEngine.Random.insideUnitCircle.normalized*UnityEngine.Random.Range(scale*3,scale*9);
+                var candidate=home+new Vector3(offset.x,0,offset.y);
+                if(AtGate(candidate)||!ValidGround(candidate)||!SetDestination(candidate))continue;
+                targetIndex=-1;CurrentActivity="Đang tuần tra vòng ngoài";return;
+            }
             Idle();
+        }
+        public void ClearRangeAtSetup()
+        {
+            if(navigation==null||raisedPatrol||ArcheryTraining.Instance?.ContainsLane(transform.position,navigation.Radius)!=true)return;
+            if(navigation.FindSpawn(transform.position,out var spawn)){transform.position=home=spawn;route.Clear();idleRemaining=0;Physics.SyncTransforms();}
+        }
+        bool DestinationReserved(Vector3 p)
+        {
+            foreach(var other in walkers)
+            {
+                if(other==null||other==this||!other.isActiveAndEnabled||other.navigation==null)continue;
+                var stop=other.route.Count>0?other.target:other.transform.position;
+                if(Mathf.Abs(stop.y-p.y)>scale*1.5f)continue;
+                if(QuestRowboat.FlatDistance(p,stop)<navigation.Radius+other.navigation.Radius+scale*.35f)return true;
+            }
+            return false;
         }
         bool TryNeighbourhoodTrip()
         {
@@ -230,11 +258,12 @@ namespace BeachBoatStory
         }
         bool SetDestination(Vector3 destination)
         {
+            if(DestinationReserved(destination))return false;
             if(!navigation.Route(transform.position,destination,route))return false;
             target=route[route.Count-1];routePoint=0;RoutesPlanned++;return true;
         }
         public bool TryWorkDestination(Vector3 candidate,out Vector3 point)
-        {point=candidate;return navigation!=null&&navigation.Project(candidate,out point)&&!navigation.Occupied(point,true)&&navigation.Route(transform.position,point,new System.Collections.Generic.List<Vector3>());}
+        {point=candidate;return navigation!=null&&navigation.Project(candidate,out point)&&!DestinationReserved(point)&&!navigation.Occupied(point,true)&&navigation.Route(transform.position,point,new System.Collections.Generic.List<Vector3>());}
         void Idle()
         {
             idleRemaining=UnityEngine.Random.Range(Mathf.Max(.1f,minIdleTime),Mathf.Max(minIdleTime,maxIdleTime));

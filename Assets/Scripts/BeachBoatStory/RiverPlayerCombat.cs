@@ -51,7 +51,7 @@ namespace BeachBoatStory
             public int damage;
             public float elapsed,duration;
             public bool hostile,active,practice;
-            public ArcheryPracticeTarget practiceTarget;public int practiceScore;
+            public ArcheryPracticeTarget practiceTarget;public int practiceScore,practiceIndex;
         }
         readonly Arrow[] arrows=new Arrow[16];
         readonly RaycastHit[] rayHits=new RaycastHit[64];
@@ -171,7 +171,7 @@ namespace BeachBoatStory
         }
         public bool TryFire(Ray ray,float draw)
         {
-            if(PracticeActive&&ArcheryTraining.Active.Shots>=6)return false;
+            if(PracticeActive&&!ArcheryTraining.Active.CanFire)return false;
             if(!CanUseBow||BeachBoatQuestSession.InputBlocked||!IsAiming||IsReloading||Time.time<nextShot||!float.IsFinite(draw)||draw<0)return false;
             if(Arrows<=0){Reload();return false;}
             var target=FindTarget(ray,out var end);
@@ -182,7 +182,7 @@ namespace BeachBoatStory
             {
                 var arrow=System.Array.Find(arrows,a=>a.active&&a.elapsed==0&&!a.hostile);
                 if(arrow!=null){arrow.target=null;arrow.end=ArcheryTraining.Active.ResolveShot(ray,out var practice,out int score);arrow.practiceTarget=practice;arrow.practiceScore=score;}
-                ArcheryTraining.Active.RecordShot();return true;
+                int index=ArcheryTraining.Active.RecordShot();if(arrow!=null)arrow.practiceIndex=index;return true;
             }
             if(target==null)Tell("Tên đã bắn. Đưa tâm ngắm vào người lính trên boong.");
             return true;
@@ -230,7 +230,7 @@ namespace BeachBoatStory
                     {session.player.GetComponent<PlayerVitals>().TakeImpact(a.damage,"Trúng tên địch",CombatImpactKind.Arrow);Tell("TRÚNG TÊN! Bỏ ngắm, chèo lệch hướng để né loạt kế tiếp.");}
                     else {DodgedShots++;Tell("ĐÃ NÉ LOẠT TÊN!");}
                 }
-                else if(a.practiceTarget!=null){ArcheryTraining.Active?.RegisterHit(a.practiceTarget,a.end,a.practiceScore);hitUntil=Time.time+.3f;}
+                else if(a.practice){ArcheryTraining.Active?.RegisterShotResult(a.practiceIndex,a.practiceTarget,a.end,a.practiceScore);if(a.practiceScore>0)hitUntil=Time.time+.3f;}
                 else if(a.target!=null&&a.target.IsAlive&&a.target.Hit(a.damage,true,CombatImpactKind.Arrow))
                 {Hits++;hitUntil=Time.time+.3f;if(a.target.IsAlive)Tell("TRÚNG ĐỊCH • giữ dây cung lâu hơn để bắn mạnh.");}
             }
