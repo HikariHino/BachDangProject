@@ -53,7 +53,18 @@ public static class BeachBoatPhysicalVillagePlaytest
             if(work.Current==VillagePhysicalWork.Step.Tie&&work.ToolPressure>=.6f)work.ReleaseTool();
             return true;
         }
-        bool moved=work.DragTool(Vector2.ClampMagnitude(work.ToolGoal-work.ToolPointer,.3f),.1f);return moved;
+        bool moved=work.DragTool(Vector2.ClampMagnitude(work.ToolGoal-work.ToolPointer,.3f),.1f);
+        if(work.Current==VillagePhysicalWork.Step.FillRice&&work.ScoopLoaded&&work.RiceOverBag)work.ReleaseTool();return moved;
+    }
+    static Vector3 ToolWorld(VillagePhysicalWork work,Vector2 point)=>(Vector3)typeof(VillagePhysicalWork).GetMethod("ToolPoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(work,new object[]{point});
+    static bool DrivePointer(VillagePhysicalWork work)
+    {
+        var camera=BeachBoatQuestSession.Instance.storyCamera;
+        Vector2 Screen(Vector2 p)=>camera.WorldToScreenPoint(ToolWorld(work,p));
+        if(!work.ToolHeld&&!work.PressPointer(Screen(work.ToolGrabPoint)))return false;
+        if(work.Finishing){work.AdvanceTool(.1f);if(work.Current==VillagePhysicalWork.Step.Tie&&work.ToolPressure>=.6f)work.ReleaseTool();return true;}
+        var target=Vector2.MoveTowards(work.ToolPointer,work.ToolGoal,.3f);bool moved=work.DragPointer(Screen(target),.1f);
+        if(work.Current==VillagePhysicalWork.Step.FillRice&&work.ScoopLoaded&&work.RiceOverBag)work.ReleaseTool();return moved;
     }
     static void RequestCapture(string name)
     {
@@ -76,9 +87,7 @@ public static class BeachBoatPhysicalVillagePlaytest
         if(stall.Physical.ToolStep)
         {
             var contact=(Vector3)typeof(VillagePhysicalWork).GetMethod("ToolPoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(stall.Physical,new object[]{stall.Physical.ToolPointer});
-            var rig=player.GetComponentInChildren<Animator>();
-            var hand=rig.GetBoneTransform(HumanBodyBones.RightHand);var shoulder=rig.GetBoneTransform(HumanBodyBones.RightUpperArm);var elbow=rig.GetBoneTransform(HumanBodyBones.RightLowerArm);
-            Check(Vector3.Distance(hand.position,stall.Physical.RightGripPosition)<2.5f,"Working hand reaches the tool, not the air: "+stall.kind+" hand="+hand.position+" grip="+stall.Physical.RightGripPosition+" arm="+(Vector3.Distance(shoulder.position,elbow.position)+Vector3.Distance(elbow.position,hand.position)));
+            Check(stall.Physical.HandContactError<.02f,"Both rendered palms reach the actual 3D work contacts throughout tool motion: "+stall.kind+" error="+stall.Physical.HandContactError);
             Check(stall.Physical.HandsOnly&&stall.Physical.HandTriangles>100,"Only the player's forearms render at the bench; torso and helmet are hidden: "+stall.kind);
             Check(stall.Physical.HandSegmentError<.001f,"Display arm segments keep their original proportions throughout tool motion: "+stall.kind+" error="+stall.Physical.HandSegmentError);
             Check(stall.Physical.HandWristAngle<1,"Display wrists use the neutral mesh bind frame throughout the gesture: "+stall.kind+" angle="+stall.Physical.HandWristAngle);
@@ -91,6 +100,12 @@ public static class BeachBoatPhysicalVillagePlaytest
             if(stall.kind==VillageWorkStall.WorkKind.Timber)Check(stall.Physical.SawGuidesVisible,"Saw guides appear only after the log is placed and the table camera is active");
             Check(StationSignature()==stationSnapshot,"The same table, roof and crates remain in place while manipulating tools: "+stall.kind);
             if(stall.kind==VillageWorkStall.WorkKind.Rope)Check(Object.FindAnyObjectByType<VillageWorkUI>().TensionGaugeVisible,"Large rope tension gauge remains visible below the work area");
+            if(stall.kind==VillageWorkStall.WorkKind.Rice)
+            {
+                var hud=Object.FindAnyObjectByType<VillageWorkUI>();typeof(VillageWorkUI).GetMethod("Update",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(hud,null);
+                Check(hud.RiceGaugeVisible&&hud.RiceStatus.Contains(stall.Physical.RiceReady?"ĐỦ GẠO":stall.Physical.RiceExcess?"DƯ GẠO":"THIẾU GẠO"),"Rice controls show the actual missing/ready/excess state: "+name);
+            }
+            var foley=stall.Physical.Foley;foley.Tick(.1f,true);Check(!foley.IsPlaying,"Help/pause suspends both tool sound channels: "+stall.kind);foley.Tick(.1f,false);
             Check(source.GetComponent<BeachBoatStory.Camera_Script>().TableFocusActive&&!VillagePhysicalWork.AllowsMovement,"Bench view locks walking and uses the centered tabletop camera: "+stall.kind);
             var viewport=source.WorldToViewportPoint(contact);
             Check(viewport.z>0&&viewport.x>.08f&&viewport.x<.92f&&viewport.y>.18f&&viewport.y<.88f,"Tool stays inside the unobstructed tabletop frame: "+stall.kind+" "+viewport);
@@ -135,6 +150,10 @@ public static class BeachBoatPhysicalVillagePlaytest
             if(pendingCapture!=null){if(Time.frameCount>=captureFrame+3&&Time.unscaledTime>=captureAt+(stall.Physical.ToolStep?.55f:.1f))captureReady=true;return;}
             if(phase==0)
             {
+                foreach(VillageWorkFoley.Cue cue in Enum.GetValues(typeof(VillageWorkFoley.Cue)))
+                {
+                    var clip=Resources.Load<AudioClip>("BachDang938/WorkAudio/Trade_"+cue);Check(clip!=null&&clip.samples>1000&&clip.channels==1,"Original work foley loads as a valid mono clip: "+cue);
+                }
                 foreach(var p in Directory.GetFiles(Application.persistentDataPath,"campaign938*"))hashes[p]=Hash(p);
                 BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/PhysicalVillageQA/"+DateTime.Now.ToString("yyyyMMddHHmmssfff"));BachDangAutoSave.Instance.enabled=false;
                 BeachBoatQuestSession.Instance.player.AddComponent<VillageWorkPoseProbe>();
@@ -163,7 +182,9 @@ public static class BeachBoatPhysicalVillagePlaytest
             }
             if(phase==2)
             {
+                var sounds=stall.Physical.Foley;
                 Check(BachDangFrontEnd.Instance.HandleEscape()&&VillageWorkStall.Active==null&&BachDangFrontEnd.Instance.Page==BachDangFrontEnd.MenuPage.None,"ESC cancels the work without opening Pause: "+stall.kind);
+                Check(!sounds.IsPlaying,"ESC stops the current work sounds: "+stall.kind);
                 Check(!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name=="Village_3D_Work_"+stall.kind),"Temporary workstation immediately stops blocking the world: "+stall.kind);
                 Check(StationSignature()==stationSnapshot,"Leaving restores supplies while keeping the same furniture and canopy: "+stall.kind);
                 Check(!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name=="Workbench_Hands_Only")&&BeachBoatQuestSession.Instance.player.GetComponentsInChildren<SkinnedMeshRenderer>().All(r=>!r.forceRenderingOff),"ESC restores the complete player and removes the hands-only view: "+stall.kind);
@@ -180,6 +201,13 @@ public static class BeachBoatPhysicalVillagePlaytest
             {
                 if(stall.Phase==VillageWorkStall.WorkPhase.Won)
                 {
+                    var foley=stall.Physical.Foley;
+                    Check(foley.Count(VillageWorkFoley.Cue.SetDown)>0,"Picking up, placing and delivering goods produce work sounds: "+stall.kind);
+                    var cue=stall.kind==VillageWorkStall.WorkKind.Timber?VillageWorkFoley.Cue.Saw:stall.kind==VillageWorkStall.WorkKind.Rope?VillageWorkFoley.Cue.Rope:stall.kind==VillageWorkStall.WorkKind.Rice?VillageWorkFoley.Cue.Pour:VillageWorkFoley.Cue.Cloth;
+                    Check(foley.Count(cue)>0,"The trade's actual tool gesture plays its distinct foley: "+cue);
+                    if(stall.kind==VillageWorkStall.WorkKind.Rope)Check(foley.Count(VillageWorkFoley.Cue.Knot)==3,"Each secured knot plays one tightening accent");
+                    if(stall.kind==VillageWorkStall.WorkKind.Rice)Check(foley.Count(VillageWorkFoley.Cue.Scoop)>0,"Moving the ladle into grain plays scooping foley");
+                    if(stall.kind==VillageWorkStall.WorkKind.Provisions)Check(foley.Count(VillageWorkFoley.Cue.Crease)==8,"Four cloth folds per parcel each produce a crease accent");
                     Check(!stall.Physical.HandsOnly&&!BeachBoatQuestSession.Instance.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().TableFocusActive,"Finishing goods restores third-person view before claiming the reward: "+stall.kind);
                     Check(stall.Progress==stall.Goal&&CampaignProgress.Instance.MiniRecord(index+1)?.id==CampaignProgress.MiniId(index+1),"Only actual deliveries finish and record the 3D trade: "+stall.kind);
                     Check(stall.ClaimReward()&&stall.Completed,"Confirming the result grants the required supplies: "+stall.kind);BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
@@ -190,6 +218,7 @@ public static class BeachBoatPhysicalVillagePlaytest
                 var work=stall.Physical;var before=work.Current;
                 if(QuestRowboat.FlatDistance(BeachBoatQuestSession.Instance.player.transform.position,work.RequiredApproach)>1)
                 {stall.AdvanceTime(QuestRowboat.FlatDistance(BeachBoatQuestSession.Instance.player.transform.position,work.RequiredApproach)/30);Place(work.RequiredApproach);return;}
+                if(work.ToolStep&&!captures.Contains(stall.kind+"_Entry")){RequestCapture(stall.kind+"_Entry");return;}
                 if(!challengeChecks.Contains(stall.kind)&&work.ToolStep)
                 {
                     if(work.Current==VillagePhysicalWork.Step.Saw)
@@ -204,7 +233,7 @@ public static class BeachBoatPhysicalVillagePlaytest
                     else if(work.Current==VillagePhysicalWork.Step.FillRice&&work.ScoopLoaded)
                     {
                         for(int n=0;n<7;n++)work.DragTool(Vector2.up*.3f,.1f);
-                        Check(!work.ScoopLoaded&&work.RiceFill==0,"Tilting a loaded scoop before reaching the sack spills the scoop, not the entire bag");challengeChecks.Add(stall.kind);
+                        work.ReleaseTool();Check(work.ScoopLoaded&&work.RiceFill==0&&work.ToolFeedback.Contains("miệng bao"),"Releasing outside the sack keeps the rice in the scoop and explains where to drop it");challengeChecks.Add(stall.kind);
                     }
                     else if(work.Current==VillagePhysicalWork.Step.Wrap&&work.Finishing)
                     {
@@ -213,9 +242,15 @@ public static class BeachBoatPhysicalVillagePlaytest
                 }
                 if(work.Current==VillagePhysicalWork.Step.FillRice&&!riceOverflow)
                 {
-                    if(work.RiceFill<.95f){stall.AdvanceTime(.1f);DriveTool(work);return;}
-                    int errors=stall.Mistakes;work.Interact();Check(stall.Mistakes==errors+1&&work.RiceFill==0&&stall.Progress==0,"Overfilled rice visibly resets the bag, charges one error and grants no delivery");riceOverflow=true;
+                    if(work.RiceFill<.95f){stall.AdvanceTime(.1f);CheckAction(DrivePointer(work),"Rice pointer filling");return;}
+                    if(!captures.Contains("Rice_Excess")){RequestCapture("Rice_Excess");return;}
+                    float amount=work.RiceFill;int errors=stall.Mistakes;
+                    Check(!work.Confirm()&&work.RiceFill==amount&&stall.Mistakes==errors&&stall.Progress==0&&work.ToolFeedback.Contains("R"),"Confirming excess rice preserves the bag and explains how to remove it");
+                    Check(work.TrimRice()&&work.RiceReady,"R removes exactly one scoop and makes the excess bag ready");
+                    Check(work.EmptyRice()&&work.RiceFill==0&&stall.Progress==0,"C empties the bag without falsely delivering goods");
+                    Check(!work.Confirm()&&work.ToolFeedback.Contains("CHƯA ĐỦ"),"Confirming an empty bag explains that more rice is needed");riceOverflow=true;return;
                 }
+                if(work.RiceReady&&!captures.Contains("Rice_Ready")){RequestCapture("Rice_Ready");return;}
                 bool action=work.Current==VillagePhysicalWork.Step.Saw||work.Current==VillagePhysicalWork.Step.Tie||work.Current==VillagePhysicalWork.Step.Wrap||work.Current==VillagePhysicalWork.Step.FillRice&&work.RiceFill<.70f;
                 if(work.Current==VillagePhysicalWork.Step.Tie&&work.Finishing&&work.ToolPressure>.38f&&!captures.Contains("Rope_Tension")){RequestCapture("Rope_Tension");return;}
                 if(action)
@@ -226,12 +261,14 @@ public static class BeachBoatPhysicalVillagePlaytest
                         work.PressTool();for(int n=0;n<10;n++)work.DragTool(Vector2.zero,.1f);
                         Check(work.ActionProgress==beforeProgress,"Holding without tool motion grants no work: "+work.Current);
                     }
-                    stall.AdvanceTime(.1f);CheckAction(DriveTool(work),work.Current.ToString());
+                    // Exercise the exact absolute pointer path used by real mouse input.
+                    if(work.ToolHeld&&!work.PointerDragging)work.ReleaseTool();
+                    stall.AdvanceTime(.1f);CheckAction(DrivePointer(work),work.Current.ToString());
                     if(work.ActionProgress>.35f&&work.ActionProgress<.65f)RequestCapture(stall.kind.ToString());
                 }
                 else
                 {
-                    stall.AdvanceTime(.2f);CheckAction(work.Interact(),work.Current.ToString());
+                    stall.AdvanceTime(.2f);CheckAction(work.Confirm(),work.Current.ToString());
                     if(work.Carrying)RequestCapture(stall.kind+"_Carry");
                 }
                 return;
@@ -275,6 +312,12 @@ public static class BeachBoatPhysicalVillagePlaytest
         var point=typeof(VillagePhysicalWork).GetMethod("ToolPoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);
         Vector3 World(Vector2 p)=>(Vector3)point.Invoke(work,new object[]{p});
         var origin=(Vector2)camera.WorldToScreenPoint(World(Vector2.zero));
+        foreach(var target in new[]{Vector2.zero,new Vector2(-.9f,-.7f),new Vector2(.85f,.6f)})
+        {
+            var screen=camera.WorldToScreenPoint(World(target));bool hit=work.PointerCoordinates(screen,out var actual);
+            float pixels=Vector2.Distance(screen,camera.WorldToScreenPoint(World(actual)));
+            Check(hit&&Vector2.Distance(target,actual)<.015f&&pixels<1,"Absolute mouse ray returns within one pixel on the 3D work plane: "+work.Current+" wanted="+target+" actual="+actual.ToString("F5")+" pixels="+pixels);
+        }
         foreach(var direction in new[]{Vector2.up,Vector2.down,Vector2.right,Vector2.left})
         {
             var logical=work.ScreenToToolDelta(direction*.02f);var moved=(Vector2)camera.WorldToScreenPoint(World(logical))-origin;

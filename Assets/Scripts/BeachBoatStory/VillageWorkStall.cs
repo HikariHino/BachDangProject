@@ -64,7 +64,7 @@ namespace BeachBoatStory
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);
         public string Instructions=>kind==WorkKind.Timber?"Đặt gỗ lên bàn để vào góc nhìn tay. Giữ chuột trái kéo LÊN / XUỐNG dọc rãnh xanh; rê ngang để đưa cưa về giữa nếu lệch. Cưa đủ tám nhịp và giao ba khúc.":
             kind==WorkKind.Rope?"Lấy dây, đặt lên bàn. Kéo quanh bốn điểm; tiếp tục giữ để siết và THẢ chuột khi lực trong dải xanh 55–85%. Thả sớm hoặc muộn làm tuột nút này. Buộc ba nút rồi giao.":
-            kind==WorkKind.Rice?"Đặt bao lên bàn. Kéo gáo sang trái và XUỐNG để xúc, giữ ngang khi mang sang phải rồi đẩy LÊN để đổ. Nghiêng sớm làm rơi gáo gạo. Ba gáo tới vạch xanh; E nhấc và giao.":
+            kind==WorkKind.Rice?"Lấy bao rỗng trên thùng trái và đặt lên bàn. Bấm giữ gáo trong rổ, kéo sang miệng bao phải rồi THẢ chuột để đổ. Thanh vàng là thiếu, xanh là đủ, đỏ là dư. Đủ: E / Enter hoặc nút Nhấc bao. Dư: R bớt một gáo; C đổ lại. Mang bao tới giá phải để giao.":
             "Đặt gạo, cá và muối lên khăn. Kéo mép sáng vào giữa rồi giữ yên chuột trái gần nửa giây để ép nếp. Nhả sớm chưa kín nếp. Gấp bốn mép rồi giao gói.";
         public static string IngredientName(int n)=>n==0?"GẠO":n==1?"CÁ KHÔ":"MUỐI";
         readonly bool[] soundTimber=new bool[8];

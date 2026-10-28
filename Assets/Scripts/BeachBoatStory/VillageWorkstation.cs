@@ -51,6 +51,7 @@ namespace BeachBoatStory
             }
             else if(owner.kind==VillageWorkStall.WorkKind.Rice)
             {
+                for(int i=0;i<3;i++)Shape("Folded_empty_sack",PrimitiveType.Cube,new Vector3(-25,6.4f+i*.55f,-14),new Vector3(6,.5f,7),fibre);
                 Shape("Grain_basket",PrimitiveType.Cylinder,new Vector3(-5,10,-10.2f),new Vector3(9,2,9),fibre);
                 for(int i=0;i<28;i++)Shape("Grain_in_basket",PrimitiveType.Sphere,new Vector3(-5+Mathf.Sin(i*2.4f)*3,12+(i%3)*.15f,-10.2f+Mathf.Cos(i*2.4f)*3),new Vector3(.7f,.35f,1),rice);
             }

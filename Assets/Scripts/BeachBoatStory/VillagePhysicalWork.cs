@@ -28,16 +28,23 @@ namespace BeachBoatStory
         public int HandTriangles=>hands?.TriangleCount??0;
         public float HandSegmentError=>hands?.MaxSegmentError??0;
         public float HandWristAngle=>hands?.MaxWristAngle??0;
+        public float HandContactError=>hands?.MaxContactError??0;
         public bool SawGuidesVisible=>sawGuides.Count>0&&sawGuides.TrueForAll(g=>g!=null&&g.activeInHierarchy);
         public Vector3 ToolWorldPosition=>ToolPoint(ToolPointer);
+        public bool RiceReady=>Current==Step.FillRice&&RiceFill>=.65f&&RiceFill<=.85f;
+        public bool RiceExcess=>Current==Step.FillRice&&RiceFill>.85f;
+        public bool RiceOverBag=>ToolPointer.x>=.65f&&Mathf.Abs(ToolPointer.y)<=.8f;
+        public bool PointerDragging {get;private set;}
+        public Vector2 ToolGrabPoint=>Current==Step.Wrap&&!foldGrabbed?ToolGoal:ToolPointer;
+        public VillageWorkFoley Foley {get;private set;}
         public string ToolFeedback {get;private set;}="";
-        float strokeSeconds;
+        float strokeSeconds,strokeTravel;Vector2 grabOffset;
         bool foldGrabbed;int sawDirection=1;
         public bool ToolStep=>Current==Step.Saw||Current==Step.Tie||Current==Step.FillRice||Current==Step.Wrap;
         static readonly Vector2[] LoopPoints={Vector2.right,Vector2.up,Vector2.left,Vector2.down};
         static readonly Vector2[] Corners={Vector2.left,Vector2.right,Vector2.down,Vector2.up};
         public Vector2 ToolGoal=>Current==Step.Saw?Vector2.right*sawDirection:Current==Step.Tie?LoopPoints[ToolStages%4]:
-            Current==Step.FillRice?(ScoopLoaded?(ToolPointer.x<.8f?Vector2.right:Vector2.one):new Vector2(-1,-.6f)):foldGrabbed?Vector2.zero:Corners[Mathf.Min(3,ToolStages)];
+            Current==Step.FillRice?(ScoopLoaded?Vector2.right:Vector2.left):foldGrabbed?Vector2.zero:Corners[Mathf.Min(3,ToolStages)];
         public bool Carrying=>held!=null&&held.activeSelf;
         public const float Reach=9;
         public static VillagePhysicalWork Active=>VillageWorkStall.Active?.Physical;
@@ -53,22 +60,22 @@ namespace BeachBoatStory
             {
                 switch(Current)
                 {
-                    case Step.Take:return "E • "+(stall.kind==VillageWorkStall.WorkKind.Timber?"Lấy một khúc gỗ":stall.kind==VillageWorkStall.WorkKind.Rope?"Lấy cuộn dây":"Lấy bao gạo rỗng");
-                    case Step.CarryToBench:return "Mang tới bàn • E đặt xuống";
-                    case Step.Saw:return $"Giữ chuột trái, kéo LÊN / XUỐNG dọc rãnh xanh • {ToolStages}/8 nhịp";
+                    case Step.Take:return "E / ENTER • "+(stall.kind==VillageWorkStall.WorkKind.Timber?"Lấy một khúc gỗ bên trái":stall.kind==VillageWorkStall.WorkKind.Rope?"Lấy cuộn dây bên trái":"Lấy bao rỗng trên thùng BÊN TRÁI");
+                    case Step.CarryToBench:return "Mang tới bàn • E / ENTER đặt xuống";
+                    case Step.Saw:return $"Bấm giữ cán cưa, kéo LÊN / XUỐNG dọc rãnh • {ToolStages}/8 nhịp";
                     case Step.Tie:return Finishing?$"Giữ để SIẾT, thả khi thanh XANH • Nút {Knots+1}/3":$"Giữ chuột trái, kéo dây QUANH 4 điểm sáng • Nút {Knots+1}/3";
-                    case Step.FillRice:return ScoopLoaded?"Giữ gáo ngang, đưa sang PHẢI rồi đẩy LÊN để đổ • E nhấc khi XANH":"Giữ chuột trái, kéo gáo sang TRÁI và XUỐNG để xúc";
+                    case Step.FillRice:return RiceExcess?"DƯ GẠO • R bớt 1 gáo • C đổ lại bao":RiceReady?"ĐỦ GẠO • E / ENTER nhấc bao, mang tới kệ bên phải":ScoopLoaded?"Kéo gáo tới MIỆNG BAO BÊN PHẢI rồi THẢ chuột để đổ":"Bấm giữ GÁO, kéo về RỔ TRÁI để xúc • rồi sang bao và THẢ";
                     case Step.LiftRice:return "E • Nhấc bao gạo đã đủ";
                     case Step.TakeIngredient:return "E • Lấy "+new[]{"nắm gạo đã gói","cá khô","gói muối"}[Mathf.Min(2,Ingredients)];
                     case Step.PlaceIngredient:return "Mang tới khăn trên bàn • E đặt nguyên liệu";
-                    case Step.Wrap:return Finishing?"GIỮ YÊN chuột trái một chút để ép nếp gấp":$"Kéo mép khăn sáng VÀO GIỮA rồi giữ để ép • {ToolStages}/4 mép";
-                    default:return "Mang tới giá giao hàng • E đặt vật tư";
+                    case Step.Wrap:return Finishing?"GIỮ YÊN chuột trái để ép kín nếp gấp":$"BẤM GIỮ MÉP KHĂN SÁNG → KÉO VÀO GIỮA → giữ ép • {ToolStages}/4 mép";
+                    default:return "Mang tới giá BÊN PHẢI • E / ENTER giao vật tư";
                 }
             }
         }
         VillageWorkStall stall;Transform player;Animator rig;Transform[] arms;Quaternion[] armRest;Quaternion spineRest;Transform rightHand,leftHand,chest,spine;
         GameObject props,held,benchLog,bag,grain,blade,sawHandle,parcel,marker,foodTray,toolCursor,spoon,ladleRice;
-        LineRenderer rope,pour;TextMeshPro label;Material wood,fibre,cloth,rice,fish,salt,gold,green,red;
+        LineRenderer rope,pour,fillBand;TextMeshPro label;Material wood,fibre,cloth,rice,fish,salt,gold,green,red;
         readonly List<Material> owned=new List<Material>();
         readonly List<Mesh> ownedMeshes=new List<Mesh>();
         readonly List<GameObject> placed=new List<GameObject>();readonly List<GameObject> knots=new List<GameObject>();
@@ -116,6 +123,7 @@ namespace BeachBoatStory
             foreach(var renderer in playerMeshes)renderer.updateWhenOffscreen=true;
             origin=stall.transform.position;rotation=Quaternion.Euler(0,stall.transform.eulerAngles.y,0);
             props=new GameObject("Village_3D_Work_"+stall.kind);props.transform.SetPositionAndRotation(origin,rotation);
+            Foley=new VillageWorkFoley(props.transform);
             props.transform.localScale=new Vector3(1,verticalScale,1);
             foreach(var r in FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))if(r.name.StartsWith("Vai_Phoi_")&&QuestRowboat.FlatDistance(r.bounds.center,origin)<120)fabrics.Add((r,r.forceRenderingOff));
             wood=station.Wood;
@@ -150,22 +158,32 @@ namespace BeachBoatStory
             if(rope!=null)rope.positionCount=0;if(pour!=null)pour.enabled=false;
         }
         public void NextOrder(){ClearOrder();Current=stall.kind==VillageWorkStall.WorkKind.Provisions?Step.TakeIngredient:Step.Take;}
-        void ResetTool(){ToolHeld=ScoopLoaded=foldGrabbed=Finishing=false;ToolStages=0;sawDirection=1;ToolPressure=strokeSeconds=0;ToolFeedback="";ToolPointer=stall!=null&&stall.kind==VillageWorkStall.WorkKind.Rope?Vector2.down:Vector2.left;}
+        void ResetTool(){ToolHeld=ScoopLoaded=foldGrabbed=Finishing=PointerDragging=false;ToolStages=0;sawDirection=1;ToolPressure=strokeSeconds=strokeTravel=0;ToolFeedback="";ToolPointer=stall!=null&&stall.kind==VillageWorkStall.WorkKind.Rope?Vector2.down:Vector2.left;}
+        bool RiceAtSource=>ToolPointer.x<=-.65f&&Mathf.Abs(ToolPointer.y)<=.8f;
+        void LoadRiceScoop()
+        {if(ScoopLoaded||!RiceAtSource)return;ScoopLoaded=true;ToolFeedback="Đã xúc gạo • kéo gáo sang miệng bao rồi THẢ chuột";Foley?.Play(VillageWorkFoley.Cue.Scoop);}
         public bool PressTool()
         {
             if(!CanInteract||!ToolStep)return false;
             ToolHeld=true;busy=true;actionUntil=Time.time+.12f;
+            if(Current==Step.FillRice)LoadRiceScoop();
+            if(Current==Step.Wrap&&!foldGrabbed&&Vector2.Distance(ToolPointer,ToolGoal)<.3f)foldGrabbed=true;
             if(Current==Step.Wrap&&foldGrabbed&&ToolPointer.magnitude<.2f){Finishing=true;ToolPressure=0;}
             return true;
         }
         public void ReleaseTool()
         {
+            if(Current==Step.FillRice&&ToolHeld&&CanInteract&&ScoopLoaded)
+            {
+                if(RiceOverBag){RiceFill=Mathf.Min(1.2f,RiceFill+.24f);ActionProgress=RiceFill;ScoopLoaded=false;pourUntil=Time.time+.45f;Foley?.Play(VillageWorkFoley.Cue.Pour);ToolFeedback=RiceExcess?"Đã múc dư • R bớt một gáo hoặc C đổ lại":RiceReady?"ĐÃ ĐỦ • E / ENTER nhấc bao":"Đã đổ một gáo • xúc thêm ở rổ bên trái";}
+                else ToolFeedback="Gạo vẫn trong gáo • đưa tới miệng bao bên phải rồi thả";
+            }
             bool knot=Current==Step.Tie&&Finishing&&ToolHeld;
-            ToolHeld=false;busy=false;
+            ToolHeld=PointerDragging=false;busy=false;
             if(knot)
             {
                 Finishing=false;
-                if(ToolPressure>=.55f&&ToolPressure<=.85f)CompleteTool();
+                if(ToolPressure>=.55f&&ToolPressure<=.85f){Foley?.Play(VillageWorkFoley.Cue.Knot);CompleteTool();}
                 else {ToolStages=0;ToolPressure=ActionProgress=0;ToolPointer=Vector2.down;ToolFeedback="Dây tuột • thử nút này lại, thả trong dải xanh";}
             }
             else if(Current==Step.Wrap&&Finishing){Finishing=false;ToolPressure=0;ToolFeedback="Chưa ép kín nếp • giữ yên lâu hơn một chút";}
@@ -174,18 +192,19 @@ namespace BeachBoatStory
         {
             if(!ToolHeld||!CanInteract||!Finishing||seconds<=0||!float.IsFinite(seconds))return;
             seconds=Mathf.Min(seconds,.1f);
-            if(Current==Step.Tie)ToolPressure=Mathf.Min(1,ToolPressure+seconds*.65f);
+            if(Current==Step.Tie){ToolPressure=Mathf.Min(1,ToolPressure+seconds*.65f);Foley?.Move(VillageWorkFoley.Cue.Rope,.5f);}
             else if(Current==Step.Wrap)
             {
                 if(ToolPointer.magnitude>.25f){Finishing=false;ToolPressure=0;return;}
                 ToolPressure=Mathf.Min(1,ToolPressure+seconds/.45f);
-                if(ToolPressure>=1){Finishing=false;ToolStages++;ActionProgress=ToolStages/4f;foldGrabbed=false;ToolPressure=0;ToolFeedback="Nếp đã kín";if(ToolStages==4)CompleteTool();}
+                Foley?.Move(VillageWorkFoley.Cue.Cloth,.35f);
+                if(ToolPressure>=1){Foley?.Play(VillageWorkFoley.Cue.Crease);Finishing=false;ToolStages++;ActionProgress=ToolStages/4f;foldGrabbed=false;ToolPressure=0;ToolFeedback="Nếp đã kín • bấm giữ mép sáng tiếp theo";if(ToolStages==4)CompleteTool();}
             }
         }
         Vector3 ToolPoint(Vector2 point)
         {
             if(Current==Step.Tie)return World(new Vector3(-10+Knots*10+point.x*1.7f+(Finishing?ToolPressure*2:0),12.5f+point.y*1.2f,-11-(Finishing?ToolPressure*2:0)));
-            if(Current==Step.FillRice)return World(new Vector3(Mathf.Lerp(-5,4,(point.x+1)*.5f),13.2f+point.y*.7f,-10.2f));
+            if(Current==Step.FillRice)return World(new Vector3(Mathf.Lerp(-5,4,(point.x+1)*.5f),13.2f,-10.2f+point.y*3));
             if(Current==Step.Wrap)return World(new Vector3(point.x*4.5f,9.7f,-10.2f+point.y*2));
             return World(new Vector3(point.y*4,13,-10.5f+point.x*1.2f));
         }
@@ -204,34 +223,70 @@ namespace BeachBoatStory
             return new Vector2((delta.x*b.y-delta.y*b.x)/det,(a.x*delta.y-a.y*delta.x)/det);
         }
         public bool DragScreen(Vector2 delta,float seconds)=>DragTool(ScreenToToolDelta(delta),seconds);
+        public bool PointerCoordinates(Vector2 screen,out Vector2 point)
+        {
+            point=default;if(camera==null||!ToolStep||!float.IsFinite(screen.x)||!float.IsFinite(screen.y))return false;
+            var view=camera.GetComponent<Camera>();
+            Vector3 Project(Vector2 p)
+            {
+                var s=view.WorldToScreenPoint(ToolPoint(p));float depth=view.orthographic?1:s.z;
+                return new Vector3(s.x*depth,s.y*depth,depth);
+            }
+            // Invert the projected 3D tool plane in homogeneous screen coordinates.
+            // Using the same projection as rendering avoids ray/projection jitter
+            // disagreement and subtraction of large world-space plane distances.
+            var origin=Project(Vector2.zero);var u=Project(Vector2.right)-origin;var v=Project(Vector2.up)-origin;
+            if(origin.z<=0)return false;
+            float a=u.x-screen.x*u.z,b=v.x-screen.x*v.z,c=screen.x*origin.z-origin.x;
+            float d=u.y-screen.y*u.z,e=v.y-screen.y*v.z,f=screen.y*origin.z-origin.y;
+            float det=a*e-b*d;if(Mathf.Abs(det)<.001f)return false;
+            point=new Vector2((c*e-b*f)/det,(a*f-c*d)/det);return float.IsFinite(point.x)&&float.IsFinite(point.y);
+        }
+        public bool PressPointer(Vector2 screen)
+        {
+            if(!CanInteract||!ToolStep||!PointerCoordinates(screen,out var point))return false;
+            var pick=ToolGrabPoint;
+            var projected=(Vector2)camera.GetComponent<Camera>().WorldToScreenPoint(ToolPoint(pick));
+            if(Vector2.Distance(screen,projected)>Mathf.Max(45,Screen.height*128f/720)){ToolFeedback=Current==Step.Wrap?"Bấm giữ ngay mép khăn có vòng sáng":"Bấm giữ ngay dụng cụ đang cầm";return false;}
+            if(Current==Step.Wrap&&!foldGrabbed)ToolPointer=pick;
+            grabOffset=ToolPointer-point;PointerDragging=PressTool();return PointerDragging;
+        }
+        public bool DragPointer(Vector2 screen,float seconds)
+        {
+            if(!PointerDragging||!ToolHeld||!PointerCoordinates(screen,out var point))return false;
+            var goal=point+grabOffset;goal=new Vector2(Mathf.Clamp(goal.x,-1,1),Mathf.Clamp(goal.y,-1,1));
+            return MoveTool(goal-ToolPointer,seconds,true);
+        }
         public bool DragTool(Vector2 delta,float seconds)
+            =>MoveTool(delta,seconds,false);
+        bool MoveTool(Vector2 delta,float seconds,bool direct)
         {
             if(!ToolHeld||!CanInteract||!ToolStep||seconds<=0||!float.IsFinite(seconds)||!float.IsFinite(delta.x)||!float.IsFinite(delta.y))return false;
-            var motion=Vector2.ClampMagnitude(delta,Mathf.Min(.4f,seconds*8));
+            var motion=direct?Vector2.ClampMagnitude(delta,3):Vector2.ClampMagnitude(delta,Mathf.Min(.4f,seconds*8));
             ToolPointer=new Vector2(Mathf.Clamp(ToolPointer.x+motion.x,-1,1),Mathf.Clamp(ToolPointer.y+motion.y,-1,1));
             busy=true;actionUntil=Time.time+.12f;
             if(Finishing&&Current==Step.Tie)return true;
             if(Current==Step.Saw)
             {
-                strokeSeconds+=Mathf.Min(seconds,.1f);
+                strokeSeconds+=Mathf.Min(seconds,.1f);if(motion.x*sawDirection>0)strokeTravel+=Mathf.Abs(motion.x);
+                if(motion.magnitude>.001f)Foley?.Move(VillageWorkFoley.Cue.Saw,motion.magnitude/Mathf.Max(.01f,seconds)/5);
                 ToolFeedback=Mathf.Abs(ToolPointer.y)>.28f?"Lệch rãnh • đưa cưa về giữa":"Giữ cưa trong hai vạch xanh";
-                if(motion.sqrMagnitude>0&&motion.x*sawDirection>=0&&Mathf.Abs(ToolPointer.x-sawDirection)<.15f&&Mathf.Abs(ToolPointer.y)<=.28f&&strokeSeconds>=.3f)
-                {ToolStages++;strokeSeconds=0;sawDirection=-sawDirection;ActionProgress=ToolStages/8f;if(ToolStages==8)CompleteTool();}
+                if(strokeTravel>=1.2f&&Mathf.Abs(ToolPointer.x-sawDirection)<.15f&&Mathf.Abs(ToolPointer.y)<=.28f&&strokeSeconds>=.22f)
+                {ToolStages++;strokeSeconds=strokeTravel=0;sawDirection=-sawDirection;ActionProgress=ToolStages/8f;if(ToolStages==8)CompleteTool();}
             }
             else if(Current==Step.Tie)
             {
+                if(motion.magnitude>.001f)Foley?.Move(VillageWorkFoley.Cue.Rope,motion.magnitude/Mathf.Max(.01f,seconds)/4);
                 if(motion.sqrMagnitude>0&&Vector2.Distance(ToolPointer,ToolGoal)<.25f)
                 {ToolStages++;ActionProgress=ToolStages/4f;if(ToolStages==4){Finishing=true;ToolPressure=0;ToolFeedback="Siết dây rồi THẢ trong dải xanh";}}
             }
             else if(Current==Step.FillRice)
             {
-                if(!ScoopLoaded&&ToolPointer.x<-.8f&&ToolPointer.y<-.45f){ScoopLoaded=true;ToolFeedback="Giữ gáo ngang, đưa sang bao rồi nghiêng";BeachBoatSoundscape.Instance?.PlayInteraction();}
-                else if(ScoopLoaded&&ToolPointer.x<.7f&&ToolPointer.y>.65f){ScoopLoaded=false;ToolFeedback="Nghiêng sớm làm rơi gạo • xúc lại";BeachBoatSoundscape.Instance?.PlayInteraction();}
-                else if(ScoopLoaded&&ToolPointer.x>.8f&&ToolPointer.y>.8f&&motion.y>0)
-                {RiceFill=Mathf.Min(1,RiceFill+.24f);ActionProgress=RiceFill;ScoopLoaded=false;ToolPointer=new Vector2(1,0);pourUntil=Time.time+.25f;BeachBoatSoundscape.Instance?.PlayInteraction();}
+                if(motion.sqrMagnitude>0)LoadRiceScoop();
             }
             else
             {
+                if(motion.magnitude>.001f)Foley?.Move(VillageWorkFoley.Cue.Cloth,motion.magnitude/Mathf.Max(.01f,seconds)/4);
                 if(!foldGrabbed&&Vector2.Distance(ToolPointer,ToolGoal)<.25f)foldGrabbed=true;
                 else if(foldGrabbed&&!Finishing&&ToolPointer.magnitude<.2f&&motion.sqrMagnitude>0)
                 {Finishing=true;ToolPressure=0;ToolFeedback="Giữ yên để ép kín nếp";}
@@ -257,6 +312,19 @@ namespace BeachBoatStory
         }
         bool Near()=>player!=null&&QuestRowboat.FlatDistance(player.position,RequiredApproach)<=Reach&&Mathf.Abs(player.position.y-RequiredApproach.y)<18;
         public bool CanInteract=>stall!=null&&VillageWorkStall.Active==stall&&stall.Phase==VillageWorkStall.WorkPhase.Playing&&Time.timeScale>0&&!BachDangFrontEnd.IsBlocking&&Near();
+        public bool Confirm()=>Interact();
+        public bool TrimRice()
+        {
+            if(!CanInteract||Current!=Step.FillRice||RiceFill<=0)return false;
+            ToolHeld=PointerDragging=busy=ScoopLoaded=false;RiceFill=Mathf.Max(0,RiceFill-.24f);ActionProgress=RiceFill;
+            ToolFeedback=RiceReady?"Đã bớt gạo • ĐỦ • E / ENTER nhấc bao":RiceExcess?"Vẫn DƯ • R bớt thêm một gáo":"Đã bớt gạo • THIẾU • xúc thêm";Foley?.Play(VillageWorkFoley.Cue.Scoop);return true;
+        }
+        public bool EmptyRice()
+        {
+            if(!CanInteract||Current!=Step.FillRice||RiceFill<=0)return false;
+            ToolHeld=PointerDragging=busy=ScoopLoaded=false;RiceFill=ActionProgress=0;
+            ToolFeedback="Đã đổ lại bao • lấy gạo ở rổ bên trái";Foley?.Play(VillageWorkFoley.Cue.Pour);return true;
+        }
         public bool Interact()
         {
             if(!CanInteract)return false;
@@ -278,13 +346,12 @@ namespace BeachBoatStory
                         bag=Shape("Sack_at_fill_station",PrimitiveType.Cylinder,new Vector3(4,11.5f,-10.2f),new Vector3(6,2.5f,6),cloth);
                         OpenSack(bag);
                         grain=Shape("Visible_rice_level",PrimitiveType.Cylinder,new Vector3(4,10,-10.2f),new Vector3(5.4f,.1f,5.4f),rice);
-                        var band=Line("Green_fill_band",green,.5f);band.positionCount=33;for(int i=0;i<33;i++){float a=i/32f*Mathf.PI*2;band.SetPosition(i,World(new Vector3(4+Mathf.Cos(a)*3.2f,12.6f,-10.2f+Mathf.Sin(a)*3.2f)));}placed.Add(band.gameObject);Current=Step.FillRice;
+                        fillBand=Line("Sack_fill_status",gold,.5f);fillBand.positionCount=33;for(int i=0;i<33;i++){float a=i/32f*Mathf.PI*2;fillBand.SetPosition(i,World(new Vector3(4+Mathf.Cos(a)*3.2f,12.6f,-10.2f+Mathf.Sin(a)*3.2f)));}placed.Add(fillBand.gameObject);Current=Step.FillRice;
                     }
                     break;
                 case Step.FillRice:
-                    if(RiceFill>=.65f&&RiceFill<=.85f){Carry("Full_rice_sack",cloth,new Vector3(5,6,5));bag.SetActive(false);grain.SetActive(false);foreach(var go in placed)if(go!=null)go.SetActive(false);Current=Step.Deliver;pour.enabled=false;}
-                    else if(RiceFill>.85f){RiceFill=0;ActionProgress=0;stall.PhysicalMistake("Bao bị đầy quá vạch. Đã đổ lại để đong tiếp.");}
-                    ReleaseTool();return RiceFill>=.65f||RiceFill==0;
+                    if(!RiceReady){ToolFeedback=RiceExcess?"DƯ GẠO • nhấn R để bớt hoặc C để đổ lại":"CHƯA ĐỦ • kéo gáo từ rổ sang bao rồi thả";return false;}
+                    ToolHeld=PointerDragging=busy=ScoopLoaded=false;Carry("Full_rice_sack",cloth,new Vector3(5,6,5));bag.SetActive(false);grain.SetActive(false);foreach(var go in placed)if(go!=null)go.SetActive(false);Current=Step.Deliver;pour.enabled=false;break;
                 case Step.TakeIngredient:
                     Carry("Carried_ingredient_"+Ingredients,new[]{rice,fish,salt}[Ingredients],Ingredients==1?new Vector3(6,.8f,2):new Vector3(3,2,3));Current=Step.PlaceIngredient;break;
                 case Step.PlaceIngredient:
@@ -302,7 +369,7 @@ namespace BeachBoatStory
                     stall.CompletePhysicalOrder();break;
                 default:return false;
             }
-            ResetTool();BeachBoatSoundscape.Instance?.PlayInteraction();return true;
+            ResetTool();Foley?.Play(VillageWorkFoley.Cue.SetDown);return true;
         }
         // Time alone cannot finish a physical action; all progress comes from tool motion.
         public bool Work(float seconds)=>false;
@@ -323,20 +390,26 @@ namespace BeachBoatStory
         {
             if(stall==null||props==null)return;
             if(QuestRowboat.FlatDistance(player.position,origin)>130){stall.Close();return;}
-            if(Input.GetKeyDown(KeyCode.E))Interact();
-            if(Input.GetMouseButtonDown(0))PressTool();
-            if(Input.GetMouseButton(0))DragScreen(new Vector2(Input.GetAxisRaw("Mouse X"),Input.GetAxisRaw("Mouse Y"))*.075f,Time.deltaTime);
+            if(Input.GetKeyDown(KeyCode.E)||Input.GetKeyDown(KeyCode.Return)||Input.GetKeyDown(KeyCode.KeypadEnter))Confirm();
+            if(Current==Step.FillRice&&Input.GetKeyDown(KeyCode.R))TrimRice();
+            if(Current==Step.FillRice&&Input.GetKeyDown(KeyCode.C))EmptyRice();
+            bool overUI=UnityEngine.EventSystems.EventSystem.current!=null&&UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
+            if(Input.GetMouseButtonDown(0)&&!overUI)PressPointer(Input.mousePosition);
+            if(Input.GetMouseButton(0)&&PointerDragging)DragPointer(Input.mousePosition,Time.deltaTime);
             if(Input.GetMouseButton(0))AdvanceTool(Time.deltaTime);
-            if(Input.GetMouseButtonUp(0))ReleaseTool();
+            if(Input.GetMouseButtonUp(0)){if(PointerDragging)DragPointer(Input.mousePosition,Time.deltaTime);ReleaseTool();}
             if(Time.time>actionUntil&&!ToolHeld)busy=false;
         }
         void LateUpdate()
         {
             if(stall==null||props==null)return;
+            Foley?.Tick(Time.unscaledDeltaTime,Time.timeScale<=0||stall.Phase!=VillageWorkStall.WorkPhase.Playing||BachDangFrontEnd.IsBlocking||CampaignJournalUI.IsOpen);
             if(Camera.main!=null)
                 foreach(var item in fabrics)if(item.renderer!=null)
                 {var cameraPosition=Camera.main.transform.position;bool Blocks(Vector3 target){var delta=target-cameraPosition;return item.renderer.bounds.IntersectRay(new Ray(cameraPosition,delta.normalized),out float distance)&&distance<delta.magnitude;}item.renderer.forceRenderingOff=item.hidden||(item.renderer.bounds.ClosestPoint(cameraPosition)-cameraPosition).sqrMagnitude<400||Blocks(player.position+Vector3.up*10)||Blocks(TargetPosition);}
             bool table=AtTable;
+            if(table&&!tableWasActive)camera.CaptureCursor(false);
+            else if(!table&&tableWasActive&&stall.Phase==VillageWorkStall.WorkPhase.Playing&&!BachDangFrontEnd.IsBlocking&&!CampaignJournalUI.IsOpen)camera.CaptureCursor(true);
             if(table&&(!tableWasActive||QuestRowboat.FlatDistance(player.position,RequiredApproach)>.1f))
             {
                 var dock=RequiredApproach;dock.y=player.position.y;player.position=dock;
@@ -344,13 +417,13 @@ namespace BeachBoatStory
             }
             tableWasActive=table;hands?.Show(table);
             foreach(var guide in sawGuides)guide.SetActive(table&&Current==Step.Saw&&benchLog!=null);
-            hands?.Grip(Current==Step.FillRice,Current==Step.Saw||Current==Step.FillRice||Current==Step.Tie);
+            hands?.Grip(false,Current==Step.Saw||Current==Step.FillRice||Current==Step.Tie);
             if(camera!=null){if(AtTable)camera.FocusTable(World(new Vector3(Current==Step.Tie?-10+Knots*10:0,Current==Step.Saw?12:Current==Step.FillRice?12:10,-9.5f)),rotation*Vector3.forward,Current==Step.Wrap?.78f:Current==Step.Tie?.9f:1);else camera.ClearWorkFocus();}
             marker.transform.position=(ToolStep?ToolPoint(ToolGoal):TargetPosition)+Vector3.up*.3f;
             toolCursor.SetActive(ToolStep);if(ToolStep)toolCursor.transform.position=ToolPoint(ToolPointer);
-            spoon.SetActive(Current==Step.FillRice);if(spoon.activeSelf)spoon.transform.SetPositionAndRotation(ToolPoint(ToolPointer),rotation*Quaternion.Euler(ScoopLoaded?-ToolPointer.y*55:0,0,0));
+            spoon.SetActive(Current==Step.FillRice);if(spoon.activeSelf)spoon.transform.SetPositionAndRotation(ToolPoint(ToolPointer),rotation*Quaternion.Euler(Time.time<pourUntil?55:0,0,0));
             ladleRice.SetActive(ScoopLoaded);
-            label.transform.position=TargetPosition+Vector3.up*7;label.text=Current==Step.FillRice?(RiceFill<.65f?"THIẾU":RiceFill<=.85f?"ĐỦ • BẤM E":"DƯ • E ĐỔ LẠI"):Near()?(Current==Step.Saw||Current==Step.Tie||Current==Step.Wrap?"KÉO CHUỘT THEO ĐIỂM SÁNG":"[E] TƯƠNG TÁC"):"ĐẾN ĐÂY";
+            label.transform.position=TargetPosition+Vector3.up*7;label.text=Current==Step.FillRice?(RiceFill<.65f?"THIẾU":RiceFill<=.85f?"ĐỦ • E / ENTER":"DƯ • R BỚT GẠO"):Near()?(Current==Step.Saw||Current==Step.Tie||Current==Step.Wrap?"BẤM GIỮ VẬT RỒI KÉO":"[E] TƯƠNG TÁC"):"ĐẾN ĐÂY";
             label.color=Current==Step.FillRice&&RiceFill>=.65f?(RiceFill<=.85f?new Color(.3f,1,.5f):new Color(1,.3f,.2f)):new Color(1,.82f,.37f);
             if(Camera.main!=null)label.transform.rotation=Camera.main.transform.rotation;
             label.gameObject.SetActive(!AtTable);
@@ -364,7 +437,7 @@ namespace BeachBoatStory
                 // plane; baking that lift into pointer coordinates inverted drags.
                 if(!Carrying&&Current==Step.Wrap&&foldGrabbed)grip+=Vector3.up*(Mathf.Max(0,1-ToolPointer.magnitude)*1.5f*verticalScale);
                 var right=grip+player.right*2;var left=grip-player.right*2;
-                if(!Carrying&&Current==Step.FillRice){right=spoon.transform.TransformPoint(new Vector3(0,0,-3));left=spoon.transform.TransformPoint(new Vector3(0,0,-1.5f));}
+                if(!Carrying&&Current==Step.FillRice){right=spoon.transform.TransformPoint(new Vector3(0,0,-3));left=World(new Vector3(.5f,13,-11.8f));}
                 else if(!Carrying&&Current==Step.Saw)left=World(new Vector3(-4,12,-10));
                 else if(!Carrying&&Current==Step.Tie){right=grip;left=World(new Vector3(-13.5f+Knots*10,12.5f,-10.5f));}
                 else if(!Carrying&&Current==Step.Wrap){right=grip;left=World(new Vector3(0,9.7f,-10.2f));}
@@ -375,13 +448,13 @@ namespace BeachBoatStory
                 if(AtTable&&gripProfile!=null)
                 {
                     if(Current==Step.Saw||Current==Step.FillRice)gripProfile.Align(arms[0],arms[1],rightHand,right,arms[0].position+player.right*4-Vector3.up*3,false,true,Current==Step.Saw?player.right:player.forward);
-                    if(Current==Step.FillRice)gripProfile.Align(arms[2],arms[3],leftHand,left,arms[2].position-player.right*4-Vector3.up*3,true,false,player.forward);
                 }
             }
-            if(AtTable&&camera!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,Current!=Step.FillRice,Current==Step.Wrap);
+            if(AtTable&&camera!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,true,Current==Step.Wrap);
             if(blade!=null&&Current==Step.Saw)blade.transform.position=ToolPoint(ToolPointer);
             if(sawHandle!=null&&Current==Step.Saw)sawHandle.transform.SetPositionAndRotation(ToolPoint(ToolPointer)+player.right*2,player.rotation);
-            if(grain!=null){grain.transform.localScale=new Vector3(5.4f,Mathf.Max(.05f,RiceFill*2.5f),5.4f);grain.transform.localPosition=new Vector3(4,9+RiceFill*2.5f,-10.2f);grain.GetComponent<Renderer>().sharedMaterial=RiceFill>=.65f&&RiceFill<=.85f?green:RiceFill>.85f?red:rice;}
+            if(grain!=null){float level=Mathf.Clamp01(RiceFill);grain.transform.localScale=new Vector3(5.4f,Mathf.Max(.05f,level*2.5f),5.4f);grain.transform.localPosition=new Vector3(4,9+level*2.5f,-10.2f);grain.GetComponent<Renderer>().sharedMaterial=rice;}
+            if(fillBand!=null)fillBand.sharedMaterial=RiceReady?green:RiceExcess?red:gold;
             if(pour!=null){pour.enabled=Current==Step.FillRice&&Time.time<pourUntil;if(pour.enabled){pour.positionCount=9;for(int i=0;i<9;i++){float t=i/8f;pour.SetPosition(i,World(Vector3.Lerp(new Vector3(4,14,-10.2f),new Vector3(4,12,-10.2f),t)));}}}
             if(rope!=null&&stall.kind==VillageWorkStall.WorkKind.Rope)
             {rope.positionCount=Current==Step.Tie?33:0;for(int i=0;i<rope.positionCount;i++){float a=i/32f*Mathf.PI*2;float radius=1.25f-ActionProgress*.25f;rope.SetPosition(i,World(new Vector3(-10+Knots*10,11.3f+Mathf.Cos(a)*3*radius,-10.2f+Mathf.Sin(a)*1.6f*radius)));}}
@@ -389,7 +462,7 @@ namespace BeachBoatStory
         }
         public void Finish()
         {
-            busy=tableWasActive=false;hands?.Dispose();hands=null;if(props!=null){props.SetActive(false);Destroy(props);}props=null;
+            busy=tableWasActive=false;Foley?.Stop();Foley=null;hands?.Dispose();hands=null;if(props!=null){props.SetActive(false);Destroy(props);}props=null;
             sawGuides.Clear();
             if(station!=null)station.ResetDisplay();station=null;
             foreach(var item in fabrics)if(item.renderer!=null)item.renderer.forceRenderingOff=item.hidden;fabrics.Clear();bundleLogs.Clear();

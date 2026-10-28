@@ -17,6 +17,7 @@ public static class BeachBoatCasualWorkPlaytest
     static float maxHammerGripError,maxHammerWristAngle;static int hammerSamples;
     static string Hash(string p)=>Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(File.ReadAllBytes(p)));
     static void Check(bool ok,string message){if(!ok)throw new Exception(message);checks.Add(message);}
+    public static void RunBatch(){UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
     public static void RunInEditor(){phase=cluster=0;lastFrame=-1;began=0;runtimeError=null;hammerFrame=hammerSamples=0;maxHammerGripError=maxHammerWristAngle=0;captured=capturedHammer=impactTimingChecked=hammerCaptureReady=false;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Log;Application.logMessageReceived+=Log;}
     static void Log(string m,string stack,LogType kind){if(SessionState.GetBool(Flag,false)&&(kind==LogType.Error||kind==LogType.Exception))runtimeError=m+"\n"+stack;}
@@ -43,6 +44,7 @@ public static class BeachBoatCasualWorkPlaytest
     {
         SessionState.SetBool(Flag,false);File.WriteAllText("Logs/CasualWorkPlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,phase,hammerSamples,maxHammerGripError,maxHammerWristAngle,checks},Newtonsoft.Json.Formatting.Indented));
         BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
+        if(Application.isBatchMode)EditorApplication.Exit(error==null?0:1);
     }
     public static void ObserveHammer()
     {

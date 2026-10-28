@@ -6,12 +6,20 @@ Bốn sạp trong làng dùng cùng nhân vật, camera, địa hình và va ch�
 |---|---|---|---|
 | Gỗ | Lấy gỗ bên trái, mang đặt lên bàn, cưa, vác sang giá phải; ba khúc | E cầm/đặt; giữ chuột trái kéo LÊN/XUỐNG dọc rãnh; rê ngang căn giữa | 75 / 45 / 60 / 71,25 giây |
 | Dây | Lấy cuộn dây, mang tới bó cọc, tới và siết ba nút, giao bó đã buộc | E cầm/đặt; kéo dây quanh bốn điểm của mỗi nút | 60 / 36 / 48 / 57 giây |
-| Gạo | Mang bao rỗng lên bàn, đong tới vạch xanh, nhấc và giao; hai bao | Kéo gáo xúc gạo, đưa qua bao và nghiêng đổ; đủ thì E nhấc, dư thì E đổ lại | 75 / 45 / 60 / 71,25 giây |
+| Gạo | Mang bao rỗng lên bàn, đong tới vạch xanh, nhấc và giao; hai bao | Bấm giữ gáo trong rổ, kéo qua bao rồi thả; E/Enter nhấc khi đủ; R bớt một gáo, C đổ lại | 75 / 45 / 60 / 71,25 giây |
 | Lương khô | Lấy lần lượt phần gạo, cá khô và muối ở kệ; mang đặt lên khăn; gấp khăn và giao; hai gói | E cầm/đặt; kéo bốn mép khăn vào giữa | 90 / 54 / 72 / 85,5 giây |
 
-WASD đi lại khi mang hàng; sau khi đặt lên bàn, camera cận mặt bàn chỉ hiện tay và dụng cụ, khóa đi bộ và xoay camera để chuột thao tác. Lệch rãnh cưa không tính nhịp; dây cần thả trong dải lực xanh; gáo gạo phải giữ ngang trước khi nghiêng; khăn cần ép nếp 0,45 giây. Sai thao tác nhẹ chỉ thử lại bước đó. HUD nhỏ ghi tiến độ, thời gian và điều khiển. H xem điều khiển, Enter tiếp tục. ESC/X bỏ lượt đang làm; ESC lần này không mở menu tạm dừng. Hết giờ hoặc quá ba lỗi thì R thử lại. Khi đủ hàng, Enter nhận vật tư. Có thể chơi lại sạp đã xong mà không mất vật tư đã nhận.
+WASD đi lại khi mang hàng; sau khi đặt lên bàn, camera cận mặt bàn chỉ hiện tay và dụng cụ, khóa đi bộ và xoay camera. Con trỏ hiện ra: bấm giữ dụng cụ/mép khăn rồi kéo trực tiếp theo vị trí trên bàn. Lệch rãnh cưa không tính nhịp; dây cần thả trong dải lực xanh; gáo gạo thả trên miệng bao mới đổ; khăn cần ép nếp 0,45 giây. Sai thao tác nhẹ chỉ thử lại bước đó. HUD ghi tiến độ, thời gian và điều khiển. H xem điều khiển, Enter tiếp tục. ESC/X bỏ lượt đang làm; ESC lần này không mở menu tạm dừng. Hết giờ hoặc quá ba lỗi thì R thử lại. Khi đủ hàng, Enter nhận vật tư. Có thể chơi lại sạp đã xong mà không mất vật tư đã nhận.
 
-Không dùng công cụ hoặc lấy/giao vật từ xa: mỗi bước kiểm tra vị trí tiếp cận, độ cao và trạng thái hiện tại. Cưa, siết dây, đong và gói cần chuyển động dụng cụ đúng; giữ chuột đứng yên không cộng tiến độ; giao vật mới tăng số đơn. Bàn và thùng có collider, vật đang cầm bám theo tư thế nhân vật. Bao gạo thiếu/đủ/dư có màu và chữ; đổ lại bao dư tính một lỗi và hai giây phạt, không cộng đơn.
+Không dùng công cụ hoặc lấy/giao vật từ xa: mỗi bước kiểm tra vị trí tiếp cận, độ cao và trạng thái hiện tại. Cưa, siết dây, đong và gói cần chuyển động dụng cụ đúng; giữ chuột đứng yên không tự hoàn thành; giao vật mới tăng số đơn. Bàn và thùng có collider, vật đang cầm bám theo tư thế nhân vật. Bao gạo có thanh thiếu vàng/đủ xanh/dư đỏ và ba nút bấm trực tiếp. Ba gáo 24% tạo mức đủ 72% (dải 65–85%). Xác nhận thiếu/dư chỉ giải thích thao tác, không tự xóa gạo; R bớt một gáo, C đổ lại, đồng hồ tiếp tục chạy. Thả ngoài bao giữ gạo trong gáo và nhắc vị trí cần thả.
+
+`VillagePhysicalWork.PointerCoordinates` nghịch phép chiếu mặt phẳng thao tác 3D để lấy vị trí con trỏ thật trên bàn; không cộng dồn Mouse X/Y. Dùng cùng phép chiếu với hình ảnh, tránh lệch giữa tia chuột và camera có jitter tại tọa độ map lớn. Khoảng lệch lúc bấm được giữ lại để dụng cụ không giật tới con trỏ. Mặt phẳng gói khăn tách khỏi độ nâng bàn tay. Tư thế tay tiếp tục dùng đoạn xương dài cố định.
+
+## Âm thanh thao tác
+
+`VillageWorkFoley` dùng một kênh ma sát (cưa/dây/vải) và một kênh thao tác ngắn (xúc, đổ gạo, ép nếp, siết nút, đặt hàng). Ma sát chỉ phát khi kéo hoặc siết/ép và giảm nhanh khi ngừng; giúp tránh chồng nhiều tiếng. Help/tạm dừng ngừng cả hai kênh; ESC/load hủy nguồn phát. Tuân theo master volume, F10 và âm lượng người chơi.
+
+Tám WAV mono 32 kHz (khoảng 307 KiB) do `Tools/author_trade_foley.py` tự tổng hợp từ nhiễu lọc, hạt va chạm và cộng hưởng; không lấy bản ghi bên ngoài. Có fade đầu/cuối và đỉnh 0,62 để tránh clipping. File nằm trong `Assets/Resources/BachDang938/WorkAudio`.
 
 `VillageWorkstation` dựng bố trí cố định cho cả bốn sạp khi scene bắt đầu: cùng bàn, mái, thùng lấy/giao hàng và nguồn vật tư trước E, trong và sau lượt chơi. Không ẩn mái hay thay bàn lúc mở minigame. Cánh tay được đặt tư thế mang/làm việc sau animation; dụng cụ, dây quấn, dòng gạo và mép khăn biến đổi trong thế giới 3D. Thanh lực buộc dây nằm ở giữa phía dưới màn hình; tay trái giữ bó gỗ, tay phải kéo dây, cổ tay dùng trục bind pose trung tính. Vải phơi chỉ tạm ẩn khi chắn camera và khôi phục khi rời sạp.
 
@@ -38,3 +46,15 @@ trên ảnh chiếu thật của cả bốn minigame, bao gồm lúc đang nâng
 ẩn ở bước lấy hàng và chỉ hiện khi cưa; đế giày Ngô Quyền chạm sàn trước/sau
 load. Chụp ảnh sau khi camera đã chuyển góc ổn định, dùng save tạm và giữ nguyên
 SHA-256 của các save thật.
+
+Đợt sửa theo clip 28/10 và thêm foley: **358 kiểm tra qua** trong
+`PhysicalVillagePlaytest.json`. Luồng chơi dùng `PressPointer`/`DragPointer`,
+xác nhận nghịch chiếu dưới một pixel, hoàn tất cả bốn sạp, thử nhả sai chỗ,
+thiếu/dư gạo, bớt/đổ lại, nhấc và giao bao, siết/ép, tay hiển thị chạm vật,
+âm thanh đúng công việc, pause/ESC/load và thành tích. Chụp thêm Rice_Entry,
+Rice_Excess, Rice_Ready. SHA-256 các save thật giữ nguyên.
+
+`BeachBoatCasualWorkPlaytest.RunBatch` qua thêm **67 kiểm tra** chuẩn bị vật tư
+và dựng năm cụm cọc. Tổng hai bộ: **425**; 13 file save thật được kiểm hash
+trong mỗi bộ và không thay đổi. Hai bộ chạy bằng Unity 6000.6.0f1 / DX11;
+không phát sinh lỗi C# hoặc exception trong log của lượt chạy đạt.

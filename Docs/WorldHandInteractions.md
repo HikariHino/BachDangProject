@@ -19,23 +19,24 @@ rời sạp; mái không còn bị gỡ, bàn không bị thay bằng một bàn
 
 | Sạp | Thao tác sau khi mang vật tới bàn |
 |---|---|
-| Gỗ | Kéo LÊN/XUỐNG trên màn hình dọc rãnh xanh; rê ngang để căn giữa (lệch ngang tối đa 28%); mỗi nửa nhịp ít nhất 0,3 giây, tám nửa nhịp mỗi khúc |
+| Gỗ | Bấm giữ cán cưa rồi kéo LÊN/XUỐNG dọc rãnh xanh; rê ngang để căn giữa (lệch ngang tối đa 28%); mỗi nửa nhịp ít nhất 0,22 giây và quãng kéo 1,2 đơn vị thao tác, tám nửa nhịp mỗi khúc |
 | Dây | Kéo quanh bốn điểm, giữ để tăng lực siết; THẢ trong dải xanh 55–85%, tương đương cửa sổ khoảng 0,46 giây. Thả sai chỉ làm lại nút này; ba nút cho bó cọc |
-| Gạo | Kéo sang trái và xuống để xúc, giữ gáo ngang khi chuyển sang phải rồi nghiêng lên trên bao; nghiêng sớm làm rơi gáo, không mất gạo trong bao. Ba gáo 24% tạo mức đủ 72% |
+| Gạo | Bấm giữ gáo trong rổ trái, kéo qua miệng bao phải rồi THẢ để đổ. Thả sai chỗ vẫn giữ gạo trong gáo. Ba gáo 24% tạo mức đủ 72%; E/Enter hoặc nút Nhấc bao khi xanh; R bớt một gáo, C đổ lại khi dư |
 | Lương khô | Đặt đủ ba nguyên liệu, kéo mép khăn vào giữa rồi giữ yên 0,45 giây để ép kín; nhả sớm chưa tính nếp, có thể ép lại. Bốn mép tạo thành gói |
 
 Giữ chuột đứng yên từ đầu không tự làm xong; chỉ bước siết/ép sau đường kéo đúng
 mới dùng thời gian giữ. Thanh lực lớn nằm giữa phía dưới màn hình, ngoài vùng
 làm việc và phía trên dòng điều khiển; dải xanh chỉ vùng nhả tốt. Thanh này hiện
 suốt bước buộc dây, không bị mái, tay hay camera 3D che khuất;
-HUD hiển thị phản hồi lệch rãnh, rơi gạo hoặc nếp chưa kín. E dùng để cầm, đặt,
+HUD hiển thị phản hồi lệch rãnh, thiếu/đủ/dư gạo hoặc nếp chưa kín. E/Enter dùng để cầm, đặt,
 nhấc và giao vật. ESC/X rời lượt; H xem thao tác.
 Các giới hạn và mốc hạng của bốn sạp giữ nguyên. Kết quả cũ vẫn giữ trong save.
 
 Vạch xanh chỉ hiện sau khi đặt gỗ lên bàn, trong đúng bước cưa và góc nhìn bàn;
-không hiện khi vừa mở sạp, đang lấy/vác gỗ hoặc đã giao hàng. `DragScreen` đổi
-chuyển động chuột qua phép chiếu thật của hai trục dụng cụ, giữ cả hướng và tỷ lệ
-trục thay vì gán trực tiếp Mouse X/Y. Con trỏ gói lương luôn nằm trên mặt bàn;
+không hiện khi vừa mở sạp, đang lấy/vác gỗ hoặc đã giao hàng. Khi làm việc,
+con trỏ được mở khóa và hiện rõ; bấm giữ dụng cụ rồi kéo theo vị trí thật.
+`PointerCoordinates` nghịch phép chiếu mặt phẳng thao tác 3D, tránh cộng dồn
+Mouse X/Y gây lệch hướng và phụ thuộc độ nhạy. Con trỏ gói lương luôn nằm trên mặt bàn;
 độ nâng tay/khăn là chuyển động 3D riêng, không làm đảo hướng kéo.
 
 Tay hiển thị lấy trục cẳng tay/cổ tay từ bind pose của mesh, không kế thừa góc

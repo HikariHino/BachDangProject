@@ -23,6 +23,7 @@ namespace BeachBoatStory
         public int TriangleCount {get;private set;}
         public float MaxSegmentError {get;private set;}
         public float MaxWristAngle {get;private set;}
+        public float MaxContactError {get;private set;}
         public WorkbenchHands(Transform player,Animator rig)
         {
             profile=BowGripProfile.Load();
@@ -127,6 +128,7 @@ namespace BeachBoatStory
             // Use the mesh bind frame, not a bent wrist inherited from the third-person animation.
             lower.rotation=Quaternion.LookRotation(along,up)*Quaternion.Inverse(left?rig.leftLowerFrame:rig.rightLowerFrame);
             hand.localScale=originalHand.localScale;hand.SetPositionAndRotation(wrist,handRotation);
+            MaxContactError=Mathf.Max(MaxContactError,Vector3.Distance(hand.TransformPoint(center),contact));
             MaxSegmentError=Mathf.Max(MaxSegmentError,Mathf.Abs(Vector3.Distance(lower.position,hand.position)/lowerLength-1),Mathf.Abs(Vector3.Distance(upper.position,lower.position)/upperLength-1));
             MaxWristAngle=Mathf.Max(MaxWristAngle,Vector3.Angle(hand.TransformDirection(forward),lower.TransformDirection(left?rig.leftLowerAlong:rig.rightLowerAlong)));
         }
