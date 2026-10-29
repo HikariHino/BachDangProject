@@ -791,6 +791,17 @@
           "path": "BachDang938/Voices/Preparation/crew_move"
         }
       ]
+    },
+    {
+      "line": "Trước khi đi nhử địch, ngươi phải luyện cung. Hãy đến bãi tập trong doanh trại, bắn trúng ít nhất bốn trong sáu bia, rồi quay lại nhận lệnh.",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "commander_brief",
+          "path": "BachDang938/Voices/Preparation/ngo_archery_natural"
+        }
+      ]
     }
   ],
   "profiles": [

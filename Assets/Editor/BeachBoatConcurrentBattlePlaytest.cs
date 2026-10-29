@@ -263,6 +263,9 @@ public static class BeachBoatConcurrentBattlePlaytest
             if(phase==3)
             {
                 if(!fleet.AmbushStarted)return;ambushTime=Time.time;
+                var battleVoice=fleet.GetComponent<RiverBattleVoices>();var spoken=battleVoice.SpeechSource.clip;
+                Check(battleVoice.QueueWreckCry(Resources.LoadAll<AudioClip>("BachDang938/WreckAudio")[0])&&battleVoice.SpeechSource.clip==spoken,"Wreck cries queue behind the existing battle sentence without interrupting or layering another speech channel");
+                Check(!BeachBoatSoundscape.Instance.transform.Find("Shipwreck_Scream_Channel").GetComponent<AudioSource>().isPlaying,"The ambush uses the single battle voice channel instead of overlapping the independent wreck source");
                 Check(ambushTime-entryTime<=3.1f,"The entire fleet is caught within three seconds of the rear hull entering the field");
                 Check(TideSystem.CurrentWaterHeight<highWater-5&&zone.ExposedStakeCount>0,"Falling water visibly exposes the planted stakes");
                 Check(fleet.enemyShips.All(s=>s.isDestroyed),"The whole fleet is caught and starts sinking in one ambush event");phase=4;

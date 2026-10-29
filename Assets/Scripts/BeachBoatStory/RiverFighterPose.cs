@@ -36,6 +36,11 @@ namespace BeachBoatStory
         public Vector3 GripPosition {get;private set;}
         public Vector3 BladeDirection {get;private set;}
         Transform rangedBow,leftHand,rightHand,rightPalmEnd;
+        LineRenderer rangedString;Transform rangedArrow;float bowBegan=-100;
+        public int BowShots {get;private set;}
+        public float BowDrawAmount=>Mathf.Clamp01((Time.time-bowBegan)/.7f)*(Time.time-bowBegan<.73f?1:Mathf.Clamp01(1-(Time.time-bowBegan-.73f)/.12f));
+        public Vector3 BowMuzzle=>rangedBow!=null?rangedBow.position+rangedBow.forward*3:transform.position+Vector3.up*12;
+        public void BeginBowShot(Vector3 target){SetRanged(true);var face=target-transform.position;face.y=0;if(face.sqrMagnitude>.01f)transform.rotation=Quaternion.LookRotation(face);bowBegan=Time.time;BowShots++;}
         bool ranged;
         float actorHeight;
         Transform[] bones;
@@ -111,9 +116,13 @@ namespace BeachBoatStory
             {
                 if(ranged&&rangedBow!=null)
                 {
-                    rangedBow.SetPositionAndRotation(transform.position+Vector3.up*10+transform.forward*4,transform.rotation);
-                    QuestRowboat.SolveArm(bones[0],bones[2],leftHand,rangedBow.position,bones[0].position-transform.right*4);
-                    QuestRowboat.SolveArm(bones[1],bones[3],rightHand,rangedBow.position-transform.forward*2,bones[1].position+transform.right*4);
+                    float h=EnemyDeckGuard.RigHeight(Animator),elapsed=Time.time-bowBegan,raise=Mathf.SmoothStep(0,1,Mathf.Clamp01(elapsed/.18f))*(1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(.9f,1.3f,elapsed)));
+                    var support=bones[0].position+transform.forward*(h*.30f)+Vector3.up*(h*(raise*.06f-.22f*(1-raise)));
+                    rangedBow.SetPositionAndRotation(support,transform.rotation);var draw=Vector3.Lerp(support-transform.forward*(h*.08f),head.position+transform.right*(h*.06f)+transform.forward*(h*.035f)-Vector3.up*(h*.02f),BowDrawAmount);
+                    var profile=BowGripProfile.Load();
+                    if(profile!=null){profile.Align(bones[0],bones[2],leftHand,support,bones[0].position-transform.right*h*.25f-Vector3.up*h*.07f,true);profile.Align(bones[1],bones[3],rightHand,draw,bones[1].position+transform.right*h*.35f,false);}
+                    else{QuestRowboat.SolveArm(bones[0],bones[2],leftHand,support,bones[0].position-transform.right*h*.25f);QuestRowboat.SolveArm(bones[1],bones[3],rightHand,draw,bones[1].position+transform.right*h*.35f);}
+                    rangedString.SetPosition(1,rangedBow.InverseTransformPoint(draw));rangedArrow.gameObject.SetActive(elapsed>=0&&elapsed<.73f);rangedArrow.SetPositionAndRotation(draw+transform.forward*3,Quaternion.FromToRotation(Vector3.up,transform.forward));
                 }
                 return;
             }
@@ -164,9 +173,15 @@ namespace BeachBoatStory
                     float sign=side==0?-1:1;var shoulder=bones[side].position;
                     var grip=shoulder+forward*(reach*h)+right*(sign*sweep*h)+Vector3.up*(depth*h);
                     QuestRowboat.SolveArm(bones[side],bones[side+2],side==0?leftHand:rightHand,grip,shoulder+right*(sign*h*.4f)-Vector3.up*h*.15f);
-                    float kick=SwimMoving?Mathf.Max(0,Mathf.Sin((t-.5f)*Mathf.PI*2)):Mathf.Sin(t*Mathf.PI*2+side*Mathf.PI)*.35f;
-                    var foot=SwimMoving?hips.position-forward*(h*(.40f-.18f*kick))+right*(sign*h*(.08f+.13f*kick))-Vector3.up*h*(.03f+.10f*kick):hips.position-Vector3.up*h*.42f+right*(sign*h*.12f)+forward*(kick*h*.14f);
-                    QuestRowboat.SolveArm(bones[side+4],bones[side+6],side==0?leftFoot:rightFoot,foot,hips.position+right*(sign*h*.3f)-forward*h*.15f);
+                    float kick=Mathf.Sin(t*Mathf.PI*2+side*Mathf.PI);
+                    var upper=bones[side+4];var lower=bones[side+6];var ankle=side==0?leftFoot:rightFoot;
+                    float legLength=Vector3.Distance(upper.position,lower.position)+Vector3.Distance(lower.position,ankle.position);
+                    var foot=SwimMoving?upper.position-forward*(legLength*.94f)+right*(sign*h*.025f)+Vector3.up*(kick*h*.018f-h*.025f):upper.position-Vector3.up*(legLength*.88f)+right*(sign*h*.04f)+forward*(kick*h*.045f);
+                    // A nearly extended flutter kick and a downward knee plane
+                    // avoid the old lateral IK fold that snapped heels behind the back.
+                    QuestRowboat.SolveArm(upper,lower,ankle,foot,upper.position-forward*h*.13f-Vector3.up*h*.22f+right*(sign*h*.035f));
+                    var toes=Animator.GetBoneTransform(side==0?HumanBodyBones.LeftToes:HumanBodyBones.RightToes);
+                    if(toes!=null&&SwimMoving)ankle.rotation=Quaternion.FromToRotation(toes.position-ankle.position,-forward+Vector3.down*.08f)*ankle.rotation;
                 }
                 int stroke=Mathf.FloorToInt(cycle+.35f);
                 if(stroke>lastStroke)
@@ -244,6 +259,8 @@ namespace BeachBoatStory
                 rangedBow=new GameObject("DaiViet_Boarding_Bow").transform;rangedBow.SetParent(transform,false);var scale=transform.lossyScale;rangedBow.localScale=new Vector3(1/scale.x,1/scale.y,1/scale.z);
                 var line=rangedBow.gameObject.AddComponent<LineRenderer>();line.sharedMaterial=weapon.GetComponentInChildren<Renderer>().sharedMaterial;line.useWorldSpace=false;line.widthMultiplier=.4f;line.positionCount=9;
                 for(int i=0;i<9;i++){float y=(i/8f-.5f)*10;line.SetPosition(i,new Vector3(0,y,2*(1-y*y/25)));}
+                var stringObject=new GameObject("Day_cung_keo_tha");stringObject.transform.SetParent(rangedBow,false);rangedString=stringObject.AddComponent<LineRenderer>();rangedString.useWorldSpace=false;rangedString.sharedMaterial=line.sharedMaterial;rangedString.widthMultiplier=.1f;rangedString.positionCount=3;rangedString.SetPositions(new[]{new Vector3(0,-5,0),Vector3.zero,new Vector3(0,5,0)});
+                var arrow=GameObject.CreatePrimitive(PrimitiveType.Cylinder);arrow.name="Ten_dang_giu";arrow.transform.SetParent(rangedBow,false);arrow.transform.localScale=new Vector3(.13f,3,.13f);arrow.GetComponent<Collider>().enabled=false;Destroy(arrow.GetComponent<Collider>());arrow.GetComponent<Renderer>().sharedMaterial=line.sharedMaterial;rangedArrow=arrow.transform;
             }
             if(rangedBow!=null)rangedBow.gameObject.SetActive(value);
         }

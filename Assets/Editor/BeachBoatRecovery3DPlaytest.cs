@@ -52,24 +52,19 @@ public static class BeachBoatRecovery3DPlaytest
             }
             if(phase==3)
             {
-                var game=CampRecoveryGame.Active;Check(game!=null&&game.Course!=null&&game.Phase==CampRecoveryGame.GamePhase.Playing,"Training begins in the 3D world with three physical gates");Check(PhysicalTrainingCourse.AllowsMovement&&player.GetComponent<BeachBoatStory.Character_Movement>().enabled,"The normal movement controller is available during the course");
-                Check(!game.Submit(0)&&game.Progress==0,"Pressing the old rhythm action cannot complete the physical course");Check(!BachDangSaveSystem.CanSave,"Temporary exercise props are not saved mid-attempt");Check(game.Course.Interact(),"The player picks up the sandbag at its actual starting point");phase=4;return;
+                var game=CampRecoveryGame.Active;Check(game!=null&&game.Course!=null&&game.Phase==CampRecoveryGame.GamePhase.Playing,"Training begins in the separate 3D supply yard");Check(QuestRowboat.FlatDistance(player.transform.position,game.TrainingHome)>150&&!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name.StartsWith("Cong_vac_bao_")),"The drill teleports away from the tents and creates no ugly jump gates");Check(PhysicalTrainingCourse.AllowsMovement&&player.GetComponent<BeachBoatStory.Character_Movement>().enabled,"The normal movement controller is available during the course");
+                var yard=GameObject.Find("Strength_3D_Course").transform;var air=new Bounds(game.Course.Home+Vector3.forward*28+Vector3.up*77,new Vector3(132,150,132));
+                Check(!Object.FindObjectsByType<MeshRenderer>(FindObjectsInactive.Include,FindObjectsSortMode.None).Any(r=>!r.transform.IsChildOf(yard)&&!r.transform.IsChildOf(player.transform)&&r.bounds.max.y>game.Course.Home.y+4&&air.Intersects(r.bounds)),"The yard and headroom clear even scenery hidden by distance LOD before teleporting");
+                Check(!game.Submit(0)&&game.Progress==0,"Pressing the old rhythm action cannot complete the physical course");Check(!BachDangSaveSystem.CanSave,"Temporary exercise props are not saved mid-attempt");BeachBoatReview29Playtest.Picture("SupplyYard",game.Course.Home+Vector3.forward*28+Vector3.up*90,game.Course.Home+Vector3.forward*28);Check(game.Course.Interact(),"The player picks up the sandbag at its actual starting point");phase=4;return;
             }
             if(phase==4)
             {
                 var game=CampRecoveryGame.Active;var course=game.Course;if(game.Phase==CampRecoveryGame.GamePhase.Won){phase=5;return;}
-                if(game.Progress>=game.Goal-1)
-                {
-                    var home=game.TrainingHome;home.y=Terrain.activeTerrain.SampleHeight(home)+Terrain.activeTerrain.transform.position.y;if(Move(home,.5f))course.Interact();return;
-                }
-                if(lastGate!=course.PassedGates){lastGate=course.PassedGates;routeStage=0;}
-                var gate=GameObject.Find("Cong_vac_bao_"+(course.PassedGates%3+1)).transform;
-                var point=gate.position+gate.forward*(routeStage==0?-11:routeStage==1?-5:routeStage==2?1:7);
-                if(Move(point,routeStage==1||routeStage==2?4.3f:.5f))routeStage=Mathf.Min(3,routeStage+1);return;
+                var point=course.Target+Vector3.back*10;if(Move(point,.5f))course.Interact();return;
             }
             if(phase==5)
             {
-                var game=CampRecoveryGame.Active;Check(game.TrainingDelivered&&game.Progress==game.Goal,"Real gate traversal and returning the bag finish the 3D exercise");Check(game.ClaimReward()&&vitals.maxStamina==stamina+20,"Only completed exercise grants the next stamina upgrade");Check(!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name=="Strength_3D_Course"),"Exiting training removes its physical course and carried sack");
+                var game=CampRecoveryGame.Active;Check(game.TrainingDelivered&&game.Progress==game.Goal&&QuestRowboat.FlatDistance(player.transform.position,game.TrainingHome)<1,"Delivering the real bags finishes the drill and restores the player to the tent");Check(game.ClaimReward()&&vitals.maxStamina==stamina+20,"Only completed exercise grants the next stamina upgrade");Check(!Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Any(t=>t.name=="Strength_3D_Course"),"Exiting training removes its physical course and carried sack");
                 var save=BachDangSaveSystem.Capture("Training result");BachDangSaveSystem.Apply(save);Check(vitals.maxStamina==stamina+20&&vitals.CompletedTrainingLevels==1,"The earned upgrade survives save/load");
                 var training=Object.FindObjectsByType<CampFacility>(FindObjectsSortMode.None).First(f=>f.kind==CampFacility.FacilityKind.Armory);
                 Check(CampRecoveryGame.Open(training)&&CampRecoveryGame.Active.Course!=null,"A new physical attempt can start after loading the earned upgrade");

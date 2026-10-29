@@ -54,7 +54,7 @@ namespace BeachBoatStory
             wreckCries=Resources.LoadAll<AudioClip>("BachDang938/WreckAudio");
             runningFootsteps=Resources.LoadAll<AudioClip>("BachDang938/RunSteps");
             arrowImpact=Resources.Load<AudioClip>("BachDang938/LobbyAudio/Arrow_Flesh_Impact");
-            StakeImpact=Resources.Load<AudioClip>("BachDang938/WorkAudio/Trade_SetDown");
+            StakeImpact=Resources.Load<AudioClip>("BachDang938/WorkAudio/Stake_Hammer");
             var actionClips=Resources.LoadAll<AudioClip>("BachDang938/ActionAudio");
             AudioClip[] Group(string prefix)=>System.Array.FindAll(actionClips,c=>c.name.StartsWith(prefix,System.StringComparison.Ordinal));
             var walking=Group("Walk_");if(walking.Length>0)footsteps=walking;
@@ -157,11 +157,11 @@ namespace BeachBoatStory
             float distance=Vector3.Distance(point,session.player.transform.position);float level=Mathf.Lerp(.72f,.12f,Mathf.Clamp01(distance/900));
             Play(effects,crash,level,.9f);
             var voices=EnemyFleetDirector.Instance?.GetComponent<RiverBattleVoices>();
-            if(voices!=null)voices.RequestWreckCry();
-            if(!Muted&&wreckChannel!=null&&!wreckChannel.isPlaying&&wreckCries!=null&&wreckCries.Length>0){wreckChannel.clip=wreckCries[cryIndex++%wreckCries.Length];wreckChannel.pitch=1;wreckChannel.volume=Mathf.Max(.5f,level*.95f)*masterVolume;wreckChannel.Play();WreckCriesPlayed++;}
+            if(!Muted&&wreckChannel!=null&&wreckCries!=null&&wreckCries.Length>0){var cry=wreckCries[cryIndex++%wreckCries.Length];if(voices?.QueueWreckCry(cry)==true)WreckCriesPlayed++;else if(!wreckChannel.isPlaying){wreckChannel.clip=cry;wreckChannel.pitch=1;wreckChannel.volume=Mathf.Max(.5f,level*.95f)*masterVolume;wreckChannel.Play();WreckCriesPlayed++;}}
             WreckSoundsPlayed++;
         }
-        public void PlayStake()=>Play(effects,StakeImpact!=null?StakeImpact:drum,.45f,1);
+        public int StakeHitsPlayed {get;private set;}
+        public void PlayStake(){Play(effects,StakeImpact!=null?StakeImpact:drum,.85f,1);StakeHitsPlayed++;}
         public void PlayHit()=>Play(effects,hit,.55f);
         public void PlayCombatHit(Vector3 point,CombatImpactKind kind,bool foreground)
         {

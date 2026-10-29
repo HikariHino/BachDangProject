@@ -262,7 +262,7 @@ namespace BeachBoatStory
             var direction=camera.transform.forward;
             var flat=direction;flat.y=0;
             poseTension=Mathf.MoveTowards(poseTension,charge/1.1f,Time.deltaTime*7);
-            if(flat.sqrMagnitude>.01f)session.player.transform.rotation=Quaternion.LookRotation(Quaternion.AngleAxis(Mathf.Lerp(20,50,poseTension),Vector3.up)*flat);
+            if(flat.sqrMagnitude>.01f){var stance=Quaternion.LookRotation(Quaternion.AngleAxis(35,Vector3.up)*flat);session.player.transform.rotation=stance;session.player.GetComponent<Rigidbody>().rotation=stance;}
             // Only the rowboat stance needs a water-relative height. On shore
             // or another deck, gravity/the boarding surface already supports us.
             var boarding=RiverBoardingCombat.Instance;
@@ -278,23 +278,32 @@ namespace BeachBoatStory
             float reach=Vector3.Distance(shoulder.position,animator.GetBoneTransform(HumanBodyBones.LeftLowerArm).position)+Vector3.Distance(animator.GetBoneTransform(HumanBodyBones.LeftLowerArm).position,animator.GetBoneTransform(HumanBodyBones.LeftHand).position);
             var supportHand=animator.GetBoneTransform(HumanBodyBones.LeftHand);
             float palmReach=gripProfile!=null?Vector3.Dot(gripProfile.leftCenter,gripProfile.leftForward)*Mathf.Abs(supportHand.lossyScale.y):0;
-            float tension=charge/1.1f;var cheek=head.position+direction*1.8f+camera.transform.right*1.1f+Vector3.up*.8f;
-            float faceFront=Vector3.Dot(cheek-chest.position,actor.forward);if(faceFront<2.5f)cheek+=actor.forward*(2.5f-faceFront);
+            float tension=charge/1.1f;var cheek=head.position+direction*.7f+camera.transform.right*1.3f-Vector3.up*.5f;
+            float faceFront=Vector3.Dot(cheek-chest.position,actor.forward);if(faceFront<1)cheek+=actor.forward*(1-faceFront);
             // Put the arrow rest on the sight line and solve the support arm's
             // available forward reach; the grip includes the palm beyond the wrist.
             var across=Vector3.ProjectOnPlane(cheek-camera.transform.right*.45f-Vector3.up*.9f-shoulder.position,direction);
-            float totalReach=reach*.92f+palmReach;
+            float totalReach=reach*.88f+palmReach;
+            across=Vector3.ClampMagnitude(across,totalReach*.75f);
             var grip=shoulder.position+across+direction*Mathf.Sqrt(Mathf.Max(1,totalReach*totalReach-across.sqrMagnitude));
             bow.SetPositionAndRotation(grip,Quaternion.LookRotation(direction));
-            var ready=grip+camera.transform.right*.45f+Vector3.up*.9f-direction*2.8f;
+            var ready=grip+camera.transform.right*.25f+Vector3.up*.15f-direction*1.8f;
             var draw=Vector3.Lerp(ready,cheek,Mathf.SmoothStep(0,1,poseTension));
             if(Time.time-releasedAt<.25f)draw+=actor.right*(Mathf.Sin((Time.time-releasedAt)/.25f*Mathf.PI)*.6f);
-            float front=Vector3.Dot(draw-chest.position,actor.forward);if(front<2.5f)draw+=actor.forward*(2.5f-front);
+            float front=Vector3.Dot(draw-chest.position,actor.forward);if(front<1)draw+=actor.forward*(1-front);
             bowString.SetPosition(1,bow.InverseTransformPoint(draw));
             bowString.SetPosition(0,new Vector3(0,-7,-(2.8f+tension*.7f)));bowString.SetPosition(2,new Vector3(0,7,-(2.8f+tension*.7f)));
             for(int i=0;i<13;i++){float y=(i/12f-.5f)*14;bowStave.SetPosition(i,new Vector3(0,y,-(2.8f+tension*.7f)*(y*y/49)));}
             nockedArrow.gameObject.SetActive(charge>.03f);nockedArrow.SetPositionAndRotation(draw+direction*3,Quaternion.FromToRotation(Vector3.up,direction));
             QuestRowboat.Instance.ApplyBowArmPose(grip,draw,direction);
+            if(gripProfile!=null)
+            {
+                // The visible string and arrow follow the solved hands even at
+                // steep aim angles; unreachable ideal goals must never detach them.
+                bow.position=supportHand.TransformPoint(gripProfile.leftCenter);
+                var actualDraw=animator.GetBoneTransform(HumanBodyBones.RightHand).TransformPoint(gripProfile.rightCenter);
+                bowString.SetPosition(1,bow.InverseTransformPoint(actualDraw));nockedArrow.position=actualDraw+direction*3;
+            }
         }
         void Tell(string text){message=text;noticeUntil=Time.time+3;}
         void UpdateHUD()

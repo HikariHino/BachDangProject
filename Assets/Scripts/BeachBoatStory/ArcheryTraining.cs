@@ -22,6 +22,7 @@ namespace BeachBoatStory
         public float RoundSeconds=>(resultShown?endedAt:Time.time)-beganAt;
         public Canvas HudCanvas=>hud?.Canvas;
         public Vector3 Approach=>origin-forward*8;
+        public Transform GuideTarget {get;private set;}
         public bool Available=>built&&BachDangStoryManager.Instance!=null&&BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_BattleInProgress&&BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_Victory&&BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_Celebration&&(BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_WaitForLowTide||QuestRowboat.Instance?.IsAboard!=true);
         public bool Required=>!Completed&&(BachDangStoryManager.Instance?.currentState==BachDangStoryManager.StoryState.Act2_Completed||BachDangStoryManager.Instance?.currentState==BachDangStoryManager.StoryState.Act3_PrepareForBattle||BachDangStoryManager.Instance?.currentState==BachDangStoryManager.StoryState.Act3_WaitForLowTide);
         public ArcheryPracticeTarget[] Targets {get;private set;}
@@ -91,6 +92,7 @@ namespace BeachBoatStory
             }
             var board=new GameObject("Huong_dan_ban_cung");board.transform.SetParent(transform);board.transform.SetPositionAndRotation(origin+Vector3.up*10,Quaternion.LookRotation(forward));
             sign=board.AddComponent<TextMeshPro>();StoryFont.Apply(sign);sign.fontSize=10;sign.alignment=TextAlignmentOptions.Center;sign.rectTransform.sizeDelta=new Vector2(65,24);sign.color=new Color(1,.82f,.35f);
+            GuideTarget=new GameObject("Chi_dan_bai_tap_cung").transform;GuideTarget.SetParent(transform,true);GuideTarget.position=Approach;
             built=true;Physics.SyncTransforms();
             var circle=new GameObject("Vi_tri_dung_tap_cung").AddComponent<LineRenderer>();circle.transform.SetParent(transform,false);circle.sharedMaterial=gold;circle.useWorldSpace=true;circle.widthMultiplier=.4f;circle.positionCount=49;
             for(int n=0;n<49;n++){float a=n/48f*Mathf.PI*2;var p=Approach+new Vector3(Mathf.Cos(a)*7,.25f,Mathf.Sin(a)*7);p.y=Ground(p)+.25f;circle.SetPosition(n,p);}

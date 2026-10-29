@@ -82,7 +82,7 @@ public class Character_Movement : MonoBehaviour
         forward.y = 0; forward.Normalize();
         Vector3 right = Vector3.Cross(Vector3.up, forward);
         Vector3 direction = forward * input.y + right * input.x;
-        Vector3 desired = direction * (sprint ? runSpeed : walkSpeed) * (aim ? .65f : 1f);
+        Vector3 desired = direction * (sprint ? runSpeed : walkSpeed) * (aim ? .65f : 1f)*PhysicalTrainingCourse.MovementScale;
         Vector3 velocity = body.linearVelocity;
         float change = (input.sqrMagnitude > .01f ? acceleration : braking) * Time.fixedDeltaTime;
         if (IsGrounded)
@@ -104,7 +104,7 @@ public class Character_Movement : MonoBehaviour
         }
         body.linearVelocity = velocity;
         if (body.useGravity && !IsGrounded) body.AddForce(Physics.gravity * (Mathf.Max(1, gravityMultiplier) - 1), ForceMode.Acceleration);
-        if (direction.sqrMagnitude > .001f || aim)
+        if ((direction.sqrMagnitude > .001f || aim)&&RiverPlayerCombat.Instance?.IsAiming!=true)
         {
             Vector3 facing = aim ? forward : direction;
             if (facing.sqrMagnitude > .001f) body.MoveRotation(Quaternion.Slerp(body.rotation, Quaternion.LookRotation(facing), 1 - Mathf.Exp(-rotationSpeed * Time.fixedDeltaTime)));

@@ -59,7 +59,7 @@ namespace BeachBoatStory
         public VillageWorkstation Workstation {get;private set;}
         public VillageWorkstation EnsureWorkstation()
         {Workstation=GetComponent<VillageWorkstation>()??gameObject.AddComponent<VillageWorkstation>();Workstation.Build(this);return Workstation;}
-        void Start(){EnsureWorkstation();}
+        void Start(){VillageStallLayout.ClearLaundry(this);EnsureWorkstation();}
         public int MistakeLimit=>kind==WorkKind.Timber||kind==WorkKind.Rice?3:Difficulty==2?2:3;
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);
         public string Instructions=>kind==WorkKind.Timber?"Đặt gỗ lên bàn để vào góc nhìn tay. Giữ chuột trái kéo LÊN / XUỐNG dọc rãnh xanh; rê ngang để đưa cưa về giữa nếu lệch. Cưa đủ tám nhịp và giao ba khúc.":

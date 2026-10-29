@@ -10,6 +10,10 @@ namespace BeachBoatStory
         public LureStage Stage {get;private set;}
         public bool IsPursuing=>Stage!=LureStage.Approach;
         public bool HasEnteredTrap=>Stage==LureStage.EnteringTrap;
+        public RiverArrowChase Chase {get;private set;}
+        void Awake(){Chase=new RiverArrowChase(this);}
+        void OnDestroy(){Chase?.Dispose();}
+        void OnGUI(){Chase?.Draw();}
         public Vector3 FormationAnchor {get;private set;}
         public Vector3 GuidePosition
         {
@@ -56,7 +60,7 @@ namespace BeachBoatStory
         Vector3 origin;
         bool initialized;
         public void ResetLure()
-        {Stage=LureStage.Approach;initialized=false;FormationAnchor=origin=Vector3.zero;}
+        {Stage=LureStage.Approach;initialized=false;FormationAnchor=origin=Vector3.zero;Chase?.Reset();}
         void Initialize()
         {
             if(initialized)return;
@@ -90,9 +94,10 @@ namespace BeachBoatStory
                 }
             }
             if(Stage!=LureStage.Pursuit||!rowing)return;
+            Chase.Step(dt);
             var p=boat.transform.position;var field=zone.FieldBounds;
             // The rower must actually cross the field after meeting the enemy fleet.
-            if(p.z<=field.center.z&&p.x>field.min.x+40&&p.x<field.max.x-40)
+            if(Chase.Completed&&p.z<=field.center.z&&p.x>field.min.x+40&&p.x<field.max.x-40)
             {Stage=LureStage.EnteringTrap;BachDangStoryManager.Instance?.UpdateUI();return;}
             float longest=0;foreach(var ship in Fleet.enemyShips)if(ship!=null)longest=Mathf.Max(longest,ship.hullHalfLength);
             var follow=new Vector3(origin.x+Mathf.Clamp(p.x-origin.x,-120,120),TideSystem.CurrentWaterHeight,p.z+longest+180);
@@ -114,13 +119,14 @@ namespace BeachBoatStory
             destination=FormationAnchor+(ship.spawnPoint-origin);destination.y=TideSystem.CurrentWaterHeight;return true;
         }
         public void FillSave(BachDangSaveData.Fleet data)
-        {Initialize();data.lureVersion=1;data.lureStage=(int)Stage;data.lureAnchor=FormationAnchor;}
+        {Initialize();data.lureVersion=1;data.lureStage=(int)Stage;data.lureAnchor=FormationAnchor;Chase.FillSave(data);}
         public void RestoreSave(BachDangSaveData.Fleet data)
         {
             initialized=false;Initialize();
             // Old saves already have ships sailing to their berths; retain that progress.
             Stage=data.lureVersion==0||data.ebb?LureStage.EnteringTrap:(LureStage)Mathf.Clamp(data.lureStage,0,2);
             if(data.lureVersion>0)FormationAnchor=data.lureAnchor;
+            Chase.RestoreSave(data,Stage==LureStage.EnteringTrap||data.ebb||data.lureVersion==0);
         }
     }
 }

@@ -13,6 +13,14 @@ namespace BeachBoatStory
         bool invasionPlayed,ambushPlayed,counterattackPlayed,pursuitPlayed,active,paused,secondCommand;
         float nextEnemy,commandTime,nextCommand,busy;
         int advanceMask,panicMask;
+        AudioClip queuedWreck;float nextWreck;int wreckCalls;
+        public int WreckCalls=>wreckCalls;
+        public bool QueueWreckCry(AudioClip clip)
+        {
+            var fleet=EnemyFleetDirector.Instance;if(clip==null||fleet?.BattleStarted!=true||!fleet.AmbushStarted)return false;
+            if(queuedWreck==null&&wreckCalls<2&&Time.time>=nextWreck){queuedWreck=clip;nextWreck=Time.time+12;}
+            return true;
+        }
         const string InvasionLine="Đây là cơ hội tốt để ta xâm lược và đô hộ Giao Châu!";
         public int InvasionCues {get;private set;}
         public int PanicCues {get;private set;}
@@ -48,6 +56,7 @@ namespace BeachBoatStory
             data.invasionVoiced=invasionPlayed;data.ambushVoiced=ambushPlayed;data.counterattackVoiced=counterattackPlayed;
             data.pursuitVoiced=pursuitPlayed;
             data.counterattackDelay=secondCommand?Mathf.Max(.5f,nextCommand):0;data.voiceAdvanceMask=advanceMask;data.voicePanicMask=panicMask;
+            data.voiceWreckCalls=wreckCalls;
         }
         public void RestoreSave(BachDangSaveData.Fleet data)
         {
@@ -55,9 +64,10 @@ namespace BeachBoatStory
             pursuitPlayed=data.pursuitVoiced||(data.lureVersion==0&&data.active);
             secondCommand=ambushPlayed&&!counterattackPlayed;nextCommand=Mathf.Max(.5f,data.counterattackDelay);nextEnemy=3;
             advanceMask=data.voiceAdvanceMask&3;panicMask=data.voicePanicMask&7;
+            wreckCalls=Mathf.Clamp(data.voiceWreckCalls,0,2);
         }
         public void ResetForNewBattle(){Silence();invasionPlayed=ambushPlayed=counterattackPlayed=pursuitPlayed=false;advanceMask=panicMask=0;InvasionCues=PanicCues=CommanderCues=PursuitCues=0;nextEnemy=0;}
-        public void Silence(){speech.Stop();caption.gameObject.SetActive(false);commandTime=busy=0;secondCommand=false;active=false;paused=false;}
+        public void Silence(){speech.Stop();caption.gameObject.SetActive(false);commandTime=busy=0;secondCommand=false;active=false;paused=false;queuedWreck=null;nextWreck=0;wreckCalls=0;}
         public void RequestWreckCry(){nextEnemy=Mathf.Min(nextEnemy,.5f);}
         public void PlayInvasionIntroduction()
         {
@@ -74,6 +84,7 @@ namespace BeachBoatStory
         void Play(AudioClip clip,bool command,string subtitle=null)
         {
             if(clip==null)return;
+            commandTime=0;caption.gameObject.SetActive(false);
             // Play replaces the channel's clip. There are no overlapping OneShots.
             speech.Stop();speech.clip=clip;speech.pitch=1;speech.volume=command?1:.85f;speech.spatialBlend=command?0:.15f;speech.priority=command?12:55;speech.Play();
             busy=clip.length+.5f;
@@ -82,7 +93,7 @@ namespace BeachBoatStory
         }
         void EnemyCue(bool panic)
         {
-            if(busy>0)return;var clips=panic?panics:advances;int mask=panic?panicMask:advanceMask;
+            if(busy>0||panic&&panicMask!=0)return;var clips=panic?panics:advances;int mask=panic?panicMask:advanceMask;
             for(int i=0;i<clips.Length;i++)
             {
                 if((mask&(1<<i))!=0)continue;mask|=1<<i;Play(clips[i],false,!panic&&i==0?InvasionLine:null);
@@ -121,6 +132,8 @@ namespace BeachBoatStory
             else if(!ambush&&!invasionPlayed){invasionPlayed=true;EnemyCue(false);}
             else if(!ambush&&!pursuitPlayed&&fleet.Pursuit.IsPursuing&&busy<=0)
             {pursuitPlayed=true;PursuitCues++;Play(pursuitCommand,false,"Giết! Đuổi theo bọn chúng cho ta!");nextEnemy=busy+4;}
+            else if(busy<=0&&queuedWreck!=null)
+            {var cry=queuedWreck;queuedWreck=null;wreckCalls++;Play(cry,false);nextEnemy=busy+8;}
             else if(busy<=0&&secondCommand&&nextCommand<=0)
             {secondCommand=false;counterattackPlayed=true;Play(attackCommand,true,"Hỡi ba quân tướng sĩ! Đánh cho Nam quốc sơn hà rạng danh ngàn đời!");nextEnemy=busy+1.25f;}
             else if(busy<=0&&nextEnemy<=0)EnemyCue(ambush);

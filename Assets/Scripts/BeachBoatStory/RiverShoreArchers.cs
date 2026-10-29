@@ -6,7 +6,7 @@ namespace BeachBoatStory
     /// <summary>Prepared archery groups cover dry riverbanks and islands around the stake field.</summary>
     public sealed class RiverShoreArchers : MonoBehaviour
     {
-        sealed class Archer {public GameObject go;public RiverFighterPose pose;public float nextShot;public Vector3 bank;}
+        sealed class Archer {public GameObject go;public RiverFighterPose pose;public float nextShot,fireAt;public Vector3 bank;public EnemyDeckGuard pending;}
         sealed class Bank {public Vector3 point;public Vector2Int cell;public int island;}
         sealed class Arrow {public Transform visual;public EnemyDeckGuard target;public Vector3 start,end,previous;public float time,duration;public bool hit,lethal;}
         readonly List<Archer> archers=new List<Archer>();
@@ -144,14 +144,17 @@ namespace BeachBoatStory
             if(dt<=0||!ActiveAmbush)return;
             foreach(var a in archers)
             {
-                if(Time.time<a.nextShot)continue;a.nextShot=Time.time+Random.Range(12f,18f);
-                EnemyDeckGuard target=null;float best=MaximumRange;
-                foreach(var g in RiverPlayerCombat.Instance.guards)
-                {if(g==null||!g.IsAlive||!g.ship.isDestroyed)continue;float d=QuestRowboat.FlatDistance(a.go.transform.position,g.transform.position);if(d<best){best=d;target=g;}}
-                if(target==null)continue;
+                if(a.pending==null)
+                {
+                    if(Time.time<a.nextShot)continue;a.nextShot=Time.time+Random.Range(8f,12f);EnemyDeckGuard next=null;float nearest=MaximumRange;
+                    foreach(var g in RiverPlayerCombat.Instance.guards){if(g==null||!g.IsAlive||!g.ship.isDestroyed)continue;float d=QuestRowboat.FlatDistance(a.go.transform.position,g.transform.position);if(d<nearest){nearest=d;next=g;}}
+                    if(next==null)continue;a.pending=next;a.fireAt=Time.time+.73f;a.pose.BeginBowShot(next.AimPoint);continue;
+                }
+                if(Time.time<a.fireAt)continue;
+                var target=a.pending;a.pending=null;if(target==null||!target.IsAlive)continue;float best=QuestRowboat.FlatDistance(a.go.transform.position,target.transform.position);
                 Arrow arrow=null;foreach(var shot in arrows)if(!shot.visual.gameObject.activeSelf){arrow=shot;break;}if(arrow==null)continue;
                 var face=target.transform.position-a.go.transform.position;face.y=0;a.go.transform.rotation=Quaternion.LookRotation(face);
-                arrow.start=a.go.transform.position+Vector3.up*12+a.go.transform.forward*7;
+                arrow.start=a.pose.BowMuzzle;BeachBoatSoundscape.Instance?.PlayBow(true);
                 arrow.hit=RollHit(Random.value,best);arrow.lethal=RollLethal(Random.value);arrow.target=target;
                 arrow.end=target.AimPoint+(arrow.hit?Vector3.zero:Quaternion.Euler(0,Random.Range(0,360),0)*Vector3.forward*Random.Range(18,30));
                 arrow.time=0;arrow.duration=Mathf.Clamp(best/550,.55f,5.5f);arrow.previous=arrow.start;
@@ -176,7 +179,7 @@ namespace BeachBoatStory
         }
         public void ResetAmbush()
         {
-            fighting=false;foreach(var a in archers)a.go.SetActive(false);
+            fighting=false;foreach(var a in archers){a.pending=null;a.go.SetActive(false);}
             foreach(var shot in arrows){shot.visual.gameObject.SetActive(false);shot.target=null;}
         }
         void OnDestroy(){if(material!=null)Destroy(material);}

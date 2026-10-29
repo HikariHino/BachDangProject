@@ -144,8 +144,9 @@ namespace BeachBoatStory
             rightHand=rig.GetBoneTransform(HumanBodyBones.RightHand);leftHand=rig.GetBoneTransform(HumanBodyBones.LeftHand);chest=rig.GetBoneTransform(HumanBodyBones.Chest)??rig.GetBoneTransform(HumanBodyBones.Spine);
             armRest=arms.Select(a=>a.localRotation).ToArray();
             hands=new WorkbenchHands(player,rig);gripProfile=BowGripProfile.Load();
-            marker=new GameObject("Active_work_target");marker.transform.SetParent(props.transform,false);var ring=marker.AddComponent<LineRenderer>();ring.sharedMaterial=gold;ring.useWorldSpace=false;ring.widthMultiplier=.35f;ring.positionCount=33;
-            for(int i=0;i<33;i++){float a=i/32f*Mathf.PI*2;ring.SetPosition(i,new Vector3(Mathf.Cos(a)*1.2f,0,Mathf.Sin(a)*1.2f));}
+            marker=new GameObject("Active_work_target");marker.transform.SetParent(props.transform,false);
+            // Four small corners identify the item without drawing a floating ring.
+            foreach(int x in new[]{-1,1})foreach(int z in new[]{-1,1}){var corner=new GameObject("Item_highlight_corner").AddComponent<LineRenderer>();corner.transform.SetParent(marker.transform,false);corner.sharedMaterial=gold;corner.useWorldSpace=false;corner.widthMultiplier=.18f;corner.positionCount=3;corner.SetPositions(new[]{new Vector3(x*.8f,0,z*1.5f),new Vector3(x*1.5f,0,z*1.5f),new Vector3(x*1.5f,0,z*.8f)});}
             label=new GameObject("Context_prompt").AddComponent<TextMeshPro>();label.transform.SetParent(props.transform,false);StoryFont.Apply(label);label.fontSize=6.5f;label.alignment=TextAlignmentOptions.Center;label.rectTransform.sizeDelta=new Vector2(55,10);label.color=new Color(1,.82f,.37f);
             label.transform.localScale=new Vector3(1,1/verticalScale,1);
             rope=Line("Rope_pulled_around_bundle",fibre,.5f);pour=Line("Rice_pour",rice,.3f);pour.enabled=false;
@@ -518,7 +519,7 @@ namespace BeachBoatStory
             if(blade!=null&&Current==Step.Saw)blade.transform.position=ToolPoint(ToolPointer);
             if(sawHandle!=null&&Current==Step.Saw)sawHandle.transform.SetPositionAndRotation(ToolPoint(ToolPointer)+player.right*2,player.rotation);
             if(grain!=null){float level=Mathf.Clamp01(RiceFill);grain.transform.localScale=new Vector3(5.4f,Mathf.Max(.05f,level*2.5f),5.4f);grain.transform.localPosition=WorkLocal(new Vector3(4,9+level*2.5f,-10.2f));grain.GetComponent<Renderer>().sharedMaterial=rice;}
-            if(fillBand!=null)fillBand.sharedMaterial=RiceReady?green:RiceExcess?red:gold;
+            if(fillBand!=null)fillBand.enabled=false; // Amount is already shown by the readable screen gauge.
             if(pour!=null){pour.enabled=Current==Step.FillRice&&Time.time<pourUntil;if(pour.enabled){pour.positionCount=9;for(int i=0;i<9;i++){float t=i/8f;pour.SetPosition(i,World(Vector3.Lerp(new Vector3(4,14,-10.2f),new Vector3(4,12,-10.2f),t)));}}}
             if(rope!=null&&stall.kind==VillageWorkStall.WorkKind.Rope)
             {rope.positionCount=Current==Step.Tie?33:0;for(int i=0;i<rope.positionCount;i++){float a=i/32f*Mathf.PI*2;float radius=1.25f-ActionProgress*.25f;rope.SetPosition(i,World(new Vector3(-10+Knots*10,11.3f+Mathf.Cos(a)*3*radius,-10.2f+Mathf.Sin(a)*1.6f*radius)));}}

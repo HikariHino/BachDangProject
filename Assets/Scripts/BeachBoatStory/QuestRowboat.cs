@@ -556,6 +556,13 @@ namespace BeachBoatStory
             return true;
         }
 
+        public bool TakeChaseArrow(float damage)
+        {
+            if(!IsAboard||IsBroken||Time.timeScale<=0||BeachBoatQuestSession.InteractionBlocked)return false;
+            Durability=Mathf.Max(0,Durability-Mathf.Max(0,damage));LastHullImpact=$"Trúng loạt tên • -{damage:0} độ bền";LastHullImpactUntil=Time.unscaledTime+2.5f;BeachBoatSoundscape.Instance?.PlayHit();
+            if(IsBroken){Speed=0;IsBoosting=false;QuestCheckpoint.Instance?.Defeat("THUYỀN ĐÃ HỎNG","Loạt tên đã phá hỏng thuyền nhử địch.");}return true;
+        }
+
         void AttachPlayer()
         {
             if(StakeConstruction.Active!=null)return;

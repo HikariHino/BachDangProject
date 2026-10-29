@@ -19,7 +19,7 @@ namespace BeachBoatStory
         public Vector3 TrainingHome {get;private set;}
         public bool TrainingDelivered {get;private set;}
         public int TrainingLevel {get;private set;}=1;
-        public int Goal=>Training?4+TrainingLevel*2:Sequence?3:4;
+        public int Goal=>Training?2+TrainingLevel:Sequence?3:4;
         public float CrossingSeconds=>Training?(TrainingLevel==1?1.4f:TrainingLevel==2?.95f:.6f):2f;
         public float GreenWidth=>Training?(TrainingLevel==1?.30f:TrainingLevel==2?.18f:.09f):.24f;
         public float GreenMin=>.7f-GreenWidth*.5f;
@@ -56,7 +56,7 @@ namespace BeachBoatStory
             if(Active!=this||Phase==GamePhase.Playing||Phase==GamePhase.Won)return;
             Progress=Mistakes=0;Elapsed=0;lastBeat=-100;Feedback="";Phase=GamePhase.Playing;
             TrainingDelivered=false;
-            if(Training){Course?.Dispose();Course=new PhysicalTrainingCourse(this);Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;}
+            if(Training){Course?.Dispose();try{Course=new PhysicalTrainingCourse(this);Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;}catch(System.InvalidOperationException){Course=null;Phase=GamePhase.Lost;Feedback="Sân tập đang bị vướng. Trở lại gần cửa lều rồi thử lại.";Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}}
             Shuffle();Refresh();
         }
         void Shuffle()
@@ -77,7 +77,7 @@ namespace BeachBoatStory
             "Băng bó theo đúng thứ tự: làm sạch → đặt băng → cố định băng. Vị trí dụng cụ sẽ đổi sau mỗi bước.":
             "Chuẩn bị bữa hồi sức: nước uống → cơm → cá khô. Vị trí món sẽ đổi sau mỗi bước.")+
             "\nNhấn nút có tên phù hợp hoặc phím 1–3. Hoàn thành 3 bước trong 22 giây; sai 3 lần sẽ thua.":
-            Training?$"E nhấc bao cát tại điểm xuất phát. WASD mang bao tới cổng vàng, SPACE nhảy qua thanh gỗ.\nCấp {TrainingLevel}/3: vượt {Goal-1} cổng rồi mang bao về, E đặt xuống trong {TimeLimit:0} giây.\nMỗi cấp hoàn thành lần đầu thưởng +20 thể lực tối đa. ESC rời bài tập.":
+            Training?$"Bạn được đưa tới sân luyện tiếp tế riêng. E lấy bao ở giá xuất phát, WASD mang tới bệ có cờ vàng, E đặt xuống rồi quay về lấy bao tiếp.\nGiao {Goal} bao trong {TimeLimit:0} giây. Thắng hoặc ESC đều đưa bạn trở lại lều.\nMỗi cấp hoàn thành lần đầu thưởng +20 thể lực tối đa.":
             "Điều hòa nhịp thở. Đợi con trỏ vào vùng xanh rồi nhấn Space hoặc nút THỞ RA. Đạt 4 nhịp trong 20 giây; sai 3 lần sẽ thua.";
         public void AdvanceTime(float dt)
         {
@@ -107,7 +107,7 @@ namespace BeachBoatStory
             if(!Facility.CompleteRecovery(this))return false;
             Close();return true;
         }
-        public void TrainingCheckpoint(){if(Active!=this||!Training||Phase!=GamePhase.Playing)return;Progress++;if(Progress>=Goal){TrainingDelivered=true;Phase=GamePhase.Won;Feedback="Đã mang bao qua đủ cổng và trả về điểm xuất phát.";Course?.Dispose();Course=null;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}Refresh();}
+        public void TrainingCheckpoint(){if(Active!=this||!Training||Phase!=GamePhase.Playing)return;Progress++;if(Progress>=Goal){TrainingDelivered=true;Phase=GamePhase.Won;Feedback="Đã giao đủ bao tiếp tế. Bạn đã trở lại lều.";Course?.Dispose();Course=null;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}Refresh();}
         public void Close()
         {
             if(Active!=this)return;

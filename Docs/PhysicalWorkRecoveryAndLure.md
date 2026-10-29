@@ -16,13 +16,15 @@ Người chơi giữ vị trí đã kiểm tra trên sàn thuyền. Camera khi n
 
 Ô vuông có biểu tượng băng thuốc nằm giữa sát dưới màn hình, hiện số lượng và phím H. Bắt đầu với ba item, mỗi item hồi tối đa 35 máu; đầy máu hoặc hết item không tiêu hao. Quân y tiếp thêm tối thiểu ba item sau khi hoàn thành băng bó. Số lượng có trường version riêng trong save; save cũ nhận bộ ban đầu, save mới có số lượng 0 giữ nguyên 0.
 
-Luyện thể lực là vác bao cát qua các cổng gỗ có collider, nhảy qua thanh thấp và đem bao về điểm xuất phát. Không còn tăng tiến độ bằng nút nhịp Space cũ. Chỉ hoàn thành đường tập và trả bao mới nhận +20 thể lực tối đa của cấp kế tiếp; cấp đã nhận không cộng lần nữa. Có 65 giây, ba cấp vẫn được lưu, ESC dọn course và giữ các phần thưởng đã nhận. Đây là bài phụ và không thêm điều kiện xếp hạng chiến dịch.
+Luyện thể lực đưa người chơi tới một sân tiếp tế riêng, vác bao từ giá tới bệ có cờ vàng rồi quay về lấy bao tiếp. Ba cấp yêu cầu giao 3/4/5 bao trong 65 giây; khi vác, tốc độ còn 74%. Không còn các khung nhảy ở cửa lều. Chỉ giao đủ mới nhận +20 thể lực tối đa của cấp kế tiếp; cấp đã nhận không cộng lần nữa. Thắng, hết giờ, ESC hoặc load đều dọn course và đưa người chơi về vị trí vào lều. Đây là bài phụ và không thêm điều kiện xếp hạng chiến dịch.
 
 ## Lệnh xuất phát và tàu đắm
 
 Ngô Quyền dặn rõ chèo ra nhử địch rồi dẫn vào cọc. Người chưa đạt cung được nhắc riêng và chưa thể xuất phát. Cờ `lureBriefed` giữ trạng thái đã nghe lệnh; save cũ trước trận nhận lời dặn trước khi bắt đầu, save đang chiến đấu tiếp tục bình thường. Callback của lời dặn được khai báo rõ để lưu/tải giữa hội thoại.
 
 Âm la thất thanh dùng các clip người thật CC0 trong `WreckAudio`, phát ngay ở sự kiện đắm trên một kênh riêng. Một clip phải phát xong mới có clip kế tiếp, tránh nhiều tàu cùng đắm làm chồng/cắt tiếng. Các lời chuẩn bị mới trong `Voices/Preparation` được tạo bằng Microsoft Edge TTS tiếng Việt theo quyền tạo giọng đã có, chỉ gửi nội dung các câu thoại. Không thay các clip giọng nhân vật khác.
+
+**Cập nhật tối 29/10:** khi phục kích, tiếng la được xếp chung vào kênh thoại trận chiến, nhường câu đang nói và không phát đồng thời kênh la riêng. Ngoài trận vẫn có kênh la dự phòng. Xem `Review29GameplayAndPresentation.md` cho thay đổi mới về né tên, tư thế và chỉ đường.
 
 ## Kiểm chứng ngày 29/10/2026
 

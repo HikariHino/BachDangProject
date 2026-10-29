@@ -36,6 +36,7 @@ namespace BeachBoatStory
         {
             if(destination==null)return false;
             var player=session.player.transform;
+            if(ArcheryTraining.Instance?.GuideTarget==destination)return QuestRowboat.FlatDistance(player.position,destination.position)<=24;
             foreach(var activity in activities)
                 if(activity!=null&&activity.transform==destination)return QuestRowboat.FlatDistance(player.position,destination.position)<=activity.interactDistance;
             if(villageWork!=null)foreach(var stall in villageWork.stalls)
@@ -54,6 +55,8 @@ namespace BeachBoatStory
             title = null;
             if (story == null || session.player == null) return null;
             var state = story.currentState;
+            var range=ArcheryTraining.Instance;
+            if(range!=null&&range.Required&&range.GuideTarget!=null){title="Bãi tập cung • Luyện cung trước khi nhận lệnh nhử địch";return ThroughGate(range.GuideTarget,ref title);}
             if (state == BachDangStoryManager.StoryState.Act2_Completed &&
                 (EnemyFleetDirector.Instance == null || !EnemyFleetDirector.Instance.IsConfigured)) return null;
             Transform best = null; float distance = float.PositiveInfinity;

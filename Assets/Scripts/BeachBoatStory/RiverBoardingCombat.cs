@@ -600,7 +600,7 @@ namespace BeachBoatStory
                     if(CarrierOf(a.target.transform)==a.home.transform)
                     {a.state=3;a.pose.SetRanged(false);a.pose.SetSword(true);continue;}
                     if(a.side<0&&a.arrows>0&&Time.time>=a.shot&&Vector3.Distance(home,a.target.transform.position)<340)
-                    {a.shot=Time.time+8;a.arrows--;if(a.target.Hit(1,false,CombatImpactKind.Arrow))AlliedArrowHits++;BeachBoatSoundscape.Instance?.PlayBow();}
+                    {a.shot=Time.time+8;a.arrows--;a.pose.BeginBowShot(a.target.AimPoint);if(a.target.Hit(1,false,CombatImpactKind.Arrow))AlliedArrowHits++;BeachBoatSoundscape.Instance?.PlayBow();}
                     if(EnemyFleetDirector.Instance.AmbushStarted&&(QuestRowboat.FlatDistance(home,a.target.transform.position)<230||a.home.IsAtBattleStation&&QuestRowboat.FlatDistance(home,a.target.transform.position)<1400)&&homeHull.TryWaterExit(home,4,a.go.transform,out var exit))
                     {a.state=4;a.travel=0;a.start=exit;a.local=a.home.transform.InverseTransformPoint(home);a.pose.SetRanged(false);a.pose.Traversal=RiverFighterPose.Motion.Climb;}
                     continue;
