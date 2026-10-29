@@ -26,6 +26,7 @@ namespace BeachBoatStory
         public bool Available=>built&&BachDangStoryManager.Instance!=null&&BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_BattleInProgress&&BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_Victory&&BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_Celebration&&(BachDangStoryManager.Instance.currentState!=BachDangStoryManager.StoryState.Act3_WaitForLowTide||QuestRowboat.Instance?.IsAboard!=true);
         public bool Required=>!Completed&&(BachDangStoryManager.Instance?.currentState==BachDangStoryManager.StoryState.Act2_Completed||BachDangStoryManager.Instance?.currentState==BachDangStoryManager.StoryState.Act3_PrepareForBattle||BachDangStoryManager.Instance?.currentState==BachDangStoryManager.StoryState.Act3_WaitForLowTide);
         public ArcheryPracticeTarget[] Targets {get;private set;}
+        public const float TargetScale=.82f;
         public ArcheryPracticeTarget NextTarget=>Targets==null?null:Targets[order[Mathf.Min(5,Shots)]];
         readonly int[] order={0,1,2,0,2,1};
         readonly int[] results=new int[6];
@@ -79,16 +80,16 @@ namespace BeachBoatStory
             {
                 var p=origin+forward*(65+i*30)+side*(i-1)*17;p.y=Ground(p);
                 var root=new GameObject("Bia_Rom_"+(i+1));root.transform.SetParent(transform);root.transform.SetPositionAndRotation(p+Vector3.up*14,Quaternion.LookRotation(-forward));
-                var target=root.AddComponent<ArcheryPracticeTarget>();target.index=i;Targets[i]=target;
+                var target=root.AddComponent<ArcheryPracticeTarget>();target.index=i;target.SwayAmplitude=i==0?0:i==1?.85f:1.35f;Targets[i]=target;
                 Part("Target_leg",root.transform,new Vector3(0,-7,1),new Vector3(1.2f,14,1.2f),wood,PrimitiveType.Cube,true);
                 for(int ring=0;ring<4;ring++)
                 {
-                    float size=10-ring*2.6f;var disc=Part("Woven_target_ring_"+ring,root.transform,new Vector3(0,0,ring*.4f),new Vector3(size,.3f,size),ring==0?straw:ring==1?white:ring==2?red:gold,PrimitiveType.Cylinder,ring==0);
+                    float size=(10-ring*2.6f)*TargetScale;var disc=Part("Woven_target_ring_"+ring,root.transform,new Vector3(0,0,ring*.4f),new Vector3(size,.3f,size),ring==0?straw:ring==1?white:ring==2?red:gold,PrimitiveType.Cylinder,ring==0);
                     disc.transform.localRotation=Quaternion.Euler(90,0,0);
                     if(ring==0)target.surface=disc.GetComponent<Renderer>();
                 }
                 var halo=new GameObject("Vong_bia_dang_chon");halo.transform.SetParent(root.transform,false);var line=halo.AddComponent<LineRenderer>();line.sharedMaterial=gold;line.useWorldSpace=false;line.widthMultiplier=.25f;line.positionCount=49;
-                for(int n=0;n<49;n++){float a=n/48f*Mathf.PI*2;line.SetPosition(n,new Vector3(Mathf.Cos(a)*5.6f,Mathf.Sin(a)*5.6f,1.5f));}target.highlight=halo;target.Initialize();
+                for(int n=0;n<49;n++){float a=n/48f*Mathf.PI*2;line.SetPosition(n,new Vector3(Mathf.Cos(a)*5.6f*TargetScale,Mathf.Sin(a)*5.6f*TargetScale,1.5f));}target.highlight=halo;target.Initialize();
             }
             var board=new GameObject("Huong_dan_ban_cung");board.transform.SetParent(transform);board.transform.SetPositionAndRotation(origin+Vector3.up*10,Quaternion.LookRotation(forward));
             sign=board.AddComponent<TextMeshPro>();StoryFont.Apply(sign);sign.fontSize=10;sign.alignment=TextAlignmentOptions.Center;sign.rectTransform.sizeDelta=new Vector2(65,24);sign.color=new Color(1,.82f,.35f);
@@ -147,7 +148,7 @@ namespace BeachBoatStory
             {
                 if(hit.transform.IsChildOf(player)||QuestRowboat.Instance!=null&&hit.transform.IsChildOf(QuestRowboat.Instance.transform))continue;
                 end=hit.point;target=hit.collider.GetComponentInParent<ArcheryPracticeTarget>();
-                if(target!=null&&target.IsReady&&Shots<6&&target.index==order[Shots]){var p=target.transform.InverseTransformPoint(end);float radius=new Vector2(p.x,p.y).magnitude;score=radius<=1.1f?10:radius<=2.4f?7:radius<=5.1f?4:0;}
+                if(target!=null&&target.IsReady&&Shots<6&&target.index==order[Shots]){var p=target.transform.InverseTransformPoint(end);float radius=new Vector2(p.x,p.y).magnitude/TargetScale;score=radius<=1.1f?10:radius<=2.4f?7:radius<=5.1f?4:0;}
                 return end;
             }
             return end;
@@ -179,7 +180,7 @@ namespace BeachBoatStory
             if(!built||BachDangFrontEnd.IsBlocking||CampaignJournalUI.IsOpen)return;
             if(Active!=this)
             {
-                if(!Available||QuestRowboat.FlatDistance(player.position,Approach)>100)return;
+                if(!Available||QuestRowboat.FlatDistance(player.position,Approach)>100||QuestRowboat.FlatDistance(player.position,Approach)<=24)return;
                 var label=new GUIStyle(GUI.skin.box){fontSize=Mathf.Max(17,Mathf.RoundToInt(Screen.height*.026f)),alignment=TextAnchor.MiddleCenter,wordWrap=true};
                 float metres=QuestRowboat.FlatDistance(player.position,Approach)/Mathf.Max(1,BeachBoatQuestSession.Instance.WorldUnitsPerMetre);
                 GUI.Box(new Rect(Screen.width*.28f,Screen.height*.69f,Screen.width*.44f,Screen.height*.1f),(Required?"BẮT BUỘC • ":"")+"TẬP BẮN CUNG\n"+(metres<3?"Bấm E tại vị trí bắn • Trúng ít nhất 4/6 bia":$"Đi tới vị trí bắn • Còn {metres:0} m"),label);return;
@@ -193,12 +194,13 @@ namespace BeachBoatStory
         public bool IsDown {get;private set;}public bool IsReady=>!IsDown&&angle<.1f;
         public float DownSeconds=>IsDown?Time.time-fellAt:0;
         public float FallAngle=>angle;
-        Vector3 pivot;Quaternion standing;float angle,fellAt;bool initialized;
+        Vector3 pivot,swayOffset;Quaternion standing;float angle,fellAt;bool initialized;
+        public float SwayAmplitude {get;set;}
         public void Initialize(){standing=transform.rotation;pivot=transform.position-Vector3.up*14;initialized=true;}
         public void KnockDown(){if(!IsReady)return;IsDown=true;fellAt=Time.time;if(highlight!=null)highlight.SetActive(false);}
         public void Raise(){IsDown=false;}
-        public void ResetPose(){if(!initialized)return;IsDown=false;angle=0;ApplyPose();}
-        void Update(){if(!initialized)return;float next=Mathf.MoveTowards(angle,IsDown?86:0,Time.deltaTime*(IsDown?230:180));if(Mathf.Approximately(next,angle))return;angle=next;ApplyPose();Physics.SyncTransforms();}
-        void ApplyPose(){var rotation=standing*Quaternion.Euler(-angle,0,0);transform.SetPositionAndRotation(pivot+rotation*Vector3.up*14,rotation);}
+        public void ResetPose(){if(!initialized)return;IsDown=false;angle=0;swayOffset=Vector3.zero;ApplyPose();}
+        void Update(){if(!initialized)return;var offset=ArcheryTraining.Active!=null&&!IsDown?standing*Vector3.right*(Mathf.Sin(Time.time*.95f+index)*SwayAmplitude):swayOffset;float next=Mathf.MoveTowards(angle,IsDown?86:0,Time.deltaTime*(IsDown?230:180));if(Mathf.Approximately(next,angle)&&(offset-swayOffset).sqrMagnitude<.000001f)return;angle=next;swayOffset=offset;ApplyPose();Physics.SyncTransforms();}
+        void ApplyPose(){var rotation=standing*Quaternion.Euler(-angle,0,0);transform.SetPositionAndRotation(pivot+swayOffset+rotation*Vector3.up*14,rotation);}
     }
 }

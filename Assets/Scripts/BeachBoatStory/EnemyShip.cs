@@ -167,8 +167,10 @@ namespace BeachBoatStory
             var direction=end-pos;
             var rotation=distance>8?Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(direction),10*dt):transform.rotation;
             float alignment=distance>8?Mathf.Max(0,Vector3.Dot(rotation*Vector3.forward,direction.normalized)):0;
-            float wantedSpeed=distance>8?Mathf.Min(moveSpeed,(distance-8)*1.2f)*alignment:0;
-            forwardSpeed=Mathf.MoveTowards(forwardSpeed,wantedSpeed,28*dt);
+            float cruise=moveSpeed;
+            if(pursuit!=null&&cruise>0){if(pursuit.Stage==RiverFleetPursuit.LureStage.Pursuit)cruise=Mathf.Max(cruise,pursuit.HullCruiseSpeed);else cruise=Mathf.Min(cruise,pursuit.HasEnteredTrap?110:75);}
+            float wantedSpeed=distance>8?Mathf.Min(cruise,(distance-8)*1.2f)*alignment:0;
+            forwardSpeed=Mathf.MoveTowards(forwardSpeed,wantedSpeed,60*dt);
             float step=distance>8?Mathf.Min(distance-8,forwardSpeed*dt):0;
             // A hull advances along its bow, never sideways toward a moving marker.
             var next=pos+rotation*Vector3.forward*step;
@@ -258,7 +260,7 @@ namespace BeachBoatStory
             if(data.active)Activate();
             if(deckGuards==null)deckGuards=GetComponentsInChildren<EnemyDeckGuard>(true);
             battleStarted=data.started;isDestroyed=data.destroyed;HasSettled=data.settled;attackReleased=data.released;
-            SignalReady=data.signal;routeIndex=data.route;forwardSpeed=Mathf.Clamp(data.speed,0,moveSpeed);
+            SignalReady=data.signal;routeIndex=data.route;forwardSpeed=Mathf.Clamp(data.speed,0,Mathf.Max(moveSpeed,EnemyFleetDirector.Instance?.Pursuit?.HullCruiseSpeed??moveSpeed));
             // Older saves refer to the former two-point route. Resume at the closest
             // forward segment of the new physical approach instead of sailing back.
             if(!data.destroyed&&data.routeCount!=routeWaypoints.Length)

@@ -6,7 +6,7 @@ import edge_tts
 dest=Path('Assets/Resources/BachDang938/Voices/Preparation');dest.mkdir(parents=True,exist_ok=True)
 staging=Path('.utmp/preparation-voices');staging.mkdir(parents=True,exist_ok=True)
 source=Path('Assets/Scripts/BeachBoatStory/PreparationBriefing.cs').read_text(encoding='utf-8-sig')
-lines=[('ngo_lure',re.search(r'Lure="([^"]+)"',source).group(1),'commander_brief'),('ngo_archery_natural',re.search(r'Archery="([^"]+)"',source).group(1),'commander_brief'),('crew_hold','Giữ chắc cọc! Một, hai, nện!','crew_work'),('crew_move','Cọc đã chắc! Chuyển sang hàng tiếp theo!','crew_work')]
+lines=[('ngo_stakes_five',re.search(r'Stakes="([^"]+)"',source).group(1),'commander_brief'),('ngo_lure',re.search(r'Lure="([^"]+)"',source).group(1),'commander_brief'),('ngo_archery_natural',re.search(r'Archery="([^"]+)"',source).group(1),'commander_brief'),('crew_hold','Giữ chắc cọc! Một, hai, nện!','crew_work'),('crew_move','Cọc đã chắc! Chuyển sang hàng tiếp theo!','crew_work')]
 async def main():
     for key,line,profile in lines:
         out=dest/(key+'.mp3')

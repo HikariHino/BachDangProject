@@ -61,7 +61,7 @@ public static class BeachBoatConcurrentBattlePlaytest
     {
         var boat=QuestRowboat.Instance;
         float remaining=boat.transform.position.z-stopZ;
-        if(remaining>0)boat.Step(1,0,Mathf.Min(Time.deltaTime*2,remaining/(boat.maxSpeed+1)));
+        if(remaining>0){BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().RestoreCheckpoint(0);boat.Step(1,0,Mathf.Min(Time.deltaTime,remaining/(boat.maxSpeed*boat.sprintMultiplier+1)),true);}
     }
     static bool HullsSeparate(EnemyFleetDirector fleet)
     {
@@ -252,7 +252,7 @@ public static class BeachBoatConcurrentBattlePlaytest
                 Check(sawApproachDrop&&approachSaveChecked,"Water visibly falls during entry while all stakes and hulls remain safely clear");
                 Check(HullsSeparate(fleet),"The entire baited formation reaches the trap without overlapping hulls");
                 Check(motionSamples>100&&maxYawRate<10.3f&&maxSlip<2,"All live hulls keep smooth bounded turns and bow-aligned movement through the full pursuit and trap entry");
-                Check(peakPursuitSpeed>60,"Enemy vessels reach the faster 62-unit pursuit cruise speed");
+                Check(peakPursuitSpeed>QuestRowboat.Instance.maxSpeed*QuestRowboat.Instance.sprintMultiplier,"Enemy vessels reach a pursuit speed above the boosted rowboat");
                 Check(TideSystem.Instance.IsControlledEbb&&TideSystem.Instance.TargetWaterHeight==TideSystem.Instance.lowTideY,"The last full hull entering releases the short final ebb immediately");phase=3;
                 Check(RiverBoardingCombat.Instance.CaptureSave().allies.All(a=>a.state==0&&a.arrows==2),"Falling water alone still does not authorize allied attacks before exposed stakes");
                 var oldEbb=BachDangSaveSystem.Capture("QA legacy long ebb");float loadedHeight=TideSystem.CurrentWaterHeight;

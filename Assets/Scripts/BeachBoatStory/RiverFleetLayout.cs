@@ -68,7 +68,7 @@ namespace BeachBoatStory
                 // dispersed berths inside the stakes remain unchanged.
                 if(!BoatHullCollision.Get(ship.transform).CanOccupy(p,Quaternion.Euler(0,180,0),false))p.x=ship.targetPoint.position.x;
                 var entry=new GameObject("Concurrent_Entry_"+i).transform;entry.SetParent(root,false);entry.position=p;
-                spawns[i]=entry;ship.spawnPoint=p;ship.routeWaypoints=new[]{entry};ship.moveSpeed=62;ship.ambushDelay=0;
+                spawns[i]=entry;ship.spawnPoint=p;ship.routeWaypoints=new[]{entry};ship.moveSpeed=EnemyFleetDirector.Instance?.Pursuit?.HullCruiseSpeed??194;ship.ambushDelay=0;
             }
             fleet.spawnPoints=spawns;
         }

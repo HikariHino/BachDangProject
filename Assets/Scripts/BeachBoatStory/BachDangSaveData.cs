@@ -19,6 +19,9 @@ namespace BeachBoatStory
         public Quaternion playerRotation=Quaternion.identity,boatRotation=Quaternion.identity;
         public bool aboard;
         public bool[] woods,stakes;
+        public int stakeSamplesVersion;
+        public Vector3[] stakeSamplePositions;
+        public Quaternion[] stakeSampleRotations;
         public string[] woodIds;public Vector3[] woodPositions;public Quaternion[] woodRotations;
         public int[] stallLevels;
         public Activity[] activities;

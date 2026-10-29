@@ -222,8 +222,8 @@ public class BachDangStoryManager : MonoBehaviour
                 desc = zone != null && zone.RecoveryRequired
                     ? "SỰ CỐ: Một bó cọc bị trôi!\n- Chèo tới bó cọc, dừng thuyền và vớt lại."
                     : zone != null && zone.IsPlanting
-                    ? $"Tự dựng ba cọc mẫu • {StakeConstruction.Active?.CompletedBundles??0}/3\nChọn chỗ, chỉnh nghiêng, căn búa và thả đúng lực."
-                    : "- Qua cổng ra bến và lên thuyền.\n- Chèo tới một điểm đánh dấu, dừng và bấm E.\n- Dựng ba cọc mẫu; quân dân sẽ hoàn thiện trận địa trong những ngày tiếp theo.";
+                    ? $"Năm vị trí đóng cọc • {RiverStakeZone.Instance.CompletedClusterCount}/5\nChọn chỗ, chỉnh nghiêng, căn búa và thả đúng lực."
+                    : "- Qua cổng ra bến và lên thuyền.\n- Ghé đủ năm điểm đánh dấu; mỗi điểm tự đóng một cọc mẫu.\n- Quân dân sẽ hoàn thiện trận địa trong những ngày tiếp theo.";
                 break;
 
             case StoryState.Act2_CompleteReturnToCamp:

@@ -177,15 +177,15 @@ namespace BeachBoatStory
                 }
                 else if (story != null && story.currentState == BachDangStoryManager.StoryState.Act3_BattleInProgress)
                 {
-                    controlsText.text = "W/S: chèo  •  A/D: lái  •  Shift: nhanh  •  M: bản đồ";
+                    controlsText.text = "W/S • Chèo    A/D • Lái\nSHIFT • Tăng tốc    M • Bản đồ";
                 }
                 else if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard)
                 {
-                    controlsText.text = "W/S: chèo  •  A/D: lái  •  Shift: nhanh  •  E: hành động  •  M: bản đồ";
+                    controlsText.text = "W/S • Chèo    A/D • Lái    SHIFT • Tăng tốc\nE • Hành động    M • Bản đồ";
                 }
                 else
                 {
-                    controlsText.text = "WASD: di chuyển  •  Shift: chạy  •  E: tương tác  •  M: bản đồ  •  TAB: nhật ký";
+                    controlsText.text = "WASD • Di chuyển    SHIFT • Chạy\nE • Tương tác    M • Bản đồ    TAB • Nhật ký";
                 }
             }
             if (vitals != null && healthFill != null)
@@ -195,8 +195,8 @@ namespace BeachBoatStory
                 healthFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(vitals.HealthFraction), 1f);
                 staminaFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(vitals.StaminaFraction), 1f);
                 int hp = Mathf.CeilToInt(vitals.Health), sp = Mathf.CeilToInt(vitals.Stamina);
-                if (hp != shownHealth) { healthText.text = $"Máu  {hp:0}/{vitals.maxHealth:0}"; shownHealth = hp; }
-                if (sp != shownStamina) { staminaText.text = $"Thể lực  {sp:0}/{vitals.maxStamina:0}"; shownStamina = sp; }
+                if (hp != shownHealth) { healthText.text = $"MÁU  {hp:0}/{vitals.maxHealth:0}"; shownHealth = hp; }
+                if (sp != shownStamina) { staminaText.text = $"THỂ LỰC  {sp:0}/{vitals.maxStamina:0}"; shownStamina = sp; }
                 impactText.text = Time.unscaledTime < vitals.LastImpactUntil
                     ? vitals.LastImpact + (vitals.LastImpactDamage > 0 ? $"  -{vitals.LastImpactDamage:0} máu" : "")
                     : "";
@@ -253,19 +253,19 @@ namespace BeachBoatStory
             controlsPanel = controls;
             var keys = Text("Controls",controls.transform,new Vector2(.025f,.05f),new Vector2(.975f,.95f),14);
             controlsText = keys;
-            keys.enableAutoSizing = true; keys.fontSizeMin = 10; keys.fontSizeMax = 14;
+            keys.enableAutoSizing = true; keys.fontSizeMin = 12; keys.fontSizeMax = 16;keys.alignment=TextAlignmentOptions.MidlineLeft;
             keys.text = "WASD: di chuyển  •  Shift: chạy  •  E: tương tác  •  M: bản đồ";
             vitalsPanel = Panel("Vitals", canvas.transform, new Vector2(.015f,.077f),
                 new Vector2(.257f,.190f), new Color(.02f,.025f,.03f,.80f));
-            healthText = Text("HealthLabel", vitalsPanel.transform, new Vector2(.04f,.56f),new Vector2(.44f,.96f),14);
-            staminaText = Text("StaminaLabel", vitalsPanel.transform, new Vector2(.04f,.07f),new Vector2(.44f,.47f),14);
-            var healthBack = Panel("HealthTrack", vitalsPanel.transform, new Vector2(.45f,.60f),
-                new Vector2(.96f,.78f), new Color(.20f,.12f,.12f,.9f));
+            healthText = Text("HealthLabel", vitalsPanel.transform, new Vector2(.04f,.74f),new Vector2(.96f,.98f),14);
+            staminaText = Text("StaminaLabel", vitalsPanel.transform, new Vector2(.04f,.27f),new Vector2(.96f,.50f),14);
+            var healthBack = Panel("HealthTrack", vitalsPanel.transform, new Vector2(.04f,.54f),
+                new Vector2(.96f,.68f), new Color(.20f,.12f,.12f,.9f));
             healthFill = Panel("HealthFill", healthBack.transform, Vector2.zero,Vector2.one,
                 new Color(.82f,.18f,.16f,1f)).GetComponent<Image>();
             healthFill.type = Image.Type.Simple;
-            var staminaBack = Panel("StaminaTrack", vitalsPanel.transform, new Vector2(.45f,.12f),
-                new Vector2(.96f,.30f), new Color(.10f,.20f,.19f,.9f));
+            var staminaBack = Panel("StaminaTrack", vitalsPanel.transform, new Vector2(.04f,.08f),
+                new Vector2(.96f,.22f), new Color(.10f,.20f,.19f,.9f));
             staminaFill = Panel("StaminaFill", staminaBack.transform, Vector2.zero,Vector2.one,
                 new Color(.26f,.76f,.54f,1f)).GetComponent<Image>();
             staminaFill.type = Image.Type.Simple;
@@ -284,6 +284,7 @@ namespace BeachBoatStory
             canvas.gameObject.AddComponent<StoryRouteGuide>().Initialize(this,guide,route,pointer);
             canvas.gameObject.AddComponent<BeachBoatMinimap>().Initialize(player.transform);
             canvas.gameObject.AddComponent<BeachBoatMinigameUI>().Initialize();
+            canvas.gameObject.AddComponent<GameplayHUDLayout>().Initialize((RectTransform)vitalsPanel.transform,(RectTransform)controlsPanel.transform,(RectTransform)prompt.transform,(RectTransform)boatPanel.transform,impactText.rectTransform);
         }
         void BuildIntro()
         {

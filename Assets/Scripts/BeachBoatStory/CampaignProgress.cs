@@ -44,7 +44,7 @@ namespace BeachBoatStory
         }
         public bool MissionCurrent(int index)=>BachDangStoryManager.Instance!=null&&(int)BachDangStoryManager.Instance.currentState==StoryOrder[index]&&!MissionDone(index);
         public int CompletedMissions=>Enumerable.Range(0,StoryOrder.Length).Count(MissionDone);
-        public void StartStakes(){if(!Record.finished){if(!Record.stakeStarted){Record.stakeTargetSeconds=90;stakeTarget=0;}Record.stakeStarted=true;}}
+        public void StartStakes(){if(!Record.finished){if(!Record.stakeStarted){Record.stakeTargetSeconds=0;stakeTarget=0;Record.stakeTargetSeconds=StakeTargetSeconds;}Record.stakeStarted=true;}}
         public void RecordDefeat(){if(!Record.finished)Record.defeats++;}
         public void RecordCasualty(){if(!Record.finished)Record.casualties++;}
         public void RecordFriendlyBoarding(){if(!Record.finished)Record.friendlyBoardings++;}
@@ -150,6 +150,7 @@ namespace BeachBoatStory
             // Upgrade the old point-based ending using its real records. Missing
             // timings cannot silently grant a timed achievement or a high rank.
             if(Record.finished&&Record.rankRulesVersion<RankRulesVersion){if(RecordedMinigames<ScoredMinigames)Record.historyIncomplete=true;Record.finalRank=EarnedRank;Record.finalScore=0;Record.rankRulesVersion=RankRulesVersion;}
+            if(!Record.stakeFinished&&state==(int)BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver&&Record.stakeTargetSeconds<=90){Record.stakeTargetSeconds=0;stakeTarget=0;if(Record.stakeStarted)Record.stakeTargetSeconds=StakeTargetSeconds;}
             Visit(state);if(state==(int)BachDangStoryManager.StoryState.Act3_Celebration&&!Record.finished)Finish();
         }
         public static string Duration(float seconds){var t=TimeSpan.FromSeconds(Mathf.Max(0,seconds));return t.TotalHours>=1?$"{(int)t.TotalHours:00}:{t.Minutes:00}:{t.Seconds:00}":$"{t.Minutes:00}:{t.Seconds:00}";}

@@ -802,6 +802,17 @@
           "path": "BachDang938/Voices/Preparation/ngo_archery_natural"
         }
       ]
+    },
+    {
+      "line": "Mang cọc ra bến. Chèo tới đủ năm vị trí ngoài sông, mỗi nơi dựng một cọc mẫu, chỉnh đúng góc và nện thật chắc. Quân dân sẽ theo mẫu hoàn thiện trận địa. Xong việc, trở về báo cáo với ta.",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "commander_brief",
+          "path": "BachDang938/Voices/Preparation/ngo_stakes_five"
+        }
+      ]
     }
   ],
   "profiles": [

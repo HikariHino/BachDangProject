@@ -116,7 +116,7 @@ public class NPCQuestGiver : MonoBehaviour
                 }
                 else if (story.currentState == BachDangStoryManager.StoryState.Act2_ReportToNgoQuyen)
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", "Tốt lắm. Mang cọc qua cổng ra bến, lên thuyền tới một điểm đánh dấu ngoài sông. Hãy dựng ba cọc mẫu đúng độ nghiêng và nện chắc xuống lòng sông. Quân dân sẽ theo mẫu đó hoàn thiện cả trận địa trong những ngày tới. Xong việc, trở về báo cáo với ta.", story.OnReportToNgoQuyenAct2,transform);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", PreparationBriefing.Stakes, story.OnReportToNgoQuyenAct2,transform);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }

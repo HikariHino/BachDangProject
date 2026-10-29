@@ -38,7 +38,7 @@ namespace BeachBoatStory
             feedback=Text("Hit_feedback",root.transform,new Vector2(.25f,.19f),new Vector2(.75f,.245f),23,Gold,"",TextAlignmentOptions.Center);
             var controls=Panel("Range_controls",root.transform,new Vector2(.14f,.035f),new Vector2(.86f,.145f),Dark);
             Text("Aim_and_release",controls.transform,new Vector2(.025f,.49f),new Vector2(.975f,.95f),19,Color.white,"CHUỘT PHẢI: NGẮM    •    GIỮ CHUỘT TRÁI: KÉO DÂY    •    THẢ: BẮN",TextAlignmentOptions.Center);
-            Text("Scoring_rules",controls.transform,new Vector2(.025f,.05f),new Vector2(.975f,.46f),16,Muted,"Tâm 10  /  Vòng giữa 7  /  Vòng ngoài 4  •  Chỉ tính bia vòng vàng  •  ESC rời bãi",TextAlignmentOptions.Center);
+            Text("Scoring_rules",controls.transform,new Vector2(.025f,.05f),new Vector2(.975f,.46f),16,Muted,"Tâm 10 / Giữa 7 / Ngoài 4 • Bia 2–3 đung đưa • Chỉ tính bia vàng • ESC rời bãi",TextAlignmentOptions.Center);
             result=Panel("Round_results",root.transform,new Vector2(.26f,.25f),new Vector2(.74f,.70f),Dark);
             Panel("Result_rule",result.transform,new Vector2(0,.985f),Vector2.one,Gold);
             Text("Result_title",result.transform,new Vector2(.05f,.82f),new Vector2(.95f,.96f),22,Gold,"KẾT QUẢ LUYỆN CUNG",TextAlignmentOptions.Center);

@@ -95,7 +95,7 @@ public static class BeachBoatCasualWorkPlaytest
         if(began==0)began=EditorApplication.timeSinceStartup;if(EditorApplication.timeSinceStartup-began<4)return;
         try
         {
-            if(runtimeError!=null)throw new Exception(runtimeError);if(EditorApplication.timeSinceStartup-began>140)throw new Exception("Casual work QA timeout");
+            if(runtimeError!=null)throw new Exception(runtimeError);if(EditorApplication.timeSinceStartup-began>240)throw new Exception("Casual work QA timeout");
             if(phase==0)
             {
                 foreach(var p in Directory.GetFiles(Application.persistentDataPath,"campaign938*"))hashes[p]=Hash(p);
@@ -128,13 +128,24 @@ public static class BeachBoatCasualWorkPlaytest
                 if(work==null)
                 {
                     if(BeachBoatStory.ScreenFader.Instance.IsTransitioning||Zone.Instance.IsPlanting)return;
-                    Check(Zone.Instance.IsComplete&&Zone.Instance.CompletedClusterCount==Zone.Instance.ClusterCount,"Three sample stakes followed by the narrative reveal complete the entire field");
+                    if(!Zone.Instance.IsComplete)
+                    {
+                        Check(Zone.Instance.CompletedClusterCount==cluster+1,"Only the finished location advances progress: "+(cluster+1)+"/5");
+                        Check(Story.Instance.currentState==Story.StoryState.Act2_PlantStakesAtRiver,"The other locations remain required before the time skip");
+                        Check(Zone.Instance.fieldStakes.All(t=>!t.gameObject.activeSelf),"The full stake field stays hidden before all five samples are complete");
+                        var partial=BachDangSaveSystem.Capture("QA partial stakes");var posts=Zone.Instance.CaptureSamplePositions();
+                        BachDangSaveSystem.Apply(partial);
+                        Check(Zone.Instance.CompletedClusterCount==cluster+1&&!Zone.Instance.IsComplete,"A partial save retains the number of completed locations");
+                        Check(Zone.Instance.CaptureSamplePositions().Select((v,i)=>!partial.stakes[i]||Vector3.Distance(v,posts[i])<.001f).All(v=>v),"Planted sample posts retain their exact positions after loading");
+                        cluster++;StartCluster(cluster);return;
+                    }
+                    Check(cluster==4&&Zone.Instance.CompletedClusterCount==Zone.Instance.ClusterCount,"Five separate sample locations precede the narrative reveal");
                     Check(Story.Instance.currentState==Story.StoryState.Act2_CompleteReturnToCamp,"The days-later reveal resumes the return-to-camp mission");
                     Check(BachDangSaveSystem.CanSave,"Construction and the narrative release save and rowing controls");
                     Check(hammerSamples>50&&maxHammerGripError<.02f&&maxHammerWristAngle<1,"Displayed hammer hands stay on the shaft with neutral wrists through the sample exercise");
-                    var final=BachDangSaveSystem.Capture("QA three samples and time skip");BachDangSaveSystem.Apply(final);
+                    var final=BachDangSaveSystem.Capture("QA five locations and time skip");BachDangSaveSystem.Apply(final);
                     Check(Zone.Instance.IsComplete&&StakeConstruction.Active==null,"Loading the finished time skip restores the full field without work locks");
-                    Check(CampaignProgress.Instance.Record.stakeTargetSeconds==90&&CampaignProgress.Instance.StakeTarget(3)==90,"The new three-stake exercise keeps its recorded 90-second S target after load");
+                    Check(CampaignProgress.Instance.Record.stakeTargetSeconds>=180&&CampaignProgress.Instance.StakeTarget(3)==final.campaign.stakeTargetSeconds,"Five-location route achievement keeps its realistic recorded time target after load");
                     foreach(var pair in hashes)Check(File.Exists(pair.Key)&&Hash(pair.Key)==pair.Value,"User save unchanged: "+Path.GetFileName(pair.Key));Finish(null);return;
                 }
                 if(work.Step==StakeConstruction.WorkStep.TakeBundle)work.Interact();

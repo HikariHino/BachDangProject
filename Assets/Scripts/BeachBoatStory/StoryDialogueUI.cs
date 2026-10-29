@@ -207,6 +207,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
     public void RestoreSave(BachDangSaveData.Dialogue data)
     {
         if(data==null||!data.active)return;
+        if(data.speaker=="Ngô Quyền"&&data.line!=null&&(data.line.Contains("dựng ba cọc mẫu")||data.line.StartsWith("Tốt lắm. Mang năm cọc"))){data.line=PreparationBriefing.Stakes;data.voiceProfile="commander_brief";}
         if(data.speaker=="Ngô Quyền"&&data.line!=null&&data.line.Contains("cung")&&data.line.Contains("bấm E")){data.line=PreparationBriefing.Archery;data.voiceProfile="commander_brief";}
         var story=BachDangStoryManager.Instance;System.Action callback=null;
         // Save only known story actions, never deserialize executable delegate data.

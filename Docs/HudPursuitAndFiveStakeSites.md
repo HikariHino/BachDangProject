@@ -1,0 +1,15 @@
+# HUD, pursuit and five stake sites — 30 October 2026
+
+The bottom HUD has three distinct areas: health/stamina on the left, the healing item in the centre, and two lines of key help on the right. Labels sit above full-width bars. Durability and damage notices stack above the left area; interaction text sits above the bottom row. The layout recalculates when the scaled canvas changes size.
+
+Archery practice keeps six arrows and the existing four-hit pass requirement. Target discs are eighteen percent smaller. The first stays still; the other two sway slowly by at most 0.85 and 1.35 world units. Scoring radii use the same scale as the physical discs. Existing practice completion remains valid.
+
+Pursuit used to combine a 48-unit formation anchor with 62-unit vessels, while the player's boosted rowboat can reach 147.25. The formation now advances at 115% of boosted rowboat speed (169.34 by default), with a 25-unit hull catch-up margin and acceleration of 60. Forward-only bow movement, bounded turning, lane spacing and collision sweeps remain in force. Slow approach and trap-entry limits remain separate from chase speed. Save/load retains the faster forward velocity.
+
+Each of the five river work locations now requires one sample stake, with placement, inclination, aim, power and rhythm checks and three successful hammer blows. Completing a location does not complete the other four. Only after all five does the days-later transition reveal the full field. Partial saves retain completed locations and the exact positions and rotations of sample poles. Legacy completed fields still restore fully; incomplete older checkpoints can finish their remaining locations.
+
+New stake achievement targets use the route between the five sites, rowboat speed, per-site work time and ninety seconds of reserve, with a three-minute minimum. Unfinished old ninety-second targets migrate to this route calculation; completed older records keep their recorded target. Stake impacts use the original Trade_SetDown recording at normal pitch. River and wind ambience duck during construction so the old strike remains audible.
+
+Validation: 360 checks passed through Unity CLI (CasualWork: 81; Archery: 80; ConcurrentBattle: 60; HudLayout30: 57; Review29: 41; Recovery3D: 41). HUD canvases were rendered and measured at 640×360, 800×600, 1280×720, 1920×1080 and 2560×1080; the 1280×720 image was visually reviewed. The complete fleet trial reached 170.63 units/second, retained forward-only movement and separated hulls, preserved pursuit velocity on load, then reached exposed stakes 1.36 seconds after the rear hull entered. Tests use isolated temporary saves; all thirteen real player save files retained their SHA-256 hashes.
+
+The commander has a matching five-location order recorded through the previously approved Microsoft Edge Vietnamese TTS workflow. Old open three-stake briefings migrate to this text and voice. Previously completed stake saves remain complete; testing the new five-site activity requires a save before finishing stake construction.

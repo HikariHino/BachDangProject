@@ -10,6 +10,8 @@ namespace BeachBoatStory
         public LureStage Stage {get;private set;}
         public bool IsPursuing=>Stage!=LureStage.Approach;
         public bool HasEnteredTrap=>Stage==LureStage.EnteringTrap;
+        public float FormationCruiseSpeed=>Mathf.Max(130,(QuestRowboat.Instance?.maxSpeed??95)*(QuestRowboat.Instance?.sprintMultiplier??1.55f)*1.15f);
+        public float HullCruiseSpeed=>FormationCruiseSpeed+25;
         public RiverArrowChase Chase {get;private set;}
         void Awake(){Chase=new RiverArrowChase(this);}
         void OnDestroy(){Chase?.Dispose();}
@@ -104,7 +106,7 @@ namespace BeachBoatStory
             // Do not reverse the rear ranks through the leading ranks when the bait circles.
             follow.z=Mathf.Min(follow.z,FormationAnchor.z);
             var anchor=FormationAnchor;
-            float advance=Mathf.Min(Mathf.Max(0,anchor.z-follow.z),48*dt);
+            float advance=Mathf.Min(Mathf.Max(0,anchor.z-follow.z),FormationCruiseSpeed*dt);
             // Course changes require forward progress, so circling bait cannot
             // make the entire formation crab sideways at a stationary marker.
             if(Mathf.Abs(follow.x-anchor.x)>12)anchor.x=Mathf.MoveTowards(anchor.x,follow.x,advance*.22f);

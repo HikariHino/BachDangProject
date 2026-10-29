@@ -31,7 +31,7 @@ namespace BeachBoatStory
         public int RequiredCount => fieldStakes == null ? 0 : fieldStakes.Length;
         public int CompletedClusterCount { get; private set; }
         public int ClusterCount => placements == null ? 0 : placements.Length;
-        public bool IsComplete => RequiredCount > 0 && PlantedCount == RequiredCount && CompletedClusterCount == ClusterCount;
+        public bool IsComplete => fieldRevealed && RequiredCount > 0 && PlantedCount == RequiredCount && CompletedClusterCount == ClusterCount;
         public bool IsPlanting { get; private set; }
         public bool RecoveryRequired { get; private set; }
         public Transform RecoveryTarget => lostStake != null && lostStake.activeSelf ? lostStake.transform : null;
@@ -96,6 +96,9 @@ namespace BeachBoatStory
             return true;
         }
         int workingIndex = -1;
+        public int WorkingIndex=>workingIndex;
+        bool fieldRevealed;
+        Transform[] samplePosts;
         GameObject lostStake;
         bool recoveryTriggered;
 
@@ -136,6 +139,7 @@ namespace BeachBoatStory
                 if (point.stake != null) point.finalPosition = point.stake.position;
                 if (point.marker == null) continue;
                 point.label = point.marker.GetComponentInChildren<TMP_Text>(true);
+                if(point.label!=null)point.label.text=$"VỊ TRÍ {Array.IndexOf(placements,point)+1} • 1 CỌC MẪU";
                 point.marker.SetActive(false);
             }
             ready &= assigned.Count == count;
@@ -201,13 +205,16 @@ namespace BeachBoatStory
         {
             while(StakeConstruction.Active!=null&&StakeConstruction.Active.Step!=StakeConstruction.WorkStep.Finished)yield return null;
             if(StakeConstruction.Active==null)yield break;
+            var position=StakeConstruction.Active.FinishedStakePosition;var rotation=StakeConstruction.Active.FinishedStakeRotation;
             StakeConstruction.Active.FinishWork();planting=null;workingIndex=-1;
+            var done=CaptureCheckpoint();done[index]=true;RestoreCheckpoint(done,false);SetSample(index,position,rotation);
+            if(CompletedClusterCount<ClusterCount){BachDangStoryManager.Instance?.UpdateUI();yield break;}
             void CompleteField()
             {
                 var all=new bool[placements.Length];for(int i=0;i<all.Length;i++)all[i]=true;
                 RestoreCheckpoint(all);BachDangStoryManager.Instance?.OnPlantStakesComplete();
             }
-            if(ScreenFader.Instance!=null)ScreenFader.Instance.FadeTransition("VÀI NGÀY SAU…\nTheo ba cọc mẫu, quân dân ngày đêm hoàn thành trận địa Bạch Đằng.",CompleteField,.7f,2.8f);
+            if(ScreenFader.Instance!=null)ScreenFader.Instance.FadeTransition("VÀI NGÀY SAU…\nTừ năm cọc mẫu tại năm vị trí, quân dân ngày đêm hoàn thành trận địa Bạch Đằng.",CompleteField,.7f,2.8f);
             else CompleteField();
         }
 
@@ -265,11 +272,14 @@ namespace BeachBoatStory
         {
             var states=new bool[placements.Length];for(int i=0;i<states.Length;i++)states[i]=placements[i].planted;return states;
         }
-        public void RestoreCheckpoint(bool[] states)
+        public void RestoreCheckpoint(bool[] states,bool reveal=true)
         {
             StakeConstruction.Active?.FinishWork();
             if(planting!=null)StopCoroutine(planting);planting=null;IsPlanting=false;workingIndex=-1;
             PlantedCount=CompletedClusterCount=0;RecoveryRequired=false;recoveryTriggered=false;
+            fieldRevealed=reveal&&states!=null&&states.Length>=placements.Length;
+            for(int i=0;i<placements.Length&&fieldRevealed;i++)fieldRevealed=states[i];
+            if(samplePosts==null)samplePosts=new Transform[placements.Length];
             if(lostStake!=null)lostStake.SetActive(false);
             for(int i=0;i<fieldStakes.Length;i++)
             {finished[i]=false;if(fieldStakes[i]!=null){fieldStakes[i].position=finalPositions[i];fieldStakes[i].gameObject.SetActive(false);RestoreColliders(i);}}
@@ -277,11 +287,40 @@ namespace BeachBoatStory
             {
                 bool planted=states!=null&&p<states.Length&&states[p];placements[p].planted=planted;
                 if(placements[p].marker!=null)placements[p].marker.SetActive(false);
+                if(samplePosts[p]!=null)samplePosts[p].gameObject.SetActive(planted&&!fieldRevealed);
                 if(!planted)continue;CompletedClusterCount++;
+                if(!fieldRevealed&&samplePosts[p]==null)SetSample(p,DefaultSamplePosition(p),Quaternion.Euler(0,0,-12));
                 foreach(int i in placements[p].stakeIndices)if(i>=0&&i<fieldStakes.Length&&fieldStakes[i]!=null&&!finished[i])
-                {finished[i]=true;fieldStakes[i].gameObject.SetActive(true);PlantedCount++;}
+                {finished[i]=true;fieldStakes[i].gameObject.SetActive(fieldRevealed);PlantedCount++;}
             }
             recoveryTriggered=CompletedClusterCount>=3;
+        }
+
+        Vector3 DefaultSamplePosition(int index)
+        {var p=placements[index].approach.position+Vector3.right*30;p.y=TideSystem.CurrentWaterHeight+2;return p;}
+        void SetSample(int index,Vector3 position,Quaternion rotation)
+        {
+            if(samplePosts[index]==null)
+            {
+                var post=StakeWorkVisual.Create("Coc_mau_vi_tri_"+index,transform,fieldStakes[0]);
+                var solid=post.gameObject.AddComponent<CapsuleCollider>();solid.height=24;solid.radius=.8f;
+                samplePosts[index]=post;
+            }
+            samplePosts[index].SetPositionAndRotation(position,rotation);
+            samplePosts[index].gameObject.SetActive(!fieldRevealed&&placements[index].planted);
+        }
+        public Vector3[] CaptureSamplePositions()
+        {var result=new Vector3[ClusterCount];for(int i=0;i<result.Length;i++)result[i]=samplePosts!=null&&samplePosts[i]!=null?samplePosts[i].position:DefaultSamplePosition(i);return result;}
+        public Quaternion[] CaptureSampleRotations()
+        {var result=new Quaternion[ClusterCount];for(int i=0;i<result.Length;i++)result[i]=samplePosts!=null&&samplePosts[i]!=null?samplePosts[i].rotation:Quaternion.Euler(0,0,-12);return result;}
+        public void RestoreSamples(BachDangSaveData data)
+        {
+            for(int i=0;i<ClusterCount;i++)
+                if(placements[i].planted&&!fieldRevealed)
+                {
+                    bool saved=data.stakeSamplesVersion>0&&data.stakeSamplePositions!=null&&i<data.stakeSamplePositions.Length&&data.stakeSampleRotations!=null&&i<data.stakeSampleRotations.Length;
+                    SetSample(i,saved?data.stakeSamplePositions[i]:DefaultSamplePosition(i),saved?data.stakeSampleRotations[i]:Quaternion.Euler(0,0,-12));
+                }
         }
 
         void Update()
@@ -324,7 +363,7 @@ namespace BeachBoatStory
             if (index < 0 || QuestRowboat.FlatDistance(boat.transform.position, placements[index].approach.position) > interactDistance) return;
             string prompt = Mathf.Abs(boat.Speed) > 8 ? "Thả W/S để dừng thuyền và đóng cọc" :
                 !HasBoatClearance(boat.transform.position) ? "Lùi thuyền một chút để chừa chỗ dựng bãi cọc" :
-                "[E] Dựng ba cọc mẫu tại đây • Quân dân sẽ hoàn thiện trận địa";
+                $"[E] Đóng cọc mẫu tại vị trí {index+1}/{ClusterCount} • Đã xong {CompletedClusterCount}/{ClusterCount}";
             story.SetInteractPrompt(true, prompt, this);
             if (!StoryDialogueUI.InputConsumedThisFrame && Input.GetKeyDown(KeyCode.E) && StoryDialogueUI.TryConsumeInput()) TryPlant(index);
         }

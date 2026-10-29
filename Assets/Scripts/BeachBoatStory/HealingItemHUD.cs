@@ -15,7 +15,7 @@ namespace BeachBoatStory
             var roll=Box("Medicine_roll",slot.transform,new Vector2(.18f,.28f),new Vector2(.82f,.76f),Vector2.zero,Vector2.zero,new Color(.84f,.81f,.67f));roll.transform.localRotation=Quaternion.Euler(0,0,-18);
             for(int i=0;i<4;i++)Box("Bandage_fold",roll.transform,new Vector2(.15f+i*.2f,0),new Vector2(.18f+i*.2f,1),Vector2.zero,Vector2.zero,new Color(.62f,.6f,.49f));
             Box("Herbal_mark_vertical",roll.transform,new Vector2(.44f,.1f),new Vector2(.56f,.9f),Vector2.zero,Vector2.zero,new Color(.27f,.4f,.26f));Box("Herbal_mark_horizontal",roll.transform,new Vector2(.25f,.36f),new Vector2(.75f,.64f),Vector2.zero,Vector2.zero,new Color(.27f,.4f,.26f));
-            count=Label("Item_count",slot.transform,new Vector2(.52f,.7f),new Vector2(.97f,.98f),17);var key=Label("Key_H",slot.transform,new Vector2(.05f,.02f),new Vector2(.95f,.26f),16);key.text="[H] THUỐC";
+            count=Label("Item_count",slot.transform,new Vector2(.52f,.7f),new Vector2(.97f,.98f),17);var key=Label("Key_H",slot.transform,new Vector2(.05f,.02f),new Vector2(.95f,.26f),13);key.text="THUỐC";Label("Hotkey_H",slot.transform,new Vector2(.04f,.72f),new Vector2(.38f,.98f),16).text="H";
             notice=Label("Healing_notice",root.transform,new Vector2(.29f,.135f),new Vector2(.71f,.185f),20);
         }
         static GameObject Box(string name,Transform parent,Vector2 min,Vector2 max,Vector2 offsetMin,Vector2 offsetMax,Color color)

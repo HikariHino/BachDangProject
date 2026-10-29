@@ -9,7 +9,7 @@ namespace BeachBoatStory
         public enum WorkStep { TakeBundle, CarryBundle, Hammer, Finished }
         public static StakeConstruction Active {get;private set;}
         public WorkStep Step {get;private set;}
-        public float Progress=>Mathf.Clamp01((bundles*3+hits)/9f);
+        public float Progress=>Mathf.Clamp01(hits/3f);
         public float CarryProgress {get;private set;}
         public int CompletedBundles=>bundles;
         public Vector2 PlacementOffset {get;private set;}
@@ -17,7 +17,9 @@ namespace BeachBoatStory
         public bool PlacementValid {get;private set;}
         public bool HasAimedStake {get;private set;}
         public Vector3 PlacementPoint {get;private set;}
-        public float RequiredLean=>bundles==1?18:bundles==2?9:12;
+        public float RequiredLean=>zone.WorkingIndex%3==1?18:zone.WorkingIndex%3==2?9:12;
+        public Vector3 FinishedStakePosition {get;private set;}
+        public Quaternion FinishedStakeRotation {get;private set;}
         public float StakeLean=>lean;
         public float HammerAim {get;private set;}
         public float AimError=>HammerAim+Mathf.Sin(Time.time*1.3f)*.1f;
@@ -128,7 +130,8 @@ namespace BeachBoatStory
             if(hits==3)
             {
                 var planted=Instantiate(stake,props.transform);planted.name="Coc_mau_da_dong_"+bundles;planted.position=stake.position-Vector3.up*3;planted.gameObject.SetActive(true);
-                bundles++;hits=0;Step=bundles==3?WorkStep.Finished:WorkStep.TakeBundle;CarryProgress=0;HammerAim=bundles%2==0?-.36f:.36f;stake.gameObject.SetActive(false);hammer.gameObject.SetActive(false);
+                FinishedStakePosition=planted.position;FinishedStakeRotation=planted.rotation;
+                bundles++;Step=WorkStep.Finished;CarryProgress=0;HammerAim=bundles%2==0?-.36f:.36f;stake.gameObject.SetActive(false);hammer.gameObject.SetActive(false);
             }
         }
         public bool AimStake(Vector2 motion)
@@ -256,10 +259,10 @@ namespace BeachBoatStory
             if(Active!=this||BachDangFrontEnd.IsBlocking)return;
             var style=new GUIStyle(GUI.skin.box){fontSize=Mathf.RoundToInt(Screen.height*.025f),alignment=TextAnchor.MiddleCenter,wordWrap=true};
             string hint=Step==WorkStep.TakeBundle?"[E] Lấy cọc mẫu trên thuyền":Step==WorkStep.CarryBundle?(CarryProgress<1?"Giữ W • Vác cọc tới mạn thuyền":$"Rê chọn chỗ • Cuộn chuột: nghiêng {lean:0}° / cần {RequiredLean:0}° ±3 • E dựng"):
-                    Step==WorkStep.Hammer?$"Giữ chuột trái • Kéo NGANG căn tâm, kéo LÊN nâng búa • THẢ trong dải xanh • Nện {hits}/3\n{Feedback}":"Ba cọc mẫu đã xong • Quân dân tiếp tục dựng trận địa";
+                    Step==WorkStep.Hammer?$"Giữ chuột trái • Kéo NGANG căn tâm, kéo LÊN nâng búa • THẢ trong dải xanh • Nện {hits}/3\n{Feedback}":"Cọc mẫu đã chắc • Chèo tới điểm tiếp theo";
             if(Step==WorkStep.CarryBundle)hint+="\n"+(string.IsNullOrEmpty(Feedback)?"A / D hoặc cuộn chuột chỉnh góc • R chọn lại vị trí":Feedback);
             if(!string.IsNullOrEmpty(crew?.CurrentCall))hint+="\nCông binh: "+crew.CurrentCall;
-            GUI.Box(new Rect(Screen.width*.12f,Screen.height*.81f,Screen.width*.76f,Screen.height*.14f),$"CÔNG BINH • Cọc mẫu {Mathf.Min(3,bundles+1)}/3 • X: hủy\n"+hint,style);
+            GUI.Box(new Rect(Screen.width*.12f,Screen.height*.81f,Screen.width*.76f,Screen.height*.14f),$"CÔNG BINH • Vị trí {zone.WorkingIndex+1}/{zone.ClusterCount} • Đã xong {zone.CompletedClusterCount}/{zone.ClusterCount} • X: hủy\n"+hint,style);
             if(Step==WorkStep.Hammer)
             {
                 void Gauge(float y,float value,float min,float max,string label){float x=Screen.width*.31f,w=Screen.width*.38f;GUI.color=Color.black;GUI.Box(new Rect(x,y,w,22),"");GUI.color=new Color(.2f,.8f,.4f);GUI.DrawTexture(new Rect(x+w*min,y,w*(max-min),22),Texture2D.whiteTexture);GUI.color=Color.white;GUI.DrawTexture(new Rect(x+w*Mathf.Clamp01(value)-3,y-3,6,28),Texture2D.whiteTexture);GUI.Label(new Rect(x,y-25,w,25),label,style);}

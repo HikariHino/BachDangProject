@@ -130,6 +130,7 @@ namespace BeachBoatStory
                 playerPosition=session.player.transform.position,playerRotation=session.player.transform.rotation,aboard=boat!=null&&boat.IsAboard,
                 boatPosition=boat!=null?boat.transform.position:Vector3.zero,boatRotation=boat!=null?boat.transform.rotation:Quaternion.identity,
                 health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,healingItemsVersion=1,healingItems=vitals.HealingItems,lureBriefed=story.LureBriefed,
+                stakeSamplesVersion=1,stakeSamplePositions=RiverStakeZone.Instance?.CaptureSamplePositions(),stakeSampleRotations=RiverStakeZone.Instance?.CaptureSampleRotations(),
                 woods=session.woodItems.Select(w=>w!=null&&w.IsCollected).ToArray(),stakes=RiverStakeZone.Instance?.CaptureCheckpoint()??Array.Empty<bool>(),
                 woodIds=session.woodItems.Select(w=>w.name).ToArray(),woodPositions=session.woodItems.Select(w=>w.transform.position).ToArray(),woodRotations=session.woodItems.Select(w=>w.transform.rotation).ToArray(),
                 stallLevels=VillagePreparationQuest.Instance.stalls.Select(s=>s.CompletedLevels).ToArray(),
@@ -155,6 +156,7 @@ namespace BeachBoatStory
             EnemyFleetDirector.Instance.GetComponent<RiverShoreArchers>()?.ResetAmbush();
             VillageWoodHunt.Instance.Restore(data);
             RiverStakeZone.Instance.RestoreCheckpoint(data.stakes);
+            RiverStakeZone.Instance.RestoreSamples(data);
             story.collectedWood=data.woodCount;story.destroyedEnemyShips=data.destroyedCount;story.RestoreLureBriefing(data.lureBriefed||data.storyState==10||data.storyState==11||data.storyState==14);
             story.TransitionTo((BachDangStoryManager.StoryState)data.storyState,true);
             var stalls=VillagePreparationQuest.Instance.stalls;for(int i=0;i<stalls.Length;i++)stalls[i].RestoreLearningProgress(i<data.stallLevels.Length?data.stallLevels[i]:0);
