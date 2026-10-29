@@ -18,6 +18,20 @@ namespace BeachBoatStory
         public bool IsExhausted { get; private set; }
         public int ArmorCharges { get; private set; }
         public int CompletedTrainingLevels { get; private set; }
+        public int HealingItems {get;private set;}=3;
+        public string HealingFeedback {get;private set;}="";
+        public float HealingFeedbackUntil {get;private set;}
+        public const float HealingPerItem=35;
+        float nextHealing;
+        public bool UseHealingItem()
+        {
+            if(BeachBoatQuestSession.InputBlocked||Time.timeScale<=0||Health<=0||Time.time<nextHealing)return false;
+            HealingFeedback=Health>=maxHealth-.01f?"Máu đã đầy":HealingItems<=0?"Hết thuốc • Nhận thêm tại quân y":"+35 máu";
+            HealingFeedbackUntil=Time.unscaledTime+2;
+            if(Health>=maxHealth-.01f||HealingItems<=0)return false;
+            float amount=Mathf.Min(HealingPerItem,maxHealth-Health);Health+=amount;HealingItems--;nextHealing=Time.time+.75f;HealingFeedback=$"+{amount:0} máu";BeachBoatSoundscape.Instance?.PlayInteraction();return true;
+        }
+        public void RestockHealingItems(){HealingItems=Mathf.Max(HealingItems,3);}
         public string LastImpact { get; private set; }
         public float LastImpactDamage { get; private set; }
         public float LastImpactUntil { get; private set; }
@@ -31,6 +45,7 @@ namespace BeachBoatStory
 
         void Update()
         {
+            if(Input.GetKeyDown(KeyCode.H))UseHealingItem();
             if(CampRecoveryGame.Active!=null)return;
             if (Time.time - lastEffortTime < recoveryDelay) return;
             Stamina = Mathf.MoveTowards(Stamina, maxStamina, staminaRecoveryPerSecond * Time.deltaTime);
@@ -121,6 +136,7 @@ namespace BeachBoatStory
         }
         public void RestoreSave(BachDangSaveData data)
         {
+            HealingItems=data.healingItemsVersion>0?Mathf.Clamp(data.healingItems,0,5):3;nextHealing=0;HealingFeedbackUntil=0;
             ReportRecoveryUntil=0;
             maxHealth=Mathf.Max(1,data.maxHealth);maxStamina=Mathf.Max(1,data.maxStamina);
             Health=Mathf.Clamp(data.health,1,maxHealth);Stamina=Mathf.Clamp(data.stamina,0,maxStamina);

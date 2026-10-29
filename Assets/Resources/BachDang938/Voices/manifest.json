@@ -747,6 +747,50 @@
           "path": "BachDang938/Voices/NativeCast/5a0f7ade92aa28ead575_narrator"
         }
       ]
+    },
+    {
+      "line": "Ngươi hãy chèo thuyền nhẹ ra nhử địch. Khi chúng đuổi theo, dẫn cả hạm đội vào bãi cọc rồi rút qua lối quân ta. Chờ nước rút và hiệu lệnh mới phản công!",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "commander_brief",
+          "path": "BachDang938/Voices/Preparation/ngo_lure"
+        }
+      ]
+    },
+    {
+      "line": "Trước khi đi nhử địch, ngươi phải tập bắn cung. Đến bãi tập, bấm E và bắn trúng ít nhất bốn trong sáu bia, rồi quay lại nhận lệnh.",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "commander_brief",
+          "path": "BachDang938/Voices/Preparation/ngo_archery"
+        }
+      ]
+    },
+    {
+      "line": "Giữ chắc cọc! Một, hai, nện!",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "crew_work",
+          "path": "BachDang938/Voices/Preparation/crew_hold"
+        }
+      ]
+    },
+    {
+      "line": "Cọc đã chắc! Chuyển sang hàng tiếp theo!",
+      "male": "",
+      "female": "",
+      "variants": [
+        {
+          "profile": "crew_work",
+          "path": "BachDang938/Voices/Preparation/crew_move"
+        }
+      ]
     }
   ],
   "profiles": [
@@ -839,6 +883,14 @@
       "id": "villager_alt_f",
       "voice": "VieNeu/Thục Đoan",
       "tempo": 1.11
+    },
+    {
+      "id": "commander_brief",
+      "voice": "Microsoft vi-VN-NamMinhNeural"
+    },
+    {
+      "id": "crew_work",
+      "voice": "Microsoft vi-VN-NamMinhNeural"
     }
   ]
 }

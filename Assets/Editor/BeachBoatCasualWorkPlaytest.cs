@@ -60,13 +60,25 @@ public static class BeachBoatCasualWorkPlaytest
             File.WriteAllText("Logs/HammerGripContact.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{right=rc.ToString(),left=lc.ToString(),shaft=hammer.position.ToString(),direction=hammer.up.ToString(),leftShoulder=rig.GetBoneTransform(HumanBodyBones.LeftUpperArm).position.ToString(),rightShoulder=rig.GetBoneTransform(HumanBodyBones.RightUpperArm).position.ToString(),leftWrist=left.position.ToString(),rightWrist=right.position.ToString()},Newtonsoft.Json.Formatting.Indented));
             Check(StakeConstruction.Active.HandsOnly,"Only work hands render while hammering, leaving the stake unobstructed");
             Check(StakeConstruction.Active.SupportedOnDeck,"The work position keeps both boots over the actual plank deck");
+            var view=BeachBoatQuestSession.Instance.storyCamera;
+            Check(BoatHullCollision.Get(QuestRowboat.Instance.transform).TryDeckSurface(view.transform.position,out _),"Hammer camera stays vertically above the actual boat planks");
+            File.WriteAllText("Logs/StakeWorkCamera.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{eye=view.transform.position.ToString(),forward=view.transform.forward.ToString(),head=rig.GetBoneTransform(HumanBodyBones.Head).position.ToString(),chest=rig.GetBoneTransform(HumanBodyBones.Chest).position.ToString(),stake=GameObject.Find("Coc_dang_dong").transform.position.ToString(),player=player.transform.position.ToString(),water=TideSystem.CurrentWaterHeight},Newtonsoft.Json.Formatting.Indented));
+            CaptureCarry("Hammer");
+            Check(view.transform.forward.y<-.05f,"The hammer view looks down towards the supported work position, not up at the sky • "+view.transform.forward+" eye "+view.transform.position);
             Check(StakeConstruction.Active.StakeMesh==Zone.Instance.fieldStakes[0].GetComponentInChildren<MeshFilter>(true).sharedMesh,"The sampled stake uses the completed field's pointed timber mesh");
-            Check(StakeConstruction.Active.WorkingCrew>=4,"At least four other soldiers visibly construct stakes from separate boats");
+            Check(StakeConstruction.Active.WorkingCrew>=6,"More construction soldiers cooperate in holder/hammer pairs on separate boats");
             Check(StakeConstruction.Active.HandContactError<.02f&&StakeConstruction.Active.HandSegmentError<.001f,"Both fixed-length display arms hold the actual hammer shaft");
             Check(StakeConstruction.Active.HandWristAngle<1&&StakeConstruction.Active.DisplayedGripWeight>90,"Hammer wrists stay neutral and fingers close around the shaft");
             Check(StakeConstruction.Active.HammerHeadError<.02f,"The hammer head reaches its real stake target instead of stopping short");
             foreach(var r in player.GetComponentsInChildren<SkinnedMeshRenderer>())r.forceMatrixRecalculationPerRender=true;
             CaptureCarry("Hammer");
+            var crewActor=UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).First(t=>t.name=="Cong_binh_0_1");
+            var crewView=new GameObject("PairedConstructionProof").AddComponent<Camera>();crewView.CopyFrom(view);crewView.enabled=false;
+            crewView.transform.position=crewActor.position+crewActor.forward*34+crewActor.right*35+Vector3.up*28;
+            crewView.transform.LookAt(crewActor.position+Vector3.up*5);
+            var crewRt=new RenderTexture(1280,800,24);crewView.targetTexture=crewRt;crewView.Render();RenderTexture.active=crewRt;
+            var crewPixels=new Texture2D(1280,800,TextureFormat.RGB24,false);crewPixels.ReadPixels(new Rect(0,0,1280,800),0,0);crewPixels.Apply();File.WriteAllBytes("Logs/StakeConstruction_Team.png",crewPixels.EncodeToPNG());
+            RenderTexture.active=null;crewView.targetTexture=null;UnityEngine.Object.DestroyImmediate(crewPixels);UnityEngine.Object.DestroyImmediate(crewRt);UnityEngine.Object.DestroyImmediate(crewView.gameObject);
             var source=BeachBoatQuestSession.Instance.storyCamera;var chest=rig.GetBoneTransform(HumanBodyBones.Chest);var preview=new GameObject("HammerGripFrontProof").AddComponent<Camera>();preview.CopyFrom(source);preview.enabled=false;preview.transform.position=chest.position+player.transform.forward*22+player.transform.right*24+Vector3.up*9;preview.transform.LookAt(Vector3.Lerp(chest.position,hammer.position,.7f));
             foreach(bool close in new[]{false,true})
             {
@@ -149,6 +161,7 @@ public static class BeachBoatCasualWorkPlaytest
                     {
                         if(!capturedHammer){if(hammerFrame==0)hammerFrame=Time.frameCount;if(Time.frameCount>hammerFrame+20)hammerCaptureReady=true;return;}
                         float before=work.Progress;
+                        if(!work.IsBeatReady)return;
                         if(work.Strike()&&!impactTimingChecked){Check(work.Progress==before,"Progress is awarded only when a well-aimed downswing lands");impactTimingChecked=true;}
                     }
                 }

@@ -233,6 +233,10 @@ public static class BeachBoatPhysicalVillagePlaytest
                     index++;phase=index<4?1:5;return;
                 }
                 var work=stall.Physical;var before=work.Current;
+                if(work.Current==VillagePhysicalWork.Step.Deliver&&work.CarriedGoods!=null&&stall.kind==VillageWorkStall.WorkKind.Timber)
+                    Check(work.TimberSplit&&work.WoodChipsEmitted>0&&GameObject.Find("Log_on_saw_bench").transform.localPosition.x<0,"Sawing emits chips and leaves a separate left half while the other half is carried");
+                if(work.Current==VillagePhysicalWork.Step.Deliver&&work.CarriedGoods!=null&&stall.kind==VillageWorkStall.WorkKind.Provisions)
+                    Check(work.CarriedGoods.Find("Cloth_base")!=null&&work.CarriedGoods.localScale==Vector3.one,"The carried ration is the same closed cloth parcel at its original scale");
                 if(QuestRowboat.FlatDistance(BeachBoatQuestSession.Instance.player.transform.position,work.RequiredApproach)>1)
                 {stall.AdvanceTime(QuestRowboat.FlatDistance(BeachBoatQuestSession.Instance.player.transform.position,work.RequiredApproach)/30);Place(work.RequiredApproach);return;}
                 if(work.ToolStep&&!captures.Contains(stall.kind+"_Entry")){RequestCapture(stall.kind+"_Entry");return;}

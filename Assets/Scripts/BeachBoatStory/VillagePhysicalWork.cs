@@ -89,8 +89,12 @@ namespace BeachBoatStory
         Camera_Script camera;Vector3 cameraSettings;float cameraElevation;
         WorkbenchHands hands;BowGripProfile gripProfile;VillageWorkstation station;
         bool tableWasActive;
+        ParticleSystem sawChips;float nextChips,splitAt;Vector3 cutPickup;
+        public int WoodChipsEmitted {get;private set;}
+        public bool TimberSplit {get;private set;}
+        public Transform CarriedGoods=>held!=null?held.transform:null;
         AnimatorCullingMode previousCulling;SkinnedMeshRenderer[] playerMeshes;bool[] previousOffscreen;float[][] previousFingerWeights;
-        Vector3 WorkLocal(Vector3 local){if(stall!=null&&stall.kind==VillageWorkStall.WorkKind.Rice&&local.x>-18&&local.x<18)local.z+=5.7f;return local;}
+        Vector3 WorkLocal(Vector3 local){if(stall!=null&&local.x>-18&&local.x<18)local.z+=stall.kind==VillageWorkStall.WorkKind.Rice?5.7f:stall.kind==VillageWorkStall.WorkKind.Provisions?5.5f:0;return local;}
         Vector3 World(Vector3 local){local=WorkLocal(local);local.y*=verticalScale;return origin+rotation*local;}
         Material Make(string name,Color color)
         {var m=new Material(Shader.Find("Universal Render Pipeline/Lit")){name=name,color=color};m.SetFloat("_Smoothness",.12f);owned.Add(m);return m;}
@@ -156,6 +160,7 @@ namespace BeachBoatStory
         }
         void ClearOrder()
         {
+            TimberSplit=false;
             foreach(var go in new[]{held,benchLog,bag,grain,blade,sawHandle,parcel,foodTray})if(go!=null)Destroy(go);
             foreach(var go in placed)if(go!=null)Destroy(go);placed.Clear();foreach(var go in knots)if(go!=null)Destroy(go);knots.Clear();
             held=benchLog=bag=grain=blade=sawHandle=parcel=foodTray=null;flaps.Clear();ActionProgress=RiceFill=0;Knots=Ingredients=0;busy=false;ResetTool();
@@ -285,7 +290,7 @@ namespace BeachBoatStory
             if(Current==Step.Saw)
             {
                 strokeSeconds+=Mathf.Min(seconds,.1f);if(motion.x*sawDirection>0)strokeTravel+=Mathf.Abs(motion.x);
-                if(motion.magnitude>.001f)Foley?.Move(VillageWorkFoley.Cue.Saw,motion.magnitude/Mathf.Max(.01f,seconds)/5);
+                if(motion.magnitude>.001f){Foley?.Move(VillageWorkFoley.Cue.Saw,motion.magnitude/Mathf.Max(.01f,seconds)/5);EmitSawChips();}
                 ToolFeedback=Mathf.Abs(ToolPointer.y)>.28f?"Lệch rãnh • đưa cưa về giữa":"Giữ cưa trong hai vạch xanh";
                 if(strokeTravel>=1.2f&&Mathf.Abs(ToolPointer.x-sawDirection)<.15f&&Mathf.Abs(ToolPointer.y)<=.28f&&strokeSeconds>=.22f)
                 {ToolStages++;strokeSeconds=strokeTravel=0;sawDirection=-sawDirection;ActionProgress=ToolStages/8f;if(ToolStages==8)CompleteTool();}
@@ -373,11 +378,11 @@ namespace BeachBoatStory
                 case Step.PlaceIngredient:
                     if(parcel==null)
                     {
-                        parcel=new GameObject("Packing_cloth");parcel.transform.SetParent(props.transform,false);parcel.transform.localPosition=new Vector3(0,9.2f,-10.2f);
+                        parcel=new GameObject("Packing_cloth");parcel.transform.SetParent(props.transform,false);parcel.transform.localPosition=WorkLocal(new Vector3(0,9.2f,-10.2f));
                         Shape("Cloth_base",PrimitiveType.Cube,Vector3.zero,new Vector3(6,.2f,4),cloth,false,parcel.transform);
                         for(int i=0;i<4;i++){var pivot=new GameObject("Fold_"+i).transform;pivot.SetParent(parcel.transform,false);pivot.localPosition=i<2?new Vector3(i==0?-3:3,0,0):new Vector3(0,0,i==2?-1.5f:1.5f);Shape("Cloth_flap",PrimitiveType.Cube,i<2?new Vector3(i==0?-1.5f:1.5f,0,0):new Vector3(0,0,i==2?-1.5f:1.5f),i<2?new Vector3(3,.2f,4):new Vector3(6,.2f,3),cloth,false,pivot);flaps.Add(pivot);}
                     }
-                    Destroy(held);held=null;placed.Add(Shape("Ingredient_on_cloth_"+Ingredients,Ingredients==1?PrimitiveType.Sphere:PrimitiveType.Cube,new Vector3(-2+Ingredients*2,10,-10.2f),Ingredients==1?new Vector3(4,1,1.5f):new Vector3(2,1,2),new[]{rice,fish,salt}[Ingredients]));
+                    Destroy(held);held=null;placed.Add(Shape("Ingredient_on_cloth_"+Ingredients,Ingredients==1?PrimitiveType.Sphere:PrimitiveType.Cube,new Vector3(-1.1f+Ingredients*1.1f,9.7f,-10.2f),Ingredients==1?new Vector3(3,.55f,1.2f):new Vector3(1.2f,.55f,1.2f),new[]{rice,fish,salt}[Ingredients]));
                     Ingredients++;Current=Ingredients==3?Step.Wrap:Step.TakeIngredient;break;
                 case Step.Deliver:
                     if(!Carrying)return false;var goods=held;held=null;goods.name="Delivered_goods_"+stall.Progress;goods.transform.SetParent(props.transform,false);goods.transform.localPosition=new Vector3(25,6+stall.Progress*4,-14);goods.transform.localRotation=stall.kind==VillageWorkStall.WorkKind.Timber?Quaternion.Euler(0,0,90):Quaternion.identity;
@@ -398,9 +403,34 @@ namespace BeachBoatStory
                 var loop=Line("Tied_binding_"+Knots,fibre,.5f);loop.positionCount=33;for(int i=0;i<33;i++){float a=i/32f*Mathf.PI*2;loop.SetPosition(i,World(new Vector3(-10+Knots*10,11.3f+Mathf.Cos(a)*3,-10.2f+Mathf.Sin(a)*1.6f)));}placed.Add(loop.gameObject);Knots++;
                 if(Knots==3){foreach(var go in bundleLogs)go.SetActive(false);foreach(var go in knots)go.SetActive(false);foreach(var go in placed)go.SetActive(false);Carry("Bound_timber_bundle",wood,new Vector3(12,4,4));Current=Step.Deliver;}
             }
-            else if(Current==Step.Saw){if(benchLog!=null)benchLog.transform.localScale=new Vector3(3,5,3);if(blade!=null)blade.SetActive(false);if(sawHandle!=null)sawHandle.SetActive(false);Carry("Sawn_timber",wood,new Vector3(2.5f,5,2.5f));Current=Step.Deliver;}
-            else {foreach(var go in placed)if(go!=null)go.SetActive(false);if(parcel!=null)parcel.SetActive(false);Carry("Wrapped_rations",cloth,new Vector3(7,4,5));Current=Step.Deliver;}
+            else if(Current==Step.Saw)
+            {
+                benchLog.transform.localScale=new Vector3(3,5,3);benchLog.transform.localPosition=new Vector3(-5.25f,11,-9.8f);
+                held=Shape("Sawn_timber",PrimitiveType.Cylinder,new Vector3(5.25f,11,-9.8f),new Vector3(3,5,3),wood);held.transform.localRotation=Quaternion.Euler(0,0,90);cutPickup=held.transform.position;splitAt=Time.time;TimberSplit=true;
+                if(blade!=null)blade.SetActive(false);if(sawHandle!=null)sawHandle.SetActive(false);Current=Step.Deliver;
+            }
+            else
+            {
+                foreach(var go in placed)if(go!=null)go.SetActive(false);for(int i=0;i<flaps.Count;i++)PoseFlap(i,1);
+                held=parcel;parcel=null;held.name="Wrapped_rations";Current=Step.Deliver;
+                var seal=new GameObject("Parcel_tie").AddComponent<LineRenderer>();seal.transform.SetParent(held.transform,false);seal.useWorldSpace=false;seal.sharedMaterial=fibre;seal.widthMultiplier=.13f;seal.positionCount=5;seal.SetPositions(new[]{new Vector3(0,.05f,-2.1f),new Vector3(0,1.25f,-2.1f),new Vector3(0,1.25f,2.1f),new Vector3(0,.05f,2.1f),new Vector3(0,.05f,-2.1f)});
+            }
             ResetTool();
+        }
+        void PoseFlap(int i,float fold)
+        {
+            var pivot=flaps[i];pivot.localPosition=(i<2?new Vector3(i==0?-3:3,0,0):new Vector3(0,0,i==2?-1.5f:1.5f))+Vector3.up*(fold*(.85f+i*.04f));
+            float a=fold*175;pivot.localRotation=i<2?Quaternion.Euler(0,0,i==0?-a:a):Quaternion.Euler(i==2?a:-a,0,0);
+        }
+        void EmitSawChips()
+        {
+            if(Time.time<nextChips)return;nextChips=Time.time+.045f;
+            if(sawChips==null)
+            {
+                var go=new GameObject("Saw_wood_chips");go.transform.SetParent(props.transform,false);sawChips=go.AddComponent<ParticleSystem>();sawChips.Stop();var main=sawChips.main;main.loop=false;main.playOnAwake=false;main.simulationSpace=ParticleSystemSimulationSpace.World;main.startLifetime=.7f;main.gravityModifier=.8f;main.maxParticles=150;main.startSize3D=true;main.startSizeX=.23f;main.startSizeY=.06f;main.startSizeZ=.12f;main.startColor=new Color(.66f,.43f,.2f);var emission=sawChips.emission;emission.enabled=false;
+                var mesh=GameObject.CreatePrimitive(PrimitiveType.Cube);var renderer=go.GetComponent<ParticleSystemRenderer>();renderer.renderMode=ParticleSystemRenderMode.Mesh;renderer.mesh=mesh.GetComponent<MeshFilter>().sharedMesh;renderer.sharedMaterial=wood;mesh.SetActive(false);Destroy(mesh);var loop=sawChips.main;loop.loop=true;sawChips.Play();
+            }
+            for(int i=0;i<3;i++){var p=new ParticleSystem.EmitParams{position=World(new Vector3(0,12.3f,-10.5f+ToolPointer.x*1.2f)),velocity=rotation*new Vector3(Random.Range(-4f,4f),Random.Range(3f,6f),Random.Range(-3f,3f))};sawChips.Emit(p,1);WoodChipsEmitted++;}
         }
         public void Tick()
         {
@@ -450,7 +480,7 @@ namespace BeachBoatStory
             label.color=Current==Step.FillRice&&RiceFill>=.65f?(RiceFill<=.85f?new Color(.3f,1,.5f):new Color(1,.3f,.2f)):new Color(1,.82f,.37f);
             if(Camera.main!=null)label.transform.rotation=Camera.main.transform.rotation;
             label.gameObject.SetActive(!AtTable);
-            if(held!=null){held.transform.position=chest.position+player.forward*4.5f+player.right*(stall.kind==VillageWorkStall.WorkKind.Timber?2:0);held.transform.rotation=player.rotation*(stall.kind==VillageWorkStall.WorkKind.Timber?Quaternion.Euler(0,0,90):Quaternion.identity);}
+            if(held!=null){var at=chest.position+player.forward*4.5f+player.right*(stall.kind==VillageWorkStall.WorkKind.Timber?2:0);held.transform.position=TimberSplit?Vector3.Lerp(cutPickup,at,Mathf.SmoothStep(0,1,(Time.time-splitAt)/.4f)):at;held.transform.rotation=player.rotation*(stall.kind==VillageWorkStall.WorkKind.Timber?Quaternion.Euler(0,0,90):Quaternion.identity);}
             if(busy||AtTable){var facing=(AtTable?rotation*Vector3.forward:TargetPosition-player.position);facing.y=0;var body=player.GetComponent<Rigidbody>();if(body!=null&&facing.sqrMagnitude>.1f)body.MoveRotation(Quaternion.Slerp(body.rotation,Quaternion.LookRotation(facing),1-Mathf.Exp(-12*Time.deltaTime)));}
             if(Carrying||busy||AtTable)
             {
@@ -462,7 +492,7 @@ namespace BeachBoatStory
                 {
                     var flap=flaps[Mathf.Min(3,ToolStages)];
                     float a=(foldGrabbed?1-Mathf.Clamp01(ToolPointer.magnitude):0)*130;
-                    var r=ToolStages<2?Quaternion.Euler(0,0,ToolStages==0?-a:a):Quaternion.Euler(ToolStages==2?a:-a,0,0);
+                    a=a/130*175;var r=ToolStages<2?Quaternion.Euler(0,0,ToolStages==0?-a:a):Quaternion.Euler(ToolStages==2?a:-a,0,0);
                     var local=ToolStages<2?new Vector3(ToolStages==0?-1.5f:1.5f,.18f,0):new Vector3(0,.18f,ToolStages==2?-1.5f:1.5f);
                     grip=flap.parent.TransformPoint(flap.localPosition+r*local);
                 }
@@ -492,7 +522,7 @@ namespace BeachBoatStory
             if(pour!=null){pour.enabled=Current==Step.FillRice&&Time.time<pourUntil;if(pour.enabled){pour.positionCount=9;for(int i=0;i<9;i++){float t=i/8f;pour.SetPosition(i,World(Vector3.Lerp(new Vector3(4,14,-10.2f),new Vector3(4,12,-10.2f),t)));}}}
             if(rope!=null&&stall.kind==VillageWorkStall.WorkKind.Rope)
             {rope.positionCount=Current==Step.Tie?33:0;for(int i=0;i<rope.positionCount;i++){float a=i/32f*Mathf.PI*2;float radius=1.25f-ActionProgress*.25f;rope.SetPosition(i,World(new Vector3(-10+Knots*10,11.3f+Mathf.Cos(a)*3*radius,-10.2f+Mathf.Sin(a)*1.6f*radius)));}}
-            if(parcel!=null&&Current==Step.Wrap)for(int i=0;i<flaps.Count;i++){float a=(i<ToolStages?1:i==ToolStages&&foldGrabbed?1-Mathf.Clamp01(ToolPointer.magnitude):0)*130;flaps[i].localRotation=i<2?Quaternion.Euler(0,0,i==0?-a:a):Quaternion.Euler(i==2?a:-a,0,0);}
+            if(parcel!=null&&Current==Step.Wrap){for(int i=0;i<flaps.Count;i++)PoseFlap(i,i<ToolStages?1:i==ToolStages&&foldGrabbed?1-Mathf.Clamp01(ToolPointer.magnitude):0);if(ToolStages>=2)foreach(var go in placed)if(go!=null&&go.name.StartsWith("Ingredient_on_cloth_"))go.SetActive(false);}
         }
         public void Finish()
         {

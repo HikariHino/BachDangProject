@@ -130,7 +130,7 @@ public class NPCQuestGiver : MonoBehaviour
                          (story.currentState == BachDangStoryManager.StoryState.Act2_Completed ||
                           story.currentState == BachDangStoryManager.StoryState.Act3_PrepareForBattle))
                 {
-                    StoryDialogueUI.Instance?.Show("Ngô Quyền", ArcheryTraining.Instance?.Completed==true?"Trận địa đã sẵn sàng. Hãy chèo thuyền nhẹ ra nhử giặc, dẫn chúng theo vào bãi cọc rồi cùng quân ta phản công!":"Trước khi xuất quân, ngươi phải luyện cung. Đến bãi tập trong doanh trại, đứng trong vòng vàng rồi bấm E. Bắn sáu mũi, trúng ít nhất bốn bia, sau đó quay lại nhận lệnh.", story.OnTalkToNgoQuyenAct3,transform);
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền", ArcheryTraining.Instance?.Completed==true?PreparationBriefing.Lure:PreparationBriefing.Archery, story.OnTalkToNgoQuyenAct3,transform);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
                 }

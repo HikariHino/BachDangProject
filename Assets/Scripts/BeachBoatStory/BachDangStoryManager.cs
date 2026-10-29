@@ -364,6 +364,10 @@ public class BachDangStoryManager : MonoBehaviour
     /// <summary>
     /// Gọi khi gặp Ngô Quyền lần 3 để nhận lệnh tấn công
     /// </summary>
+    public bool LureBriefed {get;private set;}
+    public void RestoreLureBriefing(bool done){LureBriefed=done;}
+    public void ShowArcheryReminder(){if(StoryDialogueUI.Instance?.IsOpen!=true)StoryDialogueUI.Instance?.Show("Ngô Quyền",PreparationBriefing.Archery);}
+    public void OnLureOrdersAcknowledged(){LureBriefed=true;OnReadyForBattle();}
     public void OnTalkToNgoQuyenAct3()
     {
         if (EnemyFleetDirector.Instance == null || !EnemyFleetDirector.Instance.IsConfigured ||
@@ -371,7 +375,7 @@ public class BachDangStoryManager : MonoBehaviour
         if (currentState == StoryState.Act2_Completed || currentState == StoryState.Act3_PrepareForBattle)
         {
             if(ArcheryTraining.Instance?.Completed!=true){TransitionTo(StoryState.Act3_PrepareForBattle);return;}
-            TransitionTo(StoryState.Act3_WaitForLowTide);
+            LureBriefed=true;TransitionTo(StoryState.Act3_WaitForLowTide);
             Debug.Log("[BachDangStory] Ngo Quyen ra lenh tong tan cong! Hay len thuyen cho trieu rut.");
         }
     }
@@ -386,7 +390,8 @@ public class BachDangStoryManager : MonoBehaviour
             RiverStakeZone.Instance == null || !RiverStakeZone.Instance.IsComplete) return;
         if (currentState == StoryState.Act3_WaitForLowTide)
         {
-            if(ArcheryTraining.Instance?.Completed!=true){UpdateUI();return;}
+            if(ArcheryTraining.Instance?.Completed!=true){UpdateUI();ShowArcheryReminder();return;}
+            if(!LureBriefed){if(StoryDialogueUI.Instance?.IsOpen!=true)StoryDialogueUI.Instance?.Show("Ngô Quyền",PreparationBriefing.Lure,OnLureOrdersAcknowledged);return;}
             totalEnemyShips = director.ShipCount; destroyedEnemyShips = 0;
             TransitionTo(StoryState.Act3_BattleInProgress);
             director.StartBattle();

@@ -30,6 +30,8 @@ namespace BeachBoatStory
         public AudioSource RiverSource {get;private set;}
         public AudioSource WindSource {get;private set;}
         AudioSource foley,effects,ui,birds;
+        AudioSource wreckChannel;int cryIndex;public int WreckCriesPlayed {get;private set;}
+        public AudioClip StakeImpact {get;private set;}
         AudioClip arrowImpact;AudioClip[] wreckCries;float nextDistantHit,nextWreckSound;
         public int WreckSoundsPlayed {get;private set;}
         public int CombatHitsPlayed {get;private set;}
@@ -52,6 +54,7 @@ namespace BeachBoatStory
             wreckCries=Resources.LoadAll<AudioClip>("BachDang938/WreckAudio");
             runningFootsteps=Resources.LoadAll<AudioClip>("BachDang938/RunSteps");
             arrowImpact=Resources.Load<AudioClip>("BachDang938/LobbyAudio/Arrow_Flesh_Impact");
+            StakeImpact=Resources.Load<AudioClip>("BachDang938/WorkAudio/Trade_SetDown");
             var actionClips=Resources.LoadAll<AudioClip>("BachDang938/ActionAudio");
             AudioClip[] Group(string prefix)=>System.Array.FindAll(actionClips,c=>c.name.StartsWith(prefix,System.StringComparison.Ordinal));
             var walking=Group("Walk_");if(walking.Length>0)footsteps=walking;
@@ -69,6 +72,7 @@ namespace BeachBoatStory
             var windFilter=WindSource.gameObject.AddComponent<AudioLowPassFilter>();
             windFilter.cutoffFrequency=700;windFilter.lowpassResonanceQ=1;
             foley=Source("PlayerFoley",null,false,1);effects=Source("ActionEffects",null,false,1);ui=Source("InteractionFeedback",null,false,1);birds=Source("DistantBirds",null,false,1);
+            wreckChannel=Source("Shipwreck_Scream_Channel",null,false,1);
             nextBird=Time.time+4;
         }
         AudioSource Source(string name,AudioClip clip,bool loop,float volume)
@@ -154,10 +158,10 @@ namespace BeachBoatStory
             Play(effects,crash,level,.9f);
             var voices=EnemyFleetDirector.Instance?.GetComponent<RiverBattleVoices>();
             if(voices!=null)voices.RequestWreckCry();
-            else if(wreckCries!=null&&wreckCries.Length>0)Play(effects,wreckCries[Random.Range(0,wreckCries.Length)],level*.65f,Random.Range(.92f,1.05f));
+            if(!Muted&&wreckChannel!=null&&!wreckChannel.isPlaying&&wreckCries!=null&&wreckCries.Length>0){wreckChannel.clip=wreckCries[cryIndex++%wreckCries.Length];wreckChannel.pitch=1;wreckChannel.volume=Mathf.Max(.5f,level*.95f)*masterVolume;wreckChannel.Play();WreckCriesPlayed++;}
             WreckSoundsPlayed++;
         }
-        public void PlayStake()=>Play(effects,drum,.3f,1.7f);
+        public void PlayStake()=>Play(effects,StakeImpact!=null?StakeImpact:drum,.45f,1);
         public void PlayHit()=>Play(effects,hit,.55f);
         public void PlayCombatHit(Vector3 point,CombatImpactKind kind,bool foreground)
         {

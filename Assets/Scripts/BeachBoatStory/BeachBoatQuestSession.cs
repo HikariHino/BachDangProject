@@ -47,6 +47,7 @@ namespace BeachBoatStory
 
         void Awake()
         {
+            if(GetComponent<HealingItemHUD>()==null)gameObject.AddComponent<HealingItemHUD>();
             talkers = GetComponentsInChildren<NPCDialogue>(true);
             questGiver = GetComponentInChildren<NPCQuestGiver>(true);
             gates = GetComponentsInChildren<CampGateTransition>(true);
@@ -154,7 +155,7 @@ namespace BeachBoatStory
         void Update()
         {
             var story = GetComponent<BachDangStoryManager>();
-            bool focusedOverlay = RiverInvasionIntro.IsRunning || BachDangFrontEnd.IsBlocking || ArcheryTraining.Active != null || CampRecoveryGame.Active != null || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
+            bool focusedOverlay = RiverInvasionIntro.IsRunning || BachDangFrontEnd.IsBlocking || StakeConstruction.Active!=null || ArcheryTraining.Active != null || CampRecoveryGame.Active != null || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
                 (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen);
             if (story != null && story.objectiveUIPanel != null)

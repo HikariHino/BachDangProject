@@ -209,6 +209,7 @@ namespace BeachBoatStory
         public bool TryBoard()
         {
             var story = BachDangStoryManager.Instance;
+            if(story!=null&&story.currentState==BachDangStoryManager.StoryState.Act3_WaitForLowTide&&ArcheryTraining.Instance?.Completed!=true){story.ShowArcheryReminder();return false;}
             if (story != null && story.currentState == BachDangStoryManager.StoryState.Act3_WaitForLowTide && !IsAboard &&
                 (!battleLaunchPrepared || !HasClearLaunch(transform.position, transform.rotation)))
                 if (!PrepareForBattle()) return false;

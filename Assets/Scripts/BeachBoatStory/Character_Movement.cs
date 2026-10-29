@@ -56,7 +56,7 @@ public class Character_Movement : MonoBehaviour
     }
     void Update()
     {
-        bool allowed = (!BeachBoatQuestSession.InputBlocked||VillagePhysicalWork.AllowsMovement) && Cursor.lockState == CursorLockMode.Locked;
+        bool allowed = (!BeachBoatQuestSession.InputBlocked||VillagePhysicalWork.AllowsMovement||PhysicalTrainingCourse.AllowsMovement) && Cursor.lockState == CursorLockMode.Locked;
         input = allowed ? Vector2.ClampMagnitude(new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")), 1) : Vector2.zero;
         aim = allowed && orbit != null && orbit.enableShoulderAim && Input.GetMouseButton(1);
         freeLook = allowed && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
@@ -70,7 +70,7 @@ public class Character_Movement : MonoBehaviour
     void FixedUpdate()
     {
         if (body == null || body.isKinematic) return;
-        if (BeachBoatQuestSession.InteractionBlocked&&!VillagePhysicalWork.AllowsMovement)
+        if (BeachBoatQuestSession.InteractionBlocked&&!VillagePhysicalWork.AllowsMovement&&!PhysicalTrainingCourse.AllowsMovement)
         {
             input = Vector2.zero; jumpUntil = -1; aim = false; freeLook = false; sprint = false;
             body.linearVelocity = new Vector3(0, body.linearVelocity.y, 0);

@@ -44,6 +44,9 @@ namespace BeachBoatStory
         Material timber;
         LineRenderer impactRing;
         StakeWorkCrew crew;
+        float workStarted;
+        public float BeatPosition=>Mathf.PingPong((Time.time-workStarted)/1.2f,1);
+        public bool IsBeatReady=>BeatPosition>=.38f&&BeatPosition<=.82f;
         public bool SupportedOnDeck {get;private set;}
         public int WorkingCrew=>crew?.Count??0;
         public Mesh StakeMesh=>stake!=null?stake.GetComponentInChildren<MeshFilter>().sharedMesh:null;
@@ -67,6 +70,7 @@ namespace BeachBoatStory
             cameraElevation=camera.Elevation;camera.distance=32;camera.heightOffset=14;camera.rightOffset=9;
             localStart=boat.transform.InverseTransformPoint(boat.seat.position);localStart.y=0;
             bundles=hits=0;CarryProgress=0;Step=WorkStep.TakeBundle;Active=this;
+            workStarted=Time.time;
             props=new GameObject("Stake_Work_3D_Props");timber=zone.fieldStakes[0].GetComponentInChildren<Renderer>(true).sharedMaterial;
             crew=new StakeWorkCrew(boat,zone.fieldStakes[0],props.transform,timber);
             stack=new GameObject("Bo_coc_tren_thuyen").transform;stack.SetParent(props.transform,false);
@@ -112,8 +116,9 @@ namespace BeachBoatStory
         public bool Strike()
         {
             if(Active!=this||Step!=WorkStep.Hammer||pendingStrike||HammerLift<.25f||Time.time<nextHit||Time.timeScale<=0||BachDangFrontEnd.IsBlocking)return false;
-            pendingGood=PowerReady&&Mathf.Abs(AimError)<=.28f;
+            pendingGood=PowerReady&&Mathf.Abs(AimError)<=.28f&&IsBeatReady;
             Feedback=!PowerReady?(HammerLift<.65f?"Lực nhẹ • nâng búa vào dải xanh":"Quá lực • nhả sớm hơn trong dải xanh"):Mathf.Abs(AimError)>.28f?"Lệch đầu cọc • kéo ngang để căn búa":"Đúng tâm, đủ lực";
+            if(PowerReady&&Mathf.Abs(AimError)<=.28f&&!IsBeatReady)Feedback="Lệch nhịp • thả khi vạch NHỊP NỆN vào xanh";
             nextHit=Time.time+.65f;releaseLift=HammerLift;swing=.25f;HammerLift=0;pendingStrike=true;return true;
         }
         void Impact()
@@ -203,7 +208,11 @@ namespace BeachBoatStory
                 if(!(hit is TerrainCollider)&&!hit.transform.IsChildOf(player)&&!hit.transform.IsChildOf(props.transform))PlacementValid=false;
             stake.gameObject.SetActive(Step==WorkStep.Hammer||Step==WorkStep.CarryBundle&&CarryProgress>=1);
             visibleDepth=Mathf.MoveTowards(visibleDepth,hits*3,Time.deltaTime*16);
-            stake.position=work+Vector3.up*(15-visibleDepth);stake.rotation=boat.transform.rotation*Quaternion.Euler(0,0,-lean);
+            stake.rotation=boat.transform.rotation*Quaternion.Euler(0,0,-lean);
+            // A person standing on the planks drives a post at chest height.
+            // Keeping its head above the helmet forced the first-person camera skyward.
+            float headHeight=Mathf.Max(work.y+9,chest.position.y-2);
+            stake.position=work+Vector3.up*(headHeight-work.y-stake.up.y*12-visibleDepth);
             impactRing.gameObject.SetActive(Step==WorkStep.Hammer);impactRing.sharedMaterial=Mathf.Abs(AimError)<=.28f?previewGood:previewBad;
             for(int n=0;n<33;n++){float a=n/32f*Mathf.PI*2;impactRing.SetPosition(n,stake.position+stake.up*12+Vector3.up*.15f+(boat.transform.right*Mathf.Cos(a)+boat.transform.forward*Mathf.Sin(a))*1.4f);}
             for(int i=0;i<4;i++)arms[i].localRotation=armPose[i];
@@ -238,7 +247,7 @@ namespace BeachBoatStory
             // around the character's actual right axis, keeping knees forward.
             for(int i=0;i<4;i++){float side=i%2==0?1:-1;float angle=i<2?stride*side*12:Mathf.Max(0,-stride*side)*14;legs[i].localRotation=legRest[i];legs[i].rotation=Quaternion.AngleAxis(angle,player.right)*legs[i].rotation;}
             crew?.Step(Time.time);
-            if(Step==WorkStep.Hammer)camera.FocusTable(stake.position+stake.up*11+Vector3.up*2+boat.transform.right*2,boat.transform.forward,.95f);
+            if(Step==WorkStep.Hammer)camera.FocusHandwork(rig.GetBoneTransform(HumanBodyBones.Head).position+player.forward*1.5f,stake.position+stake.up*12+Vector3.up*2);
             else if(Step==WorkStep.CarryBundle&&CarryProgress>=1)camera.FocusWork(Vector3.Lerp(chest.position,work+Vector3.up*12,.5f),boat.transform.right,27);
             else camera.ClearWorkFocus();
         }
@@ -249,11 +258,13 @@ namespace BeachBoatStory
             string hint=Step==WorkStep.TakeBundle?"[E] Lấy cọc mẫu trên thuyền":Step==WorkStep.CarryBundle?(CarryProgress<1?"Giữ W • Vác cọc tới mạn thuyền":$"Rê chọn chỗ • Cuộn chuột: nghiêng {lean:0}° / cần {RequiredLean:0}° ±3 • E dựng"):
                     Step==WorkStep.Hammer?$"Giữ chuột trái • Kéo NGANG căn tâm, kéo LÊN nâng búa • THẢ trong dải xanh • Nện {hits}/3\n{Feedback}":"Ba cọc mẫu đã xong • Quân dân tiếp tục dựng trận địa";
             if(Step==WorkStep.CarryBundle)hint+="\n"+(string.IsNullOrEmpty(Feedback)?"A / D hoặc cuộn chuột chỉnh góc • R chọn lại vị trí":Feedback);
+            if(!string.IsNullOrEmpty(crew?.CurrentCall))hint+="\nCông binh: "+crew.CurrentCall;
             GUI.Box(new Rect(Screen.width*.12f,Screen.height*.81f,Screen.width*.76f,Screen.height*.14f),$"CÔNG BINH • Cọc mẫu {Mathf.Min(3,bundles+1)}/3 • X: hủy\n"+hint,style);
             if(Step==WorkStep.Hammer)
             {
                 void Gauge(float y,float value,float min,float max,string label){float x=Screen.width*.31f,w=Screen.width*.38f;GUI.color=Color.black;GUI.Box(new Rect(x,y,w,22),"");GUI.color=new Color(.2f,.8f,.4f);GUI.DrawTexture(new Rect(x+w*min,y,w*(max-min),22),Texture2D.whiteTexture);GUI.color=Color.white;GUI.DrawTexture(new Rect(x+w*Mathf.Clamp01(value)-3,y-3,6,28),Texture2D.whiteTexture);GUI.Label(new Rect(x,y-25,w,25),label,style);}
                 Gauge(Screen.height*.66f,(AimError+1)*.5f,.36f,.64f,"CĂN TÂM • KÉO NGANG");Gauge(Screen.height*.75f,HammerLift,.65f,.95f,"LỰC NỆN • KÉO LÊN RỒI THẢ TRONG XANH");GUI.color=Color.white;
+                Gauge(Screen.height*.57f,BeatPosition,.38f,.82f,"NHỊP NỆN • THẢ KHI VẠCH VÀO XANH");
             }
         }
         public void FinishWork()

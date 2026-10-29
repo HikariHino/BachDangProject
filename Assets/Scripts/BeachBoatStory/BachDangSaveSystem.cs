@@ -87,7 +87,7 @@ namespace BeachBoatStory
             if(Save(location))return true;
             ActiveSlot=previous;return false;
         }
-        public static bool CanSave=>ArcheryTraining.Active==null&&!RiverInvasionIntro.IsRunning&&StakeConstruction.Active==null&&VillageWorkStall.Active==null&&BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
+        public static bool CanSave=>CampRecoveryGame.Active==null&&ArcheryTraining.Active==null&&!RiverInvasionIntro.IsRunning&&StakeConstruction.Active==null&&VillageWorkStall.Active==null&&BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
             !(QuestCheckpoint.Instance?.IsDefeated??false)&&!(QuestRowboat.Instance?.IsBroken??false)&&!(ScreenFader.Instance?.IsTransitioning??false);
         static bool WriteData(string path,BachDangSaveData data)
         {
@@ -129,7 +129,7 @@ namespace BeachBoatStory
                 archeryBestScore=ArcheryTraining.Instance?.BestScore??0,archeryTrainingCompleted=ArcheryTraining.Instance?.Completed??false,
                 playerPosition=session.player.transform.position,playerRotation=session.player.transform.rotation,aboard=boat!=null&&boat.IsAboard,
                 boatPosition=boat!=null?boat.transform.position:Vector3.zero,boatRotation=boat!=null?boat.transform.rotation:Quaternion.identity,
-                health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,
+                health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,healingItemsVersion=1,healingItems=vitals.HealingItems,lureBriefed=story.LureBriefed,
                 woods=session.woodItems.Select(w=>w!=null&&w.IsCollected).ToArray(),stakes=RiverStakeZone.Instance?.CaptureCheckpoint()??Array.Empty<bool>(),
                 woodIds=session.woodItems.Select(w=>w.name).ToArray(),woodPositions=session.woodItems.Select(w=>w.transform.position).ToArray(),woodRotations=session.woodItems.Select(w=>w.transform.rotation).ToArray(),
                 stallLevels=VillagePreparationQuest.Instance.stalls.Select(s=>s.CompletedLevels).ToArray(),
@@ -155,7 +155,7 @@ namespace BeachBoatStory
             EnemyFleetDirector.Instance.GetComponent<RiverShoreArchers>()?.ResetAmbush();
             VillageWoodHunt.Instance.Restore(data);
             RiverStakeZone.Instance.RestoreCheckpoint(data.stakes);
-            story.collectedWood=data.woodCount;story.destroyedEnemyShips=data.destroyedCount;
+            story.collectedWood=data.woodCount;story.destroyedEnemyShips=data.destroyedCount;story.RestoreLureBriefing(data.lureBriefed||data.storyState==10||data.storyState==11||data.storyState==14);
             story.TransitionTo((BachDangStoryManager.StoryState)data.storyState,true);
             var stalls=VillagePreparationQuest.Instance.stalls;for(int i=0;i<stalls.Length;i++)stalls[i].RestoreLearningProgress(i<data.stallLevels.Length?data.stallLevels[i]:0);
             foreach(var activity in data.activities??Array.Empty<BachDangSaveData.Activity>())

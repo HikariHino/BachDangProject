@@ -28,12 +28,14 @@ public class Camera_Script : MonoBehaviour
     public bool WorkFocusActive {get;private set;}
     public bool TableFocusActive {get;private set;}
     Vector3 workFocus,workForward;float workDistance;
+    bool handworkFocus;Vector3 handworkEye;
     public void FocusWork(Vector3 point,Vector3 forward,float closeDistance=24)
-    {workFocus=point;workForward=forward;workDistance=closeDistance;WorkFocusActive=true;TableFocusActive=false;}
+    {handworkFocus=false;workFocus=point;workForward=forward;workDistance=closeDistance;WorkFocusActive=true;TableFocusActive=false;}
     public void FocusTable(Vector3 point,Vector3 forward,float framing=1)
-    {workFocus=point;workForward=forward;workDistance=Mathf.Clamp(framing,.65f,1.2f);WorkFocusActive=TableFocusActive=true;}
+    {handworkFocus=false;workFocus=point;workForward=forward;workDistance=Mathf.Clamp(framing,.65f,1.2f);WorkFocusActive=TableFocusActive=true;}
+    public void FocusHandwork(Vector3 eye,Vector3 lookAt){handworkFocus=true;handworkEye=eye;workFocus=lookAt;workForward=target.forward;WorkFocusActive=TableFocusActive=true;workDistance=1;}
     public void ClearWorkFocus(){if(!WorkFocusActive)return;WorkFocusActive=TableFocusActive=false;velocity=Vector3.zero;}
-    public bool InputCaptured => Cursor.lockState == CursorLockMode.Locked && (!BeachBoatQuestSession.InputBlocked||StakeConstruction.AllowsCamera||VillagePhysicalWork.AllowsCamera);
+    public bool InputCaptured => Cursor.lockState == CursorLockMode.Locked && (!BeachBoatQuestSession.InputBlocked||StakeConstruction.AllowsCamera||VillagePhysicalWork.AllowsCamera||PhysicalTrainingCourse.AllowsMovement);
     float yaw, pitch = 12f, normalFieldOfView, nextTargetSearch;
     bool initialized;
     Vector3 velocity, previousTarget;
@@ -71,7 +73,7 @@ public class Camera_Script : MonoBehaviour
             // Tool drags manipulate the world object, never orbit the camera as well.
             var forward=Vector3.ProjectOnPlane(workForward,Vector3.up).normalized;
             var right=Vector3.Cross(Vector3.up,forward);
-            var desired=TableFocusActive?workFocus+(-forward*11+Vector3.up*16)*workDistance:workFocus-forward*workDistance+right*20+Vector3.up*17;
+            var desired=handworkFocus?handworkEye:TableFocusActive?workFocus+(-forward*11+Vector3.up*16)*workDistance:workFocus-forward*workDistance+right*20+Vector3.up*17;
             desired=KeepAboveWater(ResolveObstruction(workFocus+Vector3.up*(TableFocusActive?4:2),desired));
             transform.position=Vector3.SmoothDamp(transform.position,desired,ref velocity,.12f);
             transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(workFocus-transform.position),1-Mathf.Exp(-18*Time.deltaTime));

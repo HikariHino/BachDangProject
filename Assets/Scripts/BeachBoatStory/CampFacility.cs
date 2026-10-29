@@ -78,7 +78,9 @@ namespace BeachBoatStory
             if(game!=CampRecoveryGame.Active||game.Facility!=this||game.Phase!=CampRecoveryGame.GamePhase.Won||
                !isActiveAndEnabled||Time.unscaledTime-LastUse[(int)kind]<cooldownSeconds)return false;
             var session=BeachBoatQuestSession.Instance;
-            if(session==null||QuestRowboat.FlatDistance(session.player.transform.position,transform.position)>interactDistance)return false;
+            if(session==null)return false;
+            if(game.Training){if(!game.TrainingDelivered||QuestRowboat.FlatDistance(session.player.transform.position,game.TrainingHome)>12)return false;}
+            else if(QuestRowboat.FlatDistance(session.player.transform.position,transform.position)>interactDistance)return false;
             return ApplyReward(session.player.GetComponent<PlayerVitals>());
         }
 
@@ -101,6 +103,7 @@ namespace BeachBoatStory
                     break;
                 case FacilityKind.Medical:
                     vitals.TreatAtMedicalTent();
+                    vitals.RestockHealingItems();
                     message = "Quân y đã băng bó vết thương. Máu được hồi đầy; bạn có thể tiếp tục nhiệm vụ.";
                     break;
                 default:

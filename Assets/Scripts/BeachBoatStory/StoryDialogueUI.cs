@@ -217,6 +217,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
             case nameof(BachDangStoryManager.OnReportToNgoQuyenAct2):callback=story.OnReportToNgoQuyenAct2;break;
             case nameof(BachDangStoryManager.OnReportStakesComplete):callback=story.OnReportStakesComplete;break;
             case nameof(BachDangStoryManager.OnTalkToNgoQuyenAct3):callback=story.OnTalkToNgoQuyenAct3;break;
+            case nameof(BachDangStoryManager.OnLureOrdersAcknowledged):callback=story.OnLureOrdersAcknowledged;break;
             case nameof(BachDangStoryManager.OnVictoryReported):callback=story.OnVictoryReported;break;
         }
         Show(data.speaker,data.line,callback);

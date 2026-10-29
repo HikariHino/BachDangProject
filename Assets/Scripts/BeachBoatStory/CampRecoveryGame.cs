@@ -14,7 +14,10 @@ namespace BeachBoatStory
         public int Progress {get;private set;}
         public int Mistakes {get;private set;}
         public float Elapsed {get;private set;}
-        public float TimeLimit=>Training?24:Sequence?22:20;
+        public float TimeLimit=>Training?65:Sequence?22:20;
+        public PhysicalTrainingCourse Course {get;private set;}
+        public Vector3 TrainingHome {get;private set;}
+        public bool TrainingDelivered {get;private set;}
         public int TrainingLevel {get;private set;}=1;
         public int Goal=>Training?4+TrainingLevel*2:Sequence?3:4;
         public float CrossingSeconds=>Training?(TrainingLevel==1?1.4f:TrainingLevel==2?.95f:.6f):2f;
@@ -43,14 +46,17 @@ namespace BeachBoatStory
             game.Facility=facility;game.savedLock=Cursor.lockState;game.savedVisible=Cursor.visible;
             Active=game;game.Phase=GamePhase.Instructions;game.Feedback="";
             game.TrainingLevel=Mathf.Min(3,session.player.GetComponent<PlayerVitals>().CompletedTrainingLevels+1);
+            game.TrainingHome=session.player.transform.position;
             if(game.overlay==null)game.BuildUI();
             game.overlay.SetActive(true);Cursor.lockState=CursorLockMode.None;Cursor.visible=true;
-            BachDangStoryManager.Instance?.SetInteractPrompt(false);BeachBoatSoundscape.Instance?.PlayInteraction();game.Refresh();return true;
+            BachDangStoryManager.Instance?.SetInteractPrompt(false);BeachBoatSoundscape.Instance?.PlayInteraction();game.Refresh();if(game.Training)game.StartAttempt();return true;
         }
         public void StartAttempt()
         {
             if(Active!=this||Phase==GamePhase.Playing||Phase==GamePhase.Won)return;
             Progress=Mistakes=0;Elapsed=0;lastBeat=-100;Feedback="";Phase=GamePhase.Playing;
+            TrainingDelivered=false;
+            if(Training){Course?.Dispose();Course=new PhysicalTrainingCourse(this);Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;}
             Shuffle();Refresh();
         }
         void Shuffle()
@@ -63,7 +69,7 @@ namespace BeachBoatStory
             if(Facility.kind==CampFacility.FacilityKind.Medical)return new[]{"LÀM SẠCH","ĐẶT BĂNG","CỐ ĐỊNH BĂNG"}[semantic];
             return new[]{"NƯỚC UỐNG","CƠM","CÁ KHÔ"}[semantic];
         }
-        string Reward()=>Facility.kind==CampFacility.FacilityKind.Medical?"Thưởng: hồi đầy máu.":
+        string Reward()=>Facility.kind==CampFacility.FacilityKind.Medical?"Thưởng: hồi đầy máu và tiếp thuốc lên ít nhất 3 item.":
             Facility.kind==CampFacility.FacilityKind.Provisions?"Thưởng: hồi 25 máu và 35 thể lực.":
             Training?(BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().CompletedTrainingLevels<TrainingLevel?
                 "Thưởng cấp này: +20 thể lực tối đa và hồi đầy thể lực.":"Bạn đã nhận +20 của cấp này. Chơi lại chỉ hồi đầy thể lực."):"Thưởng: hồi 35 máu và đầy thể lực.";
@@ -71,17 +77,18 @@ namespace BeachBoatStory
             "Băng bó theo đúng thứ tự: làm sạch → đặt băng → cố định băng. Vị trí dụng cụ sẽ đổi sau mỗi bước.":
             "Chuẩn bị bữa hồi sức: nước uống → cơm → cá khô. Vị trí món sẽ đổi sau mỗi bước.")+
             "\nNhấn nút có tên phù hợp hoặc phím 1–3. Hoàn thành 3 bước trong 22 giây; sai 3 lần sẽ thua.":
-            Training?$"Ba cấp: DỄ → VỪA → KHÓ. Mỗi cấp thắng thưởng +20 thể lực tối đa một lần.\nCấp {TrainingLevel}/3: nhấn SPACE khi vạch trắng vào vùng xanh. Cấp càng khó, vùng xanh càng hẹp và vạch trắng chạy càng nhanh.\nĐạt {Goal} nhịp trong 24 giây; sai 3 lần sẽ thua. Thả Space giữa các lần nhấn.":
+            Training?$"E nhấc bao cát tại điểm xuất phát. WASD mang bao tới cổng vàng, SPACE nhảy qua thanh gỗ.\nCấp {TrainingLevel}/3: vượt {Goal-1} cổng rồi mang bao về, E đặt xuống trong {TimeLimit:0} giây.\nMỗi cấp hoàn thành lần đầu thưởng +20 thể lực tối đa. ESC rời bài tập.":
             "Điều hòa nhịp thở. Đợi con trỏ vào vùng xanh rồi nhấn Space hoặc nút THỞ RA. Đạt 4 nhịp trong 20 giây; sai 3 lần sẽ thua.";
         public void AdvanceTime(float dt)
         {
             if(Active!=this||Phase!=GamePhase.Playing)return;
             Elapsed+=Mathf.Max(0,dt);
-            if(Elapsed>=TimeLimit){Phase=GamePhase.Lost;Feedback="Hết giờ. Chưa nhận hồi phục; bạn có thể thử lại.";BeachBoatSoundscape.Instance?.PlayResult(false);}
+            if(Elapsed>=TimeLimit){Phase=GamePhase.Lost;Feedback="Hết giờ. Chưa nhận hồi phục; bạn có thể thử lại.";BeachBoatSoundscape.Instance?.PlayResult(false);if(Training){Course?.Dispose();Course=null;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}}
             Refresh();
         }
         public bool Submit(int option)
         {
+            if(Training)return false;
             if(Active!=this||Phase!=GamePhase.Playing)return false;
             bool valid=Sequence?option>=0&&option<3&&order[option]==Progress:
                 option==0&&RhythmPosition>=GreenMin&&RhythmPosition<=GreenMax&&Elapsed-lastBeat>=.45f;
@@ -98,13 +105,14 @@ namespace BeachBoatStory
         {
             if(Active!=this||Phase!=GamePhase.Won||Facility==null)return false;
             if(!Facility.CompleteRecovery(this))return false;
-            if(Training&&TrainingLevel<3){TrainingLevel++;Phase=GamePhase.Instructions;Progress=Mistakes=0;Elapsed=0;Feedback="";Refresh();}
-            else Close();return true;
+            Close();return true;
         }
+        public void TrainingCheckpoint(){if(Active!=this||!Training||Phase!=GamePhase.Playing)return;Progress++;if(Progress>=Goal){TrainingDelivered=true;Phase=GamePhase.Won;Feedback="Đã mang bao qua đủ cổng và trả về điểm xuất phát.";Course?.Dispose();Course=null;Cursor.lockState=CursorLockMode.None;Cursor.visible=true;}Refresh();}
         public void Close()
         {
             if(Active!=this)return;
             Active=null;if(overlay!=null)overlay.SetActive(false);
+            Course?.Dispose();Course=null;
             Cursor.lockState=savedLock;Cursor.visible=savedVisible;StoryDialogueUI.TryConsumeInput();
         }
         void Update()
@@ -117,10 +125,13 @@ namespace BeachBoatStory
             if(Phase==GamePhase.Lost){if(Input.GetKeyDown(KeyCode.R))StartAttempt();return;}
             if(Phase==GamePhase.Won){if(Input.GetKeyDown(KeyCode.Return))ClaimReward();return;}
             AdvanceTime(Time.unscaledDeltaTime);
+            if(Training){Course?.Tick();return;}
             if(Sequence){for(int i=0;i<3;i++)if(Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1+i)))Submit(i);}
             else if(Input.GetKeyDown(KeyCode.Space))Submit(0);
         }
         void OnDisable(){Close();}
+        void LateUpdate(){if(Active==this)Course?.Pose();}
+        void OnGUI(){if(Active==this)Course?.Draw();}
         void OnDestroy(){Close();}
         void BuildUI()
         {
@@ -154,6 +165,7 @@ namespace BeachBoatStory
         void Refresh()
         {
             if(overlay==null||Active!=this)return;
+            overlay.SetActive(!Training||Phase!=GamePhase.Playing);
             title.text=Facility.kind==CampFacility.FacilityKind.Medical?"QUÂN Y — BĂNG BÓ":Facility.kind==CampFacility.FacilityKind.Provisions?"BẾP TRẠI — BỮA HỒI SỨC":Training?"LUYỆN THỂ LỰC":"LỀU NGHỈ — ĐIỀU HÒA NHỊP THỞ";
             if(Training)title.text+=$" • CẤP {TrainingLevel}/3 — "+new[]{"DỄ","VỪA","KHÓ"}[TrainingLevel-1];
             instructions.SetActive(Phase==GamePhase.Instructions);playing.SetActive(Phase==GamePhase.Playing);result.SetActive(Phase==GamePhase.Won||Phase==GamePhase.Lost);
@@ -167,7 +179,7 @@ namespace BeachBoatStory
             goodZone.anchorMin=new Vector2(GreenMin,0);goodZone.anchorMax=new Vector2(GreenMax,1);
             actionLabel.text=Training?"ĐÚNG NHỊP [SPACE]":"THỞ RA [SPACE]";feedback.text=Feedback;
             resultText.text=(Phase==GamePhase.Won?"HOÀN THÀNH\n\n"+Reward():"CHƯA HOÀN THÀNH\n\n"+Feedback)+"\n\nESC / X: rời minigame, giữ phần thưởng đã nhận";
-            result.transform.Find("RetryOrClaim/Label").GetComponent<TMP_Text>().text=Phase==GamePhase.Won?(Training&&TrainingLevel<3?"NHẬN +20 • SANG CẤP TIẾP [ENTER]":"NHẬN THƯỞNG [ENTER]"):"THỬ LẠI [R]";
+            result.transform.Find("RetryOrClaim/Label").GetComponent<TMP_Text>().text=Phase==GamePhase.Won?"NHẬN THƯỞNG [ENTER]":"THỬ LẠI [R]";
         }
         static GameObject Box(string name,Transform parent,Vector2 min,Vector2 max,Color color)
         {var go=new GameObject(name,typeof(RectTransform),typeof(Image));go.transform.SetParent(parent,false);var r=(RectTransform)go.transform;r.anchorMin=min;r.anchorMax=max;r.offsetMin=r.offsetMax=Vector2.zero;go.GetComponent<Image>().color=color;return go;}
