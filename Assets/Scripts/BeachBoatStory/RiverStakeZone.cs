@@ -212,7 +212,7 @@ namespace BeachBoatStory
             void CompleteField()
             {
                 var all=new bool[placements.Length];for(int i=0;i<all.Length;i++)all[i]=true;
-                RestoreCheckpoint(all);BachDangStoryManager.Instance?.OnPlantStakesComplete();
+                RestoreCheckpoint(all);RiverConstructionCamp.Ensure(this).ParkAfterWork();BachDangStoryManager.Instance?.OnPlantStakesComplete();
             }
             if(ScreenFader.Instance!=null)ScreenFader.Instance.FadeTransition("VÀI NGÀY SAU…\nTừ năm cọc mẫu tại năm vị trí, quân dân ngày đêm hoàn thành trận địa Bạch Đằng.",CompleteField,.7f,2.8f);
             else CompleteField();
@@ -287,7 +287,7 @@ namespace BeachBoatStory
             {
                 bool planted=states!=null&&p<states.Length&&states[p];placements[p].planted=planted;
                 if(placements[p].marker!=null)placements[p].marker.SetActive(false);
-                if(samplePosts[p]!=null)samplePosts[p].gameObject.SetActive(planted&&!fieldRevealed);
+                if(samplePosts[p]!=null)samplePosts[p].gameObject.SetActive(planted);
                 if(!planted)continue;CompletedClusterCount++;
                 if(!fieldRevealed&&samplePosts[p]==null)SetSample(p,DefaultSamplePosition(p),Quaternion.Euler(0,0,-12));
                 foreach(int i in placements[p].stakeIndices)if(i>=0&&i<fieldStakes.Length&&fieldStakes[i]!=null&&!finished[i])
@@ -307,7 +307,7 @@ namespace BeachBoatStory
                 samplePosts[index]=post;
             }
             samplePosts[index].SetPositionAndRotation(position,rotation);
-            samplePosts[index].gameObject.SetActive(!fieldRevealed&&placements[index].planted);
+            samplePosts[index].gameObject.SetActive(placements[index].planted);
         }
         public Vector3[] CaptureSamplePositions()
         {var result=new Vector3[ClusterCount];for(int i=0;i<result.Length;i++)result[i]=samplePosts!=null&&samplePosts[i]!=null?samplePosts[i].position:DefaultSamplePosition(i);return result;}
@@ -316,7 +316,7 @@ namespace BeachBoatStory
         public void RestoreSamples(BachDangSaveData data)
         {
             for(int i=0;i<ClusterCount;i++)
-                if(placements[i].planted&&!fieldRevealed)
+                if(placements[i].planted)
                 {
                     bool saved=data.stakeSamplesVersion>0&&data.stakeSamplePositions!=null&&i<data.stakeSamplePositions.Length&&data.stakeSampleRotations!=null&&i<data.stakeSampleRotations.Length;
                     SetSample(i,saved?data.stakeSamplePositions[i]:DefaultSamplePosition(i),saved?data.stakeSampleRotations[i]:Quaternion.Euler(0,0,-12));

@@ -74,7 +74,7 @@ namespace BeachBoatStory
             bundles=hits=0;CarryProgress=0;Step=WorkStep.TakeBundle;Active=this;
             workStarted=Time.time;
             props=new GameObject("Stake_Work_3D_Props");timber=zone.fieldStakes[0].GetComponentInChildren<Renderer>(true).sharedMaterial;
-            crew=new StakeWorkCrew(boat,zone.fieldStakes[0],props.transform,timber);
+            crew=RiverConstructionCamp.Ensure(zone).BeginSite(zone.WorkingIndex);
             stack=new GameObject("Bo_coc_tren_thuyen").transform;stack.SetParent(props.transform,false);
             for(int i=0;i<6;i++)
             {var log=Log("Coc_tren_bo",stack);log.localPosition=new Vector3((i%3-1)*2.2f,1+i/3*1.8f,0);log.localRotation=Quaternion.Euler(90,0,0);}
@@ -249,7 +249,7 @@ namespace BeachBoatStory
             // Imported leg-bone X axes are not the actor's knee hinge. Swing
             // around the character's actual right axis, keeping knees forward.
             for(int i=0;i<4;i++){float side=i%2==0?1:-1;float angle=i<2?stride*side*12:Mathf.Max(0,-stride*side)*14;legs[i].localRotation=legRest[i];legs[i].rotation=Quaternion.AngleAxis(angle,player.right)*legs[i].rotation;}
-            crew?.Step(Time.time);
+            // The scene-owned construction camp animates its teams after this session ends.
             if(Step==WorkStep.Hammer)camera.FocusHandwork(rig.GetBoneTransform(HumanBodyBones.Head).position+player.forward*1.5f,stake.position+stake.up*12+Vector3.up*2);
             else if(Step==WorkStep.CarryBundle&&CarryProgress>=1)camera.FocusWork(Vector3.Lerp(chest.position,work+Vector3.up*12,.5f),boat.transform.right,27);
             else camera.ClearWorkFocus();
@@ -274,7 +274,7 @@ namespace BeachBoatStory
         {
             if(Active!=this)return;Active=null;
             hands?.Dispose();hands=null;
-            crew?.Dispose();crew=null;
+            crew=null;
             if(props!=null)Destroy(props);if(rig!=null)rig.enabled=rigEnabled;
             if(camera!=null){camera.ClearWorkFocus();camera.distance=cameraSettings.x;camera.heightOffset=cameraSettings.y;camera.rightOffset=cameraSettings.z;camera.SetElevation(cameraElevation);}
             if(previewGood!=null)Destroy(previewGood);if(previewBad!=null)Destroy(previewBad);if(waterMaterial!=null)Destroy(waterMaterial);if(bindingMaterial!=null)Destroy(bindingMaterial);

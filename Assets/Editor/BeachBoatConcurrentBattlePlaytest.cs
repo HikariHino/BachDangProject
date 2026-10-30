@@ -34,6 +34,7 @@ public static class BeachBoatConcurrentBattlePlaytest
     static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static string Hash(string p){using(var sha=SHA256.Create())return Convert.ToBase64String(sha.ComputeHash(File.ReadAllBytes(p)));}
     public static void RunInEditor(){phase=0;lastFrame=-1;boatDistance=0;ebbTime=entryTime=ambushTime=peakPursuitSpeed=0;approachSaveChecked=sawApproachDrop=false;previousPositions=null;previousRotations=null;maxYawRate=maxSlip=0;motionSamples=0;started=0;runtimeError=null;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunWithConstructionField(){SessionState.SetBool("UseConstructionField30QA",true);RunInEditor();}
     public static void RunBatch(){UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Record;Application.logMessageReceived+=Record;}
     static void Record(string m,string stack,LogType t){if(SessionState.GetBool(Flag,false)&&EditorApplication.isPlaying&&(t==LogType.Error||t==LogType.Exception))runtimeError=m+"\n"+stack;}
@@ -111,6 +112,7 @@ public static class BeachBoatConcurrentBattlePlaytest
                 BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/ConcurrentQA/"+DateTime.Now.ToString("yyyyMMdd-HHmmssfff"));BachDangAutoSave.Instance.enabled=false;
                 BachDangFrontEnd.Instance.Play();Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 zone.RestoreCheckpoint(Enumerable.Repeat(true,5).ToArray());story.collectedWood=story.totalWoodRequired;
+                if(SessionState.GetBool("UseConstructionField30QA",false)){SessionState.SetBool("UseConstructionField30QA",false);var field=JsonUtility.FromJson<BachDangSaveData>(File.ReadAllText("Logs/ConstructionFieldCheckpoint.json"));zone.RestoreSamples(field);RiverConstructionCamp.Ensure(zone).Restore(field);Check(RiverConstructionCamp.Ensure(zone).Workers>=60,"The live fleet trial includes all persistent worker teams, thirty NPC poles and five player poles");}
                 story.TransitionTo(Story.StoryState.Act3_BattleInProgress,true);
                 BachDangBattleTimeline.Instance.BeginLure(true);
                 QuestRowboat.Instance.RestoreSave(true,QuestRowboat.Instance.BattleLurePosition,Quaternion.identity);

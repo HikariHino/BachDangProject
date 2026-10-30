@@ -150,11 +150,21 @@ namespace BeachBoatStory
             }
             floor=default;return false;
         }
+        bool EscapesExistingContact(Collider obstacle,Vector3 from,Quaternion fromRotation,Vector3 to,Quaternion toRotation)
+        {
+            var offset=transform.InverseTransformPoint(solidHull.transform.position);var relative=Quaternion.Inverse(transform.rotation)*solidHull.transform.rotation;
+            Vector3 At(Vector3 p,Quaternion r)=>p+r*Vector3.Scale(offset,transform.lossyScale);
+            if(!Physics.ComputePenetration(solidHull,At(from,fromRotation),fromRotation*relative,obstacle,obstacle.transform.position,obstacle.transform.rotation,out var normal,out float oldDepth))return false;
+            if(!Physics.ComputePenetration(solidHull,At(to,toRotation),toRotation*relative,obstacle,obstacle.transform.position,obstacle.transform.rotation,out _,out float newDepth))return true;
+            // Only release an overlap already present in an older checkpoint. Never
+            // deepen it or tunnel through a new pole/hull while backing away.
+            return newDepth<oldDepth-.00005f||newDepth<=oldDepth+.00005f&&Vector3.Dot(to-from,normal)>.00005f;
+        }
         public bool CanMove(Vector3 from,Quaternion fromRotation,Vector3 to,Quaternion toRotation,bool reserveStakes=true,bool allowBankContact=false)
         {
             using var sample=SweepMarker.Auto();
             if(solidHull==null)Initialize();
-            Physics.SyncTransforms();
+            Physics.SyncTransforms();LastBlocker=null;
             var scale=Abs(transform.lossyScale);var local=Vector3.Scale(solidHull.center,scale);
             var a=from+fromRotation*local;var b=to+toRotation*local;
             var mid=Quaternion.Slerp(fromRotation,toRotation,.5f);
@@ -175,6 +185,7 @@ namespace BeachBoatStory
                 // A grounded rowboat has separately sampled keel support and may
                 // slide toward deeper water while touching sand. Other solids stay hard.
                 if(allowBankContact&&c is TerrainCollider&&GetComponent<QuestRowboat>()!=null)continue;
+                if(EscapesExistingContact(c,from,fromRotation,to,toRotation))continue;
                 LastBlocker=c;RejectedMoves++;
                 var rowboat=c.GetComponentInParent<QuestRowboat>();
                 if(rowboat!=null&&rowboat.transform!=transform&&Time.deltaTime>0)

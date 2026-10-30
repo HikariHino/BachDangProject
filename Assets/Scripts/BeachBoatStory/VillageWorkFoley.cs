@@ -28,7 +28,7 @@ namespace BeachBoatStory
         {
             if(Volume<=0||!clips.TryGetValue(cue,out var clip)||clip==null)return;
             if(friction.clip!=clip){friction.Stop();friction.clip=clip;friction.volume=0;}
-            if(!friction.isPlaying){friction.Play();counts[cue]=Count(cue)+1;}LastCue=cue;lastMotion=Time.unscaledTime;target=Mathf.Lerp(.1f,.26f,Mathf.Clamp01(speed));
+            if(!friction.isPlaying){friction.Play();counts[cue]=Count(cue)+1;}LastCue=cue;lastMotion=Time.unscaledTime;target=Mathf.Lerp(.5f,.85f,Mathf.Clamp01(speed));
         }
         public void Play(Cue cue)
         {
@@ -39,7 +39,7 @@ namespace BeachBoatStory
         {
             if(blocked){if(!paused){friction.Pause();action.Pause();tail.Pause();paused=true;}return;}
             if(paused){friction.UnPause();action.UnPause();tail.UnPause();paused=false;}
-            action.volume=Mathf.MoveTowards(action.volume,.38f*Volume,seconds*12);tail.volume=Mathf.MoveTowards(tail.volume,0,seconds*12);if(tail.volume<.001f)tail.Stop();
+            action.volume=Mathf.MoveTowards(action.volume,.9f*Volume,seconds*12);tail.volume=Mathf.MoveTowards(tail.volume,0,seconds*12);if(tail.volume<.001f)tail.Stop();
             float goal=Time.unscaledTime-lastMotion<.09f?target*Volume:0;
             friction.volume=Mathf.MoveTowards(friction.volume,goal,seconds*5);if(goal==0&&friction.volume<.001f)friction.Stop();
         }

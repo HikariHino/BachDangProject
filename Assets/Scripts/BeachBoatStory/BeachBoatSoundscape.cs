@@ -54,7 +54,7 @@ namespace BeachBoatStory
             wreckCries=Resources.LoadAll<AudioClip>("BachDang938/WreckAudio");
             runningFootsteps=Resources.LoadAll<AudioClip>("BachDang938/RunSteps");
             arrowImpact=Resources.Load<AudioClip>("BachDang938/LobbyAudio/Arrow_Flesh_Impact");
-            StakeImpact=Resources.Load<AudioClip>("BachDang938/WorkAudio/Trade_SetDown");
+            StakeImpact=Resources.Load<AudioClip>("BachDang938/WorkAudio/Stake_Hammer");
             var actionClips=Resources.LoadAll<AudioClip>("BachDang938/ActionAudio");
             AudioClip[] Group(string prefix)=>System.Array.FindAll(actionClips,c=>c.name.StartsWith(prefix,System.StringComparison.Ordinal));
             var walking=Group("Walk_");if(walking.Length>0)footsteps=walking;
@@ -91,7 +91,7 @@ namespace BeachBoatStory
             if(Time.unscaledTime>=nextShoreCheck)
             {nextShoreCheck=Time.unscaledTime+.5f;DistanceToWater=MeasureWaterDistance(session.player.transform.position);}
             float shore=1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(20,200,DistanceToWater));
-            float intro=OpeningEvent.IsOpeningActive?.15f:StakeConstruction.Active!=null?.25f:1f;
+            float intro=OpeningEvent.IsOpeningActive?.15f:(StakeConstruction.Active!=null||VillagePhysicalWork.Active?.AtTable==true)?.18f:1f;
             RiverSource.volume=Mathf.MoveTowards(RiverSource.volume,volume*(dead?.08f:.34f)*shore*intro,Time.unscaledDeltaTime*.3f);
             float breeze=.035f+.01f*Mathf.Sin(Time.unscaledTime*.23f);
             WindSource.volume=Mathf.MoveTowards(WindSource.volume,volume*(dead?.01f:breeze)*intro,Time.unscaledDeltaTime*.012f);
@@ -161,6 +161,8 @@ namespace BeachBoatStory
             WreckSoundsPlayed++;
         }
         public int StakeHitsPlayed {get;private set;}
+        float nextCrewStrike;
+        public void PlayCrewStake(Vector3 point){float distance=Vector3.Distance(point,session.player.transform.position);if(distance>300||Time.time<nextCrewStrike)return;nextCrewStrike=Time.time+.6f;Play(effects,StakeImpact,.42f*(1-distance/360),Random.Range(.97f,1.03f));}
         public void PlayStake(){Play(effects,StakeImpact!=null?StakeImpact:drum,1f,1);StakeHitsPlayed++;}
         public void PlayHit()=>Play(effects,hit,.55f);
         public void PlayCombatHit(Vector3 point,CombatImpactKind kind,bool foreground)

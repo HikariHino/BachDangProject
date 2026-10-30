@@ -35,8 +35,6 @@ namespace BeachBoatStory
         BeachBoatQuestSession session;
         Character_Movement motor;
         PlayerVitals vitals;
-        AmbientRiverBoat[] nearbyFriendlyBoats;
-        EnemyShip[] enemyShips;
         Vector3 homePosition;
         public Vector3 BattleLurePosition {get;private set;}
         Quaternion homeRotation;
@@ -134,8 +132,6 @@ namespace BeachBoatStory
             { Debug.LogError("Quest rowboat bindings incomplete.", this); enabled = false; return; }
             motor = session.player.GetComponent<Character_Movement>();
             vitals = session.player.GetComponent<PlayerVitals>();
-            nearbyFriendlyBoats = FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            enemyShips = EnemyFleetDirector.Instance != null ? EnemyFleetDirector.Instance.enemyShips : System.Array.Empty<EnemyShip>();
             homePosition = transform.position;BattleLurePosition=homePosition; homeRotation = transform.rotation;
             playerBody = session.player.GetComponent<Rigidbody>();
             playerCollider = session.player.GetComponent<CapsuleCollider>();
@@ -420,8 +416,9 @@ namespace BeachBoatStory
                 // Safe launch/old-save placement happens before rowing begins.
                 if(obstacle==BoatObstacleKind.None)
                 {var blocker=BoatHullCollision.Get(transform).LastBlocker;obstacle=blocker!=null?ClassifyObstacle(blocker):BoatObstacleKind.Structure;}
-                float turnImpact=BoatHullCollision.Get(transform).Radius*Mathf.Deg2Rad*turnSpeed*Mathf.Abs(steering);
-                bool knockedOut = ApplyCollisionImpact(obstacle, Mathf.Max(turnImpact,Mathf.Max(Mathf.Abs(Speed), Mathf.Abs(speed))));
+                // A blocked steering request is not angular velocity. Once stopped,
+                // gentle contact must not repeatedly inflict a full-speed collision.
+                bool knockedOut = ApplyCollisionImpact(obstacle, Mathf.Max(Mathf.Abs(Speed), Mathf.Abs(speed)));
                 Speed = 0; IsBoosting = false;
                 if (knockedOut) return;
             }
@@ -439,58 +436,15 @@ namespace BeachBoatStory
             return clearance>=minimumDepth&&TryCanOccupy(position,rotation,out _)&&BoatHullCollision.Get(transform).CanOccupy(position,rotation,false);
         }
 
-        float ShipClearance(Vector3 position, Quaternion rotation, Vector3 ship, float radius)
-        {
-            var axis=rotation*Vector3.forward;axis.y=0;axis.Normalize();
-            var offset=ship-position;offset.y=0;
-            var closest=position+axis*Mathf.Clamp(Vector3.Dot(offset,axis),-hullProbeSpacing,hullProbeSpacing);
-            return FlatDistance(closest,ship)-radius;
-        }
-
-        bool EscapingShip(Vector3 position, Quaternion rotation, Transform ship, float radius)
-        {
-            float current=ShipClearance(transform.position,transform.rotation,ship.position,radius);
-            if(current>=0)return false;
-            float next=ShipClearance(position,rotation,ship.position,radius);
-            // When a ship's center lies within our keel segment, the capsule depth is
-            // constant until the stern clears it. Increasing center separation must still
-            // count as escape; three discrete probes incorrectly created another trap.
-            return next>current+.0001f || (next>=current-.0001f &&
-                FlatDistance(position,ship.position)>FlatDistance(transform.position,ship.position)+.0001f);
-        }
-
         bool TryCanOccupy(Vector3 position, Quaternion rotation, out BoatObstacleKind obstacle,bool shoreEscape=false)
         {
             obstacle = BoatObstacleKind.None;
             for (int i = -1; i <= 1; i++)
             {
                 var sample = position + rotation * Vector3.forward * (i * hullProbeSpacing);
-                if (nearbyFriendlyBoats != null)
-                    foreach (var other in nearbyFriendlyBoats)
-                        if (other != null && other.gameObject.activeInHierarchy &&
-                            FlatDistance(sample, other.transform.position) < 48f &&
-                            !EscapingShip(position,rotation,other.transform,48))
-                        { obstacle = BoatObstacleKind.Ship; return false; }
-                if (enemyShips != null)
-                    foreach (var other in enemyShips)
-                        if (other != null && other.gameObject.activeInHierarchy && !other.isDestroyed &&
-                            FlatDistance(sample, other.transform.position) < 53f &&
-                            !EscapingShip(position,rotation,other.transform,53))
-                        { obstacle = BoatObstacleKind.Ship; return false; }
-                int count = Physics.OverlapSphereNonAlloc(sample + Vector3.up * 2, hullProbeRadius, overlaps, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-                if (count == overlaps.Length) { obstacle = BoatObstacleKind.Structure; return false; }
-                for (int n = 0; n < count; n++)
-                {
-                    var hit = overlaps[n];
-                    if (hit == null || hit is TerrainCollider || hit.transform.IsChildOf(transform) ||
-                        (session != null && hit.transform.IsChildOf(session.player.transform))) continue;
-                    var friendly=hit.GetComponentInParent<AmbientRiverBoat>();
-                    var enemy=hit.GetComponentInParent<EnemyShip>();
-                    if(friendly!=null && EscapingShip(position,rotation,friendly.transform,48))continue;
-                    if(enemy!=null && EscapingShip(position,rotation,enemy.transform,53))continue;
-                    obstacle = ClassifyObstacle(hit);
-                    return false;
-                }
+                // Solid hull sweeps perform object collision below. The former three
+                // oversized spheres also hit poles beside the gunwale and invisible
+                // centre-radius reservations around ships, blocking clear water.
                 if (terrain != null)
                 {
                     var local = sample - terrain.transform.position; var size = terrain.terrainData.size;
@@ -507,7 +461,8 @@ namespace BeachBoatStory
             if (hit.GetComponentInParent<AmbientRiverBoat>() != null || hit.GetComponentInParent<EnemyShip>() != null)
                 return BoatObstacleKind.Ship;
             string name = hit.name.ToLowerInvariant();
-            if(name.Contains("cocgo")||name.Contains("coc_go")||name.Contains("cọc"))return BoatObstacleKind.Stake;
+            if(name.StartsWith("thuyen_cong_binh"))return BoatObstacleKind.Ship;
+            if(name.StartsWith("coc_mau_")||name.StartsWith("coc_nhon_")||name.Contains("cocgo")||name.Contains("coc_go")||name.Contains("cọc"))return BoatObstacleKind.Stake;
             if (name.Contains("rock") || name.Contains("stone") || name.Contains("boulder") || name.Contains("đá"))
                 return BoatObstacleKind.Rock;
             if (name.Contains("tree") || name.Contains("pine") || name.Contains("mangrove") || name.Contains("cây") || name.Contains("cay"))

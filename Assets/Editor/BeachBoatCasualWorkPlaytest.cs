@@ -14,11 +14,11 @@ public static class BeachBoatCasualWorkPlaytest
     const string Flag="CasualWork938QA";
     static int phase,lastFrame,cluster,hammerFrame,badStrikePhase;static double began;static bool captured,capturedHammer,impactTimingChecked,hammerCaptureReady,leanChecked;static string runtimeError;
     static readonly List<string> checks=new List<string>();static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
-    static float maxHammerGripError,maxHammerWristAngle;static int hammerSamples;
+    static float maxHammerGripError,maxHammerWristAngle,maxCrewHandMotion;static Vector3 firstCrewHand;static int hammerSamples;
     static string Hash(string p)=>Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(File.ReadAllBytes(p)));
     static void Check(bool ok,string message){if(!ok)throw new Exception(message);checks.Add(message);}
     public static void RunBatch(){UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
-    public static void RunInEditor(){phase=cluster=badStrikePhase=0;lastFrame=-1;began=0;runtimeError=null;hammerFrame=hammerSamples=0;maxHammerGripError=maxHammerWristAngle=0;captured=capturedHammer=impactTimingChecked=hammerCaptureReady=leanChecked=false;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){phase=cluster=badStrikePhase=0;lastFrame=-1;began=0;runtimeError=null;hammerFrame=hammerSamples=0;maxHammerGripError=maxHammerWristAngle=maxCrewHandMotion=0;captured=capturedHammer=impactTimingChecked=hammerCaptureReady=leanChecked=false;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Log;Application.logMessageReceived+=Log;}
     static void Log(string m,string stack,LogType kind){if(SessionState.GetBool(Flag,false)&&(kind==LogType.Error||kind==LogType.Exception))runtimeError=m+"\n"+stack;}
     static void PlacePlayer(Vector3 p){var player=BeachBoatQuestSession.Instance.player;player.transform.position=p;player.GetComponent<Rigidbody>().position=p;Physics.SyncTransforms();}
@@ -42,7 +42,7 @@ public static class BeachBoatCasualWorkPlaytest
     }
     static void Finish(string error)
     {
-        SessionState.SetBool(Flag,false);File.WriteAllText("Logs/CasualWorkPlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,phase,hammerSamples,maxHammerGripError,maxHammerWristAngle,checks},Newtonsoft.Json.Formatting.Indented));
+        SessionState.SetBool(Flag,false);File.WriteAllText("Logs/CasualWorkPlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,phase,hammerSamples,maxHammerGripError,maxHammerWristAngle,maxCrewHandMotion,checks},Newtonsoft.Json.Formatting.Indented));
         BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
         if(Application.isBatchMode)EditorApplication.Exit(error==null?0:1);
     }
@@ -55,6 +55,8 @@ public static class BeachBoatCasualWorkPlaytest
             var hammer=GameObject.Find("Bua_go").transform;var right=rig.GetBoneTransform(HumanBodyBones.RightHand);var left=rig.GetBoneTransform(HumanBodyBones.LeftHand);
             var rc=right.TransformPoint(profile.rightRodCenter);var lc=left.TransformPoint(profile.leftCenter);
             maxHammerGripError=Mathf.Max(maxHammerGripError,StakeConstruction.Active.HandContactError);
+            var crewHand=UnityEngine.Object.FindObjectsByType<Transform>().First(t=>t.name=="Cong_binh_0_1").GetComponentInChildren<Animator>().GetBoneTransform(HumanBodyBones.RightHand).position;
+            if(hammerSamples==0)firstCrewHand=crewHand;else maxCrewHandMotion=Mathf.Max(maxCrewHandMotion,Vector3.Distance(crewHand,firstCrewHand));
             maxHammerWristAngle=Mathf.Max(maxHammerWristAngle,StakeConstruction.Active.HandWristAngle);hammerSamples++;
             if(!hammerCaptureReady)return;hammerCaptureReady=false;
             File.WriteAllText("Logs/HammerGripContact.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{right=rc.ToString(),left=lc.ToString(),shaft=hammer.position.ToString(),direction=hammer.up.ToString(),leftShoulder=rig.GetBoneTransform(HumanBodyBones.LeftUpperArm).position.ToString(),rightShoulder=rig.GetBoneTransform(HumanBodyBones.RightUpperArm).position.ToString(),leftWrist=left.position.ToString(),rightWrist=right.position.ToString()},Newtonsoft.Json.Formatting.Indented));
@@ -66,7 +68,8 @@ public static class BeachBoatCasualWorkPlaytest
             CaptureCarry("Hammer");
             Check(view.transform.forward.y<-.05f,"The hammer view looks down towards the supported work position, not up at the sky • "+view.transform.forward+" eye "+view.transform.position);
             Check(StakeConstruction.Active.StakeMesh==Zone.Instance.fieldStakes[0].GetComponentInChildren<MeshFilter>(true).sharedMesh,"The sampled stake uses the completed field's pointed timber mesh");
-            Check(StakeConstruction.Active.WorkingCrew>=6,"More construction soldiers cooperate in holder/hammer pairs on separate boats");
+            Check(maxCrewHandMotion>.15f,"A construction hammer hand actually moves while the player is hammering, despite the player interaction lock");
+            Check(StakeConstruction.Active.WorkingCrew>=12,"More construction soldiers cooperate in holder/hammer pairs on separate boats");
             Check(StakeConstruction.Active.HandContactError<.02f&&StakeConstruction.Active.HandSegmentError<.001f,"Both fixed-length display arms hold the actual hammer shaft");
             Check(StakeConstruction.Active.HandWristAngle<1&&StakeConstruction.Active.DisplayedGripWeight>90,"Hammer wrists stay neutral and fingers close around the shaft");
             Check(StakeConstruction.Active.HammerHeadError<.02f,"The hammer head reaches its real stake target instead of stopping short");
@@ -130,11 +133,14 @@ public static class BeachBoatCasualWorkPlaytest
                     if(BeachBoatStory.ScreenFader.Instance.IsTransitioning||Zone.Instance.IsPlanting)return;
                     if(!Zone.Instance.IsComplete)
                     {
+                        Check(RiverConstructionCamp.Ensure(Zone.Instance).Workers>=(cluster+1)*12,"Each worked location retains at least six paired teams after leaving the minigame");
                         Check(Zone.Instance.CompletedClusterCount==cluster+1,"Only the finished location advances progress: "+(cluster+1)+"/5");
                         Check(Story.Instance.currentState==Story.StoryState.Act2_PlantStakesAtRiver,"The other locations remain required before the time skip");
                         Check(Zone.Instance.fieldStakes.All(t=>!t.gameObject.activeSelf),"The full stake field stays hidden before all five samples are complete");
                         var partial=BachDangSaveSystem.Capture("QA partial stakes");var posts=Zone.Instance.CaptureSamplePositions();
+                        Check(partial.constructionSites.Length==cluster+1&&partial.constructionSites.All(c=>c.posts.Length>=6),"NPC posts and stationed workers are part of partial saves");
                         BachDangSaveSystem.Apply(partial);
+                        var restored=RiverConstructionCamp.Ensure(Zone.Instance).Capture();Check(partial.constructionSites.SelectMany(c=>c.posts).Zip(restored.SelectMany(c=>c.posts),(a,b)=>Vector3.Distance(a,b)<.001f).All(v=>v),"NPC poles retain their actual positions across partial load");
                         Check(Zone.Instance.CompletedClusterCount==cluster+1&&!Zone.Instance.IsComplete,"A partial save retains the number of completed locations");
                         Check(Zone.Instance.CaptureSamplePositions().Select((v,i)=>!partial.stakes[i]||Vector3.Distance(v,posts[i])<.001f).All(v=>v),"Planted sample posts retain their exact positions after loading");
                         cluster++;StartCluster(cluster);return;
@@ -143,7 +149,11 @@ public static class BeachBoatCasualWorkPlaytest
                     Check(Story.Instance.currentState==Story.StoryState.Act2_CompleteReturnToCamp,"The days-later reveal resumes the return-to-camp mission");
                     Check(BachDangSaveSystem.CanSave,"Construction and the narrative release save and rowing controls");
                     Check(hammerSamples>50&&maxHammerGripError<.02f&&maxHammerWristAngle<1,"Displayed hammer hands stay on the shaft with neutral wrists through the sample exercise");
-                    var final=BachDangSaveSystem.Capture("QA five locations and time skip");BachDangSaveSystem.Apply(final);
+                    var final=BachDangSaveSystem.Capture("QA five locations and time skip");File.WriteAllText("Logs/ConstructionFieldCheckpoint.json",JsonUtility.ToJson(final));BachDangSaveSystem.Apply(final);
+                    Check(final.constructionSites.SelectMany(c=>c.boats).All(p=>p.z<Zone.Instance.FieldBounds.min.z-70),"Every construction boat moors downstream, outside enemy battle lanes");
+                    var loaded=RiverConstructionCamp.Ensure(Zone.Instance).Capture();Check(final.constructionSites.SelectMany(c=>c.posts).Zip(loaded.SelectMany(c=>c.posts),(a,b)=>Vector3.Distance(a,b)<.001f).All(v=>v),"All NPC poles stay anchored through the days-later reveal and full-field load");
+                    Check(final.constructionSites.Length==5&&final.constructionSites.All(s=>s.parked&&s.posts.Length>=6),"The time skip retains all NPC poles and moors their boats outside the enemy approach");
+                    Check(UnityEngine.Object.FindObjectsByType<Transform>().Count(t=>t.name.StartsWith("Coc_mau_vi_tri_"))==5,"All five player sample stakes remain visible after the full field reveal");
                     Check(Zone.Instance.IsComplete&&StakeConstruction.Active==null,"Loading the finished time skip restores the full field without work locks");
                     Check(CampaignProgress.Instance.Record.stakeTargetSeconds>=180&&CampaignProgress.Instance.StakeTarget(3)==final.campaign.stakeTargetSeconds,"Five-location route achievement keeps its realistic recorded time target after load");
                     foreach(var pair in hashes)Check(File.Exists(pair.Key)&&Hash(pair.Key)==pair.Value,"User save unchanged: "+Path.GetFileName(pair.Key));Finish(null);return;

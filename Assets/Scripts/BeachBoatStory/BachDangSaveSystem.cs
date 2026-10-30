@@ -130,7 +130,7 @@ namespace BeachBoatStory
                 playerPosition=session.player.transform.position,playerRotation=session.player.transform.rotation,aboard=boat!=null&&boat.IsAboard,
                 boatPosition=boat!=null?boat.transform.position:Vector3.zero,boatRotation=boat!=null?boat.transform.rotation:Quaternion.identity,
                 health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,healingItemsVersion=1,healingItems=vitals.HealingItems,lureBriefed=story.LureBriefed,
-                stakeSamplesVersion=1,stakeSamplePositions=RiverStakeZone.Instance?.CaptureSamplePositions(),stakeSampleRotations=RiverStakeZone.Instance?.CaptureSampleRotations(),
+                constructionSites=RiverConstructionCamp.Ensure(RiverStakeZone.Instance).Capture(),stakeSamplesVersion=1,stakeSamplePositions=RiverStakeZone.Instance?.CaptureSamplePositions(),stakeSampleRotations=RiverStakeZone.Instance?.CaptureSampleRotations(),
                 woods=session.woodItems.Select(w=>w!=null&&w.IsCollected).ToArray(),stakes=RiverStakeZone.Instance?.CaptureCheckpoint()??Array.Empty<bool>(),
                 woodIds=session.woodItems.Select(w=>w.name).ToArray(),woodPositions=session.woodItems.Select(w=>w.transform.position).ToArray(),woodRotations=session.woodItems.Select(w=>w.transform.rotation).ToArray(),
                 stallLevels=VillagePreparationQuest.Instance.stalls.Select(s=>s.CompletedLevels).ToArray(),
@@ -155,6 +155,7 @@ namespace BeachBoatStory
             StoryDialogueUI.Instance?.DismissForCheckpoint();EnemyFleetDirector.Instance.ResetForCheckpoint();
             EnemyFleetDirector.Instance.GetComponent<RiverShoreArchers>()?.ResetAmbush();
             VillageWoodHunt.Instance.Restore(data);
+            RiverConstructionCamp.Ensure(RiverStakeZone.Instance).ResetCamp();
             RiverStakeZone.Instance.RestoreCheckpoint(data.stakes);
             RiverStakeZone.Instance.RestoreSamples(data);
             story.collectedWood=data.woodCount;story.destroyedEnemyShips=data.destroyedCount;story.RestoreLureBriefing(data.lureBriefed||data.storyState==10||data.storyState==11||data.storyState==14);
@@ -164,6 +165,7 @@ namespace BeachBoatStory
                 foreach(var station in UnityEngine.Object.FindObjectsByType<BeachBoatMinigameStation>(FindObjectsInactive.Include,FindObjectsSortMode.None))if(station.name==activity.name)station.RestoreSave(activity);
             if(data.tide!=null){BachDangBattleTimeline.Instance.RestoreSave(data.tide);TideSystem.Instance.RestoreSave(data.tide);}
             BachDangBattleTimeline.Instance.ReconcileAfterLoad((BachDangStoryManager.StoryState)data.storyState);
+            RiverConstructionCamp.Ensure(RiverStakeZone.Instance).Restore(data);
             foreach(var patrol in UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None))
             {var saved=(data.patrols??Array.Empty<BachDangSaveData.Patrol>()).FirstOrDefault(p=>p.name==patrol.name);if(saved!=null)patrol.RestorePatrol(saved);}
             boat.RestoreDurability(data.rowboatDurabilityVersion==0?QuestRowboat.MaximumDurability:data.boatDurability);
