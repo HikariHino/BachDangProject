@@ -1,0 +1,53 @@
+{
+  "generator": "Tools/prepare_epilogue_voices.py",
+  "entries": [
+    {
+      "file": "Assets/Resources/BachDang938/Voices/Epilogue/BossChallenge.mp3",
+      "line": "Ta vẫn còn đây. Hãy lên boong soái hạm đối mặt với ta!",
+      "source": "Microsoft Edge vi-VN-NamMinhNeural",
+      "kind": "synthesized",
+      "sha256": "1447230e871c105222aac732517f73e7bf8bab18ba670f452e07d3ec4d24b110",
+      "bytes": 46268
+    },
+    {
+      "file": "Assets/Resources/BachDang938/Voices/Epilogue/BossDefeated.mp3",
+      "line": "Tướng giặc đã bị hạ! Thu quân, đưa tù binh về doanh trại!",
+      "source": "Microsoft Edge vi-VN-NamMinhNeural",
+      "kind": "synthesized",
+      "sha256": "9deee914e65c223ca3212c96c54a6acc525498d1864399e56c446f9f96ae1240",
+      "bytes": 51020
+    },
+    {
+      "file": "Assets/Resources/BachDang938/Voices/Epilogue/FinalReport.mp3",
+      "line": "Tướng giặc đã bị hạ, tù binh đã quy hàng. Tướng sĩ đã tận lực vì non sông. Toàn quân mừng đại thắng Bạch Đằng!",
+      "source": "Microsoft Edge vi-VN-NamMinhNeural",
+      "kind": "synthesized",
+      "sha256": "59724badb1affd0aed06acb8656f565f64a02fa583eb5660ae317f73976179a3",
+      "bytes": 89036
+    },
+    {
+      "file": "Assets/Resources/BachDang938/Voices/Epilogue/Prisoner.mp3",
+      "line": "Xin đừng giết! Chủ tướng vẫn còn trên soái hạm. Chúng tôi xin hạ vũ khí.",
+      "source": "Microsoft Edge vi-VN-NamMinhNeural",
+      "kind": "synthesized",
+      "sha256": "96a6dd1f4d2581d2d147bfbb9540666a3c5f3e25dac1104237e52153f1af6a29",
+      "bytes": 68732
+    },
+    {
+      "file": "Assets/Resources/BachDang938/Voices/Epilogue/PrisonersOrder.mp3",
+      "line": "Giặc đã tan. Hãy trở lại những thuyền đắm, tìm binh lính còn sống, nhận đầu hàng và đưa họ về làm tù binh. Nhớ đề phòng tướng giặc còn ẩn náu.",
+      "source": "Microsoft Edge vi-VN-NamMinhNeural",
+      "kind": "synthesized",
+      "sha256": "d9c8d5768c305c95907f2bf62d626feff87c15847e2c4426bae86237ed38b566",
+      "bytes": 110636
+    },
+    {
+      "file": "Assets/Resources/BachDang938/BattleVoices/DaiViet_Victory.mp3",
+      "line": "Thắng rồi! Đại thắng Bạch Đằng!",
+      "source": "Microsoft Edge vi-VN-NamMinhNeural",
+      "kind": "synthesized",
+      "sha256": "ada4a0fcf81542f72ac83a8049da989be721a42656198634698f8215a3c7b1e9",
+      "bytes": 29420
+    }
+  ]
+}

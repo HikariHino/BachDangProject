@@ -130,7 +130,7 @@ namespace BeachBoatStory
                 playerPosition=session.player.transform.position,playerRotation=session.player.transform.rotation,aboard=boat!=null&&boat.IsAboard,
                 boatPosition=boat!=null?boat.transform.position:Vector3.zero,boatRotation=boat!=null?boat.transform.rotation:Quaternion.identity,
                 health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,healingItemsVersion=1,healingItems=vitals.HealingItems,lureBriefed=story.LureBriefed,
-                shieldEquipped=PlayerShield.Instance?.Equipped??false,constructionSites=RiverConstructionCamp.Ensure(RiverStakeZone.Instance).Capture(),stakeSamplesVersion=1,stakeSamplePositions=RiverStakeZone.Instance?.CaptureSamplePositions(),stakeSampleRotations=RiverStakeZone.Instance?.CaptureSampleRotations(),
+                boss=RiverBossEncounter.Instance?.Capture(),shieldEquipped=PlayerShield.Instance?.Equipped??false,constructionSites=RiverConstructionCamp.Ensure(RiverStakeZone.Instance).Capture(),stakeSamplesVersion=1,stakeSamplePositions=RiverStakeZone.Instance?.CaptureSamplePositions(),stakeSampleRotations=RiverStakeZone.Instance?.CaptureSampleRotations(),
                 woods=session.woodItems.Select(w=>w!=null&&w.IsCollected).ToArray(),stakes=RiverStakeZone.Instance?.CaptureCheckpoint()??Array.Empty<bool>(),
                 woodIds=session.woodItems.Select(w=>w.name).ToArray(),woodPositions=session.woodItems.Select(w=>w.transform.position).ToArray(),woodRotations=session.woodItems.Select(w=>w.transform.rotation).ToArray(),
                 stallLevels=VillagePreparationQuest.Instance.stalls.Select(s=>s.CompletedLevels).ToArray(),
@@ -140,7 +140,7 @@ namespace BeachBoatStory
                 guards=RiverPlayerCombat.Instance.guards.Select(g=>new BachDangSaveData.Guard{id=GuardId(g),ship=g.ship.name,health=g.Health,active=g.gameObject.activeSelf,independent=g.IsIndependentBoarder,floatingCorpse=g.GetComponent<RiverCorpse>()!=null&&g.GetComponent<RiverCorpse>().enabled,position=g.transform.position,rotation=g.transform.rotation,anchored=!g.IsIndependentBoarder,localPosition=g.ship.transform.InverseTransformPoint(g.transform.position),localRotation=Quaternion.Inverse(g.ship.transform.rotation)*g.transform.rotation}).ToArray(),
                 boarding=RiverBoardingCombat.Instance?.CaptureSave(),dialogue=StoryDialogueUI.Instance?.CaptureSave(),
                 campaign=CampaignProgress.Instance?.Capture(),
-                patrols=UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None).Select(p=>new BachDangSaveData.Patrol{name=p.name,position=p.transform.position,rotation=p.transform.rotation,layoutVersion=AmbientRiverBoat.PatrolLayoutVersion}).ToArray()
+                patrols=UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsSortMode.None).Select(p=>new BachDangSaveData.Patrol{name=p.name,position=p.transform.position,rotation=p.transform.rotation,layoutVersion=AmbientRiverBoat.PatrolLayoutVersion}).ToArray()
             };
         }
         public static void Apply(BachDangSaveData data)
@@ -152,7 +152,7 @@ namespace BeachBoatStory
             CampaignJournalUI.Instance?.Close();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();ArcheryTraining.Instance?.Restore(data.archeryBestScore,data.archeryTrainingCompleted);
             BachDangFrontEnd.Instance?.ReleaseHiddenUI();
             foreach(var intro in UnityEngine.Object.FindObjectsByType<OpeningEvent>(FindObjectsInactive.Include,FindObjectsSortMode.None))intro.SkipOpening();
-            StoryDialogueUI.Instance?.DismissForCheckpoint();EnemyFleetDirector.Instance.ResetForCheckpoint();
+            RiverBossEncounter.Instance?.ResetForLoad();StoryDialogueUI.Instance?.DismissForCheckpoint();EnemyFleetDirector.Instance.ResetForCheckpoint();
             EnemyFleetDirector.Instance.GetComponent<RiverShoreArchers>()?.ResetAmbush();
             VillageWoodHunt.Instance.Restore(data);
             RiverConstructionCamp.Ensure(RiverStakeZone.Instance).ResetCamp();
@@ -166,7 +166,7 @@ namespace BeachBoatStory
             if(data.tide!=null){BachDangBattleTimeline.Instance.RestoreSave(data.tide);TideSystem.Instance.RestoreSave(data.tide);}
             BachDangBattleTimeline.Instance.ReconcileAfterLoad((BachDangStoryManager.StoryState)data.storyState);
             RiverConstructionCamp.Ensure(RiverStakeZone.Instance).Restore(data);
-            foreach(var patrol in UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsInactive.Include,FindObjectsSortMode.None))
+            foreach(var patrol in UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsSortMode.None))
             {var saved=(data.patrols??Array.Empty<BachDangSaveData.Patrol>()).FirstOrDefault(p=>p.name==patrol.name);if(saved!=null)patrol.RestorePatrol(saved);}
             boat.RestoreDurability(data.rowboatDurabilityVersion==0?QuestRowboat.MaximumDurability:data.boatDurability);
             boat.RestoreSave(data.aboard,data.boatPosition,data.boatRotation);
@@ -182,7 +182,7 @@ namespace BeachBoatStory
             player.GetComponent<PlayerVitals>().RestoreSave(data);
             PlayerShield.Instance?.Restore(data.shieldEquipped);
             RiverBoardingCombat.Instance.ReconcileAfterLoad(data);Physics.SyncTransforms();
-            StoryDialogueUI.Instance.RestoreSave(data.dialogue);
+            RiverBossEncounter.Instance?.Restore(data.boss);StoryDialogueUI.Instance.RestoreSave(data.dialogue);
             session.storyCamera.GetComponent<Camera_Script>().SnapToTarget();BachDangPreferences.Apply();
             QuestCheckpoint.Instance.Capture((BachDangStoryManager.StoryState)data.storyState);story.UpdateUI();
             CampaignProgress.Instance?.Restore(data.campaign,data.storyState);
@@ -191,6 +191,9 @@ namespace BeachBoatStory
         {
             var s=(BachDangStoryManager.StoryState)state;
             if(s==BachDangStoryManager.StoryState.Act1_ExploreCamp||s==BachDangStoryManager.StoryState.Act1_Training||s==BachDangStoryManager.StoryState.Act1_GoToCampGate)return "HỒI I • DOANH TRẠI";
+            if(s==BachDangStoryManager.StoryState.Act3_SearchPrisoners)return "HẬU CHIẾN • TÌM TÙ BINH";
+            if(s==BachDangStoryManager.StoryState.Act3_CommanderDuel)return "SOÁI HẠM • LƯU HOẰNG THÁO";
+            if(s==BachDangStoryManager.StoryState.Act3_FinalReport)return "HẬU CHIẾN • BÁO CÔNG";
             if(s==BachDangStoryManager.StoryState.Act3_Celebration||s==BachDangStoryManager.StoryState.Act3_Victory)return "ĐẠI THẮNG BẠCH ĐẰNG";
             return state>=8&&state<=10?"HỒI III • THỦY CHIẾN":"HỒI II • TRẬN ĐỊA CỌC";
         }

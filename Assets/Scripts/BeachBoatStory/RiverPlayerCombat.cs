@@ -28,7 +28,7 @@ namespace BeachBoatStory
         public bool ThreatPending=>threat!=null;
         public EnemyDeckGuard ThreatGuard=>threat;
         public bool ReturnFireEnabled {get;set;}=true;
-        public bool BattleActive=>EnemyFleetDirector.Instance!=null&&EnemyFleetDirector.Instance.BattleStarted&&
+        public bool BattleActive=>RiverBossEncounter.Instance?.IsFighting==true||EnemyFleetDirector.Instance!=null&&EnemyFleetDirector.Instance.BattleStarted&&
             QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard;
         public int RequiredKills=>EnemyFleetDirector.Instance!=null?EnemyFleetDirector.Instance.CommandOpportunityCount:5;
         public int RemainingEnemies {get{int count=0;foreach(var guard in guards)if(guard!=null&&guard.IsAlive)count++;return count;}}
@@ -228,6 +228,7 @@ namespace BeachBoatStory
                 if(target!=null){var local=target.transform.InverseTransformPoint(point);float radius=new Vector2(local.x,local.y).magnitude/ArcheryTraining.TargetScale;score=radius<=1.1f?10:radius<=2.4f?7:radius<=5.1f?4:0;}
                 ArcheryTraining.Active?.RegisterShotResult(a.practiceIndex,target,point,score);if(score>0)hitUntil=Time.time+.3f;return;
             }
+            var boss=hit!=null?hit.GetComponentInParent<BossDamageReceiver>():null;if(boss!=null){if(boss.owner.TakeHit(a.damage*5,CombatImpactKind.Arrow)){Hits++;hitUntil=Time.time+.3f;}return;}
             var guard=hit!=null?hit.GetComponentInParent<EnemyDeckGuard>():null;
             if(guard!=null&&guard.IsAlive&&guard.Hit(a.damage,true,CombatImpactKind.Arrow)){Hits++;hitUntil=Time.time+.3f;}
         }

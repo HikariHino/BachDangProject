@@ -43,14 +43,19 @@ namespace BeachBoatStory
         {
             goal=default;
             var player=QuestRowboat.Instance;var zone=RiverStakeZone.Instance;
-            if(!Fleet.BattleStarted||RiverBattleObjective.Counterattack||!escort.lightPatrol||player==null||zone==null)return false;
+            if(!Fleet.BattleStarted||RiverBattleObjective.Counterattack||!escort.lightPatrol||escort.IsConstructionSupport||player==null||zone==null)return false;
             var boats=RiverBoardingCombat.Instance?.friendlyBoats;
             if(boats==null)return false;
             int slot=0;bool registered=false;
             foreach(var boat in boats)
             {if(boat==escort){registered=true;break;}if(boat!=null&&boat.lightPatrol)slot++;}
             if(!registered)return false;
-            // Keep the lure flotilla on the western flank, leaving both the player's
+            if(slot<2&&!HasEnteredTrap&&player.transform.position.z>zone.FieldBounds.max.z+350)
+            {
+                goal=player.transform.position+Vector3.right*(slot==0?-150:150)+Vector3.forward*35;
+                goal.y=TideSystem.CurrentWaterHeight;return true;
+            }
+            // Keep the remaining lure flotilla on the western flank, leaving both the player's
             // bow and every incoming enemy lane clear. Rear ranks have separate stations.
             float edge=float.PositiveInfinity;
             foreach(var ship in Fleet.enemyShips)if(ship!=null)edge=Mathf.Min(edge,ship.spawnPoint.x-ship.stakeHitDistance-120);

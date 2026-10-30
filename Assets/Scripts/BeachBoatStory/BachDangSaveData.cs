@@ -5,6 +5,8 @@ namespace BeachBoatStory
 {
     [Serializable] public sealed class BachDangSaveData
     {
+        public Boss boss;
+        [Serializable] public sealed class Boss {public int version,mask,health;public bool defeated,inArena,cheered,returnAboard;public Vector3 returnPosition,returnBoat,bossPosition;public Quaternion returnRotation,boatRotation;}
         public int version=1;
         public string scene="beachBoat",savedAt,location;
         public long savedUtcTicks;

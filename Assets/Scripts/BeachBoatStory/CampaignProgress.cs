@@ -9,8 +9,8 @@ namespace BeachBoatStory
     {
         public static CampaignProgress Instance {get;private set;}
         public BachDangSaveData.Campaign Record {get;private set;}=new BachDangSaveData.Campaign();
-        public static readonly int[] StoryOrder={0,12,1,2,13,3,4,5,6,7,8,9,10,11,14};
-        public static readonly string[] MissionTitles={"Nhận lệnh Ngô Quyền","Luyện hiệu lệnh trống trận","Rời doanh trại tới làng","Thu gom cọc gỗ","Chuẩn bị đủ bốn loại vật tư","Trở về doanh trại","Báo cáo vật tư với Ngô Quyền","Dựng cọc mẫu, hoàn thiện trận địa","Báo cáo hoàn thành trận địa","Chờ lệnh xuất chiến","Nhận lệnh đánh giặc","Xuất chiến trên sông","Đánh chìm hạm đội và hạ hết địch","Báo công với Ngô Quyền","Hoàn thành chiến dịch Bạch Đằng"};
+        public static readonly int[] StoryOrder={0,12,1,2,13,3,4,5,6,7,8,9,10,11,15,16,17,14};
+        public static readonly string[] MissionTitles={"Nhận lệnh Ngô Quyền","Luyện hiệu lệnh trống trận","Rời doanh trại tới làng","Thu gom cọc gỗ","Chuẩn bị đủ bốn loại vật tư","Trở về doanh trại","Báo cáo vật tư với Ngô Quyền","Dựng cọc mẫu, hoàn thiện trận địa","Báo cáo hoàn thành trận địa","Chờ lệnh xuất chiến","Nhận lệnh đánh giặc","Xuất chiến trên sông","Đánh chìm hạm đội và hạ hết địch","Báo công với Ngô Quyền","Tìm lính đầu hàng quanh thuyền đắm","Đấu tướng trên soái hạm","Báo cáo tướng giặc và tù binh","Hoàn thành chiến dịch Bạch Đằng"};
         public const int ScoredMinigames=5; // Drum plus one completed physical attempt at each trade.
         public const int RankRulesVersion=5;
         public static readonly string[] WorkNames={"Cưa và vác gỗ","Buộc bó cọc","Đong bao gạo","Gói lương khô"};

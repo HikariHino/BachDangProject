@@ -116,7 +116,7 @@ namespace BeachBoatStory
                 if(Input.GetKeyDown(KeyCode.H)&&Phase==WorkPhase.Playing){ShowHelp();return;}
                 if(Phase==WorkPhase.Instructions){if(Input.GetKeyDown(KeyCode.Return))StartTimedFromInstructions();return;}
                 if(Phase==WorkPhase.Lost){if(Input.GetKeyDown(KeyCode.R))StartAttempt(Difficulty);return;}
-                if(Phase==WorkPhase.Won){if(Input.GetKeyDown(KeyCode.Return))ClaimReward();return;}
+                if(Phase==WorkPhase.Won){if(Input.GetKeyDown(KeyCode.E)&&StoryDialogueUI.TryConsumeInput())ClaimReward();return;}
                 AdvanceTime(Time.unscaledDeltaTime);
                 Physical?.Tick();return;
             }

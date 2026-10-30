@@ -91,7 +91,7 @@ namespace BeachBoatStory
             }
             header.text=CampaignProgress.WorkNames[(int)s.kind].ToUpperInvariant()+"\n"+$"Đã giao {s.Progress}/{s.Goal} • Còn {s.TimeRemaining:0}s";
             int index=(int)s.kind+1;record.text=$"S ≤ {CampaignProgress.Clock(CampaignProgress.MiniTarget(index,3))} • A ≤ {CampaignProgress.Clock(CampaignProgress.MiniTarget(index,2))} • B ≤ {CampaignProgress.Clock(CampaignProgress.MiniTarget(index,1))}";
-            if(s.Phase==VillageWorkStall.WorkPhase.Won)step.text="ĐỦ VẬT TƯ • ENTER nhận hàng • ESC rời đi";
+            if(s.Phase==VillageWorkStall.WorkPhase.Won)step.text="ĐỦ VẬT TƯ • E nhận hàng • ESC rời đi";
             else if(s.Phase==VillageWorkStall.WorkPhase.Lost)step.text=s.Feedback+"\nR thử lại • ESC rời đi";
             else if(s.Phase==VillageWorkStall.WorkPhase.Instructions)step.text=s.Physical?.Hint+"\nWASD đi lại • Chuột xoay nhìn • ENTER tiếp tục";
             else

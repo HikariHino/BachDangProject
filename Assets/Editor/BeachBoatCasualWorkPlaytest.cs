@@ -150,7 +150,7 @@ public static class BeachBoatCasualWorkPlaytest
                     Check(BachDangSaveSystem.CanSave,"Construction and the narrative release save and rowing controls");
                     Check(hammerSamples>50&&maxHammerGripError<.02f&&maxHammerWristAngle<1,"Displayed hammer hands stay on the shaft with neutral wrists through the sample exercise");
                     var final=BachDangSaveSystem.Capture("QA five locations and time skip");File.WriteAllText("Logs/ConstructionFieldCheckpoint.json",JsonUtility.ToJson(final));BachDangSaveSystem.Apply(final);
-                    Check(final.constructionSites.Length==0&&RiverConstructionCamp.Ensure(Zone.Instance).Workers==0,"The time skip removes symbolic construction crews and their posts");
+                    Check(final.constructionSites.Length==5&&RiverConstructionCamp.Ensure(Zone.Instance).Workers==60&&RiverBoardingCombat.Instance.friendlyBoats.Count(b=>b.IsConstructionSupport)==30,"The time skip retains thirty manned support skiffs while removing only symbolic posts");
                     Check(!UnityEngine.Object.FindObjectsByType<Transform>().Any(t=>t.name.StartsWith("Coc_mau_vi_tri_")||t.name.StartsWith("Coc_nhon_cong_binh")),"Player and NPC sample poles disappear after the completed field reveal");
                     Check(Zone.Instance.ExposedStakeCount>=0&&Zone.Instance.fieldStakes.Any(t=>t.gameObject.activeSelf),"The real completed stake field remains present");
                     Check(Zone.Instance.IsComplete&&StakeConstruction.Active==null,"Loading the finished time skip restores the full field without work locks");

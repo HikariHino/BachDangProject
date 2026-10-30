@@ -32,15 +32,29 @@ namespace BeachBoatStory
         {var result=new BachDangSaveData.ConstructionSite[sites.Count];for(int i=0;i<result.Length;i++)result[i]=sites[i].crew.Capture(sites[i].index,sites[i].elapsed);return result;}
         public void Restore(BachDangSaveData data)
         {
-            if(GetComponent<RiverStakeZone>().IsComplete)return; // Migrate old saves that kept symbolic crews after the time skip.
+            bool complete=GetComponent<RiverStakeZone>().IsComplete;
+            if(complete&&(data.constructionSites==null||data.constructionSites.Length==0))
+            {
+                for(int i=0;i<GetComponent<RiverStakeZone>().ClusterCount;i++)
+                    Add(SupportFallback(i)).crew.PrepareBattle();
+                return;
+            }
             foreach(var saved in data.constructionSites??System.Array.Empty<BachDangSaveData.ConstructionSite>())
-                if(saved.index>=0&&saved.index<GetComponent<RiverStakeZone>().ClusterCount)Add(saved);
+                if(saved.index>=0&&saved.index<GetComponent<RiverStakeZone>().ClusterCount){var site=Add(saved);if(complete)site.crew.PrepareBattle(saved.parked);}
             // Existing partial saves predate persistent teams. Rebuild the finished
             // work crews once, without inventing extra completed player locations.
             if(data.constructionSites==null&&data.storyState==(int)BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver)
                 for(int i=0;i<data.stakes.Length;i++)if(data.stakes[i])Add(new BachDangSaveData.ConstructionSite{index=i,origin=GetComponent<RiverStakeZone>().placements[i].approach.position,elapsed=18});
         }
-        public void FinishConstruction(){ResetCamp();}
+        BachDangSaveData.ConstructionSite SupportFallback(int index)
+        {
+            var zone=GetComponent<RiverStakeZone>();var p=zone.placements[index].approach.position;
+            // The completed field is now solid: rebuild old missing work boats at
+            // provisional berths, then validate their permanent support stations.
+            var positions=new Vector3[6];for(int i=0;i<positions.Length;i++)positions[i]=new Vector3(p.x+i*110,TideSystem.CurrentWaterHeight,zone.FieldBounds.min.z-200-index*100);
+            return new BachDangSaveData.ConstructionSite{index=index,origin=p,rotation=Quaternion.identity,elapsed=18,boats=positions};
+        }
+        public void FinishConstruction(){foreach(var site in sites)site.crew.PrepareBattle();}
         public void ResetCamp(){foreach(var site in sites){site.root.SetActive(false);site.crew.Dispose();Destroy(site.root);}sites.Clear();}
         void OnDestroy(){ResetCamp();}
     }

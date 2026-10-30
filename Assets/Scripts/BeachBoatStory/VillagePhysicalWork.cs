@@ -332,7 +332,13 @@ namespace BeachBoatStory
             var type=stall.kind==VillageWorkStall.WorkKind.Timber||name=="Full_rice_sack"?PrimitiveType.Cylinder:name=="Wrapped_rations"?PrimitiveType.Sphere:PrimitiveType.Cube;
             if(name=="Full_rice_sack")size.y*=.5f;held=Shape(name,type,Vector3.zero,size,material);
         }
-        bool Near()=>player!=null&&QuestRowboat.FlatDistance(player.position,RequiredApproach)<=Reach&&Mathf.Abs(player.position.y-RequiredApproach.y)<18;
+        bool Near()
+        {
+            if(player==null)return false;
+            if(Current==Step.Take||Current==Step.TakeIngredient)
+                return QuestRowboat.FlatDistance(player.position,TargetPosition)<=Reach+3&&Mathf.Abs(player.position.y-TargetPosition.y)<18;
+            return QuestRowboat.FlatDistance(player.position,RequiredApproach)<=Reach&&Mathf.Abs(player.position.y-RequiredApproach.y)<18;
+        }
         public bool CanInteract=>stall!=null&&VillageWorkStall.Active==stall&&stall.Phase==VillageWorkStall.WorkPhase.Playing&&Time.timeScale>0&&!BachDangFrontEnd.IsBlocking&&Near();
         public bool Confirm()=>Interact();
         public bool TrimRice()

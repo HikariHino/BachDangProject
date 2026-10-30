@@ -288,7 +288,7 @@ namespace BeachBoatStory
             (state == BachDangStoryManager.StoryState.Act3_WaitForLowTide &&
              EnemyFleetDirector.Instance != null && EnemyFleetDirector.Instance.IsConfigured &&
              RiverStakeZone.Instance != null && RiverStakeZone.Instance.IsComplete) ||
-            state == BachDangStoryManager.StoryState.Act3_BattleInProgress || state == BachDangStoryManager.StoryState.Act3_Victory;
+            state == BachDangStoryManager.StoryState.Act3_BattleInProgress || state == BachDangStoryManager.StoryState.Act3_Victory || state==BachDangStoryManager.StoryState.Act3_SearchPrisoners || state==BachDangStoryManager.StoryState.Act3_FinalReport;
 
         // Preserve the logical boat session while the player walks and fights on shore.
         public void SetShoreWalking(bool walking)

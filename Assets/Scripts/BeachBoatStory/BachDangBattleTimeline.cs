@@ -76,6 +76,9 @@ namespace BeachBoatStory
                     HoldHighWater(immediate); break;
                 case BachDangStoryManager.StoryState.Act3_WaitForLowTide:
                     BeginLure(immediate); break;
+                case BachDangStoryManager.StoryState.Act3_SearchPrisoners:
+                case BachDangStoryManager.StoryState.Act3_CommanderDuel:
+                case BachDangStoryManager.StoryState.Act3_FinalReport:
                 case BachDangStoryManager.StoryState.Act3_Victory:
                 case BachDangStoryManager.StoryState.Act3_Celebration:
                     MarkVictory(); break;
@@ -130,6 +133,9 @@ namespace BeachBoatStory
                 case BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp:
                 case BachDangStoryManager.StoryState.Act2_Completed:
                 case BachDangStoryManager.StoryState.Act3_PrepareForBattle:
+                case BachDangStoryManager.StoryState.Act3_SearchPrisoners:
+                case BachDangStoryManager.StoryState.Act3_CommanderDuel:
+                case BachDangStoryManager.StoryState.Act3_FinalReport:
                 case BachDangStoryManager.StoryState.Act3_Victory:
                 case BachDangStoryManager.StoryState.Act3_Celebration:
                     // Keep the saved height; correct old low-water targets and retain

@@ -221,6 +221,9 @@ public sealed class StoryDialogueUI : MonoBehaviour
             case nameof(BachDangStoryManager.OnTalkToNgoQuyenAct3):callback=story.OnTalkToNgoQuyenAct3;break;
             case nameof(BachDangStoryManager.OnLureOrdersAcknowledged):callback=story.OnLureOrdersAcknowledged;break;
             case nameof(BachDangStoryManager.OnVictoryReported):callback=story.OnVictoryReported;break;
+            case nameof(BachDangStoryManager.OnFinalVictoryReported):callback=story.OnFinalVictoryReported;break;
+            case nameof(RiverBossEncounter.BeginDuel):callback=RiverBossEncounter.Instance.BeginDuel;break;
+            case nameof(RiverBossEncounter.ReturnFromDuel):callback=RiverBossEncounter.Instance.ReturnFromDuel;break;
         }
         Show(data.speaker,data.line,callback);
         if(!string.IsNullOrEmpty(data.voiceIdentity))StartVoice(data.speaker,data.line,data.voiceIdentity,data.femaleVoice,data.voiceProfile);

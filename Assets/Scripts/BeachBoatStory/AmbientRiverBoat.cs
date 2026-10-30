@@ -19,6 +19,7 @@ namespace BeachBoatStory
         public bool IsAtBattleStation {get;private set;}
         public bool IsEscortingLure {get;private set;}
         public Vector3 LureEscortGoal {get;private set;}
+        public bool IsCloseLureEscort=>IsEscortingLure&&QuestRowboat.Instance!=null&&Mathf.Abs(LureEscortGoal.x-QuestRowboat.Instance.transform.position.x)<200;
         public Vector3 ReturnBerth=>returnBerth;
         public int PlannedDetours {get;private set;}
         public bool HasNavigableRoute {get;private set;}
@@ -35,6 +36,7 @@ namespace BeachBoatStory
         bool liveUpdate;
         void Start()
         {
+            if(ready)return;
             if(tide==null)tide=FindAnyObjectByType<TideSystem>();
             if(tide==null||route.Length<2){enabled=false;return;}
             var visual=transform.Find("DaiVietPatrolVisual_Rebuilt");
@@ -49,6 +51,15 @@ namespace BeachBoatStory
             phase=Mathf.Repeat(transform.position.x*.013f+transform.position.z*.009f,Mathf.PI*2);
             target=NearestNextPoint();ready=true;SetRowing(true);
         }
+        // Work skiffs become real, saved support vessels after the construction time skip.
+        public void InitializeSupport(AmbientRiverBoat template)
+        {
+            tide=TideSystem.Instance;route=template.route;lightPatrol=true;trafficPadding=30;
+            cruiseSpeed=28;turnSpeed=65;waterlineOffset=transform.position.y-TideSystem.CurrentWaterHeight;
+            hull=BoatHullCollision.Get(transform);checkpointHome=transform.position;checkpointRotation=transform.rotation;
+            returnBerth=checkpointHome;ready=true;IsAtBattleStation=true;
+        }
+        public bool IsConstructionSupport {get;set;}
         int NearestNextPoint()
         {
             int index=0;float distance=float.PositiveInfinity;
@@ -126,7 +137,7 @@ namespace BeachBoatStory
             IsEscortingLure=pursuit!=null&&pursuit.TryEscortGoal(this,out escortGoal);
             if(YieldFromTraffic(dt))return;
             var story=BachDangStoryManager.Instance;
-            if(story!=null&&(story.currentState==BachDangStoryManager.StoryState.Act3_Victory||story.currentState==BachDangStoryManager.StoryState.Act3_Celebration)&&!IsReturningToHarbor&&!HasReturnedToHarbor)
+            if(story!=null&&(story.currentState==BachDangStoryManager.StoryState.Act3_Victory||story.currentState==BachDangStoryManager.StoryState.Act3_SearchPrisoners||story.currentState==BachDangStoryManager.StoryState.Act3_FinalReport||story.currentState==BachDangStoryManager.StoryState.Act3_Celebration)&&!IsReturningToHarbor&&!HasReturnedToHarbor)
             {int slot=Array.IndexOf(RiverBoardingCombat.Instance.friendlyBoats,this);if(slot>=0)ReturnToHarbor(slot);}
             if(HasReturnedToHarbor){FloatOnly();SetRowing(false);return;}
             if(IsReturningToHarbor)
@@ -138,13 +149,14 @@ namespace BeachBoatStory
             {
                 LureEscortGoal=escortGoal;
                 battleTarget=null;IsAtBattleStation=false;
-                MoveTo(escortGoal,dt,Mathf.Max(64,cruiseSpeed*1.8f));return;
+                MoveTo(escortGoal,dt,Mathf.Max(180,(QuestRowboat.Instance?.Speed??0)+25));return;
             }
             if(battleTarget!=null&&battleTarget.gameObject.activeInHierarchy)
             {
                 // Project the attack station onto navigable water OUTSIDE the stake field.
                 IsAtBattleStation=MoveTo(battleTarget.position,dt,cruiseSpeed*1.28f);return;
             }
+            if(IsConstructionSupport){IsAtBattleStation=true;FloatOnly();return;}
             IsAtBattleStation=false;
             if(pause>0){pause-=dt;FloatOnly();SetRowing(false);return;}
             var point=route[target];if(point==null){target=(target+1)%route.Length;return;}
@@ -157,7 +169,9 @@ namespace BeachBoatStory
                 if(clock<nextPlan){FloatOnly();SetRowing(false);return false;}
                 if(liveUpdate&&!RiverWaterNavigation.ReservePlanningFrame()){FloatOnly();SetRowing(false);return false;}
                 nextPlan=clock+1.5f;lastGoal=goal;pathIndex=0;
-                HasNavigableRoute=RiverWaterNavigation.FindPath(transform.position,goal,hull.Radius,path,transform,!IsReturningToHarbor);
+                bool reserve=RiverWaterNavigation.ReserveInvasionApproach;
+                try{if(IsCloseLureEscort)RiverWaterNavigation.ReserveInvasionApproach=false;HasNavigableRoute=RiverWaterNavigation.FindPath(transform.position,goal,hull.Radius,path,transform,!IsReturningToHarbor);}
+                finally{RiverWaterNavigation.ReserveInvasionApproach=reserve;}
                 if(!HasNavigableRoute){FloatOnly();SetRowing(false);return false;}PlannedDetours++;
             }
             while(pathIndex<path.Count&&QuestRowboat.FlatDistance(transform.position,path[pathIndex])<12)pathIndex++;

@@ -11,9 +11,9 @@ namespace BeachBoatStory
         readonly Dictionary<Vector2Int,Node> nodes=new Dictionary<Vector2Int,Node>();
         readonly List<Node> open=new List<Node>();
         readonly List<Vector3> path=new List<Vector3>();
-        int waypoint;float nextPlan;Vector3 goal;
+        int waypoint;float nextPlan,nextProbe;bool clearProbe;Vector3 goal;
         static int planningFrame=-1,plans;
-        public void Reset(){path.Clear();open.Clear();nodes.Clear();waypoint=0;nextPlan=0;goal=Vector3.zero;LastDirection=Vector3.zero;}
+        public void Reset(){path.Clear();open.Clear();nodes.Clear();waypoint=0;nextPlan=nextProbe=0;clearProbe=false;goal=Vector3.zero;LastDirection=Vector3.zero;}
         const float Cell=12;
         static readonly float[] passingAngles={45f,-45f,80f,-80f,115f,-115f};
         readonly Collider[] neighbors=new Collider[48];
@@ -36,12 +36,15 @@ namespace BeachBoatStory
         }
         public Vector3 Move(Transform actor,Vector3 from,Vector3 target,float travel,float radius,BoatHullCollision carrier=null)
         {
-            LastDirection=Vector3.zero;Physics.SyncTransforms();
+            LastDirection=Vector3.zero;
             var direct=target-from;direct.y=0;
             if(direct.sqrMagnitude<.001f)return RiverHullCollision.Move(from,from,radius,true,actor,carrier);
             // Probe ahead rather than replanning only after the actor is already touching a pole.
             var look=from+Vector3.ClampMagnitude(direct,Cell*3);
-            bool clear=RiverHullCollision.ClearSegment(from,look,radius+.25f,actor,carrier,true);
+            // Static route probing need not repeat for every actor every frame.
+            // Actual movement below still synchronizes and sweeps every segment.
+            if(Time.unscaledTime>=nextProbe){nextProbe=Time.unscaledTime+.15f;clearProbe=RiverHullCollision.ClearSegment(from,look,radius+.25f,actor,carrier,true);}
+            bool clear=clearProbe;
             if(clear){path.Clear();waypoint=0;}
             else if(Time.unscaledTime>=nextPlan&&(path.Count==0||waypoint>=path.Count||(goal-target).sqrMagnitude>80*80))
             {

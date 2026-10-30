@@ -813,6 +813,36 @@
           "path": "BachDang938/Voices/Preparation/ngo_stakes_five"
         }
       ]
+    },
+    {
+      "line": "Giặc đã tan. Hãy trở lại những thuyền đắm, tìm binh lính còn sống, nhận đầu hàng và đưa họ về làm tù binh. Nhớ đề phòng tướng giặc còn ẩn náu.",
+      "male": "BachDang938/Voices/Epilogue/PrisonersOrder",
+      "female": "BachDang938/Voices/Epilogue/PrisonersOrder",
+      "variants": []
+    },
+    {
+      "line": "Xin đừng giết! Chủ tướng vẫn còn trên soái hạm. Chúng tôi xin hạ vũ khí.",
+      "male": "BachDang938/Voices/Epilogue/Prisoner",
+      "female": "BachDang938/Voices/Epilogue/Prisoner",
+      "variants": []
+    },
+    {
+      "line": "Ta vẫn còn đây. Hãy lên boong soái hạm đối mặt với ta!",
+      "male": "BachDang938/Voices/Epilogue/BossChallenge",
+      "female": "BachDang938/Voices/Epilogue/BossChallenge",
+      "variants": []
+    },
+    {
+      "line": "Tướng giặc đã bị hạ! Thu quân, đưa tù binh về doanh trại!",
+      "male": "BachDang938/Voices/Epilogue/BossDefeated",
+      "female": "BachDang938/Voices/Epilogue/BossDefeated",
+      "variants": []
+    },
+    {
+      "line": "Tướng giặc đã bị hạ, tù binh đã quy hàng. Tướng sĩ đã tận lực vì non sông. Toàn quân mừng đại thắng Bạch Đằng!",
+      "male": "BachDang938/Voices/Epilogue/FinalReport",
+      "female": "BachDang938/Voices/Epilogue/FinalReport",
+      "variants": []
     }
   ],
   "profiles": [

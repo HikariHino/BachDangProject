@@ -5,6 +5,8 @@ namespace BeachBoatStory
 {
     public sealed class ShipwreckPresentation : MonoBehaviour
     {
+        static readonly System.Collections.Generic.HashSet<Mesh> baked=new System.Collections.Generic.HashSet<Mesh>();
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]static void ResetBakes()=>baked.Clear();
         Transform original,broken,bow,stern;MeshCollider[] colliders;ParticleSystem[] fire;
         Material flameMaterial,smokeMaterial;Texture2D texture;float began,nextSurface;
         readonly Vector3[] anchors={new Vector3(-16,17,42),new Vector3(-16,17,42),new Vector3(14,19,-50),new Vector3(14,19,-50)};
@@ -16,6 +18,7 @@ namespace BeachBoatStory
             if(broken!=null)return;original=transform.Find("RedSailJunkVisual");var prefab=Resources.Load<GameObject>("BachDang938/Wrecks/BrokenWarship");if(original==null||prefab==null)return;
             broken=Instantiate(prefab,transform,false).transform;broken.name="BrokenWarship";broken.localPosition=original.localPosition+original.localRotation*Vector3.Scale(original.localScale,Vector3.up*20);broken.localRotation=original.localRotation;broken.localScale=original.localScale;
             bow=broken.Find("Bow");stern=broken.Find("Stern");colliders=broken.GetComponentsInChildren<MeshCollider>();
+            foreach(var c in colliders)if(c.sharedMesh!=null&&baked.Add(c.sharedMesh))Physics.BakeMesh(c.sharedMesh.GetEntityId(),false,c.cookingOptions);
             texture=new Texture2D(16,16,TextureFormat.RGBA32,false);
             for(int y=0;y<16;y++)for(int x=0;x<16;x++){float r=new Vector2((x-7.5f)/7.5f,(y-7.5f)/7.5f).magnitude;texture.SetPixel(x,y,new Color(1,1,1,Mathf.Clamp01((1-r)*2)));}texture.Apply();
             flameMaterial=RiverParticleMaterial.Create(texture);smokeMaterial=new Material(flameMaterial);
@@ -64,6 +67,7 @@ namespace BeachBoatStory
             // Spread preparation over title frames; sinking only enables prepared objects.
             foreach(var ship in FindObjectsByType<EnemyShip>(FindObjectsInactive.Include,FindObjectsSortMode.None))
             {ship.PrepareWreck();yield return null;}
+            foreach(var pose in FindObjectsByType<RiverFighterPose>(FindObjectsInactive.Include,FindObjectsSortMode.None))if(pose.GetComponent<EnemyDeckGuard>()!=null){pose.WarmTraversal();yield return null;}
         }
     }
     public sealed class RiverCorpse : MonoBehaviour

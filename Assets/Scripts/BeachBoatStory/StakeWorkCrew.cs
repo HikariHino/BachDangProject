@@ -23,7 +23,7 @@ namespace BeachBoatStory
         public StakeWorkCrew(QuestRowboat source,Transform template,Transform parent,Material material,BachDangSaveData.ConstructionSite saved)
         {
             origin=saved.origin;orientation=saved.rotation;Parked=saved.parked;
-            timber=material;var sourceHull=BoatHullCollision.Get(source.transform);var box=sourceHull.SolidHull;var filters=source.GetComponentsInChildren<MeshFilter>(true);
+            timber=material;var sourceHull=BoatHullCollision.Get(source.transform);var box=sourceHull.SolidHull;var filters=(source.transform.Find("Thuyen_Go_Song")??source.transform).GetComponentsInChildren<MeshFilter>(true);
             began=0;calls=saved.elapsed>=13?2:saved.elapsed>=1?1:0;callVoice=parent.gameObject.AddComponent<DialogueVoice>();
             var fx=new GameObject("Cong_binh_nuoc_ban");fx.transform.SetParent(parent,false);spray=fx.AddComponent<ParticleSystem>();spray.Stop();var main=spray.main;main.loop=true;main.playOnAwake=false;main.simulationSpace=ParticleSystemSimulationSpace.World;main.startLifetime=.65f;main.startSize=.35f;main.gravityModifier=1;main.maxParticles=70;main.startColor=new Color(.7f,.87f,.86f,.8f);var emission=spray.emission;emission.enabled=false;water=new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));spray.GetComponent<ParticleSystemRenderer>().sharedMaterial=water;spray.Play();
             for(int i=0;i<(saved.boats!=null?saved.boats.Length:6);i++)
@@ -38,11 +38,12 @@ namespace BeachBoatStory
                     if(!dry&&RiverHullCollision.ClearAt(candidate+Vector3.up*8,42,null,sourceHull)){at=candidate;clear=true;break;}
                 }
                 if(!clear)continue;
-                var boat=new GameObject("Thuyen_cong_binh_"+i);boat.transform.SetParent(parent,true);at.y=TideSystem.CurrentWaterHeight;boat.transform.SetPositionAndRotation(at,saved.boatRotations!=null&&i<saved.boatRotations.Length?saved.boatRotations[i]:orientation);boat.transform.localScale=source.transform.lossyScale;boats.Add(boat);
+                var boat=new GameObject(parent.name+"_Thuyen_cong_binh_"+i);boat.transform.SetParent(parent,true);at.y=TideSystem.CurrentWaterHeight;boat.transform.SetPositionAndRotation(at,saved.boatRotations!=null&&i<saved.boatRotations.Length?saved.boatRotations[i]:orientation);boat.transform.localScale=source.transform.lossyScale;boats.Add(boat);
+                var visual=new GameObject("Thuyen_Go_Song").transform;visual.SetParent(boat.transform,false);
                 foreach(var f in filters)
                 {
                     if(f.sharedMesh==null||f.GetComponentInParent<Animator>()!=null)continue;var r=f.GetComponent<MeshRenderer>();if(r==null||!r.enabled||f.transform.IsChildOf(source.paddle))continue;
-                    var go=new GameObject("Construction_"+f.name,typeof(MeshFilter),typeof(MeshRenderer));go.transform.SetParent(boat.transform,false);go.transform.localPosition=source.transform.InverseTransformPoint(f.transform.position);go.transform.localRotation=Quaternion.Inverse(source.transform.rotation)*f.transform.rotation;
+                    var go=new GameObject("Construction_"+f.name,typeof(MeshFilter),typeof(MeshRenderer));go.transform.SetParent(visual,false);go.transform.localPosition=source.transform.InverseTransformPoint(f.transform.position);go.transform.localRotation=Quaternion.Inverse(source.transform.rotation)*f.transform.rotation;
                     var s=source.transform.lossyScale;var v=f.transform.lossyScale;go.transform.localScale=new Vector3(v.x/s.x,v.y/s.y,v.z/s.z);go.GetComponent<MeshFilter>().sharedMesh=f.sharedMesh;go.GetComponent<Renderer>().sharedMaterials=r.sharedMaterials;
                 }
                 var solid=boat.AddComponent<BoxCollider>();solid.center=box.center;solid.size=box.size;var body=boat.AddComponent<Rigidbody>();body.isKinematic=true;body.useGravity=false;
@@ -79,8 +80,45 @@ namespace BeachBoatStory
         void Part(Transform parent,PrimitiveType type,Vector3 at,Vector3 size)
         {var go=GameObject.CreatePrimitive(type);go.transform.SetParent(parent,false);go.transform.localPosition=at;go.transform.localScale=size;var c=go.GetComponent<Collider>();c.enabled=false;Object.Destroy(c);go.GetComponent<Renderer>().sharedMaterial=timber;}
         public BachDangSaveData.ConstructionSite Capture(int index,float elapsed)=>new BachDangSaveData.ConstructionSite{index=index,elapsed=elapsed,origin=origin,rotation=orientation,parked=Parked,boats=boats.ConvertAll(b=>b.transform.position).ToArray(),boatRotations=boats.ConvertAll(b=>b.transform.rotation).ToArray(),posts=poles.ConvertAll(p=>p.position).ToArray(),postRotations=poles.ConvertAll(p=>p.rotation).ToArray()};
+        public void PrepareBattle(bool restorePosition=false)
+        {
+            callVoice.Stop();CurrentCall="";
+            foreach(var pole in poles)if(pole!=null){pole.gameObject.SetActive(false);Object.Destroy(pole.gameObject);}poles.Clear();
+            foreach(var boat in boats)foreach(Transform child in boat.transform)
+                if(child.name=="San_go_nguoi_nen_coc"||child.name=="Van_go_nguoi_giu_coc"){child.gameObject.SetActive(false);Object.Destroy(child.gameObject);}
+            var combat=RiverBoardingCombat.Instance;var zone=RiverStakeZone.Instance;
+            var template=System.Array.Find(combat.friendlyBoats,b=>!b.IsConstructionSupport&&b.lightPatrol);
+            foreach(var boat in boats)
+            {
+                if(boat.GetComponent<AmbientRiverBoat>()!=null)continue;
+                foreach(var c in boat.GetComponents<BoxCollider>()){c.enabled=false;Object.Destroy(c);}
+                var ambient=boat.AddComponent<AmbientRiverBoat>();ambient.IsConstructionSupport=true;
+                var port=new GameObject("Boarding_Port").transform;port.SetParent(boat.transform,false);
+                var source=QuestRowboat.Instance;port.position=boat.transform.TransformPoint(source.transform.InverseTransformPoint(source.seat.position));
+                var hull=BoatHullCollision.Get(boat.transform);
+                bool placed=restorePosition; // Patrol restore validates all saved hulls after every crew has moved inboard.
+                for(int n=0;n<360&&!placed;n++)
+                {
+                    var point=new Vector3(zone.placements[0].approach.position.x+(n%18-9)*110,TideSystem.CurrentWaterHeight,zone.FieldBounds.min.z-180-(n/18)*95);
+                    if(!RiverWaterNavigation.ClearWater(point,hull.Radius)||!hull.CanOccupy(point,orientation))continue;
+                    boat.transform.SetPositionAndRotation(point,orientation);Physics.SyncTransforms();placed=true;
+                }
+                if(!placed){boat.SetActive(false);continue;}
+                foreach(var w in workers)if(w.boat==boat.transform)
+                {
+                    w.chest.localRotation=w.chestRest;for(int a=0;a<4;a++)w.arms[a].localRotation=w.rest[a];
+                    if(w.hammer!=null)w.hammer.gameObject.SetActive(false);
+                    var point=boat.transform.position+boat.transform.forward*(w.holder?-13:13);
+                    if(hull.TryDeckSurface(point,out var floor))
+                    {ActorSolidBody.WalkingDimensions(w.rig,out _,out float sole,out _);w.actor.position=floor+Vector3.up*(w.actor.position.y-w.rig.transform.position.y-sole+.15f);}
+                }
+                ambient.InitializeSupport(template);combat.RegisterSupportBoat(ambient,workers.FindAll(w=>w.boat==boat.transform).ConvertAll(w=>w.actor).ToArray());
+            }
+            Parked=true;
+        }
         public void Step(float time,bool keepWorking=false)
         {
+            if(Parked)return;
             foreach(var boat in boats){var p=boat.transform.position;p.y=TideSystem.CurrentWaterHeight;boat.transform.position=p;}
             if(Parked||time>=18&&!keepWorking)
             {
@@ -104,6 +142,6 @@ namespace BeachBoatStory
                 int cycle=Mathf.FloorToInt((time+w.phase)/2.4f);if(!w.holder&&phase>.94f&&cycle!=lastCycle&&time>=nextImpact){lastCycle=cycle;nextImpact=time+1.1f;if(!(BeachBoatSoundscape.Instance?.Muted??false))BeachBoatSoundscape.Instance.PlayCrewStake(w.stake.position);for(int n=0;n<9;n++)spray.Emit(new ParticleSystem.EmitParams{position=new Vector3(w.stake.position.x,TideSystem.CurrentWaterHeight,w.stake.position.z),velocity=new Vector3(Random.Range(-4f,4f),Random.Range(4f,8f),Random.Range(-4f,4f))},1);}
             }
         }
-        public void Dispose(){callVoice?.Stop();if(water!=null)Object.Destroy(water);foreach(var boat in boats)if(boat!=null){boat.SetActive(false);Object.Destroy(boat);}boats.Clear();workers.Clear();}
+        public void Dispose(){callVoice?.Stop();if(water!=null)Object.Destroy(water);foreach(var boat in boats)if(boat!=null){RiverBoardingCombat.Instance?.UnregisterSupportBoat(boat.GetComponent<AmbientRiverBoat>());boat.SetActive(false);Object.Destroy(boat);}boats.Clear();workers.Clear();}
     }
 }

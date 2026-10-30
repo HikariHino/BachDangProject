@@ -70,7 +70,7 @@ public class NPCQuestGiver : MonoBehaviour
             canTalk = true;
             prompt = ArcheryTraining.Instance?.Completed==true?"[E] Nhận lệnh XUẤT QUÂN":"[E] Nhận hướng dẫn TẬP CUNG trước xuất quân";
         }
-        else if (story.currentState == BachDangStoryManager.StoryState.Act3_Victory)
+        else if (story.currentState == BachDangStoryManager.StoryState.Act3_Victory || story.currentState == BachDangStoryManager.StoryState.Act3_FinalReport)
         {
             canTalk = true;
             prompt = "[E] Báo cáo Đại thắng Bạch Đằng 938";
@@ -133,6 +133,11 @@ public class NPCQuestGiver : MonoBehaviour
                     StoryDialogueUI.Instance?.Show("Ngô Quyền", ArcheryTraining.Instance?.Completed==true?PreparationBriefing.Lure:PreparationBriefing.Archery, story.OnTalkToNgoQuyenAct3,transform);
                     story.SetInteractPrompt(false, owner: this);
                     if (interactPromptUI != null) interactPromptUI.SetActive(false);
+                }
+                else if(story.currentState==BachDangStoryManager.StoryState.Act3_FinalReport)
+                {
+                    StoryDialogueUI.Instance?.Show("Ngô Quyền","Tướng giặc đã bị hạ, tù binh đã quy hàng. Tướng sĩ đã tận lực vì non sông. Toàn quân mừng đại thắng Bạch Đằng!",story.OnFinalVictoryReported,transform);
+                    story.SetInteractPrompt(false,owner:this);
                 }
                 else if (story.currentState == BachDangStoryManager.StoryState.Act3_Victory)
                 {

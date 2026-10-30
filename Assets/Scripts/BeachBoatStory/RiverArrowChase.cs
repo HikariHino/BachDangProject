@@ -5,7 +5,7 @@ namespace BeachBoatStory
     public sealed class RiverArrowChase
     {
         public const int Goal=5;public const float Damage=16,WarningSeconds=1.2f,FlightSeconds=.7f;
-        readonly RiverFleetPursuit pursuit;GameObject root;LineRenderer warning;Transform[] arrows;bool[] blocked;Material red,wood;
+        readonly RiverFleetPursuit pursuit;GameObject root;LineRenderer[] warnings;Transform[] arrows;bool[] blocked;Material red,wood;
         public int Volleys {get;private set;}public int Resolved {get;private set;}public int Hits {get;private set;}
         public bool Completed=>Resolved>=Goal;public bool Pending {get;private set;}public Vector3 Landing {get;private set;}
         bool started;float startZ,elapsed,nextVolley,shotTime;Vector3 from;string feedback;float feedbackUntil;
@@ -16,8 +16,9 @@ namespace BeachBoatStory
             if(root!=null){root.SetActive(true);return;}
             root=new GameObject("Nhu_dich_ne_ten_3D");root.transform.SetParent(pursuit.transform,false);
             red=new Material(Shader.Find("Universal Render Pipeline/Unlit")){color=new Color(.95f,.18f,.08f)};wood=new Material(Shader.Find("Universal Render Pipeline/Lit")){color=new Color(.33f,.22f,.1f)};
-            warning=new GameObject("Vung_ten_sap_roi").AddComponent<LineRenderer>();warning.transform.SetParent(root.transform,false);warning.useWorldSpace=true;warning.sharedMaterial=red;warning.widthMultiplier=.55f;warning.positionCount=5;
-            arrows=new Transform[7];blocked=new bool[7];
+            warnings=new LineRenderer[3];
+            for(int i=0;i<warnings.Length;i++){var w=new GameObject("Vung_ten_sap_roi_"+i).AddComponent<LineRenderer>();w.transform.SetParent(root.transform,false);w.useWorldSpace=true;w.sharedMaterial=red;w.widthMultiplier=.8f;w.positionCount=5;warnings[i]=w;}
+            arrows=new Transform[21];blocked=new bool[21];
             for(int i=0;i<arrows.Length;i++){var go=GameObject.CreatePrimitive(PrimitiveType.Cylinder);go.name="Ten_truy_duoi_"+i;go.transform.SetParent(root.transform,false);go.transform.localScale=new Vector3(.15f,3,.15f);go.GetComponent<Collider>().enabled=false;Object.Destroy(go.GetComponent<Collider>());go.GetComponent<Renderer>().sharedMaterial=wood;arrows[i]=go.transform;go.SetActive(false);}
         }
         public void BeginVolley()
@@ -26,9 +27,12 @@ namespace BeachBoatStory
             Landing=boat.transform.position+boat.transform.forward*boat.Speed*(WarningSeconds+FlightSeconds);Landing=new Vector3(Landing.x,TideSystem.CurrentWaterHeight+3,Landing.z);
             from=Landing+Vector3.forward*250+Vector3.up*90;float nearest=float.PositiveInfinity;
             foreach(var ship in EnemyFleetDirector.Instance.enemyShips)if(ship!=null&&ship.gameObject.activeInHierarchy&&!ship.isDestroyed){float d=QuestRowboat.FlatDistance(ship.transform.position,boat.transform.position);if(d<nearest){nearest=d;from=ship.transform.position+Vector3.up*65;}}
-            shotTime=0;Pending=true;Volleys++;nextVolley=elapsed+3.5f;System.Array.Clear(blocked,0,blocked.Length);foreach(var a in arrows)a.gameObject.SetActive(false);warning.gameObject.SetActive(true);BeachBoatSoundscape.Instance?.PlayBow(true);
+            shotTime=0;Pending=true;Volleys++;nextVolley=elapsed+3.5f;System.Array.Clear(blocked,0,blocked.Length);foreach(var a in arrows)a.gameObject.SetActive(false);foreach(var w in warnings)w.gameObject.SetActive(true);BeachBoatSoundscape.Instance?.PlayBow(true);
         }
-        Vector3 End(int i)=>Landing+new Vector3((i%3-1)*6,0,(i/3-1)*5);
+        public int WarningCount=>2+Volleys%2;
+        float Width{get{var h=BoatHullCollision.Get(QuestRowboat.Instance.transform).SolidHull;return Mathf.Max(8,h.size.x*Mathf.Abs(h.transform.lossyScale.x)*.55f);}}
+        public Vector3 WarningCenter(int index)=>Landing+(index==0?Vector3.zero:new Vector3((index==1?1:-1)*(Volleys%2==0?1:-1)*(Width*2+35),0,index==2?100:12));
+        Vector3 End(int i)=>WarningCenter(i/7)+new Vector3((i%7%3-1)*6,0,(i%7/3-1)*5);
         public void Step(float dt)
         {
             if(dt<=0||Completed||BachDangFrontEnd.IsBlocking||BeachBoatQuestSession.InteractionBlocked)return;
@@ -39,16 +43,16 @@ namespace BeachBoatStory
             if(!Pending)return;Build();shotTime+=dt;
             var hull=BoatHullCollision.Get(boat.transform).SolidHull;float width=Mathf.Max(8,hull.size.x*Mathf.Abs(hull.transform.lossyScale.x)*.55f);
             var corners=new[]{new Vector3(-width,0,-13),new Vector3(width,0,-13),new Vector3(width,0,13),new Vector3(-width,0,13),new Vector3(-width,0,-13)};
-            for(int i=0;i<5;i++)warning.SetPosition(i,Landing+corners[i]-Vector3.up*2.7f);warning.gameObject.SetActive(shotTime<WarningSeconds);
+            for(int w=0;w<warnings.Length;w++){for(int i=0;i<5;i++)warnings[w].SetPosition(i,WarningCenter(w)+corners[i]-Vector3.up*2.7f);warnings[w].gameObject.SetActive(w<WarningCount&&shotTime<WarningSeconds);}
             float t=Mathf.Clamp01((shotTime-WarningSeconds)/FlightSeconds);
             for(int i=0;i<arrows.Length;i++)
             {
-                bool flying=shotTime>=WarningSeconds&&!blocked[i];var end=End(i);var point=Vector3.Lerp(from+Vector3.right*(i-3)*3,end,t)+Vector3.up*(Mathf.Sin(t*Mathf.PI)*20);
+                bool flying=i/7<WarningCount&&shotTime>=WarningSeconds&&!blocked[i];var end=End(i);var point=Vector3.Lerp(from+Vector3.right*(i-3)*3,end,t)+Vector3.up*(Mathf.Sin(t*Mathf.PI)*20);
                 if(flying&&arrows[i].gameObject.activeSelf&&Physics.Linecast(arrows[i].position,point,out var hit,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)&&!hit.transform.IsChildOf(boat.transform)&&hit.collider.GetComponentInParent<EnemyShip>()==null){blocked[i]=true;flying=false;}
                 arrows[i].gameObject.SetActive(flying);arrows[i].SetPositionAndRotation(point,Quaternion.FromToRotation(Vector3.up,end-from));
             }
             if(shotTime<WarningSeconds+FlightSeconds)return;
-            bool struck=false;for(int i=0;i<arrows.Length;i++)if(!blocked[i]&&Vector3.Distance(hull.ClosestPoint(End(i)),End(i))<2){struck=true;break;}
+            bool struck=false;for(int i=0;i<arrows.Length;i++)if(i/7<WarningCount&&!blocked[i]&&Vector3.Distance(hull.ClosestPoint(End(i)),End(i))<2){struck=true;break;}
             if(struck&&boat.TakeChaseArrow(Damage))Hits++;Resolved++;Pending=false;root.SetActive(false);feedback=struck?"Trúng tên • Đổi hướng sớm khi vùng đỏ xuất hiện":"Đã né loạt tên";feedbackUntil=Time.unscaledTime+2.5f;
         }
         public void FillSave(BachDangSaveData.Fleet data)

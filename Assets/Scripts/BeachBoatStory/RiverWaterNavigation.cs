@@ -111,6 +111,7 @@ namespace BeachBoatStory
             }
             map[id]=clear?(byte)1:(byte)2;return clear;
         }
+        public static bool ClearWater(Vector3 point,float radius){Prepare();return Clear(Id(point),radius);}
         public static bool NearestClear(Vector3 requested,float radius,out Vector3 result,IList<Vector3> excluded=null,float separation=0)
         {
             Prepare();int start=Id(requested),x=start%width,z=start/width;float best=float.PositiveInfinity;int chosen=-1,first=-1;

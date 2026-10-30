@@ -27,13 +27,15 @@ public static class BeachBoatConcurrentBattlePlaytest
     static float maxYawRate,maxSlip;
     static int motionSamples;
     static Dictionary<string,Vector3> escortStarts;
+    static readonly Dictionary<int,Vector3> supportHands=new Dictionary<int,Vector3>();
+    static float supportHandMotion;
     static int lastFrame=-1;
     static string runtimeError;
     static Vector3[] berths;
     static readonly List<string> checks=new List<string>();
     static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static string Hash(string p){using(var sha=SHA256.Create())return Convert.ToBase64String(sha.ComputeHash(File.ReadAllBytes(p)));}
-    public static void RunInEditor(){phase=0;lastFrame=-1;boatDistance=0;ebbTime=entryTime=ambushTime=peakPursuitSpeed=0;approachSaveChecked=sawApproachDrop=false;previousPositions=null;previousRotations=null;maxYawRate=maxSlip=0;motionSamples=0;started=0;runtimeError=null;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){supportHands.Clear();supportHandMotion=0;phase=0;lastFrame=-1;boatDistance=0;ebbTime=entryTime=ambushTime=peakPursuitSpeed=0;approachSaveChecked=sawApproachDrop=false;previousPositions=null;previousRotations=null;maxYawRate=maxSlip=0;motionSamples=0;started=0;runtimeError=null;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     public static void RunWithConstructionField(){SessionState.SetBool("UseConstructionField30QA",true);RunInEditor();}
     public static void RunBatch(){UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Record;Application.logMessageReceived+=Record;}
@@ -112,7 +114,7 @@ public static class BeachBoatConcurrentBattlePlaytest
                 BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/ConcurrentQA/"+DateTime.Now.ToString("yyyyMMdd-HHmmssfff"));BachDangAutoSave.Instance.enabled=false;
                 BachDangFrontEnd.Instance.Play();Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 zone.RestoreCheckpoint(Enumerable.Repeat(true,5).ToArray());story.collectedWood=story.totalWoodRequired;
-                if(SessionState.GetBool("UseConstructionField30QA",false)){SessionState.SetBool("UseConstructionField30QA",false);var field=File.Exists(".utmp/LegacyFullConstructionCheckpoint.json")?JsonUtility.FromJson<BachDangSaveData>(File.ReadAllText(".utmp/LegacyFullConstructionCheckpoint.json")):new BachDangSaveData{storyState=6,stakes=Enumerable.Repeat(true,5).ToArray(),stakeSamplesVersion=1,stakeSamplePositions=zone.CaptureSamplePositions(),stakeSampleRotations=zone.CaptureSampleRotations(),constructionSites=new[]{new BachDangSaveData.ConstructionSite{index=0,origin=zone.placements[0].approach.position,elapsed=18,parked=true}}};zone.RestoreSamples(field);RiverConstructionCamp.Ensure(zone).Restore(field);Check(RiverConstructionCamp.Ensure(zone).Workers==0&&!Object.FindObjectsByType<Transform>().Any(t=>t.name.StartsWith("Coc_mau_vi_tri_")),"Loading the old finished construction checkpoint removes symbolic crews and posts before battle");}
+                if(SessionState.GetBool("UseConstructionField30QA",false)){SessionState.SetBool("UseConstructionField30QA",false);var field=File.Exists(".utmp/LegacyFullConstructionCheckpoint.json")?JsonUtility.FromJson<BachDangSaveData>(File.ReadAllText(".utmp/LegacyFullConstructionCheckpoint.json")):new BachDangSaveData{storyState=6,stakes=Enumerable.Repeat(true,5).ToArray(),stakeSamplesVersion=1,stakeSamplePositions=zone.CaptureSamplePositions(),stakeSampleRotations=zone.CaptureSampleRotations(),constructionSites=new[]{new BachDangSaveData.ConstructionSite{index=0,origin=zone.placements[0].approach.position,elapsed=18,parked=true}}};zone.RestoreSamples(field);RiverConstructionCamp.Ensure(zone).Restore(field);Check(RiverConstructionCamp.Ensure(zone).Workers>0&&RiverBoardingCombat.Instance.friendlyBoats.Any(b=>b.IsConstructionSupport)&&!Object.FindObjectsByType<Transform>().Any(t=>t.name.StartsWith("Coc_mau_vi_tri_")||t.name.StartsWith("Coc_nhon_cong_binh")),"Loading the old finished construction checkpoint retains manned support skiffs without symbolic poles");}
                 story.TransitionTo(Story.StoryState.Act3_BattleInProgress,true);
                 BachDangBattleTimeline.Instance.BeginLure(true);
                 QuestRowboat.Instance.RestoreSave(true,QuestRowboat.Instance.BattleLurePosition,Quaternion.identity);
@@ -135,14 +137,14 @@ public static class BeachBoatConcurrentBattlePlaytest
                 Check(fleet.enemyShips.Select((s,i)=>Vector3.Distance(s.targetPoint.position,berths[i])<.01f).All(v=>v),"Existing dispersed enemy wreck berths stay unchanged");
                 Check(!fleet.BattleCaption.Contains("Đợt"),"Fleet entry no longer announces timed waves");
                 Check(fleet.enemyShips.Min(s=>s.spawnPoint.z)>zone.FieldBounds.max.z+1400,"Enemy fleet spawns far upstream for the rower to sail out and bait it");
-                escortStarts=RiverBoardingCombat.Instance.friendlyBoats.Where(b=>b.lightPatrol).ToDictionary(b=>b.name,b=>b.transform.position);
+                escortStarts=RiverBoardingCombat.Instance.friendlyBoats.Where(b=>b.lightPatrol&&!b.IsConstructionSupport).ToDictionary(b=>b.name,b=>b.transform.position);
                 phaseTime=Time.time;phase=10;return;
             }
             if(phase==10)
             {
                 if(Time.time-phaseTime<20)return;
                 Check(!fleet.Pursuit.IsPursuing&&!fleet.EbbStarted&&fleet.ShipsInside==0,"Waiting near home cannot automatically lure the fleet or trigger falling tide");
-                var escorts=RiverBoardingCombat.Instance.friendlyBoats.Where(b=>b.lightPatrol).ToArray();
+                var escorts=RiverBoardingCombat.Instance.friendlyBoats.Where(b=>b.lightPatrol&&!b.IsConstructionSupport).ToArray();
                 Check(escorts.Length>0&&escorts.All(b=>b.IsEscortingLure),"All light boats adopt lure escort orders before the player meets the enemy");
                 Check(escorts.Any(b=>QuestRowboat.FlatDistance(escortStarts[b.name],b.transform.position)>40),"Lure escorts physically row toward their flank formation");
                 Check(RiverBoardingCombat.Instance.CaptureSave().allies.All(a=>a.state==0&&a.arrows==2),"Allied crew remain aboard with their arrows unspent throughout the initial lure");
@@ -185,9 +187,11 @@ public static class BeachBoatConcurrentBattlePlaytest
                 var boarding=RiverBoardingCombat.Instance;var crew=boarding.CaptureSave().allies;
                 Check(crew.All(a=>a.state==0&&a.arrows==2)&&boarding.AlliedArrowHits==0&&boarding.AlliedSwordHits==0,"Live allied AI cannot shoot, board or attack during pursuit");
                 Check(boarding.HostileBoardings==0,"Enemy boarding parties do not leave the pursuing fleet before the ambush");
-                var lights=boarding.friendlyBoats.Where(b=>b.lightPatrol).ToArray();
+                var lights=boarding.friendlyBoats.Where(b=>b.lightPatrol&&!b.IsConstructionSupport).ToArray();
                 float left=fleet.enemyShips.Min(s=>s.transform.position.x-s.stakeHitDistance);
-                Check(lights.All(b=>b.LureEscortGoal.x<left-200&&b.LureEscortGoal.z>zone.FieldBounds.max.z+250),"Escort goals stay outside the incoming enemy lanes and the stake entrance");
+                var close=lights.Where(b=>b.IsCloseLureEscort).ToArray();
+                Check((QuestRowboat.Instance.transform.position.z<=zone.FieldBounds.max.z+350&&close.Length==0)||(close.Length==2&&close.Any(b=>b.LureEscortGoal.x<QuestRowboat.Instance.transform.position.x)&&close.Any(b=>b.LureEscortGoal.x>QuestRowboat.Instance.transform.position.x)),"Two light escorts aim for parallel flanks on opposite sides of the bait rowboat");
+                Check(lights.Where(b=>!b.IsCloseLureEscort).All(b=>b.LureEscortGoal.x<left-200&&b.LureEscortGoal.z>zone.FieldBounds.max.z+250),"The remaining escort goals stay outside incoming enemy lanes and the stake entrance");
                 var save=BachDangSaveSystem.Capture("QA pursuit");var anchor=fleet.Pursuit.FormationAnchor;var positions=fleet.enemyShips.Select(s=>s.transform.position).ToArray();
                 // Reproduce an older save with an ally already sent to an enemy deck.
                 save.boarding.allies[0].state=3;save.boarding.allies[0].boat=fleet.enemyShips[0].name;
@@ -282,9 +286,21 @@ public static class BeachBoatConcurrentBattlePlaytest
             }
             if(phase==301)
             {
+                var supportPoses=Object.FindObjectsByType<RiverFighterPose>().Where(p=>p.GetComponentInParent<AmbientRiverBoat>()?.IsConstructionSupport==true).ToArray();
+                foreach(var pose in supportPoses.Where(p=>p.BowShots>0))
+                {
+                    int id=pose.GetEntityId().GetHashCode();var hand=pose.transform.InverseTransformPoint(pose.Animator.GetBoneTransform(HumanBodyBones.RightHand).position);
+                    if(supportHands.TryGetValue(id,out var oldHand))supportHandMotion=Mathf.Max(supportHandMotion,Vector3.Distance(hand,oldHand));else supportHands[id]=hand;
+                }
                 if(Time.time-phaseTime<6)return;
                 var boarding=RiverBoardingCombat.Instance;
                 Check(boarding.CaptureSave().allies.Any(a=>a.health>0&&a.state!=0)&&boarding.AlliedArrowHits>0,"Allies both launch their boarding/swimming assault and use bows during the live ambush");
+                if(supportPoses.Length>0)
+                {
+                    Check(supportPoses.Any(p=>p.BowShots>0)&&supportHandMotion>.5f,"Retained skiff crew visibly animate drawing and releasing their bows during the actual ambush");
+                    Check(boarding.friendlyBoats.Where(b=>b.IsConstructionSupport).All(b=>b.gameObject.activeInHierarchy),"Construction skiffs stay active throughout the ambush instead of disappearing");
+                }
+                Check(boarding.AlliedArrowsReleased>0&&boarding.CaptureSave().allies.Any(a=>a.health>0&&a.arrows<2&&a.state==0),"Deck archers physically release arrows and remain aboard while melee troops assault");
                 boarding.enabled=false;fleet.GetComponent<RiverShoreArchers>().enabled=false;phase=4;phaseTime=Time.unscaledTime;
             }
             if(phase==4)

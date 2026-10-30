@@ -128,11 +128,13 @@ namespace BeachBoatStory
             }
             EvaluateTraversal(Time.deltaTime);
         }
+        public void WarmTraversal(){if(Traversal==Motion.Idle&&traversalBones==null){BeginTraversalRig();RestoreTraversalRig();}}
         void BeginTraversalRig()
         {
             if(Animator==null)return;
             traversalController=Animator.runtimeAnimatorController;traversalAnimatorEnabled=Animator.enabled;
             Animator.enabled=true;Animator.runtimeAnimatorController=Resources.Load<RuntimeAnimatorController>("Player_Neutral");Animator.Update(0);MatchFriendlyStature();
+            if(traversalBones!=null){ResetTraversalBones();Animator.enabled=false;SwimMoving=true;ClimbProgress=0;return;}
             var list=new System.Collections.Generic.List<Transform>();
             for(int i=0;i<(int)HumanBodyBones.LastBone;i++){var bone=Animator.GetBoneTransform((HumanBodyBones)i);if(bone!=null)list.Add(bone);}
             traversalBones=list.ToArray();traversalRotations=new Quaternion[list.Count];traversalPositions=new Vector3[list.Count];
@@ -143,7 +145,7 @@ namespace BeachBoatStory
         {
             if(traversalBones==null)return;
             ResetTraversalBones();Animator.runtimeAnimatorController=traversalController;Animator.enabled=traversalAnimatorEnabled;
-            traversalBones=null;
+            // Keep the neutral bone cache for later wreck/swim transitions.
         }
         void ResetTraversalBones()
         {

@@ -81,6 +81,7 @@ namespace BeachBoatStory
             gameObject.AddComponent<CampaignProgress>();
             var frontEnd=Child("BachDangFrontEnd");frontEnd.AddComponent<BachDangFrontEnd>();
             gameObject.AddComponent<ArcheryTraining>();
+            gameObject.AddComponent<RiverBossEncounter>();
             gameObject.AddComponent<CampReadability>();
             StartCoroutine(NPCDailyActivity.AttachFixedWorkers());
         }
@@ -180,6 +181,7 @@ namespace BeachBoatStory
                 {
                     controlsText.text = "W/S • Chèo    A/D • Lái\nSHIFT • Tăng tốc    M • Bản đồ";
                 }
+                else if(RiverBossEncounter.Instance?.IsFighting==true){controlsText.text="WASD • Di chuyển    SHIFT • Né đòn\nChuột trái • Chém    Chuột phải • Cung / khiên    H • Thuốc";}
                 else if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard)
                 {
                     controlsText.text = "W/S • Chèo    A/D • Lái    SHIFT • Tăng tốc\nE • Hành động    M • Bản đồ";

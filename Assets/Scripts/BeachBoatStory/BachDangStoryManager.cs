@@ -29,6 +29,9 @@ public class BachDangStoryManager : MonoBehaviour
         Act3_Victory = 11,             // Chiến thắng - báo cáo Ngô Quyền
         Act1_Training = 12,            // Học hiệu lệnh trống trước khi rời trại
         Act2_SupplyPreparation = 13,   // Chuyển cọc và vật tư ra điểm tập kết
+        Act3_SearchPrisoners = 15,
+        Act3_CommanderDuel = 16,
+        Act3_FinalReport = 17,
         Act3_Celebration = 14          // Báo công, kết thúc và ăn mừng
     }
 
@@ -257,6 +260,18 @@ public class BachDangStoryManager : MonoBehaviour
                 desc = "- Toàn bộ thuyền và lính Nam Hán đã bị đánh bại.\n- Thuyền quân ta đang rút về bến.\n- Trở về doanh trại báo tin chiến thắng.";
                 break;
 
+            case StoryState.Act3_SearchPrisoners:
+                title="Sau trận • Tìm tù binh";
+                desc=$"- Kiểm tra ba thuyền đắm theo chỉ dẫn.\n- Tìm lính Nam Hán còn sống, nhận đầu hàng.\n- Đã kiểm tra {RiverBossEncounter.Instance?.SearchCount??0}/3 thuyền.";
+                break;
+            case StoryState.Act3_CommanderDuel:
+                title="Soái hạm • Đấu tướng địch";
+                desc="- Hạ tướng địch trên boong soái hạm.\n- Quan sát lúc lấy đà, né rồi phản công.\n- H hồi máu • SHIFT né đòn.";
+                break;
+            case StoryState.Act3_FinalReport:
+                title="Trở về • Báo cáo Ngô Quyền";
+                desc="- Tướng địch đã bị hạ, tù binh đã đầu hàng.\n- Trở về doanh trại báo cáo Chủ tướng.\n- Báo cáo để hoàn thành chiến dịch.";
+                break;
             case StoryState.Act3_Celebration:
                 title = "ĐẠI THẮNG BẠCH ĐẰNG 938";
                 desc = "Quân dân trở về đại bản doanh mừng chiến thắng.\nNước Việt bước vào thời kỳ độc lập, tự chủ.";
@@ -316,14 +331,20 @@ public class BachDangStoryManager : MonoBehaviour
     public void OnVictoryReported()
     {
         if (currentState != StoryState.Act3_Victory) return;
+        RiverBossEncounter.Instance?.StopVictoryCheer();
         RecoverAtReport();
-        TransitionTo(StoryState.Act3_Celebration);
-        StoryDialogueUI.Instance?.Show("Quân dân Bạch Đằng", "Đại thắng! Quân dân cùng trở về doanh trại, nổi trống mừng nền tự chủ của nước Việt.");
+        TransitionTo(StoryState.Act3_SearchPrisoners);
+        StoryDialogueUI.Instance?.Show("Ngô Quyền", "Giặc đã tan. Hãy trở lại những thuyền đắm, tìm binh lính còn sống, nhận đầu hàng và đưa họ về làm tù binh. Nhớ đề phòng tướng giặc còn ẩn náu.");
     }
 
     /// <summary>
     /// Gọi khi người chơi về trại báo cáo Ngô Quyền lần 2
     /// </summary>
+    public void OnFinalVictoryReported()
+    {
+        if(currentState!=StoryState.Act3_FinalReport||RiverBossEncounter.Instance?.Defeated!=true)return;
+        RecoverAtReport();TransitionTo(StoryState.Act3_Celebration);
+    }
     public void OnReportToNgoQuyenAct2()
     {
         if (currentState == StoryState.Act2_ReportToNgoQuyen)
