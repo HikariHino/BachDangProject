@@ -843,6 +843,24 @@
       "male": "BachDang938/Voices/Epilogue/FinalReport",
       "female": "BachDang938/Voices/Epilogue/FinalReport",
       "variants": []
+    },
+    {
+      "line": "Hạ cung xuống! Không được chĩa vũ khí vào chủ tướng. Ta chỉ nhắc ngươi lần này.",
+      "male": "BachDang938/Voices/Discipline/CommanderWarning",
+      "female": "BachDang938/Voices/Discipline/CommanderWarning",
+      "variants": []
+    },
+    {
+      "line": "Quân đâu! Kẻ phản nghịch dám phạm thượng. Giết hắn!",
+      "male": "BachDang938/Voices/Discipline/CommanderExecution",
+      "female": "BachDang938/Voices/Discipline/CommanderExecution",
+      "variants": []
+    },
+    {
+      "line": "Có kẻ phản quân! Đừng để hắn chạy thoát!",
+      "male": "BachDang938/Voices/Discipline/AllyRetaliation",
+      "female": "BachDang938/Voices/Discipline/AllyRetaliation",
+      "variants": []
     }
   ],
   "profiles": [

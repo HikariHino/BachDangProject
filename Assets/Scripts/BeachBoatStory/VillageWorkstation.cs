@@ -9,6 +9,7 @@ namespace BeachBoatStory
     {
         public float HeightScale {get;private set;}=1;
         public Material Wood {get;private set;}
+        public Collider StockCollider {get;private set;}
         public readonly List<GameObject> BundleLogs=new List<GameObject>();
         public Transform Environment {get;private set;}
         readonly List<GameObject> hidden=new List<GameObject>();
@@ -41,7 +42,7 @@ namespace BeachBoatStory
             Shape("Solid_workbench",PrimitiveType.Cube,new Vector3(0,8,-3),new Vector3(32,2,13),Wood,true);
             foreach(int x in new[]{-13,13})foreach(int z in new[]{-7,1})Shape("Table_leg",PrimitiveType.Cube,new Vector3(x,3.5f,z),new Vector3(2,7,2),Wood,true);
             Shape("Delivery_crate",PrimitiveType.Cube,new Vector3(25,3,-14),new Vector3(10,6,12),Wood,true);
-            Shape("Stock_crate",PrimitiveType.Cube,new Vector3(-25,3,-14),new Vector3(10,6,12),Wood,true);
+            StockCollider=Shape("Stock_crate",PrimitiveType.Cube,new Vector3(-25,3,-14),new Vector3(10,6,12),Wood,true).GetComponent<Collider>();
             if(owner.kind==VillageWorkStall.WorkKind.Timber)
                 for(int i=0;i<3;i++){var log=Shape("Uncut_stock",PrimitiveType.Cylinder,new Vector3(-25,7+i*1.8f,-14),new Vector3(2,7,2),Wood);log.transform.localRotation=Quaternion.Euler(90,0,0);}
             else if(owner.kind==VillageWorkStall.WorkKind.Rope)

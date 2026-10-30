@@ -80,6 +80,7 @@ namespace BeachBoatStory
             gameObject.AddComponent<VillageWoodHunt>();
             gameObject.AddComponent<CampaignProgress>();
             var frontEnd=Child("BachDangFrontEnd");frontEnd.AddComponent<BachDangFrontEnd>();
+            gameObject.AddComponent<CampDiscipline>();
             gameObject.AddComponent<ArcheryTraining>();
             gameObject.AddComponent<RiverBossEncounter>();
             gameObject.AddComponent<CampReadability>();
@@ -188,7 +189,7 @@ namespace BeachBoatStory
                 }
                 else
                 {
-                    controlsText.text = "WASD • Di chuyển    SHIFT • Chạy\nE • Tương tác    M • Bản đồ    TAB • Nhật ký\nG • Khiên    Chuột phải • Đỡ tên";
+                    controlsText.text = "WASD • Di chuyển    SHIFT • Chạy\nE • Tương tác    M • Bản đồ    TAB • Nhật ký\nQ • Kiếm    Chuột phải • Cung / khiên    G • Khiên";
                 }
             }
             if (vitals != null && healthFill != null)

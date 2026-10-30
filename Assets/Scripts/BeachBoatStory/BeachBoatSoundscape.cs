@@ -144,6 +144,7 @@ namespace BeachBoatStory
         public void PlayWaterEntry()=>Play(foley,oar,.72f,.8f);
         public void PlayClimbGrip()=>Play(foley,footsteps.Length>0?footsteps[0]:oar,.38f,.92f);
         public void PlayBow(bool hostile=false){LastBow=Next(recordedBows,ref bowIndex,bow);Play(effects,LastBow,hostile ? .23f : .65f,Random.Range(.98f,1.02f));}
+        public void PlayWeaponHandling()=>Play(effects,Next(recordedSwordSwings,ref swordIndex,hit),.3f,1);
         public void PlaySwordSwing()
         {
             LastSwordSwing=Next(recordedSwordSwings,ref swordIndex,GetComponent<RiverBattleChoreography>()?.swordSwing);

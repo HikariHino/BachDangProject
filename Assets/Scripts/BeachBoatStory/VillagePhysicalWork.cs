@@ -336,7 +336,14 @@ namespace BeachBoatStory
         {
             if(player==null)return false;
             if(Current==Step.Take||Current==Step.TakeIngredient)
-                return QuestRowboat.FlatDistance(player.position,TargetPosition)<=Reach+3&&Mathf.Abs(player.position.y-TargetPosition.y)<18;
+                {
+                    var point=TargetPosition;var stock=station?.StockCollider;
+                    if(stock!=null){var at=player.position;at.y=stock.bounds.center.y;point=stock.ClosestPoint(at);}
+                    var body=player.GetComponent<CapsuleCollider>();float radius=body!=null?Mathf.Clamp(body.radius*Mathf.Abs(player.lossyScale.x),2,8):3;
+                    // Reach is measured from the actual stock-crate edge and ground,
+                    // not the elevated prop centre on a height-scaled workstation.
+                    return QuestRowboat.FlatDistance(player.position,point)<=Reach+radius&&Mathf.Abs(player.position.y-origin.y)<18;
+                }
             return QuestRowboat.FlatDistance(player.position,RequiredApproach)<=Reach&&Mathf.Abs(player.position.y-RequiredApproach.y)<18;
         }
         public bool CanInteract=>stall!=null&&VillageWorkStall.Active==stall&&stall.Phase==VillageWorkStall.WorkPhase.Playing&&Time.timeScale>0&&!BachDangFrontEnd.IsBlocking&&Near();

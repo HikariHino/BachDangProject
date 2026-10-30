@@ -130,7 +130,7 @@ namespace BeachBoatStory
                 playerPosition=session.player.transform.position,playerRotation=session.player.transform.rotation,aboard=boat!=null&&boat.IsAboard,
                 boatPosition=boat!=null?boat.transform.position:Vector3.zero,boatRotation=boat!=null?boat.transform.rotation:Quaternion.identity,
                 health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,healingItemsVersion=1,healingItems=vitals.HealingItems,lureBriefed=story.LureBriefed,
-                boss=RiverBossEncounter.Instance?.Capture(),shieldEquipped=PlayerShield.Instance?.Equipped??false,constructionSites=RiverConstructionCamp.Ensure(RiverStakeZone.Instance).Capture(),stakeSamplesVersion=1,stakeSamplePositions=RiverStakeZone.Instance?.CaptureSamplePositions(),stakeSampleRotations=RiverStakeZone.Instance?.CaptureSampleRotations(),
+                discipline=CampDiscipline.Instance?.Capture(),boss=RiverBossEncounter.Instance?.Capture(),shieldEquipped=PlayerShield.Instance?.Equipped??false,constructionSites=RiverConstructionCamp.Ensure(RiverStakeZone.Instance).Capture(),stakeSamplesVersion=1,stakeSamplePositions=RiverStakeZone.Instance?.CaptureSamplePositions(),stakeSampleRotations=RiverStakeZone.Instance?.CaptureSampleRotations(),
                 woods=session.woodItems.Select(w=>w!=null&&w.IsCollected).ToArray(),stakes=RiverStakeZone.Instance?.CaptureCheckpoint()??Array.Empty<bool>(),
                 woodIds=session.woodItems.Select(w=>w.name).ToArray(),woodPositions=session.woodItems.Select(w=>w.transform.position).ToArray(),woodRotations=session.woodItems.Select(w=>w.transform.rotation).ToArray(),
                 stallLevels=VillagePreparationQuest.Instance.stalls.Select(s=>s.CompletedLevels).ToArray(),
@@ -152,7 +152,7 @@ namespace BeachBoatStory
             CampaignJournalUI.Instance?.Close();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();ArcheryTraining.Instance?.Restore(data.archeryBestScore,data.archeryTrainingCompleted);
             BachDangFrontEnd.Instance?.ReleaseHiddenUI();
             foreach(var intro in UnityEngine.Object.FindObjectsByType<OpeningEvent>(FindObjectsInactive.Include,FindObjectsSortMode.None))intro.SkipOpening();
-            RiverBossEncounter.Instance?.ResetForLoad();StoryDialogueUI.Instance?.DismissForCheckpoint();EnemyFleetDirector.Instance.ResetForCheckpoint();
+            CampDiscipline.Instance?.ResetAll();RiverBossEncounter.Instance?.ResetForLoad();StoryDialogueUI.Instance?.DismissForCheckpoint();EnemyFleetDirector.Instance.ResetForCheckpoint();
             EnemyFleetDirector.Instance.GetComponent<RiverShoreArchers>()?.ResetAmbush();
             VillageWoodHunt.Instance.Restore(data);
             RiverConstructionCamp.Ensure(RiverStakeZone.Instance).ResetCamp();
@@ -182,7 +182,7 @@ namespace BeachBoatStory
             player.GetComponent<PlayerVitals>().RestoreSave(data);
             PlayerShield.Instance?.Restore(data.shieldEquipped);
             RiverBoardingCombat.Instance.ReconcileAfterLoad(data);Physics.SyncTransforms();
-            RiverBossEncounter.Instance?.Restore(data.boss);StoryDialogueUI.Instance.RestoreSave(data.dialogue);
+            CampDiscipline.Instance?.Restore(data.discipline);RiverBossEncounter.Instance?.Restore(data.boss);StoryDialogueUI.Instance.RestoreSave(data.dialogue);
             session.storyCamera.GetComponent<Camera_Script>().SnapToTarget();BachDangPreferences.Apply();
             QuestCheckpoint.Instance.Capture((BachDangStoryManager.StoryState)data.storyState);story.UpdateUI();
             CampaignProgress.Instance?.Restore(data.campaign,data.storyState);

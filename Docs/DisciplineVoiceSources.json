@@ -1,0 +1,29 @@
+{
+  "generator": "Tools/prepare_discipline_voices.py",
+  "entries": [
+    {
+      "file": "Assets/Resources/BachDang938/Voices/Discipline/AllyRetaliation.mp3",
+      "line": "Có kẻ phản quân! Đừng để hắn chạy thoát!",
+      "source": "Microsoft Edge vi-VN-NamMinhNeural",
+      "kind": "synthesized",
+      "sha256": "022d7ca3411f79c268fcdd460ab12e4922d75c0d6e65cadb59cd3a866ef2c1d3",
+      "bytes": 39788
+    },
+    {
+      "file": "Assets/Resources/BachDang938/Voices/Discipline/CommanderExecution.mp3",
+      "line": "Quân đâu! Kẻ phản nghịch dám phạm thượng. Giết hắn!",
+      "source": "Microsoft Edge vi-VN-NamMinhNeural",
+      "kind": "synthesized",
+      "sha256": "bcb90c12ea722cac05a814f82ff03f0d395d4ccff749ceaffcc694909537773c",
+      "bytes": 51020
+    },
+    {
+      "file": "Assets/Resources/BachDang938/Voices/Discipline/CommanderWarning.mp3",
+      "line": "Hạ cung xuống! Không được chĩa vũ khí vào chủ tướng. Ta chỉ nhắc ngươi lần này.",
+      "source": "Microsoft Edge vi-VN-NamMinhNeural",
+      "kind": "synthesized",
+      "sha256": "049354f453d24c3163214f5e1ffbf0d0f387ccc71e006cc88137b7f0d7f9795a",
+      "bytes": 69164
+    }
+  ]
+}

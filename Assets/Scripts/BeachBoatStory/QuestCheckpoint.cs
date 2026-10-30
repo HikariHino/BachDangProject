@@ -79,7 +79,7 @@ namespace BeachBoatStory
                 var orbit=session.storyCamera.GetComponent<Camera_Script>();orbit.CaptureCursor(session.storyMode);
                 return true;
             }
-            restoring=true;
+            restoring=true;CampDiscipline.Instance?.ResetAll();
             var story=BachDangStoryManager.Instance;var boat=QuestRowboat.Instance;var tide=TideSystem.Instance;
             EnemyFleetDirector.Instance?.ResetForCheckpoint();boat?.LeaveForCheckpoint();
             if(tide!=null){tide.ReleaseTide(BachDangBattleTimeline.Instance);tide.SetTide(false,true);}

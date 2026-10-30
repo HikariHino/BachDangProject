@@ -24,7 +24,7 @@ namespace BeachBoatStory
         public bool IsAiming {get;private set;}
         public bool IsReloading=>reloadUntil>Time.time;
         public bool PracticeActive=>ArcheryTraining.Active!=null;
-        bool CanUseBow=>BattleActive||PracticeActive;
+        public bool CanUseBow=>BattleActive||PracticeActive||CampDiscipline.WeaponsAvailable;
         public bool ThreatPending=>threat!=null;
         public EnemyDeckGuard ThreatGuard=>threat;
         public bool ReturnFireEnabled {get;set;}=true;
@@ -45,7 +45,7 @@ namespace BeachBoatStory
         }
         sealed class Arrow
         {
-            public Transform visual;
+            public Transform visual,retaliationShooter;
             public Vector3 start,end,velocity;
             public EnemyDeckGuard target;
             public int damage;
@@ -72,7 +72,7 @@ namespace BeachBoatStory
         EnemyDeckGuard threat;
         bool wasBattle;
         bool savedAim;
-        float savedAimDistance,savedAimFov,savedRightOffset,savedHeight;
+        float savedAimDistance,savedAimFov,savedRightOffset,savedHeight;RuntimeAnimatorController groundAimController;
         string message;
         void Awake(){Instance=this;session=GetComponent<BeachBoatQuestSession>();camera=session.storyCamera;animator=session.player.GetComponentInChildren<Animator>();leftFoot=animator.GetBoneTransform(HumanBodyBones.LeftFoot);rightFoot=animator.GetBoneTransform(HumanBodyBones.RightFoot);}
         void Start(){range=Mathf.Max(range,600);LoadHandGrips();BuildBow();BuildHUD();BuildArrows();gameObject.AddComponent<EnemyHealthHUD>();}
@@ -131,6 +131,7 @@ namespace BeachBoatStory
         void Update()
         {
             bool active=CanUseBow&&!BeachBoatQuestSession.InputBlocked;
+            if(!BeachBoatQuestSession.InputBlocked&&Time.timeScale>0)StepArrows(Time.deltaTime);
             if(!BattleActive&&wasBattle){SetAim(false);wasBattle=false;threat=null;}
             if(hud!=null)hud.SetActive(active);
             if(!active){SetAim(false);return;}
@@ -142,7 +143,7 @@ namespace BeachBoatStory
             if(IsAiming&&!IsReloading&&Input.GetMouseButton(0))charge=Mathf.Min(1.1f,charge+Time.deltaTime);
             if(IsAiming&&Input.GetMouseButtonUp(0)&&charge>=.15f){TryFire(camera.ViewportPointToRay(new Vector3(.5f,.5f)),charge);charge=0;}
             if(!IsAiming)charge=0;
-            StepArrows(Time.deltaTime);if(!PracticeActive)UpdateThreat();UpdateHUD();
+            if(!PracticeActive&&BattleActive)UpdateThreat();UpdateHUD();
         }
         public void SetAim(bool value)
         {
@@ -160,6 +161,8 @@ namespace BeachBoatStory
             {orbit.enableShoulderAim=savedAim;orbit.aimDistance=savedAimDistance;orbit.aimFieldOfView=savedAimFov;orbit.rightOffset=savedRightOffset;orbit.heightOffset=savedHeight;}
             IsAiming=value;if(!value)poseTension=0;
             orbit.SetCombatAim(value);UpdateHandGrips();
+            if(animator!=null&&QuestRowboat.Instance?.IsAboard!=true)
+            {if(value){groundAimController=animator.runtimeAnimatorController;if(bowController!=null)animator.runtimeAnimatorController=bowController;}else if(groundAimController!=null)animator.runtimeAnimatorController=groundAimController;animator.applyRootMotion=false;animator.speed=1;}
             if(animator!=null&&QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard)
             {animator.runtimeAnimatorController=value&&bowController!=null?bowController:
                 RiverBoardingCombat.Instance!=null&&(RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.EnemyDeck||RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.FriendlyDeck||RiverBoardingCombat.Instance.State==RiverBoardingCombat.PlayerState.Land)?
@@ -200,13 +203,15 @@ namespace BeachBoatStory
                 var hit=rayHits[i];var guard=hit.collider.GetComponentInParent<EnemyDeckGuard>();
                 if(hit.transform.IsChildOf(session.player.transform)||hit.transform.IsChildOf(QuestRowboat.Instance.transform))continue;
                 if(guard!=null&&!guard.IsAlive)continue;
-                if(hit.collider.isTrigger&&guard==null)continue;
+                if(hit.collider.isTrigger&&guard==null&&hit.collider.GetComponentInParent<ProtectedCampNPC>()==null)continue;
                 if(guard==null&&hit.collider.GetComponentInParent<EnemyShip>()!=null)continue;
                 if(hit.distance>=nearest)continue;
                 nearest=hit.distance;result=guard;end=guard!=null?guard.AimPoint:hit.point;
             }
             return result;
         }
+        public void LaunchRetaliationArrow(Vector3 from,Vector3 to,int damage,Transform shooter)
+        {Launch(from,to,null,damage,true);var arrow=System.Array.Find(arrows,a=>a.active&&a.hostile&&a.elapsed==0&&a.start==from);if(arrow!=null)arrow.retaliationShooter=shooter;}
         public static float ArrowSpeed(float draw)=>Mathf.Lerp(340,560,Mathf.Clamp01(draw/1.1f));
         public const float ArrowGravity=36;
         public static Vector3 BallisticPoint(Vector3 start,Vector3 velocity,float seconds)=>start+velocity*seconds+Vector3.down*(.5f*ArrowGravity*seconds*seconds);
@@ -216,12 +221,13 @@ namespace BeachBoatStory
             if(shot==null)return;
             shot.practiceTarget=null;shot.practiceScore=0;shot.practice=PracticeActive;
             shot.start=from;shot.end=to;shot.target=target;shot.damage=damage;shot.hostile=hostile;
-            shot.elapsed=0;float speed=ArrowSpeed(draw);shot.velocity=(to-from).normalized*speed+Vector3.up*(ArrowGravity*80/(2*speed));
+            shot.retaliationShooter=null;shot.elapsed=0;float speed=ArrowSpeed(draw);shot.velocity=(to-from).normalized*speed+Vector3.up*(ArrowGravity*80/(2*speed));
             shot.duration=hostile?Mathf.Clamp(Vector3.Distance(from,to)/560,.12f,.8f):(PracticeActive?220:range)/speed+.05f;shot.active=true;shot.visual.position=from;shot.visual.gameObject.SetActive(true);
         }
         void FinishPlayerArrow(Arrow a,Collider hit,Vector3 point)
         {
             a.active=false;a.visual.gameObject.SetActive(false);
+            var protectedNPC=hit!=null?hit.GetComponentInParent<ProtectedCampNPC>():null;if(protectedNPC!=null){CampDiscipline.Instance?.Hit(protectedNPC,CombatImpactKind.Arrow);return;}
             if(a.practice)
             {
                 var target=hit!=null?hit.GetComponentInParent<ArcheryPracticeTarget>():null;int score=0;
@@ -246,7 +252,7 @@ namespace BeachBoatStory
                     for(int i=0;i<count;i++)
                     {
                         var h=rayHits[i];if(h.transform.IsChildOf(session.player.transform)||h.transform.IsChildOf(QuestRowboat.Instance.transform))continue;
-                        var guard=h.collider.GetComponentInParent<EnemyDeckGuard>();if(h.collider.isTrigger&&guard==null||guard!=null&&!guard.IsAlive)continue;
+                        var guard=h.collider.GetComponentInParent<EnemyDeckGuard>();if(h.collider.isTrigger&&guard==null&&h.collider.GetComponentInParent<ProtectedCampNPC>()==null||guard!=null&&!guard.IsAlive)continue;
                         if(h.distance>nearest)continue;nearest=h.distance;contact=h.collider;point=h.point;
                     }
                     a.visual.position=point;a.visual.rotation=Quaternion.FromToRotation(Vector3.up,a.velocity+Vector3.down*ArrowGravity*a.elapsed);
@@ -256,6 +262,12 @@ namespace BeachBoatStory
                 // Enemy return fire lands at its fixed warned position.
                 var end=a.end;
                 var p=Vector3.Lerp(a.start,end,t)+Vector3.up*(Mathf.Sin(t*Mathf.PI)*3);
+                if(a.retaliationShooter!=null)
+                {
+                    var step=p-a.visual.position;int contacts=Physics.SphereCastNonAlloc(a.visual.position,.25f,step.normalized,rayHits,step.magnitude,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+                    bool obstructed=false;for(int i=0;i<contacts;i++){var h=rayHits[i];if(h.transform.IsChildOf(session.player.transform)||h.transform.IsChildOf(a.retaliationShooter)||h.collider.GetComponent<TideSystem>()!=null)continue;obstructed=true;break;}
+                    if(obstructed){a.active=false;a.visual.gameObject.SetActive(false);continue;}
+                }
                 a.visual.position=p;a.visual.rotation=Quaternion.FromToRotation(Vector3.up,end-p+Vector3.down*.01f);
                 if(t<1)continue;
                 a.active=false;a.visual.gameObject.SetActive(false);
@@ -340,7 +352,7 @@ namespace BeachBoatStory
         void Tell(string text){message=text;noticeUntil=Time.time+3;}
         void UpdateHUD()
         {
-            compactHUD.Cluster.gameObject.SetActive(!PracticeActive);
+            compactHUD.Cluster.gameObject.SetActive(!PracticeActive&&BattleActive);
             compactHUD.Refresh(threat!=null?"Địch đang nhắm! Di chuyển để né tên.":Time.time<noticeUntil?message:"",threat!=null);
             reticle.gameObject.SetActive(IsAiming);reticle.color=Time.time<hitUntil?Color.white:AimedGuard!=null?new Color(1,.25f,.2f):new Color(1,.83f,.4f);
             chargeFill.rectTransform.anchorMax=new Vector2(IsAiming?charge/1.1f:0,1);

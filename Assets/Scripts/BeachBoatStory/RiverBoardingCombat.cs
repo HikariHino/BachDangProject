@@ -288,8 +288,8 @@ namespace BeachBoatStory
                 if(keepTraversal&&State==PlayerState.Climbing)playerPose.Traversal=RiverFighterPose.Motion.Climb;
             }
             SwordDrawn=false;if(!keepTraversal){State=PlayerState.Rowboat;deckShip=null;deckAnchor=null;}
-            foreach(var a in allies){a.go.SetActive(false);if(!preserveWrecks){a.health=6;a.state=0;}a.pose.Restore();}
-            foreach(var d in defenders){d.pose.Restore();if(!preserveWrecks)d.health=4;d.fighting=false;d.soldier.gameObject.SetActive(d.health>0);if(d.health>0){d.pose.Animator.enabled=true;d.pose.Animator.Update(0);d.pose.Animator.enabled=false;}}
+            foreach(var a in allies){if(a.go.GetComponent<ProtectedCampNPC>()?.Retaliating==true)continue;a.go.SetActive(false);if(!preserveWrecks){a.health=6;a.state=0;}a.pose.Restore();}
+            foreach(var d in defenders){if(d.soldier.GetComponent<ProtectedCampNPC>()?.Retaliating==true)continue;d.pose.Restore();if(!preserveWrecks)d.health=4;d.fighting=false;d.soldier.gameObject.SetActive(d.health>0);if(d.health>0){d.pose.Animator.enabled=true;d.pose.Animator.Update(0);d.pose.Animator.enabled=false;}}
             DefenderHits=DefenderDamageTaken=0;
             foreach(var h in hostiles){h.pose.Restore();if(h.fromWreck&&!preserveWrecks){h.guard.IsIndependentBoarder=false;h.guard.RestoreDeck();h.guard.ResetGuard();}else h.go.SetActive(false);h.state=0;h.source=null;}
             hostiles.RemoveAll(h=>h.fromWreck);if(!preserveWrecks)ShipwreckSurvivors=ShipwreckDeaths=SurvivorsTargetingPlayer=SurvivorsTargetingAllies=0;
@@ -304,6 +304,7 @@ namespace BeachBoatStory
             {
                 if(wasBattle)ResetBattle(true);
                 if(BeachBoatQuestSession.InputBlocked||playerPose==null)return;
+                if(Cursor.lockState==CursorLockMode.Locked){if(Input.GetKeyDown(KeyCode.Q))ToggleSword();if(SwordDrawn&&Input.GetMouseButtonDown(0))TrySlash();}
                 if(!TraversalActive){TryEnterWaterFromShore();return;}
                 ReadTraversalInput();StepPlayer(Time.deltaTime);return;
             }
@@ -336,13 +337,13 @@ namespace BeachBoatStory
         }
         public bool ToggleSword()
         {
-            if(!archery.BattleActive||BeachBoatQuestSession.InteractionBlocked||IsTraversing)return false;
-            archery.SetAim(false);SwordDrawn=!SwordDrawn;playerPose.SetSword(SwordDrawn);
+            if(!CampDiscipline.WeaponsAvailable||IsTraversing)return false;
+            archery.SetAim(false);SwordDrawn=!SwordDrawn;playerPose.SetSword(SwordDrawn);BeachBoatSoundscape.Instance?.PlayWeaponHandling();
             if(!SwordDrawn&&(State==PlayerState.EnemyDeck||State==PlayerState.FriendlyDeck||State==PlayerState.Land))playerPose.Animator.runtimeAnimatorController=FootController;return true;
         }
         public bool TrySlash()
         {
-            if(!SwordDrawn||IsTraversing||!archery.BattleActive||BeachBoatQuestSession.InteractionBlocked||Time.time<nextSlash)return false;
+            if(!SwordDrawn||IsTraversing||!CampDiscipline.WeaponsAvailable||BeachBoatQuestSession.InteractionBlocked||Time.time<nextSlash)return false;
             var vitals=session.player.GetComponent<PlayerVitals>();if(!vitals.TryExert(9,1))return false;
             nextSlash=Time.time+.72f;playerPose.Slash();PlaySwordSwing();
             var player=session.player.transform;
@@ -352,6 +353,7 @@ namespace BeachBoatStory
                 if(Mathf.Abs(delta.y)>19)continue;delta.y=0;
                 if(delta.magnitude<=32&&Vector3.Dot(player.forward,delta.normalized)>.15f&&CanMeleeReach(player,guard.transform,36)&&guard.Hit(1)){PlayerSwordHits++;}
             }
+            CampDiscipline.Instance?.SwordHit(player);
             return true;
         }
         public bool TryTraverse()
@@ -591,6 +593,7 @@ namespace BeachBoatStory
             if(!AlliedAIEnabled){foreach(var a in allies)a.go.SetActive(false);return;}
             foreach(var a in allies)
             {
+                if(a.go.GetComponent<ProtectedCampNPC>()?.Retaliating==true)continue;
                 if(a.health<=0){a.go.SetActive(false);continue;}
                 var body=a.go.GetComponent<ActorSolidBody>();body.Carrier=a.state==0?a.home.transform:a.state==3||a.state==4?a.carrier:null;
                 if(!RiverBattleObjective.Counterattack)
@@ -715,14 +718,14 @@ namespace BeachBoatStory
                 if(nearest<27&&Time.time>enemyAttacks[guard]&&CanMeleeReach(guard.transform,target,27))
                 {
                     enemyAttacks[guard]=Time.time+1.65f;pose.Slash();EnemySwordHits++;
-                    if(defender!=null){defender.health--;DefenderDamageTaken++;CombatHitFeedback.Show(defender.soldier.position+Vector3.up*9,CombatImpactKind.Sword);if(defender.health<=0){defender.soldier.gameObject.SetActive(false);CampaignProgress.Instance?.RecordCasualty();}}
+                    if(defender!=null){if(defender.soldier.GetComponent<ProtectedCampNPC>()?.Retaliating==true)continue;defender.health--;DefenderDamageTaken++;CombatHitFeedback.Show(defender.soldier.position+Vector3.up*9,CombatImpactKind.Sword);if(defender.health<=0){defender.soldier.gameObject.SetActive(false);CampaignProgress.Instance?.RecordCasualty();}}
                     else if(opponent!=null)DamageAlly(opponent);
                     else session.player.GetComponent<PlayerVitals>().TakeImpact(IsBlocking?2:9,"Kiếm địch",CombatImpactKind.Sword);
                 }
             }
         }
-        void DamageAlly(Ally ally){if(ally.health<=0)return;ally.health--;CombatHitFeedback.Show(ally.go.transform.position+Vector3.up*9,CombatImpactKind.Sword);if(ally.health<=0){ally.go.SetActive(false);CampaignProgress.Instance?.RecordCasualty();}}
-        bool CanMeleeReach(Transform attacker,Transform target,float reach)
+        void DamageAlly(Ally ally){if(ally.health<=0||ally.go.GetComponent<ProtectedCampNPC>()?.Retaliating==true)return;ally.health--;CombatHitFeedback.Show(ally.go.transform.position+Vector3.up*9,CombatImpactKind.Sword);if(ally.health<=0){ally.go.SetActive(false);CampaignProgress.Instance?.RecordCasualty();}}
+        public bool CanMeleeReach(Transform attacker,Transform target,float reach)
         {
             if(Vector3.Distance(attacker.position,target.position)>reach)return false;
             var from=attacker.position+Vector3.up*8;var delta=target.position+Vector3.up*8-from;
@@ -882,7 +885,7 @@ namespace BeachBoatStory
             if(!AlliedAIEnabled||!RiverBattleObjective.Counterattack)return;
             foreach(var defender in defenders)
             {
-                if(defender.health<=0||!defender.soldier.gameObject.activeInHierarchy)continue;
+                if(defender.health<=0||!defender.soldier.gameObject.activeInHierarchy||defender.soldier.GetComponent<ProtectedCampNPC>()?.Retaliating==true)continue;
                 EnemyDeckGuard target=null;float nearest=45;
                 foreach(var enemy in archery.guards)if(enemy.IsAlive&&enemy.IsIndependentBoarder&&Mathf.Abs(enemy.transform.position.y-defender.soldier.position.y)<16)
                 {float distance=Vector3.Distance(enemy.transform.position,defender.soldier.position);if(distance<nearest){target=enemy;nearest=distance;}}
