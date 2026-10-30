@@ -150,10 +150,9 @@ public static class BeachBoatCasualWorkPlaytest
                     Check(BachDangSaveSystem.CanSave,"Construction and the narrative release save and rowing controls");
                     Check(hammerSamples>50&&maxHammerGripError<.02f&&maxHammerWristAngle<1,"Displayed hammer hands stay on the shaft with neutral wrists through the sample exercise");
                     var final=BachDangSaveSystem.Capture("QA five locations and time skip");File.WriteAllText("Logs/ConstructionFieldCheckpoint.json",JsonUtility.ToJson(final));BachDangSaveSystem.Apply(final);
-                    Check(final.constructionSites.SelectMany(c=>c.boats).All(p=>p.z<Zone.Instance.FieldBounds.min.z-70),"Every construction boat moors downstream, outside enemy battle lanes");
-                    var loaded=RiverConstructionCamp.Ensure(Zone.Instance).Capture();Check(final.constructionSites.SelectMany(c=>c.posts).Zip(loaded.SelectMany(c=>c.posts),(a,b)=>Vector3.Distance(a,b)<.001f).All(v=>v),"All NPC poles stay anchored through the days-later reveal and full-field load");
-                    Check(final.constructionSites.Length==5&&final.constructionSites.All(s=>s.parked&&s.posts.Length>=6),"The time skip retains all NPC poles and moors their boats outside the enemy approach");
-                    Check(UnityEngine.Object.FindObjectsByType<Transform>().Count(t=>t.name.StartsWith("Coc_mau_vi_tri_"))==5,"All five player sample stakes remain visible after the full field reveal");
+                    Check(final.constructionSites.Length==0&&RiverConstructionCamp.Ensure(Zone.Instance).Workers==0,"The time skip removes symbolic construction crews and their posts");
+                    Check(!UnityEngine.Object.FindObjectsByType<Transform>().Any(t=>t.name.StartsWith("Coc_mau_vi_tri_")||t.name.StartsWith("Coc_nhon_cong_binh")),"Player and NPC sample poles disappear after the completed field reveal");
+                    Check(Zone.Instance.ExposedStakeCount>=0&&Zone.Instance.fieldStakes.Any(t=>t.gameObject.activeSelf),"The real completed stake field remains present");
                     Check(Zone.Instance.IsComplete&&StakeConstruction.Active==null,"Loading the finished time skip restores the full field without work locks");
                     Check(CampaignProgress.Instance.Record.stakeTargetSeconds>=180&&CampaignProgress.Instance.StakeTarget(3)==final.campaign.stakeTargetSeconds,"Five-location route achievement keeps its realistic recorded time target after load");
                     foreach(var pair in hashes)Check(File.Exists(pair.Key)&&Hash(pair.Key)==pair.Value,"User save unchanged: "+Path.GetFileName(pair.Key));Finish(null);return;

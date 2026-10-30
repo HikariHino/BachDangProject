@@ -393,7 +393,7 @@ namespace BeachBoatStory
             var boarding=RiverBoardingCombat.Instance;
             if(IsAboard&&boarding!=null&&(boarding.PlayerAway||boarding.SwordDrawn))
             {Speed=0;IsBoosting=false;animator.speed=1;if(!boarding.PlayerAway)AttachPlayer();return;}
-            if(RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming){throttle=0;steering=0;boostWanted=false;}
+            if((RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming||PlayerShield.Instance?.IsGuarding==true)){throttle=0;steering=0;boostWanted=false;}
             if (IsBroken) {Speed=0;IsBoosting=false;return;}
             if (!IsAboard || BeachBoatQuestSession.InteractionBlocked)
             { Speed = 0; IsBoosting = false; if (IsAboard) { animator.speed = 0; AttachPlayer(); } return; }
@@ -541,7 +541,7 @@ namespace BeachBoatStory
             if(StakeConstruction.Active!=null){if(paddle!=null)paddle.gameObject.SetActive(false);return;}
             if(RiverBoardingCombat.Instance!=null&&(RiverBoardingCombat.Instance.PlayerAway||RiverBoardingCombat.Instance.SwordDrawn)){if(paddle!=null)paddle.gameObject.SetActive(false);return;}
             bool aiming=IsAboard&&RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming;
-            if(paddle!=null)paddle.gameObject.SetActive(!aiming);
+            if(paddle!=null)paddle.gameObject.SetActive(!aiming&&PlayerShield.Instance?.IsGuarding!=true);
             if(aiming)return;
             if (IsAboard && paddle != null && leftHand != null && rightHand != null)
             {

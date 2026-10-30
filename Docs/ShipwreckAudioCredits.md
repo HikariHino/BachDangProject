@@ -9,3 +9,6 @@ The author offers the pack under CC0 (also lists OGA-BY 3.0). This project uses 
 https://creativecommons.org/publicdomain/zero/1.0/
 
 Source files: `1yell4.wav`, `2yell2.wav`, `3yell5.wav` in `yelling sounds.zip`. Processing: trim silence, mono downmix, resample to 32 kHz, peak normalization and short fades. Reproduction: `Tools/prepare_wreck_voices.py`. The full downloaded archive stays in ignored Logs, outside game assets.
+
+
+30 October: Shipwreck_Ambush_Crowd.wav combines four staggered, level-limited takes from the existing three CC0 HaelDB cries. It plays once on the shared battle voice channel before Ngô Quyền's command. Tools/prepare_wreck_voices.py reproduces the mix; no additional speech or film music is included in it.

@@ -1,0 +1,15 @@
+# Shield, arrows and ambush presentation — 30 October 2026
+
+Symbolic player/NPC construction poles remain visible during the five work locations. The days-later transition removes those samples and construction crews, leaving the completed authored stake field. Loading an older finished checkpoint also suppresses the symbolic poles and sixty idle construction workers. Partial construction checkpoints retain the visible work and progress until completion.
+
+Combat allies no longer wait for a boat to reach an exact station before entering the fight. Melee troops can disembark within a practical assault distance; archers fire their two arrows at shorter intervals from a wider range, then join the assault. Swimmer navigation plans around static geometry, steers locally away from nearby bodies, chooses clear passing directions when blocked and distributes hostile approaches around the player. Executed movement still sweeps solid colliders; actors are not made intangible.
+
+G draws/stows the wooden shield. Holding right mouse guards and takes priority over bow aim; stow the shield to aim the bow again. A successful frontal arrow block costs eight stamina and prevents that arrow's health damage. Rear attacks and insufficient stamina bypass the guard. Guarding is released during swimming, climbing and other activities. The equipment flag is saved, while the temporary guard action is not. A compact G/guard prompt appears in the battle HUD.
+
+The player bow reaches 600 world units. Full-draw launch speed is 560, with gravity 36 and a fixed 80-unit sight zero. A weaker draw has lower velocity and more drop. The arrow flies independently of the target, checks collisions in short swept segments and only damages what it actually hits. Moving targets are not homed onto. Practice uses the same physical trajectory and physical target contact scoring.
+
+Audio: the existing pursuit order is followed by a short exact entry bark, “Giết hết chúng nó!”, when the bait reaches the trap. The bark is generated through the already approved Edge Vietnamese TTS workflow, at +40% rate. Sinking queues one human wreck scream; then the single Ngô Quyền speech plays. The previous second command and post-command panic/crowd calls are removed from this sequence. The shared speech source waits for playback to finish before accepting the next clip. Save flags prevent repeating the entry bark on load.
+
+Ngô Quyền's recorded film sentence is kept at source FEdW8VpWHA8, 128.62–137.35 seconds. Its trailing excerpt is shortened; a centre/side spectral mask attenuates stereo music/effects beneath dialogue. This reduces the original mixed background, rather than claiming a clean studio voice stem. Tools/prepare_battle_recordings.py and Tools/prepare_entry_order.py reproduce the assets; the manifest records their distinct recorded/synthesized provenance.
+
+Validation: all 367 checks passed through Unity CLI: archery 80, shield/crowd 27, construction 97, concurrent battle 65, HUD layout 57 and review 41. Test writes used isolated directories; SHA-256 checks confirmed all 13 existing player save files remained unchanged.

@@ -9,7 +9,7 @@ namespace BeachBoatStory
     {
         RiverPlayerCombat combat;
         TMP_Text enemy,kills,allied,ammo,notice,tideLabel;
-        Image tideFill;
+        Image tideFill;TMP_Text shieldState;
         CombatHudIcon[] actions;
         public RectTransform Cluster {get;private set;}
         public int ActionIconCount=>actions?.Length??0;
@@ -48,7 +48,8 @@ namespace BeachBoatStory
             var water=Rect("TideProgress",group.transform,0,147,224,51);Back(water,Panel);Icon("TideIcon",water.transform,8,15,26,CombatHudIcon.Symbol.Swim,new Color(.50f,.83f,.95f));
             tideLabel=Text("TideState",water.transform,43,11,174,37,13);var track=Rect("TideTrack",water.transform,8,6,208,3);Back(track,new Color(.23f,.30f,.31f));
             var fill=Rect("TideFill",track.transform,0,0,208,3);tideFill=Back(fill,Gold);
-            notice=Text("CombatNotice",group.transform,-70,202,294,42,13);notice.alignment=TextAlignmentOptions.BottomRight;
+            shieldState=Text("ShieldControl",group.transform,0,200,224,24,12,"G • KHIÊN   |   GIỮ CHUỘT PHẢI ĐỠ");
+            notice=Text("CombatNotice",group.transform,-70,226,294,42,13);notice.alignment=TextAlignmentOptions.BottomRight;
             notice.enableAutoSizing=true;notice.fontSizeMin=11;notice.fontSizeMax=13;notice.maxVisibleLines=2;notice.overflowMode=TextOverflowModes.Ellipsis;
         }
         public void Refresh(string message,bool threat)
@@ -60,7 +61,8 @@ namespace BeachBoatStory
             actions[1].color=boarding!=null&&boarding.State==RiverBoardingCombat.PlayerState.Swimming?Gold:White;
             actions[2].color=boarding!=null&&boarding.State==RiverBoardingCombat.PlayerState.Climbing?Gold:White;
             actions[3].color=combat.IsReloading?Gold:combat.Arrows==6?new Color(.45f,.53f,.52f):White;
-            notice.text=message;notice.color=threat?new Color(1,.44f,.33f):White;
+            var shield=PlayerShield.Instance;shieldState.text=shield?.IsGuarding==true?"ĐANG ĐỠ TÊN • MỖI TÊN: 8 THỂ LỰC":shield?.Equipped==true?"KHIÊN ĐÃ RÚT • GIỮ CHUỘT PHẢI ĐỠ":"G • RÚT KHIÊN";
+            notice.text=shield!=null&&Time.unscaledTime<shield.FeedbackUntil?shield.Feedback:message;notice.color=threat?new Color(1,.44f,.33f):White;
             var fleet=EnemyFleetDirector.Instance;var tide=TideSystem.Instance;float progress=0;
             if(fleet==null)return;
             var state=BachDangStoryManager.Instance.currentState;

@@ -6,21 +6,42 @@ namespace BeachBoatStory
     /// <summary>Short bounded paths for swimmers; each executed segment still sweeps solid geometry.</summary>
     public sealed class RiverActorNavigation
     {
+        public Vector3 LastDirection {get;private set;}
         sealed class Node { public Vector2Int cell;public float cost,score;public Node parent;public bool closed; }
         readonly Dictionary<Vector2Int,Node> nodes=new Dictionary<Vector2Int,Node>();
         readonly List<Node> open=new List<Node>();
         readonly List<Vector3> path=new List<Vector3>();
         int waypoint;float nextPlan;Vector3 goal;
         static int planningFrame=-1,plans;
+        public void Reset(){path.Clear();open.Clear();nodes.Clear();waypoint=0;nextPlan=0;goal=Vector3.zero;LastDirection=Vector3.zero;}
         const float Cell=12;
+        static readonly float[] passingAngles={45f,-45f,80f,-80f,115f,-115f};
+        readonly Collider[] neighbors=new Collider[48];
+        Vector3 SteerCrowd(Transform actor,Vector3 from,Vector3 desired,float radius)
+        {
+            var direction=(desired-from).normalized;var push=Vector3.zero;var right=Vector3.Cross(Vector3.up,direction);int id=actor.GetEntityId().GetHashCode();
+            var own=actor.GetComponent<ActorSolidBody>()?.SolidCollider??actor.GetComponent<Collider>();float ownHalf=own!=null?Mathf.Max(own.bounds.extents.x,own.bounds.extents.z):radius;
+            int count=Physics.OverlapSphereNonAlloc(from+Vector3.up*4,42,neighbors,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+            for(int i=0;i<count;i++)
+            {
+                var other=neighbors[i].GetComponentInParent<ActorSolidBody>();if(other==null||other.transform.IsChildOf(actor)||Mathf.Abs(other.transform.position.y-from.y)>12)continue;
+                var away=from-other.transform.position;away.y=0;float distance=away.magnitude;float otherHalf=Mathf.Max(neighbors[i].bounds.extents.x,neighbors[i].bounds.extents.z);float gap=Mathf.Max(22,ownHalf+otherHalf+radius*2+2);
+                if(distance<gap+14&&Vector3.Dot(-away.normalized,direction)>.35f&&Vector3.Dot(other.transform.forward,direction)<.1f)push+=right*.9f;
+                if(distance>=gap)continue;
+                if(distance<.01f){int oid=other.transform.GetEntityId().GetHashCode();float a=((System.Math.Min(id,oid)^System.Math.Max(id,oid))&1023)*Mathf.PI/512;away=new Vector3(Mathf.Cos(a),0,Mathf.Sin(a))*(id<oid?1:-1);distance=.01f;}
+                float weight=1-distance/gap;push+=away.normalized*weight*1.3f;
+                if(Vector3.Dot(-away.normalized,direction)>.2f)push+=right*weight;
+            }
+            return Vector3.ClampMagnitude(direction+push,1);
+        }
         public Vector3 Move(Transform actor,Vector3 from,Vector3 target,float travel,float radius,BoatHullCollision carrier=null)
         {
-            Physics.SyncTransforms();
+            LastDirection=Vector3.zero;Physics.SyncTransforms();
             var direct=target-from;direct.y=0;
             if(direct.sqrMagnitude<.001f)return RiverHullCollision.Move(from,from,radius,true,actor,carrier);
             // Probe ahead rather than replanning only after the actor is already touching a pole.
             var look=from+Vector3.ClampMagnitude(direct,Cell*3);
-            bool clear=RiverHullCollision.ClearSegment(from,look,radius+.25f,actor,carrier);
+            bool clear=RiverHullCollision.ClearSegment(from,look,radius+.25f,actor,carrier,true);
             if(clear){path.Clear();waypoint=0;}
             else if(Time.unscaledTime>=nextPlan&&(path.Count==0||waypoint>=path.Count||(goal-target).sqrMagnitude>80*80))
             {
@@ -29,9 +50,19 @@ namespace BeachBoatStory
             }
             while(waypoint<path.Count&&QuestRowboat.FlatDistance(from,path[waypoint])<radius+1)waypoint++;
             var destination=waypoint<path.Count?path[waypoint]:target;destination.y=from.y;
-            var moved=RiverHullCollision.Move(from,Vector3.MoveTowards(from,destination,travel),radius,true,actor,carrier);
+            var step=Vector3.ClampMagnitude(destination-from,travel);
+            if(carrier==null)step=SteerCrowd(actor,from,destination,radius)*Mathf.Min(travel,(destination-from).magnitude);
+            var moved=RiverHullCollision.Move(from,from+step,radius,true,actor,carrier);
+            if(carrier==null&&(moved-from).sqrMagnitude<travel*travel*.06f)
+            {
+                // Pick a clear passing direction instead of repeatedly walking into
+                // the same moving capsule. Every candidate still performs a solid sweep.
+                float best=(moved-from).sqrMagnitude;
+                foreach(float angle in passingAngles)
+                {var side=Quaternion.AngleAxis(angle,Vector3.up)*direct.normalized*travel;var attempt=RiverHullCollision.Move(from,from+side,radius,false,actor,carrier);float score=(attempt-from).sqrMagnitude;if(score>best*1.1f){best=score;moved=attempt;}}
+            }
             if((moved-from).sqrMagnitude<travel*travel*.04f){path.Clear();nextPlan=Mathf.Min(nextPlan,Time.unscaledTime+.15f);}
-            return moved;
+            var motion=moved-from;motion.y=0;LastDirection=motion.sqrMagnitude>.001f?motion.normalized:Vector3.zero;return moved;
         }
         void Plan(Transform actor,Vector3 origin,Vector3 target,float radius,BoatHullCollision carrier)
         {
@@ -53,7 +84,7 @@ namespace BeachBoatStory
                     if(nodes.TryGetValue(cell,out var n)&&n.closed)continue;
                     var point=Point(cell);
                     if(carrier!=null&&!carrier.TryDeckSurface(point,out _))continue;
-                    if(!RiverHullCollision.ClearSegment(Point(current.cell),point,radius,actor,carrier))continue;
+                    if(!RiverHullCollision.ClearSegment(Point(current.cell),point,radius,actor,carrier,true))continue;
                     float cost=current.cost+Cell*(x!=0&&z!=0?1.414214f:1);
                     if(n!=null&&cost>=n.cost)continue;
                     if(n==null){n=new Node{cell=cell};nodes[cell]=n;open.Add(n);}

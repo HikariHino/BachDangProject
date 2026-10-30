@@ -47,6 +47,7 @@ namespace BeachBoatStory
 
         void Awake()
         {
+            if(GetComponent<PlayerShield>()==null)gameObject.AddComponent<PlayerShield>();
             if(GetComponent<HealingItemHUD>()==null)gameObject.AddComponent<HealingItemHUD>();
             talkers = GetComponentsInChildren<NPCDialogue>(true);
             questGiver = GetComponentInChildren<NPCQuestGiver>(true);
@@ -185,7 +186,7 @@ namespace BeachBoatStory
                 }
                 else
                 {
-                    controlsText.text = "WASD • Di chuyển    SHIFT • Chạy\nE • Tương tác    M • Bản đồ    TAB • Nhật ký";
+                    controlsText.text = "WASD • Di chuyển    SHIFT • Chạy\nE • Tương tác    M • Bản đồ    TAB • Nhật ký\nG • Khiên    Chuột phải • Đỡ tên";
                 }
             }
             if (vitals != null && healthFill != null)

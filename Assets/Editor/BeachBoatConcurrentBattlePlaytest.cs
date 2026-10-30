@@ -112,7 +112,7 @@ public static class BeachBoatConcurrentBattlePlaytest
                 BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/ConcurrentQA/"+DateTime.Now.ToString("yyyyMMdd-HHmmssfff"));BachDangAutoSave.Instance.enabled=false;
                 BachDangFrontEnd.Instance.Play();Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 zone.RestoreCheckpoint(Enumerable.Repeat(true,5).ToArray());story.collectedWood=story.totalWoodRequired;
-                if(SessionState.GetBool("UseConstructionField30QA",false)){SessionState.SetBool("UseConstructionField30QA",false);var field=JsonUtility.FromJson<BachDangSaveData>(File.ReadAllText("Logs/ConstructionFieldCheckpoint.json"));zone.RestoreSamples(field);RiverConstructionCamp.Ensure(zone).Restore(field);Check(RiverConstructionCamp.Ensure(zone).Workers>=60,"The live fleet trial includes all persistent worker teams, thirty NPC poles and five player poles");}
+                if(SessionState.GetBool("UseConstructionField30QA",false)){SessionState.SetBool("UseConstructionField30QA",false);var field=File.Exists(".utmp/LegacyFullConstructionCheckpoint.json")?JsonUtility.FromJson<BachDangSaveData>(File.ReadAllText(".utmp/LegacyFullConstructionCheckpoint.json")):new BachDangSaveData{storyState=6,stakes=Enumerable.Repeat(true,5).ToArray(),stakeSamplesVersion=1,stakeSamplePositions=zone.CaptureSamplePositions(),stakeSampleRotations=zone.CaptureSampleRotations(),constructionSites=new[]{new BachDangSaveData.ConstructionSite{index=0,origin=zone.placements[0].approach.position,elapsed=18,parked=true}}};zone.RestoreSamples(field);RiverConstructionCamp.Ensure(zone).Restore(field);Check(RiverConstructionCamp.Ensure(zone).Workers==0&&!Object.FindObjectsByType<Transform>().Any(t=>t.name.StartsWith("Coc_mau_vi_tri_")),"Loading the old finished construction checkpoint removes symbolic crews and posts before battle");}
                 story.TransitionTo(Story.StoryState.Act3_BattleInProgress,true);
                 BachDangBattleTimeline.Instance.BeginLure(true);
                 QuestRowboat.Instance.RestoreSave(true,QuestRowboat.Instance.BattleLurePosition,Quaternion.identity);
@@ -270,7 +270,7 @@ public static class BeachBoatConcurrentBattlePlaytest
                 Check(!BeachBoatSoundscape.Instance.transform.Find("Shipwreck_Scream_Channel").GetComponent<AudioSource>().isPlaying,"The ambush uses the single battle voice channel instead of overlapping the independent wreck source");
                 Check(ambushTime-entryTime<=3.1f,"The entire fleet is caught within three seconds of the rear hull entering the field");
                 Check(TideSystem.CurrentWaterHeight<highWater-5&&zone.ExposedStakeCount>0,"Falling water visibly exposes the planted stakes");
-                Check(fleet.enemyShips.All(s=>s.isDestroyed),"The whole fleet is caught and starts sinking in one ambush event");phase=4;
+                Check(fleet.enemyShips.All(s=>s.isDestroyed),"The whole fleet is caught and starts sinking in one ambush event");phase=301;phaseTime=Time.time;
                 var boarding=RiverBoardingCombat.Instance;var ally=boarding.CaptureSave().allies.First(a=>a.health>0&&a.arrows>0);
                 var guard=RiverPlayerCombat.Instance.guards.FirstOrDefault(g=>g.IsAlive);
                 if(guard!=null)
@@ -279,11 +279,18 @@ public static class BeachBoatConcurrentBattlePlaytest
                     int arrows=boarding.CaptureSave().allies.Sum(a=>a.arrows);boarding.StepAllies(.05f);
                     Check(boarding.CaptureSave().allies.Sum(a=>a.arrows)<arrows,"The exposed-stake ambush actually releases allied bow fire again");guard.transform.position=old;
                 }
-                boarding.enabled=false;
+            }
+            if(phase==301)
+            {
+                if(Time.time-phaseTime<6)return;
+                var boarding=RiverBoardingCombat.Instance;
+                Check(boarding.CaptureSave().allies.Any(a=>a.health>0&&a.state!=0)&&boarding.AlliedArrowHits>0,"Allies both launch their boarding/swimming assault and use bows during the live ambush");
+                boarding.enabled=false;fleet.GetComponent<RiverShoreArchers>().enabled=false;phase=4;phaseTime=Time.unscaledTime;
             }
             if(phase==4)
             {
-                if(!fleet.AllShipsSunk)return;
+                if(!fleet.AllShipsSunk||Time.unscaledTime-phaseTime<14)return;
+                Check(fleet.GetComponent<RiverBattleVoices>().EntryPlayed&&fleet.GetComponent<RiverBattleVoices>().WreckCalls==1&&fleet.GetComponent<RiverBattleVoices>().CommanderCues==1,"Trap entry order precedes one wreck scream and the single commander sentence");
                 Check(fleet.enemyShips.All(s=>s.gameObject.activeInHierarchy&&s.HasSolidWreck),"All ten physical wrecks are retained after sinking");
                 Check(zone.ExposedStakeCount>0,"Stakes remain exposed after the fleet settles");Capture();
                 foreach(var guard in RiverPlayerCombat.Instance.guards)guard.DefeatFromVolley();phase=5;return;

@@ -14,6 +14,7 @@ namespace BeachBoatStory
         public int archeryBestScore;public bool archeryTrainingCompleted;
         public int healingItemsVersion,healingItems;
         public bool lureBriefed;
+        public bool shieldEquipped;
         public float health,stamina,maxHealth,maxStamina;
         public Vector3 playerPosition,boatPosition;
         public Quaternion playerRotation=Quaternion.identity,boatRotation=Quaternion.identity;
@@ -47,6 +48,7 @@ namespace BeachBoatStory
         [Serializable] public sealed class Activity {public string name;public bool completed;public float bestTime;public int bestMistakes;}
         [Serializable] public sealed class Tide {public float height,target,start,elapsed,duration,hour;public bool rising,controlled,locked,high;public int moment;}
         [Serializable] public sealed class Fleet {public bool active,ebb,invasionVoiced,ambushVoiced,counterattackVoiced,pursuitVoiced;public float counterattackDelay;public int commands,kills,alliedKills,arrows,shots,hits,voiceAdvanceMask,voicePanicMask,lureVersion,lureStage,voiceWreckCalls;public Vector3 lureAnchor;public int[] scored,suppressed;
+            public int voiceEntryVersion;public bool voiceEntryPlayed;
             public int baitVersion,baitVolleys,baitResolved,baitHits;public bool baitStarted,baitPending;public float baitStartZ,baitElapsed,baitDelay,baitTime;public Vector3 baitTarget,baitFrom;}
         [Serializable] public sealed class Ship
         {

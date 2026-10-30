@@ -21,12 +21,12 @@ and provenance; this document is not a grant of rights to the source material.
 | Enemy_Panic_2 | ok_KBwgS9eg | 283.10–284.80 |
 | Enemy_Panic_3 | ok_KBwgS9eg | 289.90–291.50 |
 | NgoQuyen_Ambush | ok_KBwgS9eg | 268.16–270.87 |
-| NgoQuyen_Attack | FEdW8VpWHA8 | 128.62–137.80 |
+| NgoQuyen_Attack | FEdW8VpWHA8 | 128.62–137.35 |
 
 Reproduce with `Tools/prepare_battle_recordings.py` (the previous
 `Tools/generate_battle_voices.py` entry point delegates to it). Full sources
 and automatic captions stay in ignored `Logs/BattleVoiceSources`; the game
-contains only the eight short excerpts. Processing: 32 kHz mono, rumble/hiss
+contains eight short excerpts plus the separate trap-entry order described below. Processing: 32 kHz mono, rumble/hiss
 filtering, bounded RMS/peak normalization, 15 ms attack and 80 ms release fades,
 and original playback tempo. Phrase boundaries retain the complete spoken
 sentence and a trailing breath/reverb instead of splitting individual words.
@@ -52,3 +52,6 @@ The invasion-line correction passed 48 victory/cinematic checks in Unity batch
 mode, including the actual invasion caption, complete sentence scheduling and
 unchanged player save files. The replacement decodes to 3.52 seconds with a
 peak below 0.740 and matches the manifest digest.
+
+
+30 October update: Enemy_Trap_Order says “Giết hết chúng nó!” at trap entry. This short exact line uses the previously approved Microsoft Edge vi-VN-NamMinhNeural workflow (+40% rate), rather than claiming it is a film recording. Its manifest entry identifies it as synthesized. The sinking sequence uses one brief CC0 human crowd scream, then only NgoQuyen_Attack. No panic/cheer clip follows that sentence. A currently playing sentence is allowed to finish, and pending pre-command screams survive checkpoint restoration. The commander excerpt ends at 137.35 seconds; a centre/side spectral mask reduces stereo music/effects inside the speech, and the extra tail is removed. It is still an edited mixed recording, not an original studio voice stem.

@@ -10,19 +10,19 @@ namespace BeachBoatStory
         static SphereCollider probe;
         static bool Ignore(Collider c,Transform owner,BoatHullCollision deckCarrier)=>c==null||c.GetComponent<TideSystem>()!=null||
             (owner!=null&&c.transform.IsChildOf(owner))||(deckCarrier!=null&&c==deckCarrier.SolidHull);
-        public static bool ClearAt(Vector3 point,float radius,Transform owner=null,BoatHullCollision deckCarrier=null)
+        public static bool ClearAt(Vector3 point,float radius,Transform owner=null,BoatHullCollision deckCarrier=null,bool ignoreActors=false)
         {
             int count=Physics.OverlapSphereNonAlloc(point,radius,overlaps,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
-            for(int i=0;i<count;i++)if(!(overlaps[i] is TerrainCollider)&&!Ignore(overlaps[i],owner,deckCarrier))return false;
+            for(int i=0;i<count;i++)if(!(overlaps[i] is TerrainCollider)&&!(ignoreActors&&overlaps[i].GetComponentInParent<ActorSolidBody>()!=null)&&!Ignore(overlaps[i],owner,deckCarrier))return false;
             return count<overlaps.Length;
         }
-        public static bool ClearSegment(Vector3 from,Vector3 to,float radius,Transform owner=null,BoatHullCollision carrier=null)
+        public static bool ClearSegment(Vector3 from,Vector3 to,float radius,Transform owner=null,BoatHullCollision carrier=null,bool ignoreActors=false)
         {
-            if(!ClearAt(to,radius,owner,carrier))return false;
+            if(!ClearAt(to,radius,owner,carrier,ignoreActors))return false;
             var d=to-from;if(d.sqrMagnitude<.00001f)return true;
             int count=Physics.SphereCastNonAlloc(from,radius,d.normalized,hits,d.magnitude,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
             if(count==hits.Length)return false;
-            for(int i=0;i<count;i++)if(!Ignore(hits[i].collider,owner,carrier)&&!IsWalkableBank(hits[i]))return false;
+            for(int i=0;i<count;i++)if(!(ignoreActors&&hits[i].collider.GetComponentInParent<ActorSolidBody>()!=null)&&!Ignore(hits[i].collider,owner,carrier)&&!IsWalkableBank(hits[i]))return false;
             return true;
         }
         static Vector3 Separate(Vector3 point,float radius,Transform owner,BoatHullCollision carrier)

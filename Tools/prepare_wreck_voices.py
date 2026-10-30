@@ -29,3 +29,16 @@ with zipfile.ZipFile('Logs/yelling-sounds.zip') as archive:
             dest.setparams((1, 2, 32000, 0, 'NONE', 'not compressed'))
             dest.writeframes((np.clip(samples, -1, 1) * 32767).astype('<i2').tobytes())
         print(path, round(len(samples) / 32000, 2))
+
+# One bounded crowd panic cue, played once before the commander's sentence.
+parts=[]
+for index,delay,speed in [(1,0,1.0),(2,.42,.96),(3,.90,1.04),(1,1.40,.94)]:
+    with wave.open(str(folder/f'Shipwreck_Cry_{index}.wav'),'rb') as w:
+        x=np.frombuffer(w.readframes(w.getnframes()),'<i2').astype(float)/32768
+    x=np.interp(np.arange(round(len(x)/speed))*speed,np.arange(len(x)),x)
+    parts.append((round(delay*32000),x*.55))
+samples=np.zeros(max(at+len(x) for at,x in parts)+3200)
+for at,x in parts:samples[at:at+len(x)]+=x
+samples*=.72/max(.01,np.abs(samples).max());samples[-3200:]*=np.linspace(1,0,3200)
+with wave.open(str(folder/'Shipwreck_Ambush_Crowd.wav'),'wb') as w:
+    w.setparams((1,2,32000,0,'NONE','not compressed'));w.writeframes((samples*32767).astype('<i2').tobytes())

@@ -164,6 +164,7 @@ namespace BeachBoatStory
         float nextCrewStrike;
         public void PlayCrewStake(Vector3 point){float distance=Vector3.Distance(point,session.player.transform.position);if(distance>300||Time.time<nextCrewStrike)return;nextCrewStrike=Time.time+.6f;Play(effects,StakeImpact,.42f*(1-distance/360),Random.Range(.97f,1.03f));}
         public void PlayStake(){Play(effects,StakeImpact!=null?StakeImpact:drum,1f,1);StakeHitsPlayed++;}
+        public void PlayShieldBlock()=>Play(effects,StakeImpact,.65f,1.15f);
         public void PlayHit()=>Play(effects,hit,.55f);
         public void PlayCombatHit(Vector3 point,CombatImpactKind kind,bool foreground)
         {

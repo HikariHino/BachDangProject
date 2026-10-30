@@ -74,11 +74,20 @@
       "name": "NgoQuyen_Attack",
       "source": "https://www.youtube.com/watch?v=FEdW8VpWHA8",
       "start": 128.62,
-      "end": 137.8,
+      "end": 137.35,
       "tempo": 1.0,
       "kind": "recorded-film-excerpt",
-      "sha256": "ab06bfa5933974ab2ec3a7a4f21e73eed7a94ae21ceb6d153beea109983b4104",
-      "bytes": 111068
+      "sha256": "9e7236f0bbb9d752b3d7b9f934d5f76e1004b4b60c2da2440300e555c8779938",
+      "bytes": 105884
+    },
+    {
+      "name": "Enemy_Trap_Order",
+      "text": "Giết hết chúng nó!",
+      "source": "Microsoft Edge vi-VN-NamMinhNeural",
+      "kind": "synthesized-short-order",
+      "rate": "+40%",
+      "sha256": "ca53a87b5e264b7c6dabf38684f49c21a3dc63e7ca158e052e9b3fc35bdfa566",
+      "bytes": 23372
     }
   ]
 }

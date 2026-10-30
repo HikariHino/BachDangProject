@@ -32,6 +32,7 @@ namespace BeachBoatStory
         {var result=new BachDangSaveData.ConstructionSite[sites.Count];for(int i=0;i<result.Length;i++)result[i]=sites[i].crew.Capture(sites[i].index,sites[i].elapsed);return result;}
         public void Restore(BachDangSaveData data)
         {
+            if(GetComponent<RiverStakeZone>().IsComplete)return; // Migrate old saves that kept symbolic crews after the time skip.
             foreach(var saved in data.constructionSites??System.Array.Empty<BachDangSaveData.ConstructionSite>())
                 if(saved.index>=0&&saved.index<GetComponent<RiverStakeZone>().ClusterCount)Add(saved);
             // Existing partial saves predate persistent teams. Rebuild the finished
@@ -39,7 +40,7 @@ namespace BeachBoatStory
             if(data.constructionSites==null&&data.storyState==(int)BachDangStoryManager.StoryState.Act2_PlantStakesAtRiver)
                 for(int i=0;i<data.stakes.Length;i++)if(data.stakes[i])Add(new BachDangSaveData.ConstructionSite{index=i,origin=GetComponent<RiverStakeZone>().placements[i].approach.position,elapsed=18});
         }
-        public void ParkAfterWork(){foreach(var site in sites)site.crew.ParkOutsideBattle();}
+        public void FinishConstruction(){ResetCamp();}
         public void ResetCamp(){foreach(var site in sites){site.root.SetActive(false);site.crew.Dispose();Destroy(site.root);}sites.Clear();}
         void OnDestroy(){ResetCamp();}
     }

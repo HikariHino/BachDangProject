@@ -79,24 +79,6 @@ namespace BeachBoatStory
         void Part(Transform parent,PrimitiveType type,Vector3 at,Vector3 size)
         {var go=GameObject.CreatePrimitive(type);go.transform.SetParent(parent,false);go.transform.localPosition=at;go.transform.localScale=size;var c=go.GetComponent<Collider>();c.enabled=false;Object.Destroy(c);go.GetComponent<Renderer>().sharedMaterial=timber;}
         public BachDangSaveData.ConstructionSite Capture(int index,float elapsed)=>new BachDangSaveData.ConstructionSite{index=index,elapsed=elapsed,origin=origin,rotation=orientation,parked=Parked,boats=boats.ConvertAll(b=>b.transform.position).ToArray(),boatRotations=boats.ConvertAll(b=>b.transform.rotation).ToArray(),posts=poles.ConvertAll(p=>p.position).ToArray(),postRotations=poles.ConvertAll(p=>p.rotation).ToArray()};
-        public void ParkOutsideBattle()
-        {
-            if(Parked)return;Parked=true;callVoice.Stop();
-            var zone=RiverStakeZone.Instance;var source=QuestRowboat.Instance;var hull=BoatHullCollision.Get(source.transform);var half=Vector3.Scale(hull.SolidHull.size,source.transform.lossyScale)*.5f;
-            // The time skip lets construction boats moor downstream. Poles remain
-            // anchored at their exact work positions; the enemy lanes stay clear.
-            foreach(var boat in boats)
-            {
-                for(int n=0;n<150;n++)
-                {
-                    var p=new Vector3(zone.placements[0].approach.position.x+(n%10-5)*90,TideSystem.CurrentWaterHeight,zone.FieldBounds.min.z-140-(n/10)*90);
-                    bool dry=false;foreach(var terrain in Terrain.activeTerrains)if(terrain.SampleHeight(p)+terrain.transform.position.y>p.y-12)dry=true;
-                    if(dry)continue;bool clear=true;
-                    foreach(var c in Physics.OverlapBox(p+Vector3.up*2,half+Vector3.one*4,orientation,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore))if(!(c is TerrainCollider)&&!c.transform.IsChildOf(boat.transform)){clear=false;break;}
-                    if(!clear)continue;boat.transform.SetPositionAndRotation(p,orientation);Physics.SyncTransforms();break;
-                }
-            }
-        }
         public void Step(float time,bool keepWorking=false)
         {
             foreach(var boat in boats){var p=boat.transform.position;p.y=TideSystem.CurrentWaterHeight;boat.transform.position=p;}
