@@ -526,8 +526,9 @@ namespace BeachBoatStory
             bool aiming=RiverPlayerCombat.Instance!=null&&RiverPlayerCombat.Instance.IsAiming;
             aiming|=RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.SwordDrawn;
             var position=aiming?transform.position+Vector3.up*10-transform.forward*6:seat.position;
-            session.player.transform.SetPositionAndRotation(position, seat.rotation);
-            playerBody.position = position; playerBody.rotation = seat.rotation;
+            var facing=RiverPlayerCombat.Instance?.IsAiming==true?session.player.transform.rotation:seat.rotation;
+            session.player.transform.SetPositionAndRotation(position, facing);
+            playerBody.position = position; playerBody.rotation = facing;
         }
         public void LeaveForCheckpoint()
         {

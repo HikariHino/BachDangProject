@@ -519,8 +519,9 @@ namespace BeachBoatStory
                 else p=RiverHullCollision.Move(carried+Vector3.up*8,p+Vector3.up*8,4,false,session.player.transform)-Vector3.up*8;
                 deckLocal=deckAnchor.InverseTransformPoint(p);
                 playerPose.Walk(direction.sqrMagnitude>.01f);
+                if(archery.IsAiming)playerPose.Animator.SetFloat("AimMove",direction.magnitude,.12f,dt);
             }
-            MovePlayer(p,direction.sqrMagnitude>.01f?Quaternion.LookRotation(direction):session.player.transform.rotation);
+            MovePlayer(p,archery.IsAiming?session.player.transform.rotation:direction.sqrMagnitude>.01f?Quaternion.LookRotation(direction):session.player.transform.rotation);
             if(OnSolidDeck)FitPlayerToDeck();
         }
         float NearestBoard(Vector3 p,out EnemyShip ship,out Transform anchor,out Vector3 local)

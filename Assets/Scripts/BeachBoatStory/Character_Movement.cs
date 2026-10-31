@@ -58,8 +58,8 @@ public class Character_Movement : MonoBehaviour
     {
         bool allowed = (!BeachBoatQuestSession.InputBlocked||VillagePhysicalWork.AllowsMovement||PhysicalTrainingCourse.AllowsMovement) && Cursor.lockState == CursorLockMode.Locked;
         input = allowed ? Vector2.ClampMagnitude(new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")), 1) : Vector2.zero;
-        aim = allowed && orbit != null && orbit.enableShoulderAim && Input.GetMouseButton(1);
-        freeLook = allowed && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
+        aim = allowed && (RiverPlayerCombat.Instance?.IsAiming==true||orbit != null && orbit.enableShoulderAim && Input.GetMouseButton(1));
+        freeLook = allowed && !aim && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
         bool wantsSprint = allowed && !aim && input.sqrMagnitude > .01f &&
             (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
         sprint = wantsSprint && (vitals == null || vitals.TryExert(13f, Time.deltaTime));
@@ -78,7 +78,7 @@ public class Character_Movement : MonoBehaviour
         }
         float scale = Mathf.Max(.1f, Mathf.Abs(transform.lossyScale.y));
         IsGrounded = ProbeGround(scale);
-        Vector3 forward = freeLook ? transform.forward : orbit != null ? Quaternion.Euler(0, orbit.Yaw, 0) * Vector3.forward : view != null ? view.forward : transform.forward;
+        Vector3 forward = freeLook&&RiverPlayerCombat.Instance?.IsAiming!=true ? transform.forward : orbit != null ? Quaternion.Euler(0, orbit.Yaw, 0) * Vector3.forward : view != null ? view.forward : transform.forward;
         forward.y = 0; forward.Normalize();
         Vector3 right = Vector3.Cross(Vector3.up, forward);
         Vector3 direction = forward * input.y + right * input.x;
@@ -104,7 +104,12 @@ public class Character_Movement : MonoBehaviour
         }
         body.linearVelocity = velocity;
         if (body.useGravity && !IsGrounded) body.AddForce(Physics.gravity * (Mathf.Max(1, gravityMultiplier) - 1), ForceMode.Acceleration);
-        if ((direction.sqrMagnitude > .001f || aim)&&RiverPlayerCombat.Instance?.IsAiming!=true)
+        if (RiverPlayerCombat.Instance?.IsAiming==true)
+        {
+            var facing=Quaternion.LookRotation(Quaternion.AngleAxis(35,Vector3.up)*forward);
+            body.MoveRotation(Quaternion.Slerp(body.rotation,facing,1-Mathf.Exp(-rotationSpeed*Time.fixedDeltaTime)));
+        }
+        else if (direction.sqrMagnitude > .001f || aim)
         {
             Vector3 facing = aim ? forward : direction;
             if (facing.sqrMagnitude > .001f) body.MoveRotation(Quaternion.Slerp(body.rotation, Quaternion.LookRotation(facing), 1 - Mathf.Exp(-rotationSpeed * Time.fixedDeltaTime)));
@@ -138,6 +143,9 @@ public class Character_Movement : MonoBehaviour
             if (anim == null || !anim.isActiveAndEnabled) continue;
             if (walking.Contains(anim)) anim.SetBool(Walk, moving);
             if (running.Contains(anim)) anim.SetBool(Run, fast);
+            if(RiverPlayerCombat.Instance?.IsAiming==true)
+                foreach(var parameter in anim.parameters)if(parameter.name=="AimMove")
+                {var speed=body.isKinematic?0:new Vector2(body.linearVelocity.x,body.linearVelocity.z).magnitude;anim.SetFloat("AimMove",Mathf.Clamp01(speed/Mathf.Max(1,walkSpeed*.65f)),.12f,Time.deltaTime);break;}
         }
     }
     void OnDisable()

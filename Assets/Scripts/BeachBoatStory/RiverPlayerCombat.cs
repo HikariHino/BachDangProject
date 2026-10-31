@@ -75,7 +75,7 @@ namespace BeachBoatStory
         float savedAimDistance,savedAimFov,savedRightOffset,savedHeight;RuntimeAnimatorController groundAimController;
         string message;
         void Awake(){Instance=this;session=GetComponent<BeachBoatQuestSession>();camera=session.storyCamera;animator=session.player.GetComponentInChildren<Animator>();leftFoot=animator.GetBoneTransform(HumanBodyBones.LeftFoot);rightFoot=animator.GetBoneTransform(HumanBodyBones.RightFoot);}
-        void Start(){range=Mathf.Max(range,600);LoadHandGrips();BuildBow();BuildHUD();BuildArrows();gameObject.AddComponent<EnemyHealthHUD>();}
+        void Start(){bowController=Resources.Load<RuntimeAnimatorController>("Player_Bow_Locomotion")??bowController;range=Mathf.Max(range,600);LoadHandGrips();BuildBow();BuildHUD();BuildArrows();gameObject.AddComponent<EnemyHealthHUD>();}
         void LoadHandGrips()
         {
             var profile=BowGripProfile.Load();if(profile==null)return;
@@ -306,7 +306,11 @@ namespace BeachBoatStory
             var direction=camera.transform.forward;
             var flat=direction;flat.y=0;
             poseTension=Mathf.MoveTowards(poseTension,charge/1.1f,Time.deltaTime*7);
-            if(flat.sqrMagnitude>.01f){var stance=Quaternion.LookRotation(Quaternion.AngleAxis(35,Vector3.up)*flat);session.player.transform.rotation=stance;session.player.GetComponent<Rigidbody>().rotation=stance;}
+            var physics=session.player.GetComponent<Rigidbody>();var motor=session.player.GetComponent<Character_Movement>();
+            // Dynamic walking owns rotation in FixedUpdate, preserving Rigidbody
+            // interpolation. Only scripted/kinematic stances turn here.
+            if(flat.sqrMagnitude>.01f&&(physics.isKinematic||motor==null||!motor.enabled))
+            {var stance=Quaternion.LookRotation(Quaternion.AngleAxis(35,Vector3.up)*flat);var turn=Quaternion.RotateTowards(session.player.transform.rotation,stance,360*Time.deltaTime);session.player.transform.rotation=turn;physics.rotation=turn;}
             // Only the rowboat stance needs a water-relative height. On shore
             // or another deck, gravity/the boarding surface already supports us.
             var boarding=RiverBoardingCombat.Instance;
