@@ -65,7 +65,8 @@ public static class BeachBoatDisciplinePlaytest
             }
             if(phase==10)
             {
-                if(Time.time-mark<.4f)return;
+                // Retaliation now winds up before the blade's impact frame.
+                if(Time.time-mark<.7f)return;
                 soldier.StepRetaliation(.02f);Check(vitals.Health<health,"The struck soldier actually swings back and removes player health");
                 for(int i=0;i<20;i++)discipline.Hit(soldier,CombatImpactKind.Arrow);Check(soldier.Retaliating&&!soldier.Dead&&soldier.gameObject.activeInHierarchy,"Repeated player arrows cannot kill a retaliating ally");
                 soldier.transform.position+=Vector3.right*4;var savedPursuer=soldier.transform.position;

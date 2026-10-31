@@ -95,6 +95,8 @@ namespace BeachBoatStory
         }
         void LateUpdate()
         {
+            var fighter=GetComponentInParent<RiverFighterPose>();
+            if(fighter!=null&&fighter.OwnsUpperBody){Working=false;if(prop!=null)prop.SetActive(false);return;}
             if(!initialized||rig==null||!rig.enabled||!rig.isHuman||Time.timeScale<=0){Working=false;if(prop!=null)prop.SetActive(false);return;}
             bool stationary=walker==null;
             bool rest=stationary||walker.isActiveAndEnabled&&walker.IsResting&&!walker.IsSleeping;
@@ -116,7 +118,7 @@ namespace BeachBoatStory
             QuestRowboat.SolveArm(leftUpper,leftLower,leftHand,left,leftUpper.position-transform.right*4*unit-Vector3.up*2*unit);
             prop.transform.SetPositionAndRotation((right+left)*.5f-Vector3.up*(CurrentTask==Task.Garden?5:CurrentTask==Task.Water||CurrentTask==Task.Carry?3.4f:CurrentTask==Task.Laundry?2:0)*unit,transform.rotation*Quaternion.Euler(CurrentTask==Task.Garden?25:0,0,CurrentTask==Task.Garden?25:0));
         }
-        void OnDisable(){ReleaseWorksite();}
+        void OnDisable(){Working=false;if(prop!=null)prop.SetActive(false);ReleaseWorksite();}
         void OnDestroy(){ReleaseWorksite();if(prop!=null)Destroy(prop);if(material!=null)Destroy(material);if(iron!=null)Destroy(iron);}
     }
 }

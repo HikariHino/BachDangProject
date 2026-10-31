@@ -26,6 +26,7 @@ namespace BeachBoatStory
         public int SwimStrokes {get;private set;}
         public Animator Animator {get;private set;}
         public bool SwordVisible {get;private set;}
+        public bool OwnsUpperBody=>SwordVisible||ranged||Traversal!=Motion.Idle;
         public RuntimeAnimatorController swordController;
         Transform weapon;
         Transform indexKnuckle,littleKnuckle,indexMiddle,littleMiddle;
@@ -36,11 +37,14 @@ namespace BeachBoatStory
         public Vector3 GripPosition {get;private set;}
         public Vector3 BladeDirection {get;private set;}
         Transform rangedBow,leftHand,rightHand,rightPalmEnd;
-        LineRenderer rangedString;Transform rangedArrow;float bowBegan=-100;
+        LineRenderer rangedString;Transform rangedArrow;float bowBegan=-100;Vector3 bowTarget;
+        HumanoidHandGrip leftGrip,rightGrip;BowGripProfile bowGrip;
+        public Vector3 RangedGrip=>leftGrip.Contact;
+        public Vector3 RangedDraw=>rightGrip.Contact;
         public int BowShots {get;private set;}
         public float BowDrawAmount=>Mathf.Clamp01((Time.time-bowBegan)/.7f)*(Time.time-bowBegan<.73f?1:Mathf.Clamp01(1-(Time.time-bowBegan-.73f)/.12f));
         public Vector3 BowMuzzle=>rangedBow!=null?rangedBow.position+rangedBow.forward*3:transform.position+Vector3.up*12;
-        public void BeginBowShot(Vector3 target){SetRanged(true);var face=target-transform.position;face.y=0;if(face.sqrMagnitude>.01f)transform.rotation=Quaternion.LookRotation(face);bowBegan=Time.time;BowShots++;}
+        public void BeginBowShot(Vector3 target){SetSword(false);SetRanged(true);bowTarget=target;var face=target-transform.position;face.y=0;if(face.sqrMagnitude>.01f)transform.rotation=Quaternion.LookRotation(face);bowBegan=Time.time;BowShots++;}
         bool ranged;
         float actorHeight;
         Transform[] bones;
@@ -91,38 +95,51 @@ namespace BeachBoatStory
             indexMiddle=animator.GetBoneTransform(HumanBodyBones.RightIndexIntermediate);littleMiddle=animator.GetBoneTransform(HumanBodyBones.RightLittleIntermediate);
             hips=animator.GetBoneTransform(HumanBodyBones.Hips);neck=animator.GetBoneTransform(HumanBodyBones.Neck);head=animator.GetBoneTransform(HumanBodyBones.Head);
             leftFoot=animator.GetBoneTransform(HumanBodyBones.LeftFoot);rightFoot=animator.GetBoneTransform(HumanBodyBones.RightFoot);
+            leftGrip=new HumanoidHandGrip(animator,true);rightGrip=new HumanoidHandGrip(animator,false);
+            var profile=BowGripProfile.Load();
+            if(profile!=null)foreach(var skin in animator.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                if(skin.sharedMesh==profile.source||skin.sharedMesh==profile.posed){bowGrip=profile;break;}
         }
         public void SetSword(bool value)
         {
             if(Animator==null)return;
-            if(value)SetRanged(false);
+            if(value){SetRanged(false);if(Traversal==Motion.Idle)Animator.enabled=true;Animator.applyRootMotion=false;}
             if(value&&!usingSword){previousController=Animator.runtimeAnimatorController;Animator.runtimeAnimatorController=swordController;usingSword=true;Animator.SetBool("isWalking",false);Animator.SetBool("isRunning",false);Animator.SetInteger("Pose",0);Animator.Play("sword_idle",0,0);if(Animator.gameObject.activeInHierarchy){Animator.Update(0);MatchFriendlyStature();}}
             if(value&&Traversal==Motion.Idle&&Animator.runtimeAnimatorController!=swordController)Animator.runtimeAnimatorController=swordController;
             if(!value&&usingSword){Animator.runtimeAnimatorController=previousController;usingSword=false;}
             SwordVisible=value;if(weapon!=null)weapon.gameObject.SetActive(value);Animator.speed=1;
+            if(!value&&!ranged)HumanoidGripMesh.Restore(Animator);
         }
-        public void Slash(){if(!SwordVisible)return;Animator.SetTrigger("attack");}
+        public void Slash(){if(!SwordVisible)return;Animator.enabled=true;Animator.SetBool("isWalking",false);Animator.SetBool("isRunning",false);Animator.SetTrigger("attack");}
         public void Walk(bool value){if(usingSword)Animator.SetBool("isWalking",value);}
         public void Restore()
         {
             Traversal=Motion.Idle;SetRanged(false);SetSword(false);
+            if(Animator!=null)HumanoidGripMesh.Restore(Animator);
         }
         void LateUpdate()
         {
             if(Animator==null)return;
             if(sizeChecks>0&&Traversal==Motion.Idle){sizeChecks--;MatchFriendlyStature();}
-            if(SwordVisible){FitSwordGuard();FitSwordToGrip();CloseSwordHand();}
+            if(SwordVisible){FitSwordGuard();FitSwordToGrip();CloseSwordHand();HumanoidGripMesh.Apply(Animator,leftGrip,rightGrip,0,1);}
             if(Traversal==Motion.Idle)
             {
                 if(ranged&&rangedBow!=null)
                 {
                     float h=EnemyDeckGuard.RigHeight(Animator),elapsed=Time.time-bowBegan,raise=Mathf.SmoothStep(0,1,Mathf.Clamp01(elapsed/.18f))*(1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(.9f,1.3f,elapsed)));
-                    var support=bones[0].position+transform.forward*(h*.30f)+Vector3.up*(h*(raise*.06f-.22f*(1-raise)));
-                    rangedBow.SetPositionAndRotation(support,transform.rotation);var draw=Vector3.Lerp(support-transform.forward*(h*.08f),head.position+transform.right*(h*.06f)+transform.forward*(h*.035f)-Vector3.up*(h*.02f),BowDrawAmount);
-                    var profile=BowGripProfile.Load();
+                    var direction=bowTarget.sqrMagnitude>.01f?(bowTarget-head.position).normalized:transform.forward;
+                    float pitch=Mathf.Clamp(Mathf.Asin(direction.y)*Mathf.Rad2Deg,-45,55);direction=Quaternion.AngleAxis(-pitch,transform.right)*transform.forward;
+                    var support=bones[0].position+direction*(h*.29f)+Vector3.up*(h*(raise*.04f-.22f*(1-raise)));
+                    rangedBow.SetPositionAndRotation(support,Quaternion.LookRotation(direction));var draw=Vector3.Lerp(support-direction*(h*.08f),head.position+transform.right*(h*.065f)+transform.forward*(h*.04f)-Vector3.up*(h*.025f),BowDrawAmount);
+                    var profile=bowGrip;
                     if(profile!=null){profile.Align(bones[0],bones[2],leftHand,support,bones[0].position-transform.right*h*.25f-Vector3.up*h*.07f,true);profile.Align(bones[1],bones[3],rightHand,draw,bones[1].position+transform.right*h*.35f,false);}
-                    else{QuestRowboat.SolveArm(bones[0],bones[2],leftHand,support,bones[0].position-transform.right*h*.25f);QuestRowboat.SolveArm(bones[1],bones[3],rightHand,draw,bones[1].position+transform.right*h*.35f);}
-                    rangedString.SetPosition(1,rangedBow.InverseTransformPoint(draw));rangedArrow.gameObject.SetActive(elapsed>=0&&elapsed<.73f);rangedArrow.SetPositionAndRotation(draw+transform.forward*3,Quaternion.FromToRotation(Vector3.up,transform.forward));
+                    else{leftGrip.Align(bones[0],bones[2],support,bones[0].position-transform.right*h*.25f-Vector3.up*h*.07f,Vector3.up);rightGrip.Align(bones[1],bones[3],draw,bones[1].position+transform.right*h*.35f,Vector3.up);}
+                    // Attach the stave and string to the solved contacts, rather
+                    // than leaving either one at an unreachable ideal IK goal.
+                    rangedBow.position=profile!=null?leftHand.TransformPoint(profile.leftCenter):leftGrip.Contact;
+                    var actualDraw=profile!=null?rightHand.TransformPoint(profile.rightCenter):rightGrip.Contact;
+                    rangedString.SetPosition(1,rangedBow.InverseTransformPoint(actualDraw));rangedArrow.gameObject.SetActive(elapsed>=0&&elapsed<.73f);rangedArrow.SetPositionAndRotation(actualDraw+direction*3,Quaternion.FromToRotation(Vector3.up,direction));
+                    HumanoidGripMesh.Apply(Animator,leftGrip,rightGrip,1,Mathf.Clamp01(BowDrawAmount*2));
                 }
                 return;
             }
@@ -214,10 +231,10 @@ namespace BeachBoatStory
             if(weapon==null||rightHand==null)return;
             var scale=weapon.parent.lossyScale;weapon.localScale=new Vector3(swordScale/scale.x,swordScale/scale.y,swordScale/scale.z);
             // Follow the palm and its thumb side, rather than guessing bone Euler axes.
-            var across=indexKnuckle!=null&&littleKnuckle!=null?indexKnuckle.position-littleKnuckle.position:rightHand.up;
+            var across=indexKnuckle!=null&&littleKnuckle!=null?indexKnuckle.position-littleKnuckle.position:rightGrip.ThumbAxis;
             BladeDirection=across.normalized;
             var knuckles=indexKnuckle!=null&&littleKnuckle!=null?(indexKnuckle.position+littleKnuckle.position)*.5f:rightPalmEnd!=null?rightPalmEnd.position:rightHand.position;
-            GripPosition=indexMiddle!=null&&littleMiddle!=null?(knuckles+(indexMiddle.position+littleMiddle.position)*.5f)*.5f:Vector3.Lerp(rightHand.position,knuckles,.55f);
+            GripPosition=indexMiddle!=null&&littleMiddle!=null?(knuckles+(indexMiddle.position+littleMiddle.position)*.5f)*.5f:rightGrip.Contact;
             var along=knuckles-rightHand.position;
             if(along.sqrMagnitude<.000001f)along=rightHand.forward;
             var normal=Vector3.Cross(along,BladeDirection).normalized;
@@ -231,9 +248,7 @@ namespace BeachBoatStory
             float h=EnemyDeckGuard.RigHeight(Animator);
             var forward=transform.forward;var right=transform.right;
             var grip=hips.position+forward*(h*.23f)+right*(h*.18f)+Vector3.up*(h*.10f);
-            QuestRowboat.SolveArm(bones[1],bones[3],rightHand,grip,bones[1].position+right*h*.25f);
-            var across=indexKnuckle!=null&&littleKnuckle!=null?indexKnuckle.position-littleKnuckle.position:rightHand.up;
-            rightHand.rotation=Quaternion.FromToRotation(across,(forward*.7f+Vector3.up*.7f).normalized)*rightHand.rotation;
+            rightGrip.Align(bones[1],bones[3],grip,bones[1].position+right*h*.25f,(forward*.7f+Vector3.up*.7f).normalized);
             QuestRowboat.SolveArm(bones[0],bones[2],leftHand,hips.position+forward*h*.16f-right*h*.22f+Vector3.up*h*.12f,bones[0].position-right*h*.3f);
         }
         void CloseSwordHand()
@@ -255,7 +270,9 @@ namespace BeachBoatStory
         public void FinishTraversal(){Traversal=Motion.Idle;ClimbProgress=0;ClimbRail=Vector3.zero;}
         public void SetRanged(bool value)
         {
+            if(value&&SwordVisible)SetSword(false);
             ranged=value;
+            if(value&&Traversal==Motion.Idle){Animator.enabled=true;Animator.applyRootMotion=false;Animator.speed=1;}
             if(value&&rangedBow==null)
             {
                 rangedBow=new GameObject("DaiViet_Boarding_Bow").transform;rangedBow.SetParent(transform,false);var scale=transform.lossyScale;rangedBow.localScale=new Vector3(1/scale.x,1/scale.y,1/scale.z);
@@ -265,6 +282,7 @@ namespace BeachBoatStory
                 var arrow=GameObject.CreatePrimitive(PrimitiveType.Cylinder);arrow.name="Ten_dang_giu";arrow.transform.SetParent(rangedBow,false);arrow.transform.localScale=new Vector3(.13f,3,.13f);arrow.GetComponent<Collider>().enabled=false;Destroy(arrow.GetComponent<Collider>());arrow.GetComponent<Renderer>().sharedMaterial=line.sharedMaterial;rangedArrow=arrow.transform;
             }
             if(rangedBow!=null)rangedBow.gameObject.SetActive(value);
+            if(!value&&!SwordVisible)HumanoidGripMesh.Restore(Animator);
         }
     }
 }

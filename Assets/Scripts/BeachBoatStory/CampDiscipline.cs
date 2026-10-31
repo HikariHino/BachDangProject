@@ -103,7 +103,7 @@ namespace BeachBoatStory
         public Kind Type {get;private set;}public bool Retaliating {get;private set;}public bool Dead {get;private set;}
         public string Id {get;private set;}public Vector3 AimPoint=>rig.GetBoneTransform(HumanBodyBones.Chest).position;
         CampDiscipline owner;Animator rig;RiverFighterPose pose;NPCWander walker;NPCDailyActivity daily;NPCCampPose campPose;
-        Behaviour[] talkers;bool[] talkerEnabled;bool walkerEnabled,dailyEnabled,campEnabled,rigEnabled;Quaternion restRotation;RuntimeAnimatorController controller;Transform homeParent;int homeSibling;float nextAttack,nextPlan,fireAt;Vector3 arrowTarget;int point;
+        Behaviour[] talkers;bool[] talkerEnabled;bool walkerEnabled,dailyEnabled,campEnabled,rigEnabled;Quaternion restRotation;RuntimeAnimatorController controller;Transform homeParent;int homeSibling;float nextAttack,nextPlan,fireAt,strikeAt;Vector3 arrowTarget;int point;
         readonly List<Vector3> route=new List<Vector3>();readonly RiverActorNavigation swimNavigation=new RiverActorNavigation();Vector3 originalPosition;Quaternion originalRotation;
         public void Initialize(CampDiscipline owner,Animator animator,Kind kind)
         {
@@ -119,19 +119,21 @@ namespace BeachBoatStory
             if(Type!=Kind.Soldier||Retaliating)return;originalPosition=transform.position;originalRotation=transform.rotation;Retaliating=true;StopDaily();
             if(GetComponent<ActorSolidBody>()?.Carrier==null)transform.SetParent(BeachBoatQuestSession.Instance.transform,true);
             pose=GetComponent<RiverFighterPose>();if(pose==null){pose=gameObject.AddComponent<RiverFighterPose>();pose.Initialize(rig,RiverBoardingCombat.Instance.swordPrefab,RiverBoardingCombat.Instance.swordController,17);}
-            pose.FinishTraversal();rig.enabled=true;rig.applyRootMotion=false;pose.SetSword(true);nextAttack=Time.time+.25f;nextPlan=0;
+            pose.FinishTraversal();rig.enabled=true;rig.applyRootMotion=false;pose.SetSword(true);nextAttack=Time.time+.25f;nextPlan=fireAt=strikeAt=0;
         }
         public BachDangSaveData.DisciplineActor CapturePursuit()=>new BachDangSaveData.DisciplineActor{id=Id,position=transform.position,rotation=transform.rotation,home=originalPosition,homeRotation=originalRotation};
         public void RestorePursuit(BachDangSaveData.DisciplineActor data){transform.SetPositionAndRotation(data.position,data.rotation);originalPosition=data.home;originalRotation=data.homeRotation;route.Clear();nextPlan=0;}
         public void Die(){Dead=true;originalPosition=transform.position;originalRotation=transform.rotation;StopDaily();rig.enabled=false;rig.transform.localRotation=restRotation*Quaternion.Euler(85,0,10);}
         public void ResetActor()
         {
-            if(!Dead&&!Retaliating)return;if(pose!=null)pose.Restore();Retaliating=Dead=false;rig.transform.localRotation=restRotation;rig.runtimeAnimatorController=controller;rig.enabled=rigEnabled;
+            if(!Dead&&!Retaliating)return;if(pose!=null)pose.Restore();Retaliating=Dead=false;fireAt=strikeAt=0;rig.transform.localRotation=restRotation;rig.runtimeAnimatorController=controller;rig.enabled=rigEnabled;
             if(transform.parent!=homeParent){transform.SetParent(homeParent,true);transform.SetSiblingIndex(homeSibling);}transform.SetPositionAndRotation(originalPosition,originalRotation);if(walker!=null)walker.enabled=walkerEnabled;if(daily!=null)daily.enabled=dailyEnabled;if(campPose!=null)campPose.enabled=campEnabled;for(int i=0;i<talkers.Length;i++)talkers[i].enabled=talkerEnabled[i];route.Clear();swimNavigation.Reset();
         }
         public void StepRetaliation(float dt)
         {
             if(!Retaliating||dt<=0||QuestCheckpoint.Instance.IsDefeated)return;var player=BeachBoatQuestSession.Instance.player.transform;var delta=player.position-transform.position;var flat=delta;flat.y=0;float distance=flat.magnitude;
+            if(strikeAt>0&&Time.time>=strikeAt)
+            {strikeAt=0;if(distance<=30&&RiverBoardingCombat.Instance.CanMeleeReach(transform,player,34))player.GetComponent<PlayerVitals>().TakeImpact(18,"Đồng đội trừng phạt phản quân",CombatImpactKind.Sword);}
             var carrier=GetComponent<ActorSolidBody>()?.Carrier;bool ranged=carrier!=null&&carrier!=RiverBoardingCombat.Instance.PlayerDeckCarrier||Mathf.Abs(delta.y)>20;
             if(!ranged&&distance>24)
             {
@@ -154,12 +156,17 @@ namespace BeachBoatStory
             if(flat.sqrMagnitude>.01f)transform.rotation=Quaternion.RotateTowards(transform.rotation,Quaternion.LookRotation(flat),300*dt);
             if(ranged)
             {
+                strikeAt=0;
                 pose.SetSword(false);pose.SetRanged(true);
-                if(fireAt>0&&Time.time>=fireAt){fireAt=0;RiverPlayerCombat.Instance.LaunchRetaliationArrow(pose.BowMuzzle,arrowTarget,12,transform);}
+                if(fireAt>0&&Time.time>=fireAt){fireAt=0;RiverPlayerCombat.Instance.LaunchRetaliationArrow(pose.BowMuzzle,arrowTarget,12,transform);BeachBoatSoundscape.Instance?.PlayBow(true);}
                 if(distance<650&&Time.time>=nextAttack){nextAttack=Time.time+1.6f;pose.BeginBowShot(player.position+Vector3.up*12);arrowTarget=player.position+Vector3.up*10;fireAt=Time.time+.73f;}
             }
-            else if(distance<=30&&Time.time>=nextAttack&&RiverBoardingCombat.Instance.CanMeleeReach(transform,player,34))
-            {nextAttack=Time.time+1.05f;pose.SetSword(true);pose.Walk(false);pose.Slash();BeachBoatSoundscape.Instance?.PlaySwordSwing();player.GetComponent<PlayerVitals>().TakeImpact(18,"Đồng đội trừng phạt phản quân",CombatImpactKind.Sword);}
+            else
+            {
+                fireAt=0;
+                if(distance<=30&&Time.time>=nextAttack&&RiverBoardingCombat.Instance.CanMeleeReach(transform,player,34))
+                {nextAttack=Time.time+1.05f;strikeAt=Time.time+.22f;pose.SetSword(true);pose.Walk(false);pose.Slash();BeachBoatSoundscape.Instance?.PlaySwordSwing();}
+            }
         }
     }
 }

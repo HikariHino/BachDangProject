@@ -17,6 +17,35 @@ namespace BeachBoatStory
         const float Cell=12;
         static readonly float[] passingAngles={45f,-45f,80f,-80f,115f,-115f};
         readonly Collider[] neighbors=new Collider[48];
+        Vector3 SeparateCrowdPose(Transform actor,Vector3 from,Vector3 position,float radius,bool turning=true)
+        {
+            var own=actor.GetComponent<ActorSolidBody>()?.SolidCollider??actor.GetComponent<Collider>();
+            if(own==null||own.isTrigger)return position;
+            // A swimming capsule is long and turns after movement. The sphere
+            // sweep alone protects its centre but can leave the legs embedded
+            // in another swimmer after that turn, even at an arrived goal.
+            for(int pass=0;pass<3;pass++)
+            {
+                var motion=position-from;motion.y=0;
+                var facing=turning&&motion.sqrMagnitude>.001f?Quaternion.LookRotation(motion):actor.rotation;
+                var turn=facing*Quaternion.Inverse(actor.rotation);
+                var predicted=actor.position+(position-from)+turn*(own.transform.position-actor.position);
+                int count=Physics.OverlapSphereNonAlloc(predicted,42,neighbors,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+                bool changed=false;
+                for(int i=0;i<count;i++)
+                {
+                    var other=neighbors[i];var body=other.GetComponentInParent<ActorSolidBody>();
+                    if(body==null||body.transform==actor||body.transform.IsChildOf(actor)||Mathf.Abs(body.transform.position.y-actor.position.y)>12)continue;
+                    if(!Physics.ComputePenetration(own,predicted,turn*own.transform.rotation,other,other.transform.position,other.transform.rotation,out var normal,out float depth))continue;
+                    var horizontal=normal;horizontal.y=0;float planar=horizontal.magnitude;if(planar<.1f)continue;
+                    var correction=horizontal/planar*(depth/planar+.04f);
+                    if(!RiverHullCollision.ClearSegment(position,position+correction,radius,actor,null,true))continue;
+                    position+=correction;predicted+=correction;changed=true;
+                }
+                if(!changed)break;
+            }
+            return position;
+        }
         Vector3 SteerCrowd(Transform actor,Vector3 from,Vector3 desired,float radius)
         {
             var direction=(desired-from).normalized;var push=Vector3.zero;var right=Vector3.Cross(Vector3.up,direction);int id=actor.GetEntityId().GetHashCode();
@@ -38,7 +67,7 @@ namespace BeachBoatStory
         {
             LastDirection=Vector3.zero;
             var direct=target-from;direct.y=0;
-            if(direct.sqrMagnitude<.001f)return RiverHullCollision.Move(from,from,radius,true,actor,carrier);
+            if(direct.sqrMagnitude<.001f){var resting=RiverHullCollision.Move(from,from,radius,true,actor,carrier);return carrier==null?SeparateCrowdPose(actor,from,resting,radius,false):resting;}
             // Probe ahead rather than replanning only after the actor is already touching a pole.
             var look=from+Vector3.ClampMagnitude(direct,Cell*3);
             // Static route probing need not repeat for every actor every frame.
@@ -65,6 +94,7 @@ namespace BeachBoatStory
                 {var side=Quaternion.AngleAxis(angle,Vector3.up)*direct.normalized*travel;var attempt=RiverHullCollision.Move(from,from+side,radius,false,actor,carrier);float score=(attempt-from).sqrMagnitude;if(score>best*1.1f){best=score;moved=attempt;}}
             }
             if((moved-from).sqrMagnitude<travel*travel*.04f){path.Clear();nextPlan=Mathf.Min(nextPlan,Time.unscaledTime+.15f);}
+            if(carrier==null)moved=SeparateCrowdPose(actor,from,moved,radius);
             var motion=moved-from;motion.y=0;LastDirection=motion.sqrMagnitude>.001f?motion.normalized:Vector3.zero;return moved;
         }
         void Plan(Transform actor,Vector3 origin,Vector3 target,float radius,BoatHullCollision carrier)

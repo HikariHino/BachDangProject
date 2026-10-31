@@ -169,6 +169,17 @@ namespace BeachBoatStory
             foreach(var patrol in UnityEngine.Object.FindObjectsByType<AmbientRiverBoat>(FindObjectsSortMode.None))
             {var saved=(data.patrols??Array.Empty<BachDangSaveData.Patrol>()).FirstOrDefault(p=>p.name==patrol.name);if(saved!=null)patrol.RestorePatrol(saved);}
             boat.RestoreDurability(data.rowboatDurabilityVersion==0?QuestRowboat.MaximumDurability:data.boatDurability);
+            boat.LeaveForCheckpoint();
+            {
+                // Death freezes the body even on ordinary camp ground. Boat
+                // restoration must also capture an unfrozen on-foot baseline
+                // before boarding, swimming or climbing acquire it below.
+                var actor=session.player;var physics=actor.GetComponent<Rigidbody>();
+                physics.isKinematic=!session.storyMode;physics.interpolation=RigidbodyInterpolation.Interpolate;
+                actor.GetComponent<CapsuleCollider>().enabled=true;
+                actor.GetComponent<Character_Movement>().enabled=session.storyMode;
+                var rig=actor.GetComponentInChildren<Animator>();rig.enabled=true;rig.applyRootMotion=false;rig.speed=1;rig.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;
+            }
             boat.RestoreSave(data.aboard,data.boatPosition,data.boatRotation);
             foreach(var saved in data.ships??Array.Empty<BachDangSaveData.Ship>()){var ship=EnemyFleetDirector.Instance.enemyShips.FirstOrDefault(s=>s.name==saved.name);ship?.RestoreSave(saved);}
             foreach(var saved in data.guards??Array.Empty<BachDangSaveData.Guard>())

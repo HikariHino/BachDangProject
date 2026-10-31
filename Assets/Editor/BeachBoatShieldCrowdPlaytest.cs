@@ -60,7 +60,7 @@ public static class BeachBoatShieldCrowdPlaytest
                 if(++steps<500)return;
                 Check(actors.Count(t=>t.position.z>origin.z+30)==5&&actors.Count(t=>t.position.z<origin.z-30)==5,"Both five-person groups with horizontal swimming bodies pass the opposing crowd and the central pole without remaining clumped");
                 float overlap=0;for(int i=0;i<actors.Count;i++)for(int j=i+1;j<actors.Count;j++){var a=actors[i].GetComponent<Collider>();var b=actors[j].GetComponent<Collider>();if(Physics.ComputePenetration(a,a.transform.position,a.transform.rotation,b,b.transform.position,b.transform.rotation,out _,out float d))overlap=Mathf.Max(overlap,d);}
-                Check(overlap<.15f,"Crowd avoidance preserves solid bodies instead of phasing swimmers through each other");
+                Check(overlap<.15f,"Crowd avoidance preserves solid bodies instead of phasing swimmers through each other; penetration="+overlap);
                 foreach(var pair in hashes)Check(File.Exists(pair.Key)&&Hash(pair.Key)==pair.Value,"User save unchanged: "+Path.GetFileName(pair.Key));Finish(null);
             }
         }

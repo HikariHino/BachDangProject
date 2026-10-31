@@ -43,6 +43,10 @@ namespace BeachBoatStory
         public void Balance()
         {
             if(animator==null)Cache();
+            // Combat owns the shoulders and wrists. RelaxArm previously erased
+            // the sword clip every frame, leaving a shrug instead of a strike.
+            var fighter=GetComponentInParent<RiverFighterPose>();
+            if(fighter!=null&&fighter.OwnsUpperBody)return;
             if(spine==null||head==null||hips==null||!animator.enabled||
                 (wander!=null&&wander.IsSleeping)||(campPose!=null&&campPose.pose!=NPCCampPose.PoseType.Standing))return;
             // Sitting/lying animation must retain its authored body orientation.
