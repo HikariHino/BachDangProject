@@ -87,7 +87,7 @@ namespace BeachBoatStory
             if(Save(location))return true;
             ActiveSlot=previous;return false;
         }
-        public static bool CanSave=>CampRecoveryGame.Active==null&&ArcheryTraining.Active==null&&!RiverInvasionIntro.IsRunning&&StakeConstruction.Active==null&&VillageWorkStall.Active==null&&BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
+        public static bool CanSave=>!(RiverBossEncounter.Instance?.IntroActive??false)&&CampRecoveryGame.Active==null&&ArcheryTraining.Active==null&&!RiverInvasionIntro.IsRunning&&StakeConstruction.Active==null&&VillageWorkStall.Active==null&&BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
             !(QuestCheckpoint.Instance?.IsDefeated??false)&&!(QuestRowboat.Instance?.IsBroken??false)&&!(ScreenFader.Instance?.IsTransitioning??false);
         static bool WriteData(string path,BachDangSaveData data)
         {

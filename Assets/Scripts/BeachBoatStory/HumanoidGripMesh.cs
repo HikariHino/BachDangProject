@@ -6,26 +6,32 @@ namespace BeachBoatStory
     public static class HumanoidGripMesh
     {
         sealed class Entry {public Mesh source,posed;}
-        sealed class Hands {public GameObject left,right;}
+        sealed class Binding {public SkinnedMeshRenderer skin;public Mesh applied;public byte mode;public bool detail;}
+        sealed class Hands {public GameObject left,right;public Binding[] skins;}
         static readonly Dictionary<Mesh,Mesh> originals=new Dictionary<Mesh,Mesh>();
         static readonly Dictionary<string,Entry> variants=new Dictionary<string,Entry>();
         static readonly Dictionary<Animator,Hands> hands=new Dictionary<Animator,Hands>();
         static Material material;
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]static void Reset(){originals.Clear();variants.Clear();hands.Clear();material=null;}
+        static bool preparing;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]static void Reset(){originals.Clear();variants.Clear();hands.Clear();material=null;preparing=false;}
         public static void Apply(Animator rig,HumanoidHandGrip left,HumanoidHandGrip right,float lw,float rw)
         {
             if(rig.GetBoneTransform(HumanBodyBones.RightIndexProximal)!=null)return;
             if(!hands.TryGetValue(rig,out var pair))
             {
                 if(material==null){material=new Material(Shader.Find("Universal Render Pipeline/Lit")){name="Weapon hand skin",hideFlags=HideFlags.DontSave};material.SetColor("_BaseColor",new Color(.39f,.25f,.18f));material.SetFloat("_Smoothness",.24f);}
-                pair=new Hands{left=Build(rig.GetBoneTransform(HumanBodyBones.LeftHand),left,"Left_Closed_Weapon_Hand"),right=Build(rig.GetBoneTransform(HumanBodyBones.RightHand),right,"Right_Closed_Weapon_Hand")};hands[rig]=pair;
+                var bindings=new List<Binding>();foreach(var skin in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))bindings.Add(new Binding{skin=skin});
+                pair=new Hands{left=Build(rig.GetBoneTransform(HumanBodyBones.LeftHand),left,"Left_Closed_Weapon_Hand"),right=Build(rig.GetBoneTransform(HumanBodyBones.RightHand),right,"Right_Closed_Weapon_Hand"),skins=bindings.ToArray()};hands[rig]=pair;
             }
-            bool l=lw>.05f,r=rw>.05f;pair.left.SetActive(l);pair.right.SetActive(r);
-            foreach(var skin in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            bool l=lw>.05f,r=rw>.05f;pair.left.SetActive(l);pair.right.SetActive(r);byte mode=(byte)((l?1:0)+(r?2:0));
+            var view=Camera.main;bool detail=!preparing&&view!=null&&(rig.transform.position-view.transform.position).sqrMagnitude<140*140;
+            foreach(var binding in pair.skins)
             {
+                var skin=binding.skin;if(skin==null)continue;
+                if(binding.applied!=null&&skin.sharedMesh==binding.applied&&binding.mode==mode&&binding.detail==detail)continue;
                 var source=skin.sharedMesh;if(source==null||!source.isReadable)continue;
                 if(originals.TryGetValue(source,out var original))source=original;
-                if(Camera.main!=null&&(rig.transform.position-Camera.main.transform.position).sqrMagnitude<140*140)source=CombatHandSources.Original(source);
+                if(detail)source=CombatHandSources.Original(source);
                 string suffix=l&&r?"Both":l?"Left":r?"Right":"None",key=source.GetEntityId()+"/"+suffix;
                 if(!variants.TryGetValue(key,out var entry))
                 {
@@ -42,13 +48,31 @@ namespace BeachBoatStory
                     }
                     entry=new Entry{source=source,posed=mesh};variants[key]=entry;originals[mesh]=source;
                 }
-                skin.sharedMesh=entry.posed;
+                if(skin.sharedMesh!=entry.posed)skin.sharedMesh=entry.posed;
+                binding.applied=entry.posed;binding.mode=mode;binding.detail=detail;
             }
+        }
+        public static void Prepare(Animator rig,HumanoidHandGrip left,HumanoidHandGrip right)
+        {
+            if(rig.GetBoneTransform(HumanBodyBones.RightIndexProximal)!=null)return;
+            var skins=rig.GetComponentsInChildren<SkinnedMeshRenderer>(true);var saved=new Mesh[skins.Length];for(int i=0;i<skins.Length;i++)saved[i]=skins[i].sharedMesh;
+            preparing=true;
+            try
+            {
+                for(int i=0;i<skins.Length;i++)
+                {
+                    var sources=new HashSet<Mesh>{saved[i],CombatHandSources.Original(saved[i])};var lod=skins[i].GetComponentInParent<CinematicCharacterLOD>();
+                    if(lod!=null){sources.Add(lod.closeMesh);sources.Add(lod.middleMesh);sources.Add(lod.farMesh);}
+                    foreach(var source in sources)if(source!=null){skins[i].sharedMesh=source;Apply(rig,left,right,0,1);skins[i].sharedMesh=source;Apply(rig,left,right,1,1);}
+                }
+            }
+            finally{preparing=false;Restore(rig);for(int i=0;i<skins.Length;i++)skins[i].sharedMesh=saved[i];}
         }
         public static void Restore(Animator rig)
         {
-            if(hands.TryGetValue(rig,out var pair)){if(pair.left!=null)pair.left.SetActive(false);if(pair.right!=null)pair.right.SetActive(false);}
-            foreach(var skin in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))if(skin.sharedMesh!=null&&originals.TryGetValue(skin.sharedMesh,out var original))skin.sharedMesh=original;
+            if(!hands.TryGetValue(rig,out var pair))return;
+            if(pair.left!=null)pair.left.SetActive(false);if(pair.right!=null)pair.right.SetActive(false);
+            foreach(var binding in pair.skins){var skin=binding.skin;if(skin!=null&&skin.sharedMesh!=null&&originals.TryGetValue(skin.sharedMesh,out var original))skin.sharedMesh=original;}
         }
         static GameObject Build(Transform bone,HumanoidHandGrip frame,string name)
         {

@@ -33,6 +33,7 @@ namespace BeachBoatStory
                 var rect=(RectTransform)go.transform;rect.sizeDelta=new Vector2(110,50);
                 var text=go.GetComponent<TMP_Text>();StoryFont.Apply(text);text.fontSize=30;text.fontStyle=FontStyles.Bold;text.alignment=TextAlignmentOptions.Center;
                 text.color=new Color(1,.83f,.32f);text.outlineWidth=.18f;text.outlineColor=Color.black;text.raycastTarget=false;
+                text.text="−0123456789";text.ForceMeshUpdate();text.text="";
                 pool[i]=new Number{label=text,age=2};go.SetActive(false);
             }
         }

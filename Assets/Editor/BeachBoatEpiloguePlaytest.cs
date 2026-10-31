@@ -10,11 +10,11 @@ using Object=UnityEngine.Object;
 using Story=BeachBoatStory.BachDangStoryManager;
 public static class BeachBoatEpiloguePlaytest
 {
-    const string Flag="Epilogue30QA";static int phase,frame;static double began;static float mark,health;static string failure;static BachDangSaveData save;
+    const string Flag="Epilogue30QA";static int phase,frame;static double began;static float mark,health;static string failure;static BachDangSaveData save;static bool throwChecked;
     static readonly List<string> checks=new List<string>();static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static string Hash(string p)=>Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(File.ReadAllBytes(p)));
     static void Check(bool pass,string text){if(!pass)throw new Exception(text);checks.Add(text);}
-    public static void RunInEditor(){phase=0;frame=-1;began=0;failure=null;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){phase=0;throwChecked=false;frame=-1;began=0;failure=null;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Log;Application.logMessageReceived+=Log;}
     static void Log(string m,string stack,LogType kind){if(SessionState.GetBool(Flag,false)&&(kind==LogType.Error||kind==LogType.Exception))failure=m+"\n"+stack;}
     static void Finish(string error){SessionState.SetBool(Flag,false);Time.timeScale=1;File.WriteAllText("Logs/EpiloguePlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,phase,checks},Newtonsoft.Json.Formatting.Indented));BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;}
@@ -22,6 +22,40 @@ public static class BeachBoatEpiloguePlaytest
     {
         var v=new GameObject("QA_Boss_Bare_Camera").AddComponent<Camera>();v.transform.position=eye;v.transform.LookAt(look);v.clearFlags=CameraClearFlags.SolidColor;v.backgroundColor=Color.cyan;v.farClipPlane=2000;v.nearClipPlane=.1f;v.enabled=false;v.useOcclusionCulling=false;
         var rt=new RenderTexture(1280,800,24);v.targetTexture=rt;v.Render();RenderTexture.active=rt;var t=new Texture2D(1280,800,TextureFormat.RGB24,false);t.ReadPixels(new Rect(0,0,1280,800),0,0);t.Apply();var pixels=t.GetPixels32();var first=pixels[0];Check(pixels.Count(p=>Mathf.Abs(p.r-first.r)+Mathf.Abs(p.g-first.g)+Mathf.Abs(p.b-first.b)>30)>pixels.Length/5,"The actual 3D duel view contains visible deck and fighters rather than an obscuring solid surface");File.WriteAllBytes("Logs/Boss_Bare.png",t.EncodeToPNG());RenderTexture.active=null;Object.DestroyImmediate(t);Object.DestroyImmediate(rt);Object.DestroyImmediate(v.gameObject);
+    }
+    static void CheckHeroVisible()
+    {
+        var source=BeachBoatQuestSession.Instance.storyCamera;var camera=new GameObject("QA_Throw_Visibility").AddComponent<Camera>();camera.CopyFrom(source);camera.transform.SetPositionAndRotation(source.transform.position,source.transform.rotation);camera.enabled=false;
+        var target=new RenderTexture(320,200,24);camera.targetTexture=target;var texture=new Texture2D(320,200,TextureFormat.RGB24,false);
+        Color32[] Pixels(){camera.Render();RenderTexture.active=target;texture.ReadPixels(new Rect(0,0,320,200),0,0);texture.Apply();return texture.GetPixels32();}
+        var renderers=BeachBoatQuestSession.Instance.player.GetComponentsInChildren<Renderer>();var flags=renderers.Select(r=>r.forceRenderingOff).ToArray();var visible=Pixels();
+        for(int i=0;i<renderers.Length;i++)renderers[i].forceRenderingOff=true;var hidden=Pixels();for(int i=0;i<renderers.Length;i++)renderers[i].forceRenderingOff=flags[i];
+        int changed=0;for(int i=0;i<visible.Length;i++)if(Mathf.Abs(visible[i].r-hidden[i].r)+Mathf.Abs(visible[i].g-hidden[i].g)+Mathf.Abs(visible[i].b-hidden[i].b)>20)changed++;
+        RenderTexture.active=null;Object.DestroyImmediate(texture);Object.DestroyImmediate(target);Object.DestroyImmediate(camera.gameObject);
+        Check(changed>50,"The real cinematic camera sees the thrown hero instead of a roof obscuring him: pixels="+changed);
+    }
+    static void CheckFeet(Transform root,string pose)
+    {
+        var rig=root.GetComponentInChildren<Animator>();float low=float.PositiveInfinity;
+        foreach(var id in new[]{HumanBodyBones.LeftFoot,HumanBodyBones.RightFoot,HumanBodyBones.LeftToes,HumanBodyBones.RightToes}){var bone=rig.GetBoneTransform(id);if(bone!=null)low=Mathf.Min(low,bone.position.y);}
+        float deck=RiverBossEncounter.Instance.ArenaCenter.y;
+        Check(low>=deck+.1f&&low<deck+EnemyDeckGuard.RigHeight(rig)*.1f,"Animated feet remain above the timber deck: "+pose+" clearance="+(low-deck));
+    }
+    static void ProbeDeckPoses()
+    {
+        var boss=RiverBossEncounter.Instance;var hero=BeachBoatQuestSession.Instance.player.transform;
+        var late=typeof(RiverFighterPose).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic);
+        foreach(var root in new[]{hero,boss.Boss})
+        {
+            var pose=root.GetComponent<RiverFighterPose>();var rig=pose.Animator;pose.SetSword(true);pose.Walk(true);
+            for(int i=0;i<3;i++){rig.Update(.13f);late.Invoke(pose,null);boss.SupportAfterAnimation();CheckFeet(root,root.name+" walking "+i);}
+            pose.Walk(false);pose.Slash();
+            for(int i=0;i<3;i++){rig.Update(.12f);late.Invoke(pose,null);boss.SupportAfterAnimation();CheckFeet(root,root.name+" sword "+i);}
+        }
+        var bow=RiverPlayerCombat.Instance;bow.SetAim(true);hero.GetComponentInChildren<Animator>().Update(.1f);
+        typeof(RiverPlayerCombat).GetMethod("LateUpdate",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(bow,null);boss.SupportAfterAnimation();CheckFeet(hero,"aiming bow");bow.SetAim(false);
+        var floor=Object.FindObjectsByType<BoxCollider>().First(c=>c.name=="Solid_Duel_Deck");
+        Check(floor.Raycast(new Ray(boss.ArenaCenter+Vector3.up*5,Vector3.down),out var hit,10)&&Mathf.Abs(hit.point.y-boss.ArenaCenter.y)<.01f,"A continuous physical deck supports the duel even between visible planks");
     }
     static void Tick()
     {
@@ -54,7 +88,7 @@ public static class BeachBoatEpiloguePlaytest
                     if(i==0){var partial=BachDangSaveSystem.Capture("QA partial search");BachDangSaveSystem.Apply(partial);Check(boss.SearchCount==1&&!boss.InArena,"A partial prisoner search survives save/load");}
                 }
                 Check(boss.SearchCount==3,"All three searched wrecks unlock the commander reveal");boss.BeginDuel();
-                Check(boss.IsFighting&&story.currentState==Story.StoryState.Act3_CommanderDuel&&!CampaignProgress.Instance.Record.finished,"The reveal starts a separate duel without completing the game");
+                Check(boss.IntroActive&&!boss.IsFighting&&story.currentState==Story.StoryState.Act3_CommanderDuel&&!CampaignProgress.Instance.Record.finished,"The reveal starts the boss knockdown introduction before enabling duel controls");
                 Check(Vector3.Distance(actor.position,boss.ArenaCenter)<170&&Vector3.Distance(boss.Boss.position,boss.ArenaCenter)<170,"Both fighters stand on the spacious flagship deck");
                 Check(BachDangAutoSave.Instance.RetryPoint?.boss?.inArena==true,"The duel writes a temporary retry point without touching manual saves");
                 Check(boss.ClampDeck(boss.ArenaCenter+new Vector3(1000,0,1000)).x<=boss.ArenaCenter.x+96,"Deck movement clamps at the solid rail boundary");
@@ -62,7 +96,27 @@ public static class BeachBoatEpiloguePlaytest
             }
             if(phase==10)
             {
+                if(boss.IntroActive)
+                {
+                    if(!throwChecked&&boss.IntroElapsed>=1)
+                    {
+                        throwChecked=true;Check(!boss.TryPlayerStrike()&&!boss.TryDodge(Vector3.right)&&!BachDangSaveSystem.CanSave,"The throw blocks attacks, dodging and saves until the hero lands");
+                        Check(!session.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().enabled&&actor.position.z<boss.ArenaCenter.z-25,"The cinematic owns the camera and physically throws the hero backward across the deck");
+                        BeachBoatReview29Playtest.Picture("Boss_Throw",session.storyCamera.transform.position,session.storyCamera.transform.position+session.storyCamera.transform.forward*60);
+                        CheckHeroVisible();
+                    }
+                    return;
+                }
                 if(BeachBoatQuestSession.InputBlocked)return;
+                Check(throwChecked&&actor.GetComponentInChildren<Animator>().enabled&&session.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().enabled,"Landing restores the animated hero and player camera");
+                BachDangSaveSystem.Apply(BachDangAutoSave.Instance.RetryPoint);
+                Check(boss.IsFighting&&!boss.IntroActive&&actor.GetComponentInChildren<Animator>().enabled,"Retrying the pre-duel checkpoint starts controllable combat without retaining the throw pose");
+                phase=11;return;
+            }
+            if(phase==11)
+            {
+                if(BeachBoatQuestSession.InputBlocked)return;
+                ProbeDeckPoses();
                 actor.position=boss.Boss.position-Vector3.forward*25;actor.rotation=Quaternion.identity;int hp=boss.Health;Check(boss.TryPlayerStrike()&&boss.Health==hp-12,"A near facing sword strike removes twelve boss health");
                 save=BachDangSaveSystem.Capture("QA mid duel");BachDangSaveSystem.Apply(save);
                 Check(boss.IsFighting&&boss.Health==hp-12&&Vector3.Distance(actor.position,save.playerPosition)<1,"Mid-duel load restores boss health and player deck position");

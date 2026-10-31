@@ -6,6 +6,7 @@ namespace BeachBoatStory
     [DefaultExecutionOrder(700)]
     public sealed class ActorSolidBody : MonoBehaviour
     {
+        public const int ContactLayer=14;
         public Transform Carrier {get;set;}
         Animator animator;
         CapsuleCollider solid;
@@ -13,6 +14,11 @@ namespace BeachBoatStory
         Transform feet,otherFoot,head;
         bool walkingBody;
         public CapsuleCollider SolidCollider=>solid;
+        void OnEnable()
+        {
+            // Synthetic / legacy actors may supply their own contact capsule.
+            var existing=GetComponent<Collider>();if(existing!=null&&existing.enabled&&!existing.isTrigger)existing.gameObject.layer=ContactLayer;
+        }
         public float WalkingHeight {get;private set;}
         public float WalkingSoleOffset {get;private set;}
         public float WalkingRadius {get;private set;}
@@ -38,7 +44,7 @@ namespace BeachBoatStory
             body.walkingBody=walker;
             if(walker){WalkingDimensions(rig,out var h,out var sole,out var radius);body.WalkingHeight=h;body.WalkingSoleOffset=sole;body.WalkingRadius=radius;}
             body.feet=rig.GetBoneTransform(HumanBodyBones.LeftFoot);body.otherFoot=rig.GetBoneTransform(HumanBodyBones.RightFoot);body.head=rig.GetBoneTransform(HumanBodyBones.Head);
-            var go=new GameObject("Solid_Actor_Body");go.transform.SetParent(actor.transform,false);body.solid=go.AddComponent<CapsuleCollider>();body.solid.isTrigger=false;body.UpdateShape();
+            var go=new GameObject("Solid_Actor_Body");go.transform.SetParent(actor.transform,false);go.layer=ContactLayer;body.solid=go.AddComponent<CapsuleCollider>();body.solid.isTrigger=false;body.UpdateShape();
         }
         void LateUpdate()=>UpdateShape();
         void UpdateShape()

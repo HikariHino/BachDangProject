@@ -146,6 +146,7 @@ namespace BeachBoatStory
             EvaluateTraversal(Time.deltaTime);
         }
         public void WarmTraversal(){if(Traversal==Motion.Idle&&traversalBones==null){BeginTraversalRig();RestoreTraversalRig();}}
+        public void WarmCombatHands(){if(Animator!=null)HumanoidGripMesh.Prepare(Animator,leftGrip,rightGrip);}
         void BeginTraversalRig()
         {
             if(Animator==null)return;

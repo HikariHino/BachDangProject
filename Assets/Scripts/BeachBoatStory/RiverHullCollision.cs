@@ -69,9 +69,9 @@ namespace BeachBoatStory
             // normal. Use the terrain's real slope so swimmers can reach dry sand.
             return terrain.terrainData.GetInterpolatedNormal(Mathf.Clamp01(p.x/size.x),Mathf.Clamp01(p.z/size.z)).y>=.65f;
         }
-        public static Vector3 Move(Vector3 from,Vector3 destination,float radius,bool navigateAround=false,Transform owner=null,BoatHullCollision deckCarrier=null)
+        public static Vector3 Move(Vector3 from,Vector3 destination,float radius,bool navigateAround=false,Transform owner=null,BoatHullCollision deckCarrier=null,bool syncTransforms=true)
         {
-            Physics.SyncTransforms();
+            if(syncTransforms)Physics.SyncTransforms();
             var position=Separate(from,radius,owner,deckCarrier);var remaining=destination-from;
             for(int pass=0;pass<3&&remaining.sqrMagnitude>.00001f;pass++)
             {

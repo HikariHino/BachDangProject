@@ -16,7 +16,7 @@ namespace BeachBoatStory
         public void Reset(){path.Clear();open.Clear();nodes.Clear();waypoint=0;nextPlan=nextProbe=0;clearProbe=false;goal=Vector3.zero;LastDirection=Vector3.zero;}
         const float Cell=12;
         static readonly float[] passingAngles={45f,-45f,80f,-80f,115f,-115f};
-        readonly Collider[] neighbors=new Collider[48];
+        readonly Collider[] neighbors=new Collider[96];
         Vector3 SeparateCrowdPose(Transform actor,Vector3 from,Vector3 position,float radius,bool turning=true)
         {
             var own=actor.GetComponent<ActorSolidBody>()?.SolidCollider??actor.GetComponent<Collider>();
@@ -30,7 +30,7 @@ namespace BeachBoatStory
                 var facing=turning&&motion.sqrMagnitude>.001f?Quaternion.LookRotation(motion):actor.rotation;
                 var turn=facing*Quaternion.Inverse(actor.rotation);
                 var predicted=actor.position+(position-from)+turn*(own.transform.position-actor.position);
-                int count=Physics.OverlapSphereNonAlloc(predicted,42,neighbors,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+                int count=Physics.OverlapSphereNonAlloc(predicted,42,neighbors,1<<ActorSolidBody.ContactLayer,QueryTriggerInteraction.Ignore);
                 bool changed=false;
                 for(int i=0;i<count;i++)
                 {
@@ -50,7 +50,7 @@ namespace BeachBoatStory
         {
             var direction=(desired-from).normalized;var push=Vector3.zero;var right=Vector3.Cross(Vector3.up,direction);int id=actor.GetEntityId().GetHashCode();
             var own=actor.GetComponent<ActorSolidBody>()?.SolidCollider??actor.GetComponent<Collider>();float ownHalf=own!=null?Mathf.Max(own.bounds.extents.x,own.bounds.extents.z):radius;
-            int count=Physics.OverlapSphereNonAlloc(from+Vector3.up*4,42,neighbors,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+            int count=Physics.OverlapSphereNonAlloc(from+Vector3.up*4,42,neighbors,1<<ActorSolidBody.ContactLayer,QueryTriggerInteraction.Ignore);
             for(int i=0;i<count;i++)
             {
                 var other=neighbors[i].GetComponentInParent<ActorSolidBody>();if(other==null||other.transform.IsChildOf(actor)||Mathf.Abs(other.transform.position.y-from.y)>12)continue;
@@ -65,9 +65,12 @@ namespace BeachBoatStory
         }
         public Vector3 Move(Transform actor,Vector3 from,Vector3 target,float travel,float radius,BoatHullCollision carrier=null)
         {
+            // All probes below examine one unchanged world snapshot. Repeating
+            // a global sync for each passing candidate stalls large battles.
+            Physics.SyncTransforms();
             LastDirection=Vector3.zero;
             var direct=target-from;direct.y=0;
-            if(direct.sqrMagnitude<.001f){var resting=RiverHullCollision.Move(from,from,radius,true,actor,carrier);return carrier==null?SeparateCrowdPose(actor,from,resting,radius,false):resting;}
+            if(direct.sqrMagnitude<.001f){var resting=RiverHullCollision.Move(from,from,radius,true,actor,carrier,false);return carrier==null?SeparateCrowdPose(actor,from,resting,radius,false):resting;}
             // Probe ahead rather than replanning only after the actor is already touching a pole.
             var look=from+Vector3.ClampMagnitude(direct,Cell*3);
             // Static route probing need not repeat for every actor every frame.
@@ -78,20 +81,20 @@ namespace BeachBoatStory
             else if(Time.unscaledTime>=nextPlan&&(path.Count==0||waypoint>=path.Count||(goal-target).sqrMagnitude>80*80))
             {
                 if(planningFrame!=Time.frameCount){planningFrame=Time.frameCount;plans=0;}
-                if(plans<2){plans++;Plan(actor,from,target,radius+.35f,carrier);nextPlan=Time.unscaledTime+.7f;goal=target;}
+                if(plans<1){plans++;Plan(actor,from,target,radius+.35f,carrier);nextPlan=Time.unscaledTime+.7f;goal=target;}
             }
             while(waypoint<path.Count&&QuestRowboat.FlatDistance(from,path[waypoint])<radius+1)waypoint++;
             var destination=waypoint<path.Count?path[waypoint]:target;destination.y=from.y;
             var step=Vector3.ClampMagnitude(destination-from,travel);
             if(carrier==null)step=SteerCrowd(actor,from,destination,radius)*Mathf.Min(travel,(destination-from).magnitude);
-            var moved=RiverHullCollision.Move(from,from+step,radius,true,actor,carrier);
+            var moved=RiverHullCollision.Move(from,from+step,radius,true,actor,carrier,false);
             if(carrier==null&&(moved-from).sqrMagnitude<travel*travel*.06f)
             {
                 // Pick a clear passing direction instead of repeatedly walking into
                 // the same moving capsule. Every candidate still performs a solid sweep.
                 float best=(moved-from).sqrMagnitude;
                 foreach(float angle in passingAngles)
-                {var side=Quaternion.AngleAxis(angle,Vector3.up)*direct.normalized*travel;var attempt=RiverHullCollision.Move(from,from+side,radius,false,actor,carrier);float score=(attempt-from).sqrMagnitude;if(score>best*1.1f){best=score;moved=attempt;}}
+                {var side=Quaternion.AngleAxis(angle,Vector3.up)*direct.normalized*travel;var attempt=RiverHullCollision.Move(from,from+side,radius,false,actor,carrier,false);float score=(attempt-from).sqrMagnitude;if(score>best*1.1f){best=score;moved=attempt;}}
             }
             if((moved-from).sqrMagnitude<travel*travel*.04f){path.Clear();nextPlan=Mathf.Min(nextPlan,Time.unscaledTime+.15f);}
             if(carrier==null)moved=SeparateCrowdPose(actor,from,moved,radius);
@@ -104,7 +107,9 @@ namespace BeachBoatStory
             var destination=new Vector2Int(Mathf.RoundToInt(localGoal.x/Cell),Mathf.RoundToInt(localGoal.z/Cell));
             var start=new Node{cell=Vector2Int.zero,score=localGoal.magnitude};nodes[start.cell]=start;open.Add(start);Node best=start;
             Vector3 Point(Vector2Int c)=>origin+new Vector3(c.x*Cell,0,c.y*Cell);
-            for(int count=0;open.Count>0&&count<260;count++)
+            // A bounded local route plus swept passing steps avoids a burst of
+            // thousands of queries when every ship releases swimmers together.
+            for(int count=0;open.Count>0&&count<64;count++)
             {
                 int at=0;for(int i=1;i<open.Count;i++)if(open[i].score<open[at].score)at=i;
                 var current=open[at];open.RemoveAt(at);current.closed=true;

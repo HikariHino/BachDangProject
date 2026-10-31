@@ -52,7 +52,7 @@ namespace BeachBoatStory
         public int DefenderHits {get;private set;}
         public int DefenderDamageTaken {get;private set;}
         sealed class Hostile
-        {public readonly RiverActorNavigation navigation=new RiverActorNavigation();public GameObject go;public EnemyDeckGuard guard;public RiverFighterPose pose;public EnemyShip source;public Transform boat;public Vector3 start,local;public int state;public float time,respawn;public bool fromWreck,targetPlayer;}
+        {public readonly RiverActorNavigation navigation=new RiverActorNavigation();public GameObject go;public EnemyDeckGuard guard;public RiverFighterPose pose;public EnemyShip source;public Transform boat;public Vector3 start,local;public int state;public float time,respawn,nextLanding;public Vector3 landingLocal;public Transform landingCarrier;public bool landingValid,fromWreck,targetPlayer;}
         public int ShipwreckSurvivors {get;private set;}
         public int ShipwreckDeaths {get;private set;}
         public int SurvivorsTargetingPlayer {get;private set;}
@@ -792,7 +792,14 @@ namespace BeachBoatStory
                 else if(h.state==1&&h.boat!=QuestRowboat.Instance.transform&&h.boat.GetComponent<AmbientRiverBoat>()!=null)
                 {var crew=h.boat.GetComponentInChildren<FleetDeckCrew>();if(crew!=null&&crew.soldiers.Length>0)end=crew.soldiers[0].position+h.boat.forward*8;
                     int slot=hostiles.IndexOf(h)%6;end+=h.boat.forward*((slot/2-1)*20)+h.boat.right*(slot%2==0?-10:10);
-                    if(BoatHullCollision.Get(h.boat).TryClearDeckLanding(end,4,h.go.transform,out var support))end=support+Vector3.up*.2f;}
+                    // Far swimmers need an approach, not a 33-point deck occupancy search.
+                    // Cache in carrier coordinates so moving boats keep their landing aligned.
+                    if(QuestRowboat.FlatDistance(h.go.transform.position,h.boat.position)<65)
+                    {
+                        if(h.landingCarrier!=h.boat||Time.time>=h.nextLanding)
+                        {h.nextLanding=Time.time+.3f;h.landingCarrier=h.boat;h.landingValid=BoatHullCollision.Get(h.boat).TryClearDeckLanding(end,4,h.go.transform,out var support);if(h.landingValid)h.landingLocal=h.boat.InverseTransformPoint(support);}
+                        if(h.landingValid)end=h.boat.TransformPoint(h.landingLocal)+Vector3.up*.2f;
+                    }}
                 if(h.state==4)
                 {
                     if(chasePlayer)

@@ -64,10 +64,15 @@ namespace BeachBoatStory
     {
         IEnumerator Start()
         {
+            var session=BeachBoatQuestSession.Instance;
+            if(session!=null&&CombatHitFeedback.Instance==null)session.gameObject.AddComponent<CombatHitFeedback>();
+            if(CombatDamageNumbers.Instance==null)new GameObject("CombatDamageNumbers").AddComponent<CombatDamageNumbers>();
             // Spread preparation over title frames; sinking only enables prepared objects.
             foreach(var ship in FindObjectsByType<EnemyShip>(FindObjectsInactive.Include,FindObjectsSortMode.None))
             {ship.PrepareWreck();yield return null;}
-            foreach(var pose in FindObjectsByType<RiverFighterPose>(FindObjectsInactive.Include,FindObjectsSortMode.None))if(pose.GetComponent<EnemyDeckGuard>()!=null){pose.WarmTraversal();yield return null;}
+            RiverBossEncounter.Instance?.PrepareArena();yield return null;
+            foreach(var pose in FindObjectsByType<RiverFighterPose>(FindObjectsInactive.Include,FindObjectsSortMode.None))
+            {pose.WarmCombatHands();if(pose.GetComponent<EnemyDeckGuard>()!=null)pose.WarmTraversal();yield return null;}
         }
     }
     public sealed class RiverCorpse : MonoBehaviour
