@@ -1,0 +1,753 @@
+{
+  "actors": [
+    {
+      "key": "Camp_Guard_Front_Left",
+      "profile": "npc_camp_guard_front_left",
+      "voice": "Quốc Tuấn",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi giữ lối sang làng. Qua cổng rồi men theo đường đất là tới chợ ven sông.",
+        "Trận địa đã sẵn sàng. Lối ra bến tôi đã dọn, quân đi qua đây sẽ không bị vướng.",
+        "Anh về rồi! Từ lúc nghe tiếng reo bên sông, tôi cứ ngóng ở cửa trại."
+      ],
+      "label": "Lính gác cổng trái"
+    },
+    {
+      "key": "Camp_Guard_Front_Right",
+      "profile": "npc_camp_guard_front_right",
+      "voice": "Hải Đăng",
+      "tempo": 1.1,
+      "lines": [
+        "Ca gác của tôi trông về phía bến. Có thuyền lạ là tôi báo ngay cho chủ tướng.",
+        "Mặt sông đang yên, nhưng tôi không rời vị trí. Chỉ chờ hiệu lệnh từ phía Ngô Quyền.",
+        "Cánh cổng này hôm nay đón người thắng trận. Vào nghỉ một lát đi, anh vất vả rồi."
+      ],
+      "label": "Lính gác cổng phải"
+    },
+    {
+      "key": "Camp_Guard_Mid_Right",
+      "profile": "npc_camp_guard_mid_right",
+      "voice": "Thái Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Kho phía sau đang chuyển lương. Anh đi bên mép đường giúp tôi, chừa lối cho người gánh hàng.",
+        "Lương đã lên thuyền. Tôi ở lại giữ kho để quân ngoài sông yên tâm đánh giặc.",
+        "Để tôi nhận lại quân trang. Người bị thương cứ đưa thẳng sang lều quân y."
+      ],
+      "label": "Lính giữ kho"
+    },
+    {
+      "key": "Camp_Guard_Back_1",
+      "profile": "npc_camp_guard_back_1",
+      "voice": "Đức Trí",
+      "tempo": 1.1,
+      "lines": [
+        "Đường sau trại vắng nên càng phải coi chừng. Tôi vừa đi kiểm hết hàng rào.",
+        "Tôi sẽ giữ đường lui thông suốt. Ngoài sông có biến thì anh cứ theo lối này về trại.",
+        "Đêm nay chắc được đổi một ca gác yên ổn. Lâu rồi tôi mới thấy ai cũng nhẹ nhõm thế."
+      ],
+      "label": "Lính tuần tra hậu trại"
+    },
+    {
+      "key": "Camp_Guard_Back_2",
+      "profile": "npc_camp_guard_back_2",
+      "voice": "Quang Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi nhận ca từ lúc trời chưa sáng. Chân hơi mỏi, nhưng còn phải chờ người tới thay.",
+        "Nghe trống thì tôi mở lối cho đội tiếp vận. Ca này không được chậm một nhịp.",
+        "Người thay ca vừa kể thuyền giặc mắc kín giữa sông. Kế của chủ tướng thật tài."
+      ],
+      "label": "Lính trực ca sáng"
+    },
+    {
+      "key": "Camp_Guard_Back_3",
+      "profile": "npc_camp_guard_back_3",
+      "voice": "Xuân Vĩnh",
+      "tempo": 1.1,
+      "lines": [
+        "Bên kia có bếp trại, anh cần nước thì ghé đó. Tôi còn phải canh cửa sau.",
+        "Đuốc và nước đã để sẵn. Quân trở về lúc nào cũng có người đón.",
+        "Bếp đang nấu thêm cơm. Đánh xong rồi thì cũng phải cho anh em ăn một bữa nóng."
+      ],
+      "label": "Lính gác gần bếp"
+    },
+    {
+      "key": "Camp_Lookout_Soldier",
+      "profile": "npc_camp_lookout_soldier",
+      "voice": "Hải Đăng",
+      "tempo": 1.1,
+      "lines": [
+        "Đứng trên cao nhìn rõ con nước hơn. Anh nhìn vệt bọt ven bờ sẽ biết triều đang đổi.",
+        "Tôi sẽ nhìn hiệu từ ngoài sông. Anh cứ giữ đúng đường nhử, đừng nóng mà quay lại đánh sớm.",
+        "Từ chòi canh tôi thấy cờ quân ta trở về. Lần này tiếng trống nghe khác hẳn mọi hôm."
+      ],
+      "label": "Lính quan sát mặt sông"
+    },
+    {
+      "key": "Camp_Sitting_Soldier",
+      "profile": "npc_camp_sitting_soldier",
+      "voice": "Phạm Tuyên",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi từng chèo thuyền qua khúc ấy. Sông rộng thì dễ chủ quan, chỗ nguy hiểm lại nằm dưới nước.",
+        "Thuyền nhỏ phải lấy sự lanh lẹ làm lợi. Đừng đọ sức với mũi chiến thuyền của giặc.",
+        "Tôi đoán giặc sẽ ham đuổi, mà không ngờ chúng mắc sâu đến vậy. Anh làm tốt lắm."
+      ],
+      "label": "Người lính từng trải"
+    },
+    {
+      "key": "Camp_Laying_Soldier",
+      "profile": "npc_camp_laying_soldier",
+      "voice": "Minh Triết",
+      "tempo": 1.1,
+      "lines": [
+        "Chân tôi bị đau nên phải nằm lại. Anh ra làng, tiện nói với bà con rằng quân trại vẫn đủ lương nhé.",
+        "Tôi không ra sông được, đành ở đây vá bao và giữ đồ cho anh em. Phần tôi vẫn còn việc.",
+        "Anh trở về là tốt rồi. Kể cho tôi nghe đi, ngoài sông lúc cọc lộ ra trông thế nào?"
+      ],
+      "label": "Thương binh trong trại"
+    },
+    {
+      "key": "Linh_Nghi_Ca_Tay_1",
+      "profile": "npc_linh_nghi_ca_tay_1",
+      "voice": "Đức Trí",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi đang xem lại lưỡi kiếm. Cán lỏng một chút thôi, tới lúc giao chiến sẽ rất nguy.",
+        "Kiếm đã chắc cán. Tôi còn chờ người tới nhận nốt bó giáo này.",
+        "Mang vũ khí xuống kiểm lại đi anh. Đừng để vết nứt nhỏ thành chuyện lớn lần sau."
+      ],
+      "label": "Lính sửa kiếm"
+    },
+    {
+      "key": "Linh_Nghi_Ca_Tay_2",
+      "profile": "npc_linh_nghi_ca_tay_2",
+      "voice": "Quốc Tuấn",
+      "tempo": 1.1,
+      "lines": [
+        "Dây khiên của tôi sờn rồi, đang nhờ người nối lại. Đồ dùng phải sửa trước lúc xuất quân.",
+        "Khiên đã buộc chặt. Gặp tên bay thì giữ mặt khiên hướng về phía địch, đừng quay lưng chạy.",
+        "Khiên móp mất một góc mà người còn nguyên là mừng rồi. Tôi sẽ đem nó đi sửa."
+      ],
+      "label": "Lính sửa khiên"
+    },
+    {
+      "key": "Linh_Nghi_Ca_Dong_1",
+      "profile": "npc_linh_nghi_ca_dong_1",
+      "voice": "Quang Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Nhà tôi ở phía hạ lưu. Càng gần ngày đánh, tôi càng mong bà con bên ấy được yên.",
+        "Làng phía dưới đã biết giữ thuyền trong bến. Anh nhử giặc vào sâu rồi hãy tính chuyện đánh.",
+        "Tôi vừa nhờ người báo tin về nhà. Chắc tối nay cả làng sẽ ngủ ngon hơn."
+      ],
+      "label": "Người lính quê hạ lưu"
+    },
+    {
+      "key": "Linh_Nghi_Ca_Dong_2",
+      "profile": "npc_linh_nghi_ca_dong_2",
+      "voice": "Thái Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi đang lựa tên thẳng. Mũi tốt mà thân cong thì bắn xa cũng chẳng tới đúng chỗ.",
+        "Tên đã chia đủ cho hai bờ. Lúc đánh, anh cứ giữ mình, trên bờ có chúng tôi lo.",
+        "Còn ít tên nguyên, tôi đang nhặt lại. Phần hỏng thì giữ mũi để đem về lò rèn."
+      ],
+      "label": "Lính lựa tên"
+    },
+    {
+      "key": "Camp_Worker_01",
+      "profile": "npc_camp_worker_01",
+      "voice": "Quốc Tuấn",
+      "tempo": 1.1,
+      "lines": [
+        "Bao gạo này còn hở miệng, tôi phải buộc lại cho khỏi vãi dọc đường.",
+        "Gạo đã xếp gọn theo từng thuyền. Phần lương trên bờ vẫn đủ cho đội tiếp ứng.",
+        "Tôi đang đếm lại lương còn trong kho. Hôm nay phải phát thêm cho người đánh trận trở về."
+      ],
+      "label": "Lính coi kho gạo"
+    },
+    {
+      "key": "Camp_Worker_02",
+      "profile": "npc_camp_worker_02",
+      "voice": "Quang Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Cá phải hong khô thêm mới cất được. Mang ẩm xuống thuyền dễ hỏng cả phần lương.",
+        "Cá khô đã chia từng gói. Tôi giữ lại phần dự phòng cho ai về trại muộn.",
+        "Cá còn đủ, anh khỏi lo. Mấy người ngoài bếp đang nướng thêm để đãi quân về."
+      ],
+      "label": "Lính chuẩn bị cá khô"
+    },
+    {
+      "key": "Camp_Worker_03",
+      "profile": "npc_camp_worker_03",
+      "voice": "Thái Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi đang gỡ cuộn dây này. Dây rối thì lúc cần kéo cọc sẽ mất cả buổi.",
+        "Dây đã cuộn theo từng bó. Mối buộc yếu tôi thay hết từ sớm rồi.",
+        "Có cuộn dây kéo bị xước, nhưng vẫn dùng lại được. Tôi sẽ nối trước khi cất kho."
+      ],
+      "label": "Lính gỡ dây thừng"
+    },
+    {
+      "key": "Camp_Worker_04",
+      "profile": "npc_camp_worker_04",
+      "voice": "Đức Trí",
+      "tempo": 1.1,
+      "lines": [
+        "Đầu cọc phải vót đều và sắc. Anh nhìn dọc thân gỗ mà chọn, đừng lấy khúc đã nứt.",
+        "Cọc ngoài sông đã dựng xong. Đống gỗ thừa này tôi giữ để sửa bè và vá thuyền.",
+        "Tôi còn nhớ từng khúc gỗ trước lúc vót. Không ngờ chúng lại giữ được cả cửa sông."
+      ],
+      "label": "Lính vót cọc"
+    },
+    {
+      "key": "Camp_Worker_05",
+      "profile": "npc_camp_worker_05",
+      "voice": "Xuân Vĩnh",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi chuyển đồ từ kho ra bến. Anh chừa giúp một khoảng để tôi đặt gánh xuống đã.",
+        "Đồ đã tập kết sát bến, quân cần là chuyển đi ngay. Không phải chạy ngược về kho nữa.",
+        "Người về đông quá, tôi đang đưa nước ra trước. Việc trong trại giờ mới thật bận."
+      ],
+      "label": "Lính tiếp vận"
+    },
+    {
+      "key": "Camp_Worker_06",
+      "profile": "npc_camp_worker_06",
+      "voice": "Minh Triết",
+      "tempo": 1.1,
+      "lines": [
+        "Bếp sắp nhóm rồi. Tôi chẻ nốt củi này để nấu kịp trước lúc anh em đi làm.",
+        "Cơm đang ủ trong nồi. Tôi chờ đội sau ăn xong rồi mới dọn bếp.",
+        "Nồi này nấu thêm cho quân thắng trận. Anh ngồi nghỉ đi, chín là tôi gọi."
+      ],
+      "label": "Lính bếp"
+    },
+    {
+      "key": "Camp_Worker_07",
+      "profile": "npc_camp_worker_07",
+      "voice": "Phạm Tuyên",
+      "tempo": 1.1,
+      "lines": [
+        "Chum này tôi mới gánh đầy. Ra bến nhớ mang theo nước, giữa sông không dễ kiếm đâu.",
+        "Nước đã chia xuống các thuyền. Tôi giữ thêm hai chum cho người quay về tiếp tế.",
+        "Ai vừa về cứ tới lấy nước. Tôi lại ra giếng gánh thêm, chẳng để anh em phải chờ."
+      ],
+      "label": "Lính gánh nước"
+    },
+    {
+      "key": "Camp_Worker_08",
+      "profile": "npc_camp_worker_08",
+      "voice": "Quang Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi đang vá chỗ rách ở mép buồm. Gió kéo mạnh thì đường chỉ phải thật chắc.",
+        "Buồm đã vá xong từ sáng. Thuyền nhỏ mình chèo linh hoạt, đừng để dây thừa vướng chân.",
+        "Có tấm buồm thủng nhưng còn cứu được. Gấp lại cho khô rồi tôi vá tiếp."
+      ],
+      "label": "Lính vá buồm"
+    },
+    {
+      "key": "Camp_Worker_09",
+      "profile": "npc_camp_worker_09",
+      "voice": "Đức Trí",
+      "tempo": 1.1,
+      "lines": [
+        "Tro nguội rồi mới đem đổ được. Tôi dọn bếp xong còn phải châm thêm mấy cột đuốc.",
+        "Đuốc ở lối ra bến đã thắp đủ. Quân về chậm vẫn nhìn được đường vào trại.",
+        "Để tôi châm lại đuốc. Mọi người còn đi lại đưa thương binh, không thể để lối này tối."
+      ],
+      "label": "Lính chăm đuốc"
+    },
+    {
+      "key": "Camp_Worker_10",
+      "profile": "npc_camp_worker_10",
+      "voice": "Thái Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Giáp này đứt một sợi buộc. Mặc vào mà không kiểm thì xoay người là vướng ngay.",
+        "Quân trang đã sửa xong. Ai thiếu dây buộc thì tôi còn một bó ở đây.",
+        "Anh cởi giáp xuống xem có thương tích không đã. Vết nhẹ cũng nên nhờ quân y coi giúp."
+      ],
+      "label": "Lính sửa giáp"
+    },
+    {
+      "key": "Camp_Worker_11",
+      "profile": "npc_camp_worker_11",
+      "voice": "Xuân Vĩnh",
+      "tempo": 1.1,
+      "lines": [
+        "Nắp thùng phải khít mới mang xuống thuyền. Tôi đang thử lại từng cái một.",
+        "Thùng đã chằng chắc, xuống nước cũng không xô vào người chèo. Tôi còn kiểm nốt hai chiếc.",
+        "Thùng nào móp để riêng cho tôi. Mình sửa lại, lần sau vẫn còn dùng được."
+      ],
+      "label": "Lính coi thùng hàng"
+    },
+    {
+      "key": "Camp_Worker_12",
+      "profile": "npc_camp_worker_12",
+      "voice": "Quốc Tuấn",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi dọn lối giữa kho và cổng. Người gánh hàng đông, để đồ ngang đường là vướng ngay.",
+        "Lối ra bến đã thông. Anh theo mép đường mà đi, đoàn tiếp vận còn đang chuyển đồ.",
+        "Tôi đang dọn chỗ cho người nghỉ. Mang cáng qua đây nhé, đoạn này đã bằng phẳng rồi."
+      ],
+      "label": "Lính dọn đường"
+    },
+    {
+      "key": "DanLang_Thai_0",
+      "profile": "npc_danlang_thai_0",
+      "voice": "Phạm Tuyên",
+      "tempo": 1.1,
+      "lines": [
+        "Bà con đã để sẵn năm khúc gỗ dọc đường làng. Anh gom đủ rồi mang về cho quân trại nhé.",
+        "Cọc ngoài sông đã thành trận địa rồi à? Gỗ của làng giúp được việc, già này mừng lắm.",
+        "Sông vẫn chảy qua làng mình, mà giặc chẳng còn dám tới nữa. Công ấy thuộc cả quân lẫn dân."
+      ],
+      "label": "Bô lão trong làng"
+    },
+    {
+      "key": "DanLang_Thai_1",
+      "profile": "npc_danlang_thai_1",
+      "voice": "Quang Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi sống nhờ con nước nên nhìn là biết triều sắp đổi. Đợi đúng lúc, dòng sông sẽ giúp quân mình.",
+        "Thuyền nhỏ đi sát dòng quen thì dễ xoay hơn. Anh nhớ chừa đường về bến khi ra nhử giặc.",
+        "Nay tôi lại thả lưới được rồi. Mấy hôm giặc kéo tới, chẳng ai yên lòng mà ra sông."
+      ],
+      "label": "Người dân làm nghề sông"
+    },
+    {
+      "key": "DanLang_Thai_2",
+      "profile": "npc_danlang_thai_2",
+      "voice": "Xuân Vĩnh",
+      "tempo": 1.1,
+      "lines": [
+        "Nhà tôi xin góp gỗ. Anh lấy đủ năm khúc trong làng nhé, đừng bỏ sót đoạn cạnh đường.",
+        "Tôi đang thu gọn chỗ gỗ còn lại. Quân cần sửa thuyền thì cứ nói, bà con còn góp được.",
+        "Khúc gỗ nhà tôi chắc cũng nằm ngoài trận địa ấy. Nghĩ vậy mà thấy mình góp được chút sức."
+      ],
+      "label": "Người góp gỗ"
+    }
+  ],
+  "vendors": [
+    {
+      "key": "stall_Timber",
+      "profile": "npc_vendor_timber",
+      "voice": "Đức Trí",
+      "tempo": 1.1,
+      "lines": [
+        "Gỗ tôi để sẵn rồi. Anh giữ cưa thẳng rãnh, kéo đều tay là được.",
+        "Lần này mình cưa cho nhẵn hơn nhé. Đừng gấp quá mà trượt khỏi rãnh.",
+        "Được rồi, khúc này chắc tay lắm. Tôi sẽ chuyển số gỗ ấy cho quân trại."
+      ]
+    },
+    {
+      "key": "stall_Rope",
+      "profile": "npc_vendor_rope",
+      "voice": "Thái Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Dây này tôi lựa kỹ rồi. Anh quấn đều vòng, siết vừa tay để nút khỏi tuột.",
+        "Anh thử buộc thêm một lượt nhé. Cảm thấy dây căng vừa thì thả tay ra.",
+        "Nút chắc rồi đấy. Bó cọc này mang xuống thuyền cũng không bung dây nữa."
+      ]
+    },
+    {
+      "key": "stall_Rice",
+      "profile": "npc_vendor_rice",
+      "voice": "Trúc Ly",
+      "female": true,
+      "tempo": 1.1,
+      "lines": [
+        "Bao để bên này, gạo ở trong rổ. Anh xúc từng gáo thôi, đủ thì nhấc bao sang giao.",
+        "Tôi để thêm bao mới rồi. Lỡ xúc dư thì bớt một gáo, đừng bỏ phí gạo nhé.",
+        "Bao này đủ rồi, cảm ơn anh. Có phần gạo ấy, quân mình mới yên tâm ra sông."
+      ]
+    },
+    {
+      "key": "stall_Provisions",
+      "profile": "npc_vendor_provisions",
+      "voice": "Minh Triết",
+      "tempo": 1.1,
+      "lines": [
+        "Gạo với cá tôi chia sẵn rồi. Anh gấp kín từng mép, đừng để muối rơi ra ngoài.",
+        "Khăn mới đây, anh gói tiếp đi. Ép nếp chặt một chút thì gói mới giữ được lâu.",
+        "Gói này kín và gọn rồi. Tôi buộc lại để chuyển cho đội chèo thuyền."
+      ]
+    }
+  ],
+  "residents": [
+    {
+      "role": "Villager",
+      "persona": 0,
+      "female": false,
+      "profile": "npc_villager_0_m",
+      "voice": "Phạm Tuyên",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi đang thu dọn việc nhà. Nghe quân trại cần người là bà con lại chạy sang giúp.",
+        "Trong làng còn trẻ nhỏ nên tôi ở lại trông nhà. Các anh ra sông nhớ giữ mình.",
+        "Hôm nay mới dám mở cửa sớm như mọi khi. Tiếng trống chiến thắng làm cả nhà tôi tỉnh giấc."
+      ]
+    },
+    {
+      "role": "Villager",
+      "persona": 0,
+      "female": true,
+      "profile": "npc_villager_0_f",
+      "voice": "Trúc Ly",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi đang thu dọn việc nhà. Nghe quân trại cần người là bà con lại chạy sang giúp.",
+        "Trong làng còn trẻ nhỏ nên tôi ở lại trông nhà. Các anh ra sông nhớ giữ mình.",
+        "Hôm nay mới dám mở cửa sớm như mọi khi. Tiếng trống chiến thắng làm cả nhà tôi tỉnh giấc."
+      ]
+    },
+    {
+      "role": "Villager",
+      "persona": 1,
+      "female": false,
+      "profile": "npc_villager_1_m",
+      "voice": "Xuân Vĩnh",
+      "tempo": 1.1,
+      "lines": [
+        "Mấy nhà hàng xóm góp chung một gánh củi. Tôi đang chờ họ để mang sang bếp trại.",
+        "Việc đồng áng tạm để đó, trước mắt phải lo cho quân mình đủ lương.",
+        "Bà con đang sửa soạn một bữa chung. Ai trở về làng cũng được mời ngồi lại."
+      ]
+    },
+    {
+      "role": "Villager",
+      "persona": 1,
+      "female": true,
+      "profile": "npc_villager_1_f",
+      "voice": "Thục Đoan",
+      "tempo": 1.1,
+      "lines": [
+        "Mấy nhà hàng xóm góp chung một gánh củi. Tôi đang chờ họ để mang sang bếp trại.",
+        "Việc đồng áng tạm để đó, trước mắt phải lo cho quân mình đủ lương.",
+        "Bà con đang sửa soạn một bữa chung. Ai trở về làng cũng được mời ngồi lại."
+      ]
+    },
+    {
+      "role": "Farmer",
+      "persona": 0,
+      "female": false,
+      "profile": "npc_farmer_0_m",
+      "voice": "Xuân Vĩnh",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi vừa từ ruộng về. Thóc phơi xong phải cất ngay, sương xuống là ẩm hết.",
+        "Lúa ngoài bãi vẫn có người chăm. Các anh yên tâm đánh, phần ruộng để chúng tôi giữ.",
+        "Tôi lại ra thăm ruộng đây. Mấy hôm nữa lúa tốt, mình sẽ có thêm gạo mới."
+      ]
+    },
+    {
+      "role": "Farmer",
+      "persona": 0,
+      "female": true,
+      "profile": "npc_farmer_0_f",
+      "voice": "Đoan Trang",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi vừa từ ruộng về. Thóc phơi xong phải cất ngay, sương xuống là ẩm hết.",
+        "Lúa ngoài bãi vẫn có người chăm. Các anh yên tâm đánh, phần ruộng để chúng tôi giữ.",
+        "Tôi lại ra thăm ruộng đây. Mấy hôm nữa lúa tốt, mình sẽ có thêm gạo mới."
+      ]
+    },
+    {
+      "role": "Farmer",
+      "persona": 1,
+      "female": false,
+      "profile": "npc_farmer_1_m",
+      "voice": "Minh Triết",
+      "tempo": 1.1,
+      "lines": [
+        "Nắng hôm nay vừa đủ hong thóc. Tôi đảo thêm một lượt rồi đem vào kho cho chắc.",
+        "Tôi dành riêng phần thóc sạch để chuyển vào trại. Quân đông thì bữa ăn càng phải lo kỹ.",
+        "Tôi định gieo lại vạt đất gần sông. Hết giặc rồi, để đất trống cũng tiếc."
+      ]
+    },
+    {
+      "role": "Farmer",
+      "persona": 1,
+      "female": true,
+      "profile": "npc_farmer_1_f",
+      "voice": "Trúc Ly",
+      "tempo": 1.1,
+      "lines": [
+        "Nắng hôm nay vừa đủ hong thóc. Tôi đảo thêm một lượt rồi đem vào kho cho chắc.",
+        "Tôi dành riêng phần thóc sạch để chuyển vào trại. Quân đông thì bữa ăn càng phải lo kỹ.",
+        "Tôi định gieo lại vạt đất gần sông. Hết giặc rồi, để đất trống cũng tiếc."
+      ]
+    },
+    {
+      "role": "Fisher",
+      "persona": 0,
+      "female": false,
+      "profile": "npc_fisher_0_m",
+      "voice": "Quang Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Mắt lưới này rách một đoạn. Vá cho kín đã, chiều tôi mới dám ra thả.",
+        "Khúc nước giữa sông đổi nhanh lắm. Anh nhìn bờ mà giữ hướng, đừng chỉ nhìn thuyền địch.",
+        "Tôi đang sửa lại mái chèo. Chuyến tới chắc lại nghe tiếng người gọi nhau trên bến."
+      ]
+    },
+    {
+      "role": "Fisher",
+      "persona": 0,
+      "female": true,
+      "profile": "npc_fisher_0_f",
+      "voice": "Ngọc Trân",
+      "tempo": 1.1,
+      "lines": [
+        "Mắt lưới này rách một đoạn. Vá cho kín đã, chiều tôi mới dám ra thả.",
+        "Khúc nước giữa sông đổi nhanh lắm. Anh nhìn bờ mà giữ hướng, đừng chỉ nhìn thuyền địch.",
+        "Tôi đang sửa lại mái chèo. Chuyến tới chắc lại nghe tiếng người gọi nhau trên bến."
+      ]
+    },
+    {
+      "role": "Fisher",
+      "persona": 1,
+      "female": false,
+      "profile": "npc_fisher_1_m",
+      "voice": "Phạm Tuyên",
+      "tempo": 1.1,
+      "lines": [
+        "Cá mới bắt đang chuyển vào chợ. Giữ phần tươi cho làng, phần khô gửi sang quân trại.",
+        "Thuyền giặc to thì quay chậm. Thuyền nhỏ mình quen luồng, cứ lấy đó mà tránh chúng.",
+        "Lưới còn nguyên, thuyền cũng còn. Đối với người làm nghề sông, vậy là mừng lắm rồi."
+      ]
+    },
+    {
+      "role": "Fisher",
+      "persona": 1,
+      "female": true,
+      "profile": "npc_fisher_1_f",
+      "voice": "Thục Đoan",
+      "tempo": 1.1,
+      "lines": [
+        "Cá mới bắt đang chuyển vào chợ. Giữ phần tươi cho làng, phần khô gửi sang quân trại.",
+        "Thuyền giặc to thì quay chậm. Thuyền nhỏ mình quen luồng, cứ lấy đó mà tránh chúng.",
+        "Lưới còn nguyên, thuyền cũng còn. Đối với người làm nghề sông, vậy là mừng lắm rồi."
+      ]
+    },
+    {
+      "role": "Merchant",
+      "persona": 0,
+      "female": false,
+      "profile": "npc_merchant_0_m",
+      "voice": "Minh Triết",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi vừa nhận thêm mẻ cá khô. Anh cần lương thì cứ xem, hàng cho quân đã để riêng.",
+        "Hàng đã chia vào từng bao, khỏi phải mở ra đếm lại lúc vội. Tôi chỉ chờ người tới nhận.",
+        "Chợ hôm nay có tiếng cười rồi. Mấy hôm trước ai bán cũng cứ nhìn ra phía sông."
+      ]
+    },
+    {
+      "role": "Merchant",
+      "persona": 0,
+      "female": true,
+      "profile": "npc_merchant_0_f",
+      "voice": "Ngọc Huyền",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi vừa nhận thêm mẻ cá khô. Anh cần lương thì cứ xem, hàng cho quân đã để riêng.",
+        "Hàng đã chia vào từng bao, khỏi phải mở ra đếm lại lúc vội. Tôi chỉ chờ người tới nhận.",
+        "Chợ hôm nay có tiếng cười rồi. Mấy hôm trước ai bán cũng cứ nhìn ra phía sông."
+      ]
+    },
+    {
+      "role": "Merchant",
+      "persona": 1,
+      "female": false,
+      "profile": "npc_merchant_1_m",
+      "voice": "Quang Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi đổi gạo lấy muối từ sáng. Đủ hàng rồi sẽ mang phần này sang kho tiếp vận.",
+        "Quân cần gì cứ báo sớm. Tôi nhờ các nhà bên cùng gom, đỡ để người ngoài bến phải chờ.",
+        "Nhận được tin thắng trận, tôi mở thêm vò nước. Ai vừa đi đánh về cứ ghé uống."
+      ]
+    },
+    {
+      "role": "Merchant",
+      "persona": 1,
+      "female": true,
+      "profile": "npc_merchant_1_f",
+      "voice": "Đoan Trang",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi đổi gạo lấy muối từ sáng. Đủ hàng rồi sẽ mang phần này sang kho tiếp vận.",
+        "Quân cần gì cứ báo sớm. Tôi nhờ các nhà bên cùng gom, đỡ để người ngoài bến phải chờ.",
+        "Nhận được tin thắng trận, tôi mở thêm vò nước. Ai vừa đi đánh về cứ ghé uống."
+      ]
+    },
+    {
+      "role": "Porter",
+      "persona": 0,
+      "female": false,
+      "profile": "npc_porter_0_m",
+      "voice": "Thái Sơn",
+      "tempo": 1.1,
+      "lines": [
+        "Gánh này nặng, tôi đi chậm một chút. Anh cho tôi qua rồi hãy rẽ vào kho nhé.",
+        "Chuyến cuối ra bến đây. Đặt hàng xong tôi quay lại chở thêm nước cho quân.",
+        "Hôm nay gánh đồ về nhẹ hơn lúc mang đi. Chỉ mong người ra trận cũng về đủ cả."
+      ]
+    },
+    {
+      "role": "Porter",
+      "persona": 0,
+      "female": true,
+      "profile": "npc_porter_0_f",
+      "voice": "Thùy Dung",
+      "tempo": 1.1,
+      "lines": [
+        "Gánh này nặng, tôi đi chậm một chút. Anh cho tôi qua rồi hãy rẽ vào kho nhé.",
+        "Chuyến cuối ra bến đây. Đặt hàng xong tôi quay lại chở thêm nước cho quân.",
+        "Hôm nay gánh đồ về nhẹ hơn lúc mang đi. Chỉ mong người ra trận cũng về đủ cả."
+      ]
+    },
+    {
+      "role": "Porter",
+      "persona": 1,
+      "female": false,
+      "profile": "npc_porter_1_m",
+      "voice": "Quốc Tuấn",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi buộc lại quai gánh rồi mới đi tiếp. Đứt giữa đường thì vất vả cho cả người nhận hàng.",
+        "Kho trong trại giao tôi chuyển bó dây này. Việc nhỏ mà chậm cũng ảnh hưởng cả đội.",
+        "Tôi đang giúp chuyển người bị thương. Anh chừa lối này nhé, cáng sắp tới rồi."
+      ]
+    },
+    {
+      "role": "Porter",
+      "persona": 1,
+      "female": true,
+      "profile": "npc_porter_1_f",
+      "voice": "Ngọc Trân",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi buộc lại quai gánh rồi mới đi tiếp. Đứt giữa đường thì vất vả cho cả người nhận hàng.",
+        "Kho trong trại giao tôi chuyển bó dây này. Việc nhỏ mà chậm cũng ảnh hưởng cả đội.",
+        "Tôi đang giúp chuyển người bị thương. Anh chừa lối này nhé, cáng sắp tới rồi."
+      ]
+    },
+    {
+      "role": "Smith",
+      "persona": 0,
+      "female": false,
+      "profile": "npc_smith_0_m",
+      "voice": "Đức Trí",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi vừa rút mũi giáo khỏi lò. Phải để nguội đúng lúc, làm vội là thép dễ giòn.",
+        "Búa với kìm đã sẵn. Đồ quân mình cần sửa cứ đưa tới, tôi còn thức được.",
+        "Vũ khí gãy đem về đây, đừng vứt đi. Tôi còn lấy phần thép tốt để rèn lại."
+      ]
+    },
+    {
+      "role": "Smith",
+      "persona": 0,
+      "female": true,
+      "profile": "npc_smith_0_f",
+      "voice": "Kim Thanh",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi vừa rút mũi giáo khỏi lò. Phải để nguội đúng lúc, làm vội là thép dễ giòn.",
+        "Búa với kìm đã sẵn. Đồ quân mình cần sửa cứ đưa tới, tôi còn thức được.",
+        "Vũ khí gãy đem về đây, đừng vứt đi. Tôi còn lấy phần thép tốt để rèn lại."
+      ]
+    },
+    {
+      "role": "Smith",
+      "persona": 1,
+      "female": false,
+      "profile": "npc_smith_1_m",
+      "voice": "Hải Đăng",
+      "tempo": 1.1,
+      "lines": [
+        "Lò đang đỏ nên tôi làm nốt mẻ này. Mỗi mũi tên phải kiểm đầu thật kỹ mới giao.",
+        "Tôi đã sửa xong lưỡi rìu cuối. Phần cán gỗ nhờ người thợ bên kia lắp giúp là dùng được.",
+        "Nghe tin thắng mà tay vẫn chưa muốn nghỉ. Tôi rèn nốt chỗ nông cụ cho bà con rồi mới dập lò."
+      ]
+    },
+    {
+      "role": "Smith",
+      "persona": 1,
+      "female": true,
+      "profile": "npc_smith_1_f",
+      "voice": "Thùy Dung",
+      "tempo": 1.1,
+      "lines": [
+        "Lò đang đỏ nên tôi làm nốt mẻ này. Mỗi mũi tên phải kiểm đầu thật kỹ mới giao.",
+        "Tôi đã sửa xong lưỡi rìu cuối. Phần cán gỗ nhờ người thợ bên kia lắp giúp là dùng được.",
+        "Nghe tin thắng mà tay vẫn chưa muốn nghỉ. Tôi rèn nốt chỗ nông cụ cho bà con rồi mới dập lò."
+      ]
+    },
+    {
+      "role": "Guard",
+      "persona": 0,
+      "female": false,
+      "profile": "npc_guard_0_m",
+      "voice": "Quốc Tuấn",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi đi kiểm từ cổng tới kho. Có ai chở hàng vào trại thì phải nhận rõ mới cho qua.",
+        "Tôi đã thuộc hiệu trống. Có lệnh là đổi ca và ra đúng vị trí, không để chậm cả đội.",
+        "Đội về đến đâu tôi ghi tới đó. Người chưa thấy về thì vẫn phải cho quân đi tìm."
+      ]
+    },
+    {
+      "role": "Guard",
+      "persona": 0,
+      "female": true,
+      "profile": "npc_guard_0_f",
+      "voice": "Kim Thanh",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi đi kiểm từ cổng tới kho. Có ai chở hàng vào trại thì phải nhận rõ mới cho qua.",
+        "Tôi đã thuộc hiệu trống. Có lệnh là đổi ca và ra đúng vị trí, không để chậm cả đội.",
+        "Đội về đến đâu tôi ghi tới đó. Người chưa thấy về thì vẫn phải cho quân đi tìm."
+      ]
+    },
+    {
+      "role": "Guard",
+      "persona": 1,
+      "female": false,
+      "profile": "npc_guard_1_m",
+      "voice": "Hải Đăng",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi vừa đổi ca. Trong trại đông người qua lại, mình phải giữ lối đi cho thông.",
+        "Tôi giữ phần tiếp ứng trên bờ. Anh xuống thuyền rồi, nhớ nhìn hiệu từ phía quân mình.",
+        "Ngoài sông thắng rồi nhưng vẫn phải canh gác. Tù binh và vũ khí thu được cần người trông."
+      ]
+    },
+    {
+      "role": "Guard",
+      "persona": 1,
+      "female": true,
+      "profile": "npc_guard_1_f",
+      "voice": "Ngọc Huyền",
+      "tempo": 1.1,
+      "lines": [
+        "Tôi vừa đổi ca. Trong trại đông người qua lại, mình phải giữ lối đi cho thông.",
+        "Tôi giữ phần tiếp ứng trên bờ. Anh xuống thuyền rồi, nhớ nhìn hiệu từ phía quân mình.",
+        "Ngoài sông thắng rồi nhưng vẫn phải canh gác. Tù binh và vũ khí thu được cần người trông."
+      ]
+    }
+  ]
+}

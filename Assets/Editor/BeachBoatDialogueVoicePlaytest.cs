@@ -23,6 +23,7 @@ public static class BeachBoatDialogueVoicePlaytest
     static string runtimeError;
     static GameObject first,second;
     const string Line="Quân Nam Hán đang lăm le xâm phạm bờ cõi. Hãy đến làng ven sông, cùng bà con chuẩn bị gỗ làm cọc. Ta trông cậy vào ngươi.";
+    public static void RunInEditor(){phase=callbacks=0;started=until=0;runtimeError=null;capturedVolume=false;checks.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     public static void RunAndExit(){EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Record;Application.logMessageReceived+=Record;}
     static void Record(string m,string stack,LogType type){if(SessionState.GetBool(Flag,false)&&EditorApplication.isPlaying&&(type==LogType.Error||type==LogType.Exception||type==LogType.Assert))runtimeError=m+"\n"+stack;}
@@ -31,7 +32,7 @@ public static class BeachBoatDialogueVoicePlaytest
     static void Finish(string failure)
     {
         if(capturedVolume)BachDangPreferences.SetVolume(previousVolume);
-        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/DialogueVoicePlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,phase,checks},Formatting.Indented));SessionState.SetBool(Flag,false);BeachBoatQAExit.AfterPlayMode(failure==null?0:1);
+        Directory.CreateDirectory("Logs");File.WriteAllText("Logs/DialogueVoicePlaytest.json",JsonConvert.SerializeObject(new{success=failure==null,failure,phase,checks},Formatting.Indented));SessionState.SetBool(Flag,false);if(Application.isBatchMode&&!BeachBoatBatchRevision31.IsRunning)BeachBoatQAExit.AfterPlayMode(failure==null?0:1);else EditorApplication.isPlaying=false;
     }
     static void Tick()
     {
@@ -83,7 +84,7 @@ public static class BeachBoatDialogueVoicePlaytest
                 Check(voice.CurrentClip!=null,"Activity prefix resolves the full spoken villager line");
                 float pitch=voice.VoicePitch;string identity=voice.Identity;string source=voice.VoiceName;var firstClip=voice.CurrentClip;
                 ui.Show("Dân làng","Làng ven sông hôm nay đông vui hơn mọi ngày.",null,second.transform);
-                Check(identity!=voice.Identity&&source!=voice.VoiceName&&firstClip!=voice.CurrentClip,"Two villagers with the same display name use different recorded voice actors");
+                Check(identity!=voice.Identity&&source!=voice.VoiceName&&firstClip!=voice.CurrentClip,"Two villagers with the same display name use different synthesized voice presets");
                 ui.Show("Bà con làng ven sông","Gỗ, dây buộc, gạo và lương khô đã chuẩn bị đủ. Hãy về doanh trại báo cáo Ngô Quyền.");
                 Check(voice.Female&&voice.CurrentClip.name.EndsWith("_f"),"Female speaker uses a real Vietnamese female recording");
                 var saved=ui.CaptureSave();var savedIdentity=voice.Identity;var savedProfile=voice.ProfileId;var savedClip=voice.CurrentClip;ui.Close();ui.RestoreSave(saved);
@@ -93,11 +94,10 @@ public static class BeachBoatDialogueVoicePlaytest
                 var actors=Object.FindObjectsByType<NPCAmbientDialogue>(FindObjectsInactive.Include);
                 foreach(var role in new[]{NPCAmbientDialogue.Role.Farmer,NPCAmbientDialogue.Role.Fisher,NPCAmbientDialogue.Role.Merchant,NPCAmbientDialogue.Role.Porter,NPCAmbientDialogue.Role.Smith})
                 {
-                    var actor=actors.FirstOrDefault(a=>a.role==role);
-                    if(actor==null){actor=new GameObject("Voice_QA_"+role).AddComponent<NPCAmbientDialogue>();actor.role=role;}
+                    var actor=new GameObject("Voice_QA_"+role).AddComponent<NPCAmbientDialogue>();actor.role=role;
                     string line=role==NPCAmbientDialogue.Role.Farmer?"Ruộng ngoài bãi phù sa tốt lắm, mùa này lúa lên đều.":role==NPCAmbientDialogue.Role.Fisher?"Khúc sông này phải thuộc con nước mới chèo thuyền an toàn.":role==NPCAmbientDialogue.Role.Merchant?"Chợ họp từ sáng, bà con đổi cá lấy thóc và củi.":role==NPCAmbientDialogue.Role.Porter?"Tôi đang chuyển bó củi này sang bếp trại.":"Lò rèn phải đỏ lửa cả ngày để sửa giáo và nông cụ.";
                     ui.Show(actor.displayName,line,null,actor.transform);
-                    Check(voice.CurrentClip!=null&&voice.ProfileId.StartsWith(role.ToString().ToLowerInvariant()+"_"),"Role-specific recorded cast: "+role);
+                    Check(voice.CurrentClip!=null&&voice.ProfileId.StartsWith("npc_"+role.ToString().ToLowerInvariant()+"_"),"Role-specific synthesized cast: "+role);Object.DestroyImmediate(actor.gameObject);
                 }
                 ui.Show("Quản quân","Ngươi đã thuộc hiệu lệnh. Hãy qua cổng sang làng, cùng dân binh chuẩn bị cọc gỗ.");
                 Check(voice.ProfileId=="veteran","Quartermaster uses the veteran voice rather than the commander voice");

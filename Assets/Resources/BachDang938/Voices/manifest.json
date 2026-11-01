@@ -861,6 +861,1692 @@
       "male": "BachDang938/Voices/Discipline/AllyRetaliation",
       "female": "BachDang938/Voices/Discipline/AllyRetaliation",
       "variants": []
+    },
+    {
+      "line": "Tôi giữ lối sang làng. Qua cổng rồi men theo đường đất là tới chợ ven sông.",
+      "male": "BachDang938/Voices/NPCast/d28482133fb379d4008e_npc_camp_guard_front_left",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_front_left",
+          "path": "BachDang938/Voices/NPCast/d28482133fb379d4008e_npc_camp_guard_front_left"
+        }
+      ]
+    },
+    {
+      "line": "Trận địa đã sẵn sàng. Lối ra bến tôi đã dọn, quân đi qua đây sẽ không bị vướng.",
+      "male": "BachDang938/Voices/NPCast/71ec5902179f5889ad7a_npc_camp_guard_front_left",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_front_left",
+          "path": "BachDang938/Voices/NPCast/71ec5902179f5889ad7a_npc_camp_guard_front_left"
+        }
+      ]
+    },
+    {
+      "line": "Anh về rồi! Từ lúc nghe tiếng reo bên sông, tôi cứ ngóng ở cửa trại.",
+      "male": "BachDang938/Voices/NPCast/16a87d6004519513062d_npc_camp_guard_front_left",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_front_left",
+          "path": "BachDang938/Voices/NPCast/16a87d6004519513062d_npc_camp_guard_front_left"
+        }
+      ]
+    },
+    {
+      "line": "Ca gác của tôi trông về phía bến. Có thuyền lạ là tôi báo ngay cho chủ tướng.",
+      "male": "BachDang938/Voices/NPCast/74e4d35e5fffd855be80_npc_camp_guard_front_right",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_front_right",
+          "path": "BachDang938/Voices/NPCast/74e4d35e5fffd855be80_npc_camp_guard_front_right"
+        }
+      ]
+    },
+    {
+      "line": "Mặt sông đang yên, nhưng tôi không rời vị trí. Chỉ chờ hiệu lệnh từ phía Ngô Quyền.",
+      "male": "BachDang938/Voices/NPCast/fba31c45f4a82425053c_npc_camp_guard_front_right",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_front_right",
+          "path": "BachDang938/Voices/NPCast/fba31c45f4a82425053c_npc_camp_guard_front_right"
+        }
+      ]
+    },
+    {
+      "line": "Cánh cổng này hôm nay đón người thắng trận. Vào nghỉ một lát đi, anh vất vả rồi.",
+      "male": "BachDang938/Voices/NPCast/eec7f291d0f3f9296645_npc_camp_guard_front_right",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_front_right",
+          "path": "BachDang938/Voices/NPCast/eec7f291d0f3f9296645_npc_camp_guard_front_right"
+        }
+      ]
+    },
+    {
+      "line": "Kho phía sau đang chuyển lương. Anh đi bên mép đường giúp tôi, chừa lối cho người gánh hàng.",
+      "male": "BachDang938/Voices/NPCast/2018432e85f9b33bc115_npc_camp_guard_mid_right",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_mid_right",
+          "path": "BachDang938/Voices/NPCast/2018432e85f9b33bc115_npc_camp_guard_mid_right"
+        }
+      ]
+    },
+    {
+      "line": "Lương đã lên thuyền. Tôi ở lại giữ kho để quân ngoài sông yên tâm đánh giặc.",
+      "male": "BachDang938/Voices/NPCast/1ce9ea7745929364d254_npc_camp_guard_mid_right",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_mid_right",
+          "path": "BachDang938/Voices/NPCast/1ce9ea7745929364d254_npc_camp_guard_mid_right"
+        }
+      ]
+    },
+    {
+      "line": "Để tôi nhận lại quân trang. Người bị thương cứ đưa thẳng sang lều quân y.",
+      "male": "BachDang938/Voices/NPCast/db64b8a5c18986b3c1a0_npc_camp_guard_mid_right",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_mid_right",
+          "path": "BachDang938/Voices/NPCast/db64b8a5c18986b3c1a0_npc_camp_guard_mid_right"
+        }
+      ]
+    },
+    {
+      "line": "Đường sau trại vắng nên càng phải coi chừng. Tôi vừa đi kiểm hết hàng rào.",
+      "male": "BachDang938/Voices/NPCast/909d2514a964ac2a662e_npc_camp_guard_back_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_back_1",
+          "path": "BachDang938/Voices/NPCast/909d2514a964ac2a662e_npc_camp_guard_back_1"
+        }
+      ]
+    },
+    {
+      "line": "Tôi sẽ giữ đường lui thông suốt. Ngoài sông có biến thì anh cứ theo lối này về trại.",
+      "male": "BachDang938/Voices/NPCast/80633cc4ac4772ace470_npc_camp_guard_back_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_back_1",
+          "path": "BachDang938/Voices/NPCast/80633cc4ac4772ace470_npc_camp_guard_back_1"
+        }
+      ]
+    },
+    {
+      "line": "Đêm nay chắc được đổi một ca gác yên ổn. Lâu rồi tôi mới thấy ai cũng nhẹ nhõm thế.",
+      "male": "BachDang938/Voices/NPCast/4ba26c5fc1a0cd4bfaea_npc_camp_guard_back_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_back_1",
+          "path": "BachDang938/Voices/NPCast/4ba26c5fc1a0cd4bfaea_npc_camp_guard_back_1"
+        }
+      ]
+    },
+    {
+      "line": "Tôi nhận ca từ lúc trời chưa sáng. Chân hơi mỏi, nhưng còn phải chờ người tới thay.",
+      "male": "BachDang938/Voices/NPCast/0ec27810f3675946355f_npc_camp_guard_back_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_back_2",
+          "path": "BachDang938/Voices/NPCast/0ec27810f3675946355f_npc_camp_guard_back_2"
+        }
+      ]
+    },
+    {
+      "line": "Nghe trống thì tôi mở lối cho đội tiếp vận. Ca này không được chậm một nhịp.",
+      "male": "BachDang938/Voices/NPCast/bd26a0af59bb45142a8f_npc_camp_guard_back_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_back_2",
+          "path": "BachDang938/Voices/NPCast/bd26a0af59bb45142a8f_npc_camp_guard_back_2"
+        }
+      ]
+    },
+    {
+      "line": "Người thay ca vừa kể thuyền giặc mắc kín giữa sông. Kế của chủ tướng thật tài.",
+      "male": "BachDang938/Voices/NPCast/8535474d1c289375f239_npc_camp_guard_back_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_back_2",
+          "path": "BachDang938/Voices/NPCast/8535474d1c289375f239_npc_camp_guard_back_2"
+        }
+      ]
+    },
+    {
+      "line": "Bên kia có bếp trại, anh cần nước thì ghé đó. Tôi còn phải canh cửa sau.",
+      "male": "BachDang938/Voices/NPCast/3f270917c7496e324392_npc_camp_guard_back_3",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_back_3",
+          "path": "BachDang938/Voices/NPCast/3f270917c7496e324392_npc_camp_guard_back_3"
+        }
+      ]
+    },
+    {
+      "line": "Đuốc và nước đã để sẵn. Quân trở về lúc nào cũng có người đón.",
+      "male": "BachDang938/Voices/NPCast/7f5452917ea5a2132988_npc_camp_guard_back_3",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_back_3",
+          "path": "BachDang938/Voices/NPCast/7f5452917ea5a2132988_npc_camp_guard_back_3"
+        }
+      ]
+    },
+    {
+      "line": "Bếp đang nấu thêm cơm. Đánh xong rồi thì cũng phải cho anh em ăn một bữa nóng.",
+      "male": "BachDang938/Voices/NPCast/5c0a352d1adc240d358e_npc_camp_guard_back_3",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_guard_back_3",
+          "path": "BachDang938/Voices/NPCast/5c0a352d1adc240d358e_npc_camp_guard_back_3"
+        }
+      ]
+    },
+    {
+      "line": "Đứng trên cao nhìn rõ con nước hơn. Anh nhìn vệt bọt ven bờ sẽ biết triều đang đổi.",
+      "male": "BachDang938/Voices/NPCast/aa222a3bd8c332e0e9b5_npc_camp_lookout_soldier",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_lookout_soldier",
+          "path": "BachDang938/Voices/NPCast/aa222a3bd8c332e0e9b5_npc_camp_lookout_soldier"
+        }
+      ]
+    },
+    {
+      "line": "Tôi sẽ nhìn hiệu từ ngoài sông. Anh cứ giữ đúng đường nhử, đừng nóng mà quay lại đánh sớm.",
+      "male": "BachDang938/Voices/NPCast/4a3f81b9490a18620745_npc_camp_lookout_soldier",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_lookout_soldier",
+          "path": "BachDang938/Voices/NPCast/4a3f81b9490a18620745_npc_camp_lookout_soldier"
+        }
+      ]
+    },
+    {
+      "line": "Từ chòi canh tôi thấy cờ quân ta trở về. Lần này tiếng trống nghe khác hẳn mọi hôm.",
+      "male": "BachDang938/Voices/NPCast/81a570e3bfedd2cbcc18_npc_camp_lookout_soldier",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_lookout_soldier",
+          "path": "BachDang938/Voices/NPCast/81a570e3bfedd2cbcc18_npc_camp_lookout_soldier"
+        }
+      ]
+    },
+    {
+      "line": "Tôi từng chèo thuyền qua khúc ấy. Sông rộng thì dễ chủ quan, chỗ nguy hiểm lại nằm dưới nước.",
+      "male": "BachDang938/Voices/NPCast/2d45f57237708dacb140_npc_camp_sitting_soldier",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_sitting_soldier",
+          "path": "BachDang938/Voices/NPCast/2d45f57237708dacb140_npc_camp_sitting_soldier"
+        }
+      ]
+    },
+    {
+      "line": "Thuyền nhỏ phải lấy sự lanh lẹ làm lợi. Đừng đọ sức với mũi chiến thuyền của giặc.",
+      "male": "BachDang938/Voices/NPCast/826e00edf655ed2d13bd_npc_camp_sitting_soldier",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_sitting_soldier",
+          "path": "BachDang938/Voices/NPCast/826e00edf655ed2d13bd_npc_camp_sitting_soldier"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đoán giặc sẽ ham đuổi, mà không ngờ chúng mắc sâu đến vậy. Anh làm tốt lắm.",
+      "male": "BachDang938/Voices/NPCast/2b72c4dd050af33b342b_npc_camp_sitting_soldier",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_sitting_soldier",
+          "path": "BachDang938/Voices/NPCast/2b72c4dd050af33b342b_npc_camp_sitting_soldier"
+        }
+      ]
+    },
+    {
+      "line": "Chân tôi bị đau nên phải nằm lại. Anh ra làng, tiện nói với bà con rằng quân trại vẫn đủ lương nhé.",
+      "male": "BachDang938/Voices/NPCast/c824be9c96b49a2cc519_npc_camp_laying_soldier",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_laying_soldier",
+          "path": "BachDang938/Voices/NPCast/c824be9c96b49a2cc519_npc_camp_laying_soldier"
+        }
+      ]
+    },
+    {
+      "line": "Tôi không ra sông được, đành ở đây vá bao và giữ đồ cho anh em. Phần tôi vẫn còn việc.",
+      "male": "BachDang938/Voices/NPCast/1c1237a9f6c76a3ca298_npc_camp_laying_soldier",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_laying_soldier",
+          "path": "BachDang938/Voices/NPCast/1c1237a9f6c76a3ca298_npc_camp_laying_soldier"
+        }
+      ]
+    },
+    {
+      "line": "Anh trở về là tốt rồi. Kể cho tôi nghe đi, ngoài sông lúc cọc lộ ra trông thế nào?",
+      "male": "BachDang938/Voices/NPCast/b45045594e6ce6a6d81e_npc_camp_laying_soldier",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_laying_soldier",
+          "path": "BachDang938/Voices/NPCast/b45045594e6ce6a6d81e_npc_camp_laying_soldier"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đang xem lại lưỡi kiếm. Cán lỏng một chút thôi, tới lúc giao chiến sẽ rất nguy.",
+      "male": "BachDang938/Voices/NPCast/d5287ff0ff849dcc5e4b_npc_linh_nghi_ca_tay_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_tay_1",
+          "path": "BachDang938/Voices/NPCast/d5287ff0ff849dcc5e4b_npc_linh_nghi_ca_tay_1"
+        }
+      ]
+    },
+    {
+      "line": "Kiếm đã chắc cán. Tôi còn chờ người tới nhận nốt bó giáo này.",
+      "male": "BachDang938/Voices/NPCast/f650e928eeb2d141720e_npc_linh_nghi_ca_tay_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_tay_1",
+          "path": "BachDang938/Voices/NPCast/f650e928eeb2d141720e_npc_linh_nghi_ca_tay_1"
+        }
+      ]
+    },
+    {
+      "line": "Mang vũ khí xuống kiểm lại đi anh. Đừng để vết nứt nhỏ thành chuyện lớn lần sau.",
+      "male": "BachDang938/Voices/NPCast/b80ca060bd7237886774_npc_linh_nghi_ca_tay_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_tay_1",
+          "path": "BachDang938/Voices/NPCast/b80ca060bd7237886774_npc_linh_nghi_ca_tay_1"
+        }
+      ]
+    },
+    {
+      "line": "Dây khiên của tôi sờn rồi, đang nhờ người nối lại. Đồ dùng phải sửa trước lúc xuất quân.",
+      "male": "BachDang938/Voices/NPCast/bd292669a519991c2138_npc_linh_nghi_ca_tay_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_tay_2",
+          "path": "BachDang938/Voices/NPCast/bd292669a519991c2138_npc_linh_nghi_ca_tay_2"
+        }
+      ]
+    },
+    {
+      "line": "Khiên đã buộc chặt. Gặp tên bay thì giữ mặt khiên hướng về phía địch, đừng quay lưng chạy.",
+      "male": "BachDang938/Voices/NPCast/e1a483864219af7fa8d9_npc_linh_nghi_ca_tay_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_tay_2",
+          "path": "BachDang938/Voices/NPCast/e1a483864219af7fa8d9_npc_linh_nghi_ca_tay_2"
+        }
+      ]
+    },
+    {
+      "line": "Khiên móp mất một góc mà người còn nguyên là mừng rồi. Tôi sẽ đem nó đi sửa.",
+      "male": "BachDang938/Voices/NPCast/289cd82254e68303a8c6_npc_linh_nghi_ca_tay_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_tay_2",
+          "path": "BachDang938/Voices/NPCast/289cd82254e68303a8c6_npc_linh_nghi_ca_tay_2"
+        }
+      ]
+    },
+    {
+      "line": "Nhà tôi ở phía hạ lưu. Càng gần ngày đánh, tôi càng mong bà con bên ấy được yên.",
+      "male": "BachDang938/Voices/NPCast/ab47acd4a7facbd584a6_npc_linh_nghi_ca_dong_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_dong_1",
+          "path": "BachDang938/Voices/NPCast/ab47acd4a7facbd584a6_npc_linh_nghi_ca_dong_1"
+        }
+      ]
+    },
+    {
+      "line": "Làng phía dưới đã biết giữ thuyền trong bến. Anh nhử giặc vào sâu rồi hãy tính chuyện đánh.",
+      "male": "BachDang938/Voices/NPCast/4af74fd7e51f1855ffbe_npc_linh_nghi_ca_dong_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_dong_1",
+          "path": "BachDang938/Voices/NPCast/4af74fd7e51f1855ffbe_npc_linh_nghi_ca_dong_1"
+        }
+      ]
+    },
+    {
+      "line": "Tôi vừa nhờ người báo tin về nhà. Chắc tối nay cả làng sẽ ngủ ngon hơn.",
+      "male": "BachDang938/Voices/NPCast/e04aab321e7c71fbdafe_npc_linh_nghi_ca_dong_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_dong_1",
+          "path": "BachDang938/Voices/NPCast/e04aab321e7c71fbdafe_npc_linh_nghi_ca_dong_1"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đang lựa tên thẳng. Mũi tốt mà thân cong thì bắn xa cũng chẳng tới đúng chỗ.",
+      "male": "BachDang938/Voices/NPCast/259f3253939217e887ed_npc_linh_nghi_ca_dong_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_dong_2",
+          "path": "BachDang938/Voices/NPCast/259f3253939217e887ed_npc_linh_nghi_ca_dong_2"
+        }
+      ]
+    },
+    {
+      "line": "Tên đã chia đủ cho hai bờ. Lúc đánh, anh cứ giữ mình, trên bờ có chúng tôi lo.",
+      "male": "BachDang938/Voices/NPCast/189c2d12508d4a19a6fb_npc_linh_nghi_ca_dong_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_dong_2",
+          "path": "BachDang938/Voices/NPCast/189c2d12508d4a19a6fb_npc_linh_nghi_ca_dong_2"
+        }
+      ]
+    },
+    {
+      "line": "Còn ít tên nguyên, tôi đang nhặt lại. Phần hỏng thì giữ mũi để đem về lò rèn.",
+      "male": "BachDang938/Voices/NPCast/2fa82455603d6983315b_npc_linh_nghi_ca_dong_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_linh_nghi_ca_dong_2",
+          "path": "BachDang938/Voices/NPCast/2fa82455603d6983315b_npc_linh_nghi_ca_dong_2"
+        }
+      ]
+    },
+    {
+      "line": "Bao gạo này còn hở miệng, tôi phải buộc lại cho khỏi vãi dọc đường.",
+      "male": "BachDang938/Voices/NPCast/5d6038b3f230ca2fdfe2_npc_camp_worker_01",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_01",
+          "path": "BachDang938/Voices/NPCast/5d6038b3f230ca2fdfe2_npc_camp_worker_01"
+        }
+      ]
+    },
+    {
+      "line": "Gạo đã xếp gọn theo từng thuyền. Phần lương trên bờ vẫn đủ cho đội tiếp ứng.",
+      "male": "BachDang938/Voices/NPCast/ac35f1e4b2dbee911282_npc_camp_worker_01",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_01",
+          "path": "BachDang938/Voices/NPCast/ac35f1e4b2dbee911282_npc_camp_worker_01"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đang đếm lại lương còn trong kho. Hôm nay phải phát thêm cho người đánh trận trở về.",
+      "male": "BachDang938/Voices/NPCast/b1f866d42395f9db2d59_npc_camp_worker_01",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_01",
+          "path": "BachDang938/Voices/NPCast/b1f866d42395f9db2d59_npc_camp_worker_01"
+        }
+      ]
+    },
+    {
+      "line": "Cá phải hong khô thêm mới cất được. Mang ẩm xuống thuyền dễ hỏng cả phần lương.",
+      "male": "BachDang938/Voices/NPCast/9c2dd4cb55dfa219f469_npc_camp_worker_02",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_02",
+          "path": "BachDang938/Voices/NPCast/9c2dd4cb55dfa219f469_npc_camp_worker_02"
+        }
+      ]
+    },
+    {
+      "line": "Cá khô đã chia từng gói. Tôi giữ lại phần dự phòng cho ai về trại muộn.",
+      "male": "BachDang938/Voices/NPCast/d262d9c41713b83304b5_npc_camp_worker_02",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_02",
+          "path": "BachDang938/Voices/NPCast/d262d9c41713b83304b5_npc_camp_worker_02"
+        }
+      ]
+    },
+    {
+      "line": "Cá còn đủ, anh khỏi lo. Mấy người ngoài bếp đang nướng thêm để đãi quân về.",
+      "male": "BachDang938/Voices/NPCast/b324fb275eb1c7cb14c5_npc_camp_worker_02",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_02",
+          "path": "BachDang938/Voices/NPCast/b324fb275eb1c7cb14c5_npc_camp_worker_02"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đang gỡ cuộn dây này. Dây rối thì lúc cần kéo cọc sẽ mất cả buổi.",
+      "male": "BachDang938/Voices/NPCast/c357912f7b97938042c4_npc_camp_worker_03",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_03",
+          "path": "BachDang938/Voices/NPCast/c357912f7b97938042c4_npc_camp_worker_03"
+        }
+      ]
+    },
+    {
+      "line": "Dây đã cuộn theo từng bó. Mối buộc yếu tôi thay hết từ sớm rồi.",
+      "male": "BachDang938/Voices/NPCast/e1c24918dad465906ac2_npc_camp_worker_03",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_03",
+          "path": "BachDang938/Voices/NPCast/e1c24918dad465906ac2_npc_camp_worker_03"
+        }
+      ]
+    },
+    {
+      "line": "Có cuộn dây kéo bị xước, nhưng vẫn dùng lại được. Tôi sẽ nối trước khi cất kho.",
+      "male": "BachDang938/Voices/NPCast/cd27b382bb52c12b1968_npc_camp_worker_03",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_03",
+          "path": "BachDang938/Voices/NPCast/cd27b382bb52c12b1968_npc_camp_worker_03"
+        }
+      ]
+    },
+    {
+      "line": "Đầu cọc phải vót đều và sắc. Anh nhìn dọc thân gỗ mà chọn, đừng lấy khúc đã nứt.",
+      "male": "BachDang938/Voices/NPCast/5fc72b43424ee72cc9e2_npc_camp_worker_04",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_04",
+          "path": "BachDang938/Voices/NPCast/5fc72b43424ee72cc9e2_npc_camp_worker_04"
+        }
+      ]
+    },
+    {
+      "line": "Cọc ngoài sông đã dựng xong. Đống gỗ thừa này tôi giữ để sửa bè và vá thuyền.",
+      "male": "BachDang938/Voices/NPCast/ba191bf912e821467222_npc_camp_worker_04",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_04",
+          "path": "BachDang938/Voices/NPCast/ba191bf912e821467222_npc_camp_worker_04"
+        }
+      ]
+    },
+    {
+      "line": "Tôi còn nhớ từng khúc gỗ trước lúc vót. Không ngờ chúng lại giữ được cả cửa sông.",
+      "male": "BachDang938/Voices/NPCast/9c4d1da466f9cc63b2f4_npc_camp_worker_04",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_04",
+          "path": "BachDang938/Voices/NPCast/9c4d1da466f9cc63b2f4_npc_camp_worker_04"
+        }
+      ]
+    },
+    {
+      "line": "Tôi chuyển đồ từ kho ra bến. Anh chừa giúp một khoảng để tôi đặt gánh xuống đã.",
+      "male": "BachDang938/Voices/NPCast/812cb373d33c93771092_npc_camp_worker_05",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_05",
+          "path": "BachDang938/Voices/NPCast/812cb373d33c93771092_npc_camp_worker_05"
+        }
+      ]
+    },
+    {
+      "line": "Đồ đã tập kết sát bến, quân cần là chuyển đi ngay. Không phải chạy ngược về kho nữa.",
+      "male": "BachDang938/Voices/NPCast/b734132b91ecadc0cb8d_npc_camp_worker_05",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_05",
+          "path": "BachDang938/Voices/NPCast/b734132b91ecadc0cb8d_npc_camp_worker_05"
+        }
+      ]
+    },
+    {
+      "line": "Người về đông quá, tôi đang đưa nước ra trước. Việc trong trại giờ mới thật bận.",
+      "male": "BachDang938/Voices/NPCast/780eb71b7c2a08c860ba_npc_camp_worker_05",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_05",
+          "path": "BachDang938/Voices/NPCast/780eb71b7c2a08c860ba_npc_camp_worker_05"
+        }
+      ]
+    },
+    {
+      "line": "Bếp sắp nhóm rồi. Tôi chẻ nốt củi này để nấu kịp trước lúc anh em đi làm.",
+      "male": "BachDang938/Voices/NPCast/9c4be08ca814223d8128_npc_camp_worker_06",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_06",
+          "path": "BachDang938/Voices/NPCast/9c4be08ca814223d8128_npc_camp_worker_06"
+        }
+      ]
+    },
+    {
+      "line": "Cơm đang ủ trong nồi. Tôi chờ đội sau ăn xong rồi mới dọn bếp.",
+      "male": "BachDang938/Voices/NPCast/fbfd902b36e1bf9e2c8f_npc_camp_worker_06",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_06",
+          "path": "BachDang938/Voices/NPCast/fbfd902b36e1bf9e2c8f_npc_camp_worker_06"
+        }
+      ]
+    },
+    {
+      "line": "Nồi này nấu thêm cho quân thắng trận. Anh ngồi nghỉ đi, chín là tôi gọi.",
+      "male": "BachDang938/Voices/NPCast/566cc997a72625d7141a_npc_camp_worker_06",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_06",
+          "path": "BachDang938/Voices/NPCast/566cc997a72625d7141a_npc_camp_worker_06"
+        }
+      ]
+    },
+    {
+      "line": "Chum này tôi mới gánh đầy. Ra bến nhớ mang theo nước, giữa sông không dễ kiếm đâu.",
+      "male": "BachDang938/Voices/NPCast/38b866391c8c9f08745a_npc_camp_worker_07",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_07",
+          "path": "BachDang938/Voices/NPCast/38b866391c8c9f08745a_npc_camp_worker_07"
+        }
+      ]
+    },
+    {
+      "line": "Nước đã chia xuống các thuyền. Tôi giữ thêm hai chum cho người quay về tiếp tế.",
+      "male": "BachDang938/Voices/NPCast/0719b94be3421594e3a2_npc_camp_worker_07",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_07",
+          "path": "BachDang938/Voices/NPCast/0719b94be3421594e3a2_npc_camp_worker_07"
+        }
+      ]
+    },
+    {
+      "line": "Ai vừa về cứ tới lấy nước. Tôi lại ra giếng gánh thêm, chẳng để anh em phải chờ.",
+      "male": "BachDang938/Voices/NPCast/ce226697c13226aad1c6_npc_camp_worker_07",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_07",
+          "path": "BachDang938/Voices/NPCast/ce226697c13226aad1c6_npc_camp_worker_07"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đang vá chỗ rách ở mép buồm. Gió kéo mạnh thì đường chỉ phải thật chắc.",
+      "male": "BachDang938/Voices/NPCast/21753dd7c27371fcad9a_npc_camp_worker_08",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_08",
+          "path": "BachDang938/Voices/NPCast/21753dd7c27371fcad9a_npc_camp_worker_08"
+        }
+      ]
+    },
+    {
+      "line": "Buồm đã vá xong từ sáng. Thuyền nhỏ mình chèo linh hoạt, đừng để dây thừa vướng chân.",
+      "male": "BachDang938/Voices/NPCast/7196494a28da1468c7fd_npc_camp_worker_08",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_08",
+          "path": "BachDang938/Voices/NPCast/7196494a28da1468c7fd_npc_camp_worker_08"
+        }
+      ]
+    },
+    {
+      "line": "Có tấm buồm thủng nhưng còn cứu được. Gấp lại cho khô rồi tôi vá tiếp.",
+      "male": "BachDang938/Voices/NPCast/47c7c668ac9d78922493_npc_camp_worker_08",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_08",
+          "path": "BachDang938/Voices/NPCast/47c7c668ac9d78922493_npc_camp_worker_08"
+        }
+      ]
+    },
+    {
+      "line": "Tro nguội rồi mới đem đổ được. Tôi dọn bếp xong còn phải châm thêm mấy cột đuốc.",
+      "male": "BachDang938/Voices/NPCast/ddeca10a8963d7144a1e_npc_camp_worker_09",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_09",
+          "path": "BachDang938/Voices/NPCast/ddeca10a8963d7144a1e_npc_camp_worker_09"
+        }
+      ]
+    },
+    {
+      "line": "Đuốc ở lối ra bến đã thắp đủ. Quân về chậm vẫn nhìn được đường vào trại.",
+      "male": "BachDang938/Voices/NPCast/1dd986f06d76c5fb5333_npc_camp_worker_09",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_09",
+          "path": "BachDang938/Voices/NPCast/1dd986f06d76c5fb5333_npc_camp_worker_09"
+        }
+      ]
+    },
+    {
+      "line": "Để tôi châm lại đuốc. Mọi người còn đi lại đưa thương binh, không thể để lối này tối.",
+      "male": "BachDang938/Voices/NPCast/00db904331daceba5750_npc_camp_worker_09",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_09",
+          "path": "BachDang938/Voices/NPCast/00db904331daceba5750_npc_camp_worker_09"
+        }
+      ]
+    },
+    {
+      "line": "Giáp này đứt một sợi buộc. Mặc vào mà không kiểm thì xoay người là vướng ngay.",
+      "male": "BachDang938/Voices/NPCast/2e2ca5875009808e4217_npc_camp_worker_10",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_10",
+          "path": "BachDang938/Voices/NPCast/2e2ca5875009808e4217_npc_camp_worker_10"
+        }
+      ]
+    },
+    {
+      "line": "Quân trang đã sửa xong. Ai thiếu dây buộc thì tôi còn một bó ở đây.",
+      "male": "BachDang938/Voices/NPCast/8a7605d2cb1f0cc591fe_npc_camp_worker_10",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_10",
+          "path": "BachDang938/Voices/NPCast/8a7605d2cb1f0cc591fe_npc_camp_worker_10"
+        }
+      ]
+    },
+    {
+      "line": "Anh cởi giáp xuống xem có thương tích không đã. Vết nhẹ cũng nên nhờ quân y coi giúp.",
+      "male": "BachDang938/Voices/NPCast/7c98904116486ae1c7ed_npc_camp_worker_10",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_10",
+          "path": "BachDang938/Voices/NPCast/7c98904116486ae1c7ed_npc_camp_worker_10"
+        }
+      ]
+    },
+    {
+      "line": "Nắp thùng phải khít mới mang xuống thuyền. Tôi đang thử lại từng cái một.",
+      "male": "BachDang938/Voices/NPCast/6262d0e88407c0b3943a_npc_camp_worker_11",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_11",
+          "path": "BachDang938/Voices/NPCast/6262d0e88407c0b3943a_npc_camp_worker_11"
+        }
+      ]
+    },
+    {
+      "line": "Thùng đã chằng chắc, xuống nước cũng không xô vào người chèo. Tôi còn kiểm nốt hai chiếc.",
+      "male": "BachDang938/Voices/NPCast/5b02356b0a243332a830_npc_camp_worker_11",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_11",
+          "path": "BachDang938/Voices/NPCast/5b02356b0a243332a830_npc_camp_worker_11"
+        }
+      ]
+    },
+    {
+      "line": "Thùng nào móp để riêng cho tôi. Mình sửa lại, lần sau vẫn còn dùng được.",
+      "male": "BachDang938/Voices/NPCast/1ce7e45e337b0c973076_npc_camp_worker_11",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_11",
+          "path": "BachDang938/Voices/NPCast/1ce7e45e337b0c973076_npc_camp_worker_11"
+        }
+      ]
+    },
+    {
+      "line": "Tôi dọn lối giữa kho và cổng. Người gánh hàng đông, để đồ ngang đường là vướng ngay.",
+      "male": "BachDang938/Voices/NPCast/609becc7c2e54651e103_npc_camp_worker_12",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_12",
+          "path": "BachDang938/Voices/NPCast/609becc7c2e54651e103_npc_camp_worker_12"
+        }
+      ]
+    },
+    {
+      "line": "Lối ra bến đã thông. Anh theo mép đường mà đi, đoàn tiếp vận còn đang chuyển đồ.",
+      "male": "BachDang938/Voices/NPCast/75de0155d6a1bd4dc1cb_npc_camp_worker_12",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_12",
+          "path": "BachDang938/Voices/NPCast/75de0155d6a1bd4dc1cb_npc_camp_worker_12"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đang dọn chỗ cho người nghỉ. Mang cáng qua đây nhé, đoạn này đã bằng phẳng rồi.",
+      "male": "BachDang938/Voices/NPCast/cc974885ba47552dde09_npc_camp_worker_12",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_camp_worker_12",
+          "path": "BachDang938/Voices/NPCast/cc974885ba47552dde09_npc_camp_worker_12"
+        }
+      ]
+    },
+    {
+      "line": "Bà con đã để sẵn năm khúc gỗ dọc đường làng. Anh gom đủ rồi mang về cho quân trại nhé.",
+      "male": "BachDang938/Voices/NPCast/a2fa313fcbc82ad24147_npc_danlang_thai_0",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_danlang_thai_0",
+          "path": "BachDang938/Voices/NPCast/a2fa313fcbc82ad24147_npc_danlang_thai_0"
+        }
+      ]
+    },
+    {
+      "line": "Cọc ngoài sông đã thành trận địa rồi à? Gỗ của làng giúp được việc, già này mừng lắm.",
+      "male": "BachDang938/Voices/NPCast/7bf01496afb3840e57df_npc_danlang_thai_0",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_danlang_thai_0",
+          "path": "BachDang938/Voices/NPCast/7bf01496afb3840e57df_npc_danlang_thai_0"
+        }
+      ]
+    },
+    {
+      "line": "Sông vẫn chảy qua làng mình, mà giặc chẳng còn dám tới nữa. Công ấy thuộc cả quân lẫn dân.",
+      "male": "BachDang938/Voices/NPCast/cc0ef33743a9b2799153_npc_danlang_thai_0",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_danlang_thai_0",
+          "path": "BachDang938/Voices/NPCast/cc0ef33743a9b2799153_npc_danlang_thai_0"
+        }
+      ]
+    },
+    {
+      "line": "Tôi sống nhờ con nước nên nhìn là biết triều sắp đổi. Đợi đúng lúc, dòng sông sẽ giúp quân mình.",
+      "male": "BachDang938/Voices/NPCast/7b46353148b09eb9702b_npc_danlang_thai_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_danlang_thai_1",
+          "path": "BachDang938/Voices/NPCast/7b46353148b09eb9702b_npc_danlang_thai_1"
+        }
+      ]
+    },
+    {
+      "line": "Thuyền nhỏ đi sát dòng quen thì dễ xoay hơn. Anh nhớ chừa đường về bến khi ra nhử giặc.",
+      "male": "BachDang938/Voices/NPCast/f936465f82c1aaf9499d_npc_danlang_thai_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_danlang_thai_1",
+          "path": "BachDang938/Voices/NPCast/f936465f82c1aaf9499d_npc_danlang_thai_1"
+        }
+      ]
+    },
+    {
+      "line": "Nay tôi lại thả lưới được rồi. Mấy hôm giặc kéo tới, chẳng ai yên lòng mà ra sông.",
+      "male": "BachDang938/Voices/NPCast/b24ae0f3d7cabe3481dd_npc_danlang_thai_1",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_danlang_thai_1",
+          "path": "BachDang938/Voices/NPCast/b24ae0f3d7cabe3481dd_npc_danlang_thai_1"
+        }
+      ]
+    },
+    {
+      "line": "Nhà tôi xin góp gỗ. Anh lấy đủ năm khúc trong làng nhé, đừng bỏ sót đoạn cạnh đường.",
+      "male": "BachDang938/Voices/NPCast/529cb4bdd8af32f9b61b_npc_danlang_thai_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_danlang_thai_2",
+          "path": "BachDang938/Voices/NPCast/529cb4bdd8af32f9b61b_npc_danlang_thai_2"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đang thu gọn chỗ gỗ còn lại. Quân cần sửa thuyền thì cứ nói, bà con còn góp được.",
+      "male": "BachDang938/Voices/NPCast/96b65536a22d77ba2468_npc_danlang_thai_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_danlang_thai_2",
+          "path": "BachDang938/Voices/NPCast/96b65536a22d77ba2468_npc_danlang_thai_2"
+        }
+      ]
+    },
+    {
+      "line": "Khúc gỗ nhà tôi chắc cũng nằm ngoài trận địa ấy. Nghĩ vậy mà thấy mình góp được chút sức.",
+      "male": "BachDang938/Voices/NPCast/cc1a0978675fe663bf97_npc_danlang_thai_2",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_danlang_thai_2",
+          "path": "BachDang938/Voices/NPCast/cc1a0978675fe663bf97_npc_danlang_thai_2"
+        }
+      ]
+    },
+    {
+      "line": "Gỗ tôi để sẵn rồi. Anh giữ cưa thẳng rãnh, kéo đều tay là được.",
+      "male": "BachDang938/Voices/NPCast/2feebd8cd866b3941bf1_npc_vendor_timber",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_vendor_timber",
+          "path": "BachDang938/Voices/NPCast/2feebd8cd866b3941bf1_npc_vendor_timber"
+        }
+      ]
+    },
+    {
+      "line": "Lần này mình cưa cho nhẵn hơn nhé. Đừng gấp quá mà trượt khỏi rãnh.",
+      "male": "BachDang938/Voices/NPCast/cf54547425134e5610bc_npc_vendor_timber",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_vendor_timber",
+          "path": "BachDang938/Voices/NPCast/cf54547425134e5610bc_npc_vendor_timber"
+        }
+      ]
+    },
+    {
+      "line": "Được rồi, khúc này chắc tay lắm. Tôi sẽ chuyển số gỗ ấy cho quân trại.",
+      "male": "BachDang938/Voices/NPCast/cdabe023420e655fd7ec_npc_vendor_timber",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_vendor_timber",
+          "path": "BachDang938/Voices/NPCast/cdabe023420e655fd7ec_npc_vendor_timber"
+        }
+      ]
+    },
+    {
+      "line": "Dây này tôi lựa kỹ rồi. Anh quấn đều vòng, siết vừa tay để nút khỏi tuột.",
+      "male": "BachDang938/Voices/NPCast/e357c10545be65088839_npc_vendor_rope",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_vendor_rope",
+          "path": "BachDang938/Voices/NPCast/e357c10545be65088839_npc_vendor_rope"
+        }
+      ]
+    },
+    {
+      "line": "Anh thử buộc thêm một lượt nhé. Cảm thấy dây căng vừa thì thả tay ra.",
+      "male": "BachDang938/Voices/NPCast/cb0d8c9d38acdedda794_npc_vendor_rope",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_vendor_rope",
+          "path": "BachDang938/Voices/NPCast/cb0d8c9d38acdedda794_npc_vendor_rope"
+        }
+      ]
+    },
+    {
+      "line": "Nút chắc rồi đấy. Bó cọc này mang xuống thuyền cũng không bung dây nữa.",
+      "male": "BachDang938/Voices/NPCast/861910d37e18e6b65fc0_npc_vendor_rope",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_vendor_rope",
+          "path": "BachDang938/Voices/NPCast/861910d37e18e6b65fc0_npc_vendor_rope"
+        }
+      ]
+    },
+    {
+      "line": "Bao để bên này, gạo ở trong rổ. Anh xúc từng gáo thôi, đủ thì nhấc bao sang giao.",
+      "male": "",
+      "female": "BachDang938/Voices/NPCast/10cf6b5d55444674468d_npc_vendor_rice",
+      "variants": [
+        {
+          "profile": "npc_vendor_rice",
+          "path": "BachDang938/Voices/NPCast/10cf6b5d55444674468d_npc_vendor_rice"
+        }
+      ]
+    },
+    {
+      "line": "Tôi để thêm bao mới rồi. Lỡ xúc dư thì bớt một gáo, đừng bỏ phí gạo nhé.",
+      "male": "",
+      "female": "BachDang938/Voices/NPCast/4cc6964ce94f89ea0aec_npc_vendor_rice",
+      "variants": [
+        {
+          "profile": "npc_vendor_rice",
+          "path": "BachDang938/Voices/NPCast/4cc6964ce94f89ea0aec_npc_vendor_rice"
+        }
+      ]
+    },
+    {
+      "line": "Bao này đủ rồi, cảm ơn anh. Có phần gạo ấy, quân mình mới yên tâm ra sông.",
+      "male": "",
+      "female": "BachDang938/Voices/NPCast/b4a822b0670f5366e323_npc_vendor_rice",
+      "variants": [
+        {
+          "profile": "npc_vendor_rice",
+          "path": "BachDang938/Voices/NPCast/b4a822b0670f5366e323_npc_vendor_rice"
+        }
+      ]
+    },
+    {
+      "line": "Gạo với cá tôi chia sẵn rồi. Anh gấp kín từng mép, đừng để muối rơi ra ngoài.",
+      "male": "BachDang938/Voices/NPCast/bf51c1e16d65fa7817b1_npc_vendor_provisions",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_vendor_provisions",
+          "path": "BachDang938/Voices/NPCast/bf51c1e16d65fa7817b1_npc_vendor_provisions"
+        }
+      ]
+    },
+    {
+      "line": "Khăn mới đây, anh gói tiếp đi. Ép nếp chặt một chút thì gói mới giữ được lâu.",
+      "male": "BachDang938/Voices/NPCast/410af446fa753ceecc1b_npc_vendor_provisions",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_vendor_provisions",
+          "path": "BachDang938/Voices/NPCast/410af446fa753ceecc1b_npc_vendor_provisions"
+        }
+      ]
+    },
+    {
+      "line": "Gói này kín và gọn rồi. Tôi buộc lại để chuyển cho đội chèo thuyền.",
+      "male": "BachDang938/Voices/NPCast/9cd85d2dd845e4b02bb7_npc_vendor_provisions",
+      "female": "",
+      "variants": [
+        {
+          "profile": "npc_vendor_provisions",
+          "path": "BachDang938/Voices/NPCast/9cd85d2dd845e4b02bb7_npc_vendor_provisions"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đang thu dọn việc nhà. Nghe quân trại cần người là bà con lại chạy sang giúp.",
+      "male": "BachDang938/Voices/NPCast/cefddddcc5bde99b0e8c_npc_villager_0_m",
+      "female": "BachDang938/Voices/NPCast/1d1971402fa3707b36ee_npc_villager_0_f",
+      "variants": [
+        {
+          "profile": "npc_villager_0_m",
+          "path": "BachDang938/Voices/NPCast/cefddddcc5bde99b0e8c_npc_villager_0_m"
+        },
+        {
+          "profile": "npc_villager_0_f",
+          "path": "BachDang938/Voices/NPCast/1d1971402fa3707b36ee_npc_villager_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Trong làng còn trẻ nhỏ nên tôi ở lại trông nhà. Các anh ra sông nhớ giữ mình.",
+      "male": "BachDang938/Voices/NPCast/58ea249c1e54cbb74b18_npc_villager_0_m",
+      "female": "BachDang938/Voices/NPCast/cc7fd14938561af0f7ef_npc_villager_0_f",
+      "variants": [
+        {
+          "profile": "npc_villager_0_m",
+          "path": "BachDang938/Voices/NPCast/58ea249c1e54cbb74b18_npc_villager_0_m"
+        },
+        {
+          "profile": "npc_villager_0_f",
+          "path": "BachDang938/Voices/NPCast/cc7fd14938561af0f7ef_npc_villager_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Hôm nay mới dám mở cửa sớm như mọi khi. Tiếng trống chiến thắng làm cả nhà tôi tỉnh giấc.",
+      "male": "BachDang938/Voices/NPCast/f6c146f77d8e3b37c7ad_npc_villager_0_m",
+      "female": "BachDang938/Voices/NPCast/957a6c8c682966658e79_npc_villager_0_f",
+      "variants": [
+        {
+          "profile": "npc_villager_0_m",
+          "path": "BachDang938/Voices/NPCast/f6c146f77d8e3b37c7ad_npc_villager_0_m"
+        },
+        {
+          "profile": "npc_villager_0_f",
+          "path": "BachDang938/Voices/NPCast/957a6c8c682966658e79_npc_villager_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Mấy nhà hàng xóm góp chung một gánh củi. Tôi đang chờ họ để mang sang bếp trại.",
+      "male": "BachDang938/Voices/NPCast/44b39554a66c9bba20e5_npc_villager_1_m",
+      "female": "BachDang938/Voices/NPCast/48230526229581451612_npc_villager_1_f",
+      "variants": [
+        {
+          "profile": "npc_villager_1_m",
+          "path": "BachDang938/Voices/NPCast/44b39554a66c9bba20e5_npc_villager_1_m"
+        },
+        {
+          "profile": "npc_villager_1_f",
+          "path": "BachDang938/Voices/NPCast/48230526229581451612_npc_villager_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Việc đồng áng tạm để đó, trước mắt phải lo cho quân mình đủ lương.",
+      "male": "BachDang938/Voices/NPCast/31adb722fc8ef66a9a22_npc_villager_1_m",
+      "female": "BachDang938/Voices/NPCast/2fbc4c4cc7d72919a634_npc_villager_1_f",
+      "variants": [
+        {
+          "profile": "npc_villager_1_m",
+          "path": "BachDang938/Voices/NPCast/31adb722fc8ef66a9a22_npc_villager_1_m"
+        },
+        {
+          "profile": "npc_villager_1_f",
+          "path": "BachDang938/Voices/NPCast/2fbc4c4cc7d72919a634_npc_villager_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Bà con đang sửa soạn một bữa chung. Ai trở về làng cũng được mời ngồi lại.",
+      "male": "BachDang938/Voices/NPCast/dac7dd7480f0372744a3_npc_villager_1_m",
+      "female": "BachDang938/Voices/NPCast/dd7b5270f6b8a4fffb60_npc_villager_1_f",
+      "variants": [
+        {
+          "profile": "npc_villager_1_m",
+          "path": "BachDang938/Voices/NPCast/dac7dd7480f0372744a3_npc_villager_1_m"
+        },
+        {
+          "profile": "npc_villager_1_f",
+          "path": "BachDang938/Voices/NPCast/dd7b5270f6b8a4fffb60_npc_villager_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi vừa từ ruộng về. Thóc phơi xong phải cất ngay, sương xuống là ẩm hết.",
+      "male": "BachDang938/Voices/NPCast/9d57ad8c4966103b1d27_npc_farmer_0_m",
+      "female": "BachDang938/Voices/NPCast/d224a873b3f34539ff67_npc_farmer_0_f",
+      "variants": [
+        {
+          "profile": "npc_farmer_0_m",
+          "path": "BachDang938/Voices/NPCast/9d57ad8c4966103b1d27_npc_farmer_0_m"
+        },
+        {
+          "profile": "npc_farmer_0_f",
+          "path": "BachDang938/Voices/NPCast/d224a873b3f34539ff67_npc_farmer_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Lúa ngoài bãi vẫn có người chăm. Các anh yên tâm đánh, phần ruộng để chúng tôi giữ.",
+      "male": "BachDang938/Voices/NPCast/6ffbcb5b87eb9ce723e9_npc_farmer_0_m",
+      "female": "BachDang938/Voices/NPCast/5ef5a4f2551b1b11af0e_npc_farmer_0_f",
+      "variants": [
+        {
+          "profile": "npc_farmer_0_m",
+          "path": "BachDang938/Voices/NPCast/6ffbcb5b87eb9ce723e9_npc_farmer_0_m"
+        },
+        {
+          "profile": "npc_farmer_0_f",
+          "path": "BachDang938/Voices/NPCast/5ef5a4f2551b1b11af0e_npc_farmer_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi lại ra thăm ruộng đây. Mấy hôm nữa lúa tốt, mình sẽ có thêm gạo mới.",
+      "male": "BachDang938/Voices/NPCast/057506df6474d80edd2b_npc_farmer_0_m",
+      "female": "BachDang938/Voices/NPCast/d2d0879688899ee4ecbf_npc_farmer_0_f",
+      "variants": [
+        {
+          "profile": "npc_farmer_0_m",
+          "path": "BachDang938/Voices/NPCast/057506df6474d80edd2b_npc_farmer_0_m"
+        },
+        {
+          "profile": "npc_farmer_0_f",
+          "path": "BachDang938/Voices/NPCast/d2d0879688899ee4ecbf_npc_farmer_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Nắng hôm nay vừa đủ hong thóc. Tôi đảo thêm một lượt rồi đem vào kho cho chắc.",
+      "male": "BachDang938/Voices/NPCast/86728fa92997d40d712e_npc_farmer_1_m",
+      "female": "BachDang938/Voices/NPCast/3088fe0293548ba0d5ae_npc_farmer_1_f",
+      "variants": [
+        {
+          "profile": "npc_farmer_1_m",
+          "path": "BachDang938/Voices/NPCast/86728fa92997d40d712e_npc_farmer_1_m"
+        },
+        {
+          "profile": "npc_farmer_1_f",
+          "path": "BachDang938/Voices/NPCast/3088fe0293548ba0d5ae_npc_farmer_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi dành riêng phần thóc sạch để chuyển vào trại. Quân đông thì bữa ăn càng phải lo kỹ.",
+      "male": "BachDang938/Voices/NPCast/e6d0049d16b9d5fd49f7_npc_farmer_1_m",
+      "female": "BachDang938/Voices/NPCast/da1c3666cc9bdf8925f7_npc_farmer_1_f",
+      "variants": [
+        {
+          "profile": "npc_farmer_1_m",
+          "path": "BachDang938/Voices/NPCast/e6d0049d16b9d5fd49f7_npc_farmer_1_m"
+        },
+        {
+          "profile": "npc_farmer_1_f",
+          "path": "BachDang938/Voices/NPCast/da1c3666cc9bdf8925f7_npc_farmer_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi định gieo lại vạt đất gần sông. Hết giặc rồi, để đất trống cũng tiếc.",
+      "male": "BachDang938/Voices/NPCast/4398a8a16d8cf90f6a68_npc_farmer_1_m",
+      "female": "BachDang938/Voices/NPCast/d07fa95034bcf000c992_npc_farmer_1_f",
+      "variants": [
+        {
+          "profile": "npc_farmer_1_m",
+          "path": "BachDang938/Voices/NPCast/4398a8a16d8cf90f6a68_npc_farmer_1_m"
+        },
+        {
+          "profile": "npc_farmer_1_f",
+          "path": "BachDang938/Voices/NPCast/d07fa95034bcf000c992_npc_farmer_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Mắt lưới này rách một đoạn. Vá cho kín đã, chiều tôi mới dám ra thả.",
+      "male": "BachDang938/Voices/NPCast/5e4b66c8861434b14c0e_npc_fisher_0_m",
+      "female": "BachDang938/Voices/NPCast/cf99441cdd4456a77c3f_npc_fisher_0_f",
+      "variants": [
+        {
+          "profile": "npc_fisher_0_m",
+          "path": "BachDang938/Voices/NPCast/5e4b66c8861434b14c0e_npc_fisher_0_m"
+        },
+        {
+          "profile": "npc_fisher_0_f",
+          "path": "BachDang938/Voices/NPCast/cf99441cdd4456a77c3f_npc_fisher_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Khúc nước giữa sông đổi nhanh lắm. Anh nhìn bờ mà giữ hướng, đừng chỉ nhìn thuyền địch.",
+      "male": "BachDang938/Voices/NPCast/ec5e106a8fac0bc37456_npc_fisher_0_m",
+      "female": "BachDang938/Voices/NPCast/6424f3a05518f48684a4_npc_fisher_0_f",
+      "variants": [
+        {
+          "profile": "npc_fisher_0_m",
+          "path": "BachDang938/Voices/NPCast/ec5e106a8fac0bc37456_npc_fisher_0_m"
+        },
+        {
+          "profile": "npc_fisher_0_f",
+          "path": "BachDang938/Voices/NPCast/6424f3a05518f48684a4_npc_fisher_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đang sửa lại mái chèo. Chuyến tới chắc lại nghe tiếng người gọi nhau trên bến.",
+      "male": "BachDang938/Voices/NPCast/a0fa1d1820f8335eb68d_npc_fisher_0_m",
+      "female": "BachDang938/Voices/NPCast/8cde7b901c91df5207f7_npc_fisher_0_f",
+      "variants": [
+        {
+          "profile": "npc_fisher_0_m",
+          "path": "BachDang938/Voices/NPCast/a0fa1d1820f8335eb68d_npc_fisher_0_m"
+        },
+        {
+          "profile": "npc_fisher_0_f",
+          "path": "BachDang938/Voices/NPCast/8cde7b901c91df5207f7_npc_fisher_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Cá mới bắt đang chuyển vào chợ. Giữ phần tươi cho làng, phần khô gửi sang quân trại.",
+      "male": "BachDang938/Voices/NPCast/c4e13de2f844d5dfc74d_npc_fisher_1_m",
+      "female": "BachDang938/Voices/NPCast/2bfc5d553d918bcab3f2_npc_fisher_1_f",
+      "variants": [
+        {
+          "profile": "npc_fisher_1_m",
+          "path": "BachDang938/Voices/NPCast/c4e13de2f844d5dfc74d_npc_fisher_1_m"
+        },
+        {
+          "profile": "npc_fisher_1_f",
+          "path": "BachDang938/Voices/NPCast/2bfc5d553d918bcab3f2_npc_fisher_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Thuyền giặc to thì quay chậm. Thuyền nhỏ mình quen luồng, cứ lấy đó mà tránh chúng.",
+      "male": "BachDang938/Voices/NPCast/bb19e230d2d87c85b4d0_npc_fisher_1_m",
+      "female": "BachDang938/Voices/NPCast/fd5055395ab5e2ad79af_npc_fisher_1_f",
+      "variants": [
+        {
+          "profile": "npc_fisher_1_m",
+          "path": "BachDang938/Voices/NPCast/bb19e230d2d87c85b4d0_npc_fisher_1_m"
+        },
+        {
+          "profile": "npc_fisher_1_f",
+          "path": "BachDang938/Voices/NPCast/fd5055395ab5e2ad79af_npc_fisher_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Lưới còn nguyên, thuyền cũng còn. Đối với người làm nghề sông, vậy là mừng lắm rồi.",
+      "male": "BachDang938/Voices/NPCast/3b8d9e960229d9569d78_npc_fisher_1_m",
+      "female": "BachDang938/Voices/NPCast/47ac3b2ab18a9e23a31f_npc_fisher_1_f",
+      "variants": [
+        {
+          "profile": "npc_fisher_1_m",
+          "path": "BachDang938/Voices/NPCast/3b8d9e960229d9569d78_npc_fisher_1_m"
+        },
+        {
+          "profile": "npc_fisher_1_f",
+          "path": "BachDang938/Voices/NPCast/47ac3b2ab18a9e23a31f_npc_fisher_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi vừa nhận thêm mẻ cá khô. Anh cần lương thì cứ xem, hàng cho quân đã để riêng.",
+      "male": "BachDang938/Voices/NPCast/9e41d0e5d497017c0290_npc_merchant_0_m",
+      "female": "BachDang938/Voices/NPCast/1648140555b52a4fed0a_npc_merchant_0_f",
+      "variants": [
+        {
+          "profile": "npc_merchant_0_m",
+          "path": "BachDang938/Voices/NPCast/9e41d0e5d497017c0290_npc_merchant_0_m"
+        },
+        {
+          "profile": "npc_merchant_0_f",
+          "path": "BachDang938/Voices/NPCast/1648140555b52a4fed0a_npc_merchant_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Hàng đã chia vào từng bao, khỏi phải mở ra đếm lại lúc vội. Tôi chỉ chờ người tới nhận.",
+      "male": "BachDang938/Voices/NPCast/b17a3b8c52183abe0c0e_npc_merchant_0_m",
+      "female": "BachDang938/Voices/NPCast/c69fd4fc91947098a517_npc_merchant_0_f",
+      "variants": [
+        {
+          "profile": "npc_merchant_0_m",
+          "path": "BachDang938/Voices/NPCast/b17a3b8c52183abe0c0e_npc_merchant_0_m"
+        },
+        {
+          "profile": "npc_merchant_0_f",
+          "path": "BachDang938/Voices/NPCast/c69fd4fc91947098a517_npc_merchant_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Chợ hôm nay có tiếng cười rồi. Mấy hôm trước ai bán cũng cứ nhìn ra phía sông.",
+      "male": "BachDang938/Voices/NPCast/a8392f12a75b7aa5d852_npc_merchant_0_m",
+      "female": "BachDang938/Voices/NPCast/8ffa253216ba5cabefac_npc_merchant_0_f",
+      "variants": [
+        {
+          "profile": "npc_merchant_0_m",
+          "path": "BachDang938/Voices/NPCast/a8392f12a75b7aa5d852_npc_merchant_0_m"
+        },
+        {
+          "profile": "npc_merchant_0_f",
+          "path": "BachDang938/Voices/NPCast/8ffa253216ba5cabefac_npc_merchant_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đổi gạo lấy muối từ sáng. Đủ hàng rồi sẽ mang phần này sang kho tiếp vận.",
+      "male": "BachDang938/Voices/NPCast/1415bf79536106236344_npc_merchant_1_m",
+      "female": "BachDang938/Voices/NPCast/410736d4c18563fde9b6_npc_merchant_1_f",
+      "variants": [
+        {
+          "profile": "npc_merchant_1_m",
+          "path": "BachDang938/Voices/NPCast/1415bf79536106236344_npc_merchant_1_m"
+        },
+        {
+          "profile": "npc_merchant_1_f",
+          "path": "BachDang938/Voices/NPCast/410736d4c18563fde9b6_npc_merchant_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Quân cần gì cứ báo sớm. Tôi nhờ các nhà bên cùng gom, đỡ để người ngoài bến phải chờ.",
+      "male": "BachDang938/Voices/NPCast/e5fb86d8adbefe100c19_npc_merchant_1_m",
+      "female": "BachDang938/Voices/NPCast/fb26aed7b339e962dcc0_npc_merchant_1_f",
+      "variants": [
+        {
+          "profile": "npc_merchant_1_m",
+          "path": "BachDang938/Voices/NPCast/e5fb86d8adbefe100c19_npc_merchant_1_m"
+        },
+        {
+          "profile": "npc_merchant_1_f",
+          "path": "BachDang938/Voices/NPCast/fb26aed7b339e962dcc0_npc_merchant_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Nhận được tin thắng trận, tôi mở thêm vò nước. Ai vừa đi đánh về cứ ghé uống.",
+      "male": "BachDang938/Voices/NPCast/9c69778a4ec0848fdba1_npc_merchant_1_m",
+      "female": "BachDang938/Voices/NPCast/6d470ce43978e8b32d1c_npc_merchant_1_f",
+      "variants": [
+        {
+          "profile": "npc_merchant_1_m",
+          "path": "BachDang938/Voices/NPCast/9c69778a4ec0848fdba1_npc_merchant_1_m"
+        },
+        {
+          "profile": "npc_merchant_1_f",
+          "path": "BachDang938/Voices/NPCast/6d470ce43978e8b32d1c_npc_merchant_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Gánh này nặng, tôi đi chậm một chút. Anh cho tôi qua rồi hãy rẽ vào kho nhé.",
+      "male": "BachDang938/Voices/NPCast/7d9eb184032d81295515_npc_porter_0_m",
+      "female": "BachDang938/Voices/NPCast/9d94debac65c82fc10f6_npc_porter_0_f",
+      "variants": [
+        {
+          "profile": "npc_porter_0_m",
+          "path": "BachDang938/Voices/NPCast/7d9eb184032d81295515_npc_porter_0_m"
+        },
+        {
+          "profile": "npc_porter_0_f",
+          "path": "BachDang938/Voices/NPCast/9d94debac65c82fc10f6_npc_porter_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Chuyến cuối ra bến đây. Đặt hàng xong tôi quay lại chở thêm nước cho quân.",
+      "male": "BachDang938/Voices/NPCast/b02d49c8610274d616ba_npc_porter_0_m",
+      "female": "BachDang938/Voices/NPCast/1d53beb4f2455e24c35f_npc_porter_0_f",
+      "variants": [
+        {
+          "profile": "npc_porter_0_m",
+          "path": "BachDang938/Voices/NPCast/b02d49c8610274d616ba_npc_porter_0_m"
+        },
+        {
+          "profile": "npc_porter_0_f",
+          "path": "BachDang938/Voices/NPCast/1d53beb4f2455e24c35f_npc_porter_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Hôm nay gánh đồ về nhẹ hơn lúc mang đi. Chỉ mong người ra trận cũng về đủ cả.",
+      "male": "BachDang938/Voices/NPCast/7444feee499c67510b1b_npc_porter_0_m",
+      "female": "BachDang938/Voices/NPCast/e65525a4c3655f6697af_npc_porter_0_f",
+      "variants": [
+        {
+          "profile": "npc_porter_0_m",
+          "path": "BachDang938/Voices/NPCast/7444feee499c67510b1b_npc_porter_0_m"
+        },
+        {
+          "profile": "npc_porter_0_f",
+          "path": "BachDang938/Voices/NPCast/e65525a4c3655f6697af_npc_porter_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi buộc lại quai gánh rồi mới đi tiếp. Đứt giữa đường thì vất vả cho cả người nhận hàng.",
+      "male": "BachDang938/Voices/NPCast/189e2b4c0d9507bdb48e_npc_porter_1_m",
+      "female": "BachDang938/Voices/NPCast/57f3e6c8db7d556f4d41_npc_porter_1_f",
+      "variants": [
+        {
+          "profile": "npc_porter_1_m",
+          "path": "BachDang938/Voices/NPCast/189e2b4c0d9507bdb48e_npc_porter_1_m"
+        },
+        {
+          "profile": "npc_porter_1_f",
+          "path": "BachDang938/Voices/NPCast/57f3e6c8db7d556f4d41_npc_porter_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Kho trong trại giao tôi chuyển bó dây này. Việc nhỏ mà chậm cũng ảnh hưởng cả đội.",
+      "male": "BachDang938/Voices/NPCast/069f2c2a3cfde3718161_npc_porter_1_m",
+      "female": "BachDang938/Voices/NPCast/f2529774e19c2a5ed87e_npc_porter_1_f",
+      "variants": [
+        {
+          "profile": "npc_porter_1_m",
+          "path": "BachDang938/Voices/NPCast/069f2c2a3cfde3718161_npc_porter_1_m"
+        },
+        {
+          "profile": "npc_porter_1_f",
+          "path": "BachDang938/Voices/NPCast/f2529774e19c2a5ed87e_npc_porter_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đang giúp chuyển người bị thương. Anh chừa lối này nhé, cáng sắp tới rồi.",
+      "male": "BachDang938/Voices/NPCast/2b0a3da5a9b596ae725d_npc_porter_1_m",
+      "female": "BachDang938/Voices/NPCast/29729b071c5da6b7088f_npc_porter_1_f",
+      "variants": [
+        {
+          "profile": "npc_porter_1_m",
+          "path": "BachDang938/Voices/NPCast/2b0a3da5a9b596ae725d_npc_porter_1_m"
+        },
+        {
+          "profile": "npc_porter_1_f",
+          "path": "BachDang938/Voices/NPCast/29729b071c5da6b7088f_npc_porter_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi vừa rút mũi giáo khỏi lò. Phải để nguội đúng lúc, làm vội là thép dễ giòn.",
+      "male": "BachDang938/Voices/NPCast/74ddd46f867342837564_npc_smith_0_m",
+      "female": "BachDang938/Voices/NPCast/9d3a2a048e3f34461c2d_npc_smith_0_f",
+      "variants": [
+        {
+          "profile": "npc_smith_0_m",
+          "path": "BachDang938/Voices/NPCast/74ddd46f867342837564_npc_smith_0_m"
+        },
+        {
+          "profile": "npc_smith_0_f",
+          "path": "BachDang938/Voices/NPCast/9d3a2a048e3f34461c2d_npc_smith_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Búa với kìm đã sẵn. Đồ quân mình cần sửa cứ đưa tới, tôi còn thức được.",
+      "male": "BachDang938/Voices/NPCast/09be5cce66654683dd2c_npc_smith_0_m",
+      "female": "BachDang938/Voices/NPCast/0c2bcdf3673d5f84a482_npc_smith_0_f",
+      "variants": [
+        {
+          "profile": "npc_smith_0_m",
+          "path": "BachDang938/Voices/NPCast/09be5cce66654683dd2c_npc_smith_0_m"
+        },
+        {
+          "profile": "npc_smith_0_f",
+          "path": "BachDang938/Voices/NPCast/0c2bcdf3673d5f84a482_npc_smith_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Vũ khí gãy đem về đây, đừng vứt đi. Tôi còn lấy phần thép tốt để rèn lại.",
+      "male": "BachDang938/Voices/NPCast/3852af890741c9213dac_npc_smith_0_m",
+      "female": "BachDang938/Voices/NPCast/2c3827d1c728592cd75b_npc_smith_0_f",
+      "variants": [
+        {
+          "profile": "npc_smith_0_m",
+          "path": "BachDang938/Voices/NPCast/3852af890741c9213dac_npc_smith_0_m"
+        },
+        {
+          "profile": "npc_smith_0_f",
+          "path": "BachDang938/Voices/NPCast/2c3827d1c728592cd75b_npc_smith_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Lò đang đỏ nên tôi làm nốt mẻ này. Mỗi mũi tên phải kiểm đầu thật kỹ mới giao.",
+      "male": "BachDang938/Voices/NPCast/14a3bc0bae20074568e1_npc_smith_1_m",
+      "female": "BachDang938/Voices/NPCast/b473fcba04972ebe6164_npc_smith_1_f",
+      "variants": [
+        {
+          "profile": "npc_smith_1_m",
+          "path": "BachDang938/Voices/NPCast/14a3bc0bae20074568e1_npc_smith_1_m"
+        },
+        {
+          "profile": "npc_smith_1_f",
+          "path": "BachDang938/Voices/NPCast/b473fcba04972ebe6164_npc_smith_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đã sửa xong lưỡi rìu cuối. Phần cán gỗ nhờ người thợ bên kia lắp giúp là dùng được.",
+      "male": "BachDang938/Voices/NPCast/d868899f7d96509f6a10_npc_smith_1_m",
+      "female": "BachDang938/Voices/NPCast/b7d4f3fc642bb86ba372_npc_smith_1_f",
+      "variants": [
+        {
+          "profile": "npc_smith_1_m",
+          "path": "BachDang938/Voices/NPCast/d868899f7d96509f6a10_npc_smith_1_m"
+        },
+        {
+          "profile": "npc_smith_1_f",
+          "path": "BachDang938/Voices/NPCast/b7d4f3fc642bb86ba372_npc_smith_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Nghe tin thắng mà tay vẫn chưa muốn nghỉ. Tôi rèn nốt chỗ nông cụ cho bà con rồi mới dập lò.",
+      "male": "BachDang938/Voices/NPCast/cca552bbac612caf6efd_npc_smith_1_m",
+      "female": "BachDang938/Voices/NPCast/539997e6fe3d9778ba91_npc_smith_1_f",
+      "variants": [
+        {
+          "profile": "npc_smith_1_m",
+          "path": "BachDang938/Voices/NPCast/cca552bbac612caf6efd_npc_smith_1_m"
+        },
+        {
+          "profile": "npc_smith_1_f",
+          "path": "BachDang938/Voices/NPCast/539997e6fe3d9778ba91_npc_smith_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đi kiểm từ cổng tới kho. Có ai chở hàng vào trại thì phải nhận rõ mới cho qua.",
+      "male": "BachDang938/Voices/NPCast/d58f30f110775e4fc8b0_npc_guard_0_m",
+      "female": "BachDang938/Voices/NPCast/76c9667bbd9a12e55681_npc_guard_0_f",
+      "variants": [
+        {
+          "profile": "npc_guard_0_m",
+          "path": "BachDang938/Voices/NPCast/d58f30f110775e4fc8b0_npc_guard_0_m"
+        },
+        {
+          "profile": "npc_guard_0_f",
+          "path": "BachDang938/Voices/NPCast/76c9667bbd9a12e55681_npc_guard_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi đã thuộc hiệu trống. Có lệnh là đổi ca và ra đúng vị trí, không để chậm cả đội.",
+      "male": "BachDang938/Voices/NPCast/502928f6699e317d59a7_npc_guard_0_m",
+      "female": "BachDang938/Voices/NPCast/487c20c3f944abe98790_npc_guard_0_f",
+      "variants": [
+        {
+          "profile": "npc_guard_0_m",
+          "path": "BachDang938/Voices/NPCast/502928f6699e317d59a7_npc_guard_0_m"
+        },
+        {
+          "profile": "npc_guard_0_f",
+          "path": "BachDang938/Voices/NPCast/487c20c3f944abe98790_npc_guard_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Đội về đến đâu tôi ghi tới đó. Người chưa thấy về thì vẫn phải cho quân đi tìm.",
+      "male": "BachDang938/Voices/NPCast/1a0890619f34f45d9638_npc_guard_0_m",
+      "female": "BachDang938/Voices/NPCast/ebcd3f861616abc17a71_npc_guard_0_f",
+      "variants": [
+        {
+          "profile": "npc_guard_0_m",
+          "path": "BachDang938/Voices/NPCast/1a0890619f34f45d9638_npc_guard_0_m"
+        },
+        {
+          "profile": "npc_guard_0_f",
+          "path": "BachDang938/Voices/NPCast/ebcd3f861616abc17a71_npc_guard_0_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi vừa đổi ca. Trong trại đông người qua lại, mình phải giữ lối đi cho thông.",
+      "male": "BachDang938/Voices/NPCast/79cdbd1dcfd143d38a94_npc_guard_1_m",
+      "female": "BachDang938/Voices/NPCast/df38e6e2d0d158f51378_npc_guard_1_f",
+      "variants": [
+        {
+          "profile": "npc_guard_1_m",
+          "path": "BachDang938/Voices/NPCast/79cdbd1dcfd143d38a94_npc_guard_1_m"
+        },
+        {
+          "profile": "npc_guard_1_f",
+          "path": "BachDang938/Voices/NPCast/df38e6e2d0d158f51378_npc_guard_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Tôi giữ phần tiếp ứng trên bờ. Anh xuống thuyền rồi, nhớ nhìn hiệu từ phía quân mình.",
+      "male": "BachDang938/Voices/NPCast/ce7535f484f9e9dddc36_npc_guard_1_m",
+      "female": "BachDang938/Voices/NPCast/8f7efe519926a2f567cf_npc_guard_1_f",
+      "variants": [
+        {
+          "profile": "npc_guard_1_m",
+          "path": "BachDang938/Voices/NPCast/ce7535f484f9e9dddc36_npc_guard_1_m"
+        },
+        {
+          "profile": "npc_guard_1_f",
+          "path": "BachDang938/Voices/NPCast/8f7efe519926a2f567cf_npc_guard_1_f"
+        }
+      ]
+    },
+    {
+      "line": "Ngoài sông thắng rồi nhưng vẫn phải canh gác. Tù binh và vũ khí thu được cần người trông.",
+      "male": "BachDang938/Voices/NPCast/0b7ac9992d40adfe0f82_npc_guard_1_m",
+      "female": "BachDang938/Voices/NPCast/e2aa333d9425c9f83f80_npc_guard_1_f",
+      "variants": [
+        {
+          "profile": "npc_guard_1_m",
+          "path": "BachDang938/Voices/NPCast/0b7ac9992d40adfe0f82_npc_guard_1_m"
+        },
+        {
+          "profile": "npc_guard_1_f",
+          "path": "BachDang938/Voices/NPCast/e2aa333d9425c9f83f80_npc_guard_1_f"
+        }
+      ]
     }
   ],
   "profiles": [
@@ -961,6 +2647,306 @@
     {
       "id": "crew_work",
       "voice": "Microsoft vi-VN-NamMinhNeural"
+    },
+    {
+      "id": "npc_camp_guard_front_left",
+      "voice": "VieNeu/Quốc Tuấn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_guard_front_right",
+      "voice": "VieNeu/Hải Đăng",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_guard_mid_right",
+      "voice": "VieNeu/Thái Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_guard_back_1",
+      "voice": "VieNeu/Đức Trí",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_guard_back_2",
+      "voice": "VieNeu/Quang Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_guard_back_3",
+      "voice": "VieNeu/Xuân Vĩnh",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_lookout_soldier",
+      "voice": "VieNeu/Hải Đăng",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_sitting_soldier",
+      "voice": "VieNeu/Phạm Tuyên",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_laying_soldier",
+      "voice": "VieNeu/Minh Triết",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_linh_nghi_ca_tay_1",
+      "voice": "VieNeu/Đức Trí",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_linh_nghi_ca_tay_2",
+      "voice": "VieNeu/Quốc Tuấn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_linh_nghi_ca_dong_1",
+      "voice": "VieNeu/Quang Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_linh_nghi_ca_dong_2",
+      "voice": "VieNeu/Thái Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_01",
+      "voice": "VieNeu/Quốc Tuấn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_02",
+      "voice": "VieNeu/Quang Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_03",
+      "voice": "VieNeu/Thái Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_04",
+      "voice": "VieNeu/Đức Trí",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_05",
+      "voice": "VieNeu/Xuân Vĩnh",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_06",
+      "voice": "VieNeu/Minh Triết",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_07",
+      "voice": "VieNeu/Phạm Tuyên",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_08",
+      "voice": "VieNeu/Quang Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_09",
+      "voice": "VieNeu/Đức Trí",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_10",
+      "voice": "VieNeu/Thái Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_11",
+      "voice": "VieNeu/Xuân Vĩnh",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_camp_worker_12",
+      "voice": "VieNeu/Quốc Tuấn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_danlang_thai_0",
+      "voice": "VieNeu/Phạm Tuyên",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_danlang_thai_1",
+      "voice": "VieNeu/Quang Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_danlang_thai_2",
+      "voice": "VieNeu/Xuân Vĩnh",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_vendor_timber",
+      "voice": "VieNeu/Đức Trí",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_vendor_rope",
+      "voice": "VieNeu/Thái Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_vendor_rice",
+      "voice": "VieNeu/Trúc Ly",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_vendor_provisions",
+      "voice": "VieNeu/Minh Triết",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_villager_0_m",
+      "voice": "VieNeu/Phạm Tuyên",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_villager_0_f",
+      "voice": "VieNeu/Trúc Ly",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_villager_1_m",
+      "voice": "VieNeu/Xuân Vĩnh",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_villager_1_f",
+      "voice": "VieNeu/Thục Đoan",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_farmer_0_m",
+      "voice": "VieNeu/Xuân Vĩnh",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_farmer_0_f",
+      "voice": "VieNeu/Đoan Trang",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_farmer_1_m",
+      "voice": "VieNeu/Minh Triết",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_farmer_1_f",
+      "voice": "VieNeu/Trúc Ly",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_fisher_0_m",
+      "voice": "VieNeu/Quang Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_fisher_0_f",
+      "voice": "VieNeu/Ngọc Trân",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_fisher_1_m",
+      "voice": "VieNeu/Phạm Tuyên",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_fisher_1_f",
+      "voice": "VieNeu/Thục Đoan",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_merchant_0_m",
+      "voice": "VieNeu/Minh Triết",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_merchant_0_f",
+      "voice": "VieNeu/Ngọc Huyền",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_merchant_1_m",
+      "voice": "VieNeu/Quang Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_merchant_1_f",
+      "voice": "VieNeu/Đoan Trang",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_porter_0_m",
+      "voice": "VieNeu/Thái Sơn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_porter_0_f",
+      "voice": "VieNeu/Thùy Dung",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_porter_1_m",
+      "voice": "VieNeu/Quốc Tuấn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_porter_1_f",
+      "voice": "VieNeu/Ngọc Trân",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_smith_0_m",
+      "voice": "VieNeu/Đức Trí",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_smith_0_f",
+      "voice": "VieNeu/Kim Thanh",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_smith_1_m",
+      "voice": "VieNeu/Hải Đăng",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_smith_1_f",
+      "voice": "VieNeu/Thùy Dung",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_guard_0_m",
+      "voice": "VieNeu/Quốc Tuấn",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_guard_0_f",
+      "voice": "VieNeu/Kim Thanh",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_guard_1_m",
+      "voice": "VieNeu/Hải Đăng",
+      "tempo": 1.1
+    },
+    {
+      "id": "npc_guard_1_f",
+      "voice": "VieNeu/Ngọc Huyền",
+      "tempo": 1.1
     }
   ]
 }

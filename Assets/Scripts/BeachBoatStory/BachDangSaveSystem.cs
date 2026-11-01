@@ -149,7 +149,7 @@ namespace BeachBoatStory
             var session=BeachBoatQuestSession.Instance;var story=BachDangStoryManager.Instance;var boat=QuestRowboat.Instance;
             QuestCheckpoint.Instance?.PrepareForLoad();
             RiverBoardingCombat.Instance?.EndFreeWater();
-            CampaignJournalUI.Instance?.Close();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();ArcheryTraining.Instance?.Restore(data.archeryBestScore,data.archeryTrainingCompleted);
+            VillageVendorSpeech.Instance?.Stop();CampaignJournalUI.Instance?.Close();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();ArcheryTraining.Instance?.Restore(data.archeryBestScore,data.archeryTrainingCompleted);
             BachDangFrontEnd.Instance?.ReleaseHiddenUI();
             foreach(var intro in UnityEngine.Object.FindObjectsByType<OpeningEvent>(FindObjectsInactive.Include,FindObjectsSortMode.None))intro.SkipOpening();
             CampDiscipline.Instance?.ResetAll();RiverBossEncounter.Instance?.ResetForLoad();StoryDialogueUI.Instance?.DismissForCheckpoint();EnemyFleetDirector.Instance.ResetForCheckpoint();

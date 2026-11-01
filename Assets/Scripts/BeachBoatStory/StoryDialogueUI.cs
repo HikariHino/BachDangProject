@@ -159,6 +159,9 @@ public sealed class StoryDialogueUI : MonoBehaviour
     public void Show(string speaker, string line, System.Action onClosed = null,Transform actor=null)
     {
         if (panel == null) BuildUI();
+        VillageVendorSpeech.Instance?.Stop();
+        string characterProfile=null;
+        if(onClosed==null&&NPCConversationLibrary.Resolve(actor,speaker,out var characterLine,out var cast)){line=characterLine;characterProfile=cast;speaker=NPCConversationLibrary.SpeakerLabel(actor,speaker);}
 
         lastInputFrame = Time.frameCount;
         speakerText.text = speaker;
@@ -166,7 +169,7 @@ public sealed class StoryDialogueUI : MonoBehaviour
         onDialogueClosed = onClosed;
         panel.SetActive(true);
         string identity=DialogueVoice.ActorIdentity(speaker,actor);bool female=DialogueVoice.ActorIsFemale(speaker,actor);
-        StartVoice(speaker,line,identity,female,DialogueVoice.ActorProfile(speaker,actor,identity,female));
+        StartVoice(speaker,line,identity,female,characterProfile??DialogueVoice.ActorProfile(speaker,actor,identity,female));
         BeachBoatSoundscape.Instance?.PlayInteraction();
     }
 

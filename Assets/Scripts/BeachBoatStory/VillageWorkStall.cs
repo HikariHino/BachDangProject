@@ -130,7 +130,7 @@ namespace BeachBoatStory
             if(player==null&&BeachBoatQuestSession.Instance!=null)player=BeachBoatQuestSession.Instance.player.transform;
             if(Active!=null||quest==null||!quest.CanWork||player==null||QuestRowboat.FlatDistance(player.position,InteractionPosition)>interactionDistance)return false;
             savedLock=Cursor.lockState;savedCursor=Cursor.visible;Active=this;Phase=WorkPhase.Instructions;practicedThisVisit=false;HidePrompt();
-            Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;VillageWorkUI.EnsureExists();BeachBoatSoundscape.Instance?.PlayInteraction();StartAttempt(1);return true;
+            Cursor.lockState=CursorLockMode.Locked;Cursor.visible=false;VillageWorkUI.EnsureExists();BeachBoatSoundscape.Instance?.PlayInteraction();StartAttempt(1);VillageVendorSpeech.Say(kind,Completed?1:0);return true;
         }
         public void SelectDifficulty(int difficulty)
         {
@@ -334,14 +334,14 @@ namespace BeachBoatStory
         public bool ClaimReward()
         {
             if(Active!=this||Phase!=WorkPhase.Won)return false;
-            Close();quest.Collect(this);return true;
+            Close();quest.Collect(this);VillageVendorSpeech.Say(kind,2);return true;
         }
         public void MarkCollected(){Completed=true;CompletedLevels=3;}
         public void ResetCollection(){RestoreLearningProgress(0);}
         public void RestoreLearningProgress(int levels){Completed=levels>=3;CompletedLevels=Completed?3:0;Difficulty=1;history.Clear();initialWork=null;}
         public void Close()
         {
-            if(Active!=this)return;Physical?.Finish();Active=null;helpForAttempt=false;history.Clear();initialWork=null;HidePrompt();Cursor.lockState=savedLock;Cursor.visible=savedCursor;
+            if(Active!=this)return;VillageVendorSpeech.Instance?.Stop();Physical?.Finish();Active=null;helpForAttempt=false;history.Clear();initialWork=null;HidePrompt();Cursor.lockState=savedLock;Cursor.visible=savedCursor;
         }
         void HidePrompt(){if(prompt){BachDangStoryManager.Instance?.SetInteractPrompt(false,owner:this);prompt=false;}}
         void OnDisable(){Close();HidePrompt();}
