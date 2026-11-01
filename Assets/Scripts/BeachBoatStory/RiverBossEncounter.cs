@@ -34,6 +34,18 @@ namespace BeachBoatStory
         Vector3 attackDirection,dodgeDirection;Material timber,iron,crimson;
         Transform heroVisual;Quaternion heroVisualRest;Transform[] introBones;Quaternion[] introRotations;Vector3[] introPositions;bool introStrike,introLanding,introOrbitEnabled;float introFov;Vector3 introStart,introLand,introDirection;bool introTransition;float bossDodgeRemaining,nextBossDodge;Vector3 bossDodgeDirection;int aimedShots;
         int comboRemaining;bool attackHit;
+        RuntimeAnimatorController heroSwordBeforeDuel,duelSword,duelFoot,duelBow;
+        DuelBladeContact heroBody,bossBody;bool heroStrikeArmed,bossStrikeArmed,heroBladePrevious,bossBladePrevious;
+        Vector3 heroBladeRoot,heroBladeTip,bossBladeRoot,bossBladeTip;float heroStrikeAt,bossStrikeAt;int bossStrikeDamage;
+        bool airborne;float duelHeight;float jumpElapsed,jumpDuration,jumpVelocity,jumpGravity,jumpOffset,nextDodge;
+        public bool IsRunning {get;private set;}
+        public bool IsAirborne=>airborne;
+        public float JumpOffset=>jumpOffset;
+        public float JumpProgress=>airborne?Mathf.Clamp01(jumpElapsed/Mathf.Max(.01f,jumpDuration)):0;
+        public int BossMeleeHits {get;private set;}
+        public int PlayerMeleeHits {get;private set;}
+        public Vector3 LastBladeContact {get;private set;}
+        public const string DuelControls="WASD di chuyển • Giữ SHIFT chạy • SPACE nhảy • CTRL né • Chuột phải ngắm cung • H hồi máu";
         public int DodgedArrows {get;private set;}
         void Awake(){Instance=this;}
         void Start()
@@ -55,7 +67,7 @@ namespace BeachBoatStory
             }
         }
         public void StopVictoryCheer(){victory?.Stop();}
-        public void ResetForLoad(){bool hadIntro=IntroActive;CancelIntroduction();challenge?.Stop();bossDodgeRemaining=0;comboRemaining=0;aimedShots=DodgedArrows=0;nextBossDodge=0;for(int i=0;i<captives.Length;i++)if(captives[i]!=null){captives[i].SetActive(false);Destroy(captives[i]);captives[i]=null;}if(InArena||hadIntro)RestoreMotor();InArena=false;if(arena!=null)arena.SetActive(false);if(ui!=null)ui.SetActive(false);victory?.Stop();attackPhase=0;dodgeUntil=0;}
+        public void ResetForLoad(){ResetDuelMotion();bool hadIntro=IntroActive;CancelIntroduction();challenge?.Stop();bossDodgeRemaining=0;comboRemaining=0;aimedShots=DodgedArrows=0;nextBossDodge=0;for(int i=0;i<captives.Length;i++)if(captives[i]!=null){captives[i].SetActive(false);Destroy(captives[i]);captives[i]=null;}if(InArena||hadIntro)RestoreMotor();InArena=false;if(arena!=null)arena.SetActive(false);if(ui!=null)ui.SetActive(false);victory?.Stop();attackPhase=0;dodgeUntil=0;}
         void Update()
         {
             if(session==null)return;
@@ -121,7 +133,7 @@ namespace BeachBoatStory
             Health=MaximumHealth;story.TransitionTo(BachDangStoryManager.StoryState.Act3_CommanderDuel,true);BuildArena();arena.SetActive(false);
             previousUnderwater=Smartomano.OptiWater.Underwater.OptiWaterUnderwaterFeature.GlobalEnabled;LockHeroForEncounter();BeginIntroduction();
         }
-        public void PrepareArena(){if(session==null||arena!=null)return;BuildArena();arena.SetActive(false);ui.SetActive(false);bossPose.WarmCombatHands();HumanoidFootSupport.Prepare(bossPose.Animator);HumanoidFootSupport.Prepare(session.player.GetComponentInChildren<Animator>());}
+        public void PrepareArena(){if(session==null||arena!=null)return;BuildArena();arena.SetActive(false);ui.SetActive(false);bossPose.WarmCombatHands();HumanoidFootSupport.Prepare(bossPose.Animator);HumanoidFootSupport.Prepare(session.player.GetComponentInChildren<Animator>());WarmDuel();}
         void BeginIntroduction()
         {
             RiverPlayerCombat.Instance.SetAim(false);heroPose.SetSword(false);heroPose.Animator.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;heroPose.Animator.enabled=true;heroPose.Animator.Update(0);
@@ -246,13 +258,21 @@ namespace BeachBoatStory
             var g=new GameObject("Health_fill",typeof(RectTransform),typeof(Image));g.transform.SetParent(track,false);healthFill=g.GetComponent<Image>();healthFill.color=new Color(.7f,.12f,.08f);healthFill.rectTransform.anchorMin=Vector2.zero;healthFill.rectTransform.anchorMax=Vector2.one;healthFill.rectTransform.offsetMin=healthFill.rectTransform.offsetMax=Vector2.zero;
             actionText=Text("Boss_action",new Vector2(-.05f,-.7f),new Vector2(1.05f,-.05f),16);
         }
+        void WarmDuel()
+        {
+            duelSword=Resources.Load<RuntimeAnimatorController>("Boss_Duel_Sword");duelFoot=Resources.Load<RuntimeAnimatorController>("Boss_Duel_Foot");duelBow=Resources.Load<RuntimeAnimatorController>("Boss_Duel_Bow");
+            if(duelHeight<=0)duelHeight=EnemyDeckGuard.RigHeight(session.player.GetComponentInChildren<Animator>());
+            if(heroBody==null)heroBody=new DuelBladeContact(session.player.GetComponentInChildren<Animator>());if(bossBody==null)bossBody=new DuelBladeContact(bossPose.Animator);
+        }
+        void ResetDuelMotion()
+        {airborne=false;jumpElapsed=jumpOffset=0;IsRunning=false;nextDodge=0;dodgeUntil=-1;dodgeDirection=Vector3.zero;heroStrikeAt=bossStrikeAt=-100;playerSwing=0;attackNumber=0;attackClock=0;attackHit=false;heroStrikeArmed=bossStrikeArmed=heroBladePrevious=bossBladePrevious=false;BossMeleeHits=PlayerMeleeHits=0;}
         void LockHeroForEncounter()
         {
             var actor=session.player;var body=actor.GetComponent<Rigidbody>();
             oldMotor=actor.GetComponent<Character_Movement>().enabled;oldCollider=actor.GetComponent<CapsuleCollider>().enabled;oldKinematic=body.isKinematic;
             RiverBoardingCombat.Instance.PrepareRowboatBoarding();QuestRowboat.Instance.LeaveForCheckpoint();oldMotor=true;oldCollider=true;oldKinematic=false;
             actor.GetComponent<Character_Movement>().enabled=false;body.isKinematic=true;body.interpolation=RigidbodyInterpolation.None;actor.GetComponent<CapsuleCollider>().enabled=false;
-            heroPose=actor.GetComponent<RiverFighterPose>();heroPose.FinishTraversal();heroPose.SetSword(true);heroPose.Animator.enabled=true;
+            heroPose=actor.GetComponent<RiverFighterPose>();WarmDuel();if(heroSwordBeforeDuel==null)heroSwordBeforeDuel=heroPose.swordController;if(duelSword!=null)heroPose.swordController=duelSword;heroPose.FinishTraversal();heroPose.SetSword(true);heroPose.Animator.enabled=true;
         }
         void OpenArena(bool fresh)
         {
@@ -261,40 +281,90 @@ namespace BeachBoatStory
             LockHeroForEncounter();
             var camera=session.storyCamera.GetComponent<Camera_Script>();camera.distance=65;camera.heightOffset=27;camera.rightOffset=6;camera.SetElevation(12);
             bossPose.Animator.enabled=true;bossPose.SetSword(true);boss.rotation=Quaternion.Euler(0,180,0);
-            InArena=true;attackPhase=0;attackAt=Time.time+1.5f;recoverAt=0;dodgeUntil=Time.time+.6f;
+            InArena=true;ResetDuelMotion();ConfigurePlayerAnimator(false);attackPhase=0;attackAt=Time.time+1.5f;recoverAt=0;dodgeUntil=-1;
             if(fresh){actor.transform.SetPositionAndRotation(ArenaCenter+new Vector3(0,0,-85),Quaternion.identity);boss.SetPositionAndRotation(ArenaCenter+new Vector3(0,0,70),Quaternion.Euler(0,180,0));}
             FitFeet(actor.transform,heroPose.Animator);FitFeet(boss,bossPose.Animator);camera.SnapToTarget();
         }
-        static void FitFeet(Transform root,Animator rig){if(HumanoidFootSupport.Lowest(rig,out float bottom))root.position+=Vector3.up*(Instance.ArenaCenter.y+.15f-bottom);else{ActorSolidBody.WalkingDimensions(rig,out _,out float sole,out _);root.position+=Vector3.up*(Instance.ArenaCenter.y+.15f-rig.transform.position.y-sole);}}
+        static void FitFeet(Transform root,Animator rig,float lift=0){if(HumanoidFootSupport.Lowest(rig,out float bottom))root.position+=Vector3.up*(Instance.ArenaCenter.y+.15f+lift-bottom);else{ActorSolidBody.WalkingDimensions(rig,out _,out float sole,out _);root.position+=Vector3.up*(Instance.ArenaCenter.y+.15f+lift-rig.transform.position.y-sole);}}
         public void SupportAfterAnimation()
         {
             if(IntroActive){PoseIntroduction();return;}if(!InArena)return;
-            FitFeet(session.player.transform,heroPose.Animator);var body=session.player.GetComponent<Rigidbody>();body.position=session.player.transform.position;
-            if(!Defeated)FitFeet(boss,bossPose.Animator);
+            FitFeet(session.player.transform,heroPose.Animator,jumpOffset);var body=session.player.GetComponent<Rigidbody>();body.position=session.player.transform.position;
+            if(!Defeated)FitFeet(boss,bossPose.Animator);ResolveBladeContacts();
         }
         public Vector3 ClampDeck(Vector3 p){p.x=Mathf.Clamp(p.x,ArenaCenter.x-96,ArenaCenter.x+96);p.z=Mathf.Clamp(p.z,ArenaCenter.z-136,ArenaCenter.z+136);return p;}
         public bool TryDodge(Vector3 direction)
         {
-            direction.y=0;if(!IsFighting||BeachBoatQuestSession.InputBlocked||direction.sqrMagnitude<.1f||vitals.Stamina<18||!vitals.TryExert(18,1))return false;
-            dodgeUntil=Time.time+.35f;dodgeDirection=direction.normalized;return true;
+            direction.y=0;if(!IsFighting||BeachBoatQuestSession.InputBlocked||airborne||Time.time<nextDodge||direction.sqrMagnitude<.1f||vitals.Stamina<18||!vitals.TryExert(18,1))return false;
+            dodgeUntil=Time.time+.3f;nextDodge=Time.time+.65f;dodgeDirection=direction.normalized;return true;
+        }
+        public bool TryJump()
+        {
+            if(!IsFighting||BeachBoatQuestSession.InputBlocked||airborne||Time.time<dodgeUntil&&dodgeDirection.sqrMagnitude>.1f||vitals.Stamina<8||!vitals.TryExert(8,1))return false;
+            float height=duelHeight;jumpGravity=height*2.2f;jumpVelocity=Mathf.Sqrt(2*jumpGravity*height*.34f);jumpDuration=2*jumpVelocity/jumpGravity;jumpElapsed=jumpOffset=0;airborne=true;
+            BeachBoatSoundscape.Instance?.PlayFootstep();ConfigurePlayerAnimator(RiverPlayerCombat.Instance.IsAiming);return true;
+        }
+        void ConfigurePlayerAnimator(bool aiming)
+        {
+            var rig=heroPose.Animator;var wanted=aiming?duelBow:heroPose.SwordVisible?duelSword:duelFoot;
+            if(wanted!=null&&rig.runtimeAnimatorController!=wanted)rig.runtimeAnimatorController=wanted;
+            if(wanted==null)return;rig.SetBool("DuelAirborne",airborne);var state=rig.GetCurrentAnimatorStateInfo(0);rig.SetBool("DuelMelee",heroStrikeArmed||state.IsName("Attack")||state.IsName("Attack2"));rig.SetFloat("DuelJumpTime",JumpProgress);
         }
         public void StepPlayer(float dt)
         {
-            var actor=session.player.transform;var camera=session.storyCamera.transform;var forward=camera.forward;forward.y=0;forward.Normalize();var right=Vector3.Cross(Vector3.up,forward);
-            var input=Vector3.ClampMagnitude(forward*Input.GetAxisRaw("Vertical")+right*Input.GetAxisRaw("Horizontal"),1);
-            if(Input.GetKeyDown(KeyCode.LeftShift))TryDodge(input);
+            StepPlayerInput(dt,new Vector2(Input.GetAxisRaw("Horizontal"),Input.GetAxisRaw("Vertical")),Input.GetKey(KeyCode.LeftShift)||Input.GetKey(KeyCode.RightShift),Input.GetKeyDown(KeyCode.Space),Input.GetKeyDown(KeyCode.LeftControl)||Input.GetKeyDown(KeyCode.RightControl));
+            if(Input.GetMouseButtonDown(0)&&!RiverPlayerCombat.Instance.IsAiming&&heroPose.SwordVisible)TryPlayerStrike();
+        }
+        public void StepPlayerInput(float dt,Vector2 input,bool runHeld,bool jumpPressed=false,bool dodgePressed=false)
+        {
+            if(!IsFighting||BeachBoatQuestSession.InputBlocked||dt<=0)return;
+            var actor=session.player.transform;var camera=session.storyCamera.transform;var forward=camera.forward;forward.y=0;if(forward.sqrMagnitude<.01f)forward=actor.forward;forward.Normalize();var right=Vector3.Cross(Vector3.up,forward);
+            var direction=Vector3.ClampMagnitude(forward*input.y+right*input.x,1);bool aiming=RiverPlayerCombat.Instance.IsAiming;
+            if(dodgePressed)TryDodge(direction);if(jumpPressed)TryJump();
             bool dodging=Time.time<dodgeUntil&&dodgeDirection.sqrMagnitude>.1f;
-            var move=(dodging?dodgeDirection*100:input*28)*dt;var next=ClampDeck(actor.position+move);var separation=next-boss.position;separation.y=0;if(separation.magnitude<14)next=boss.position+separation.normalized*14+Vector3.up*(actor.position.y-boss.position.y);
-            actor.position=next;if(move.sqrMagnitude>.01f&&!RiverPlayerCombat.Instance.IsAiming)actor.rotation=Quaternion.Slerp(actor.rotation,Quaternion.LookRotation(move),1-Mathf.Exp(-12*dt));
-            bool aiming=RiverPlayerCombat.Instance.IsAiming;heroPose.SetSword(!aiming&&PlayerShield.Instance?.Equipped!=true);heroPose.Walk(move.sqrMagnitude>.01f);
-            if(Input.GetMouseButtonDown(0)&&!aiming&&heroPose.SwordVisible)TryPlayerStrike();
+            IsRunning=runHeld&&direction.sqrMagnitude>.01f&&!aiming&&!dodging&&PlayerShield.Instance?.IsGuarding!=true&&vitals.TryExert(13,dt);
+            var move=(dodging?dodgeDirection*100:direction*(IsRunning?48:aiming?20:28))*dt;
+            var next=SeparateOnDeck(ClampDeck(actor.position+move),boss.position,14,actor.position-boss.position);
+            actor.position=next;if(move.sqrMagnitude>.01f&&!aiming)actor.rotation=Quaternion.Slerp(actor.rotation,Quaternion.LookRotation(move),1-Mathf.Exp(-12*dt));
+            if(airborne)
+            {
+                jumpElapsed+=dt;jumpOffset=Mathf.Max(0,jumpVelocity*jumpElapsed-.5f*jumpGravity*jumpElapsed*jumpElapsed);
+                if(jumpElapsed>=jumpDuration){airborne=false;jumpOffset=0;BeachBoatSoundscape.Instance?.PlayFootstep();}
+            }
+            heroPose.SetSword(!aiming&&PlayerShield.Instance?.Equipped!=true);ConfigurePlayerAnimator(aiming);
+            heroPose.Animator.SetBool("isWalking",move.sqrMagnitude>.01f);heroPose.Animator.SetBool("isRunning",IsRunning);if(aiming)heroPose.Animator.SetFloat("AimMove",direction.magnitude,.12f,dt);
         }
         public bool TryPlayerStrike()
         {
             if(!IsFighting||BeachBoatQuestSession.InputBlocked||Time.time<playerSwing||vitals.Stamina<9||!vitals.TryExert(9,1))return false;
-            playerSwing=Time.time+.7f;heroPose.SetSword(true);heroPose.Slash();BeachBoatSoundscape.Instance?.PlaySwordSwing();
-            var delta=boss.position-session.player.transform.position;delta.y=0;
-            if(delta.magnitude<34&&Vector3.Dot(session.player.transform.forward,delta.normalized)>.2f)TakeHit(12,CombatImpactKind.Sword);return true;
+            playerSwing=Time.time+.7f;heroPose.SetSword(true);heroStrikeArmed=true;heroBladePrevious=false;heroStrikeAt=Time.time;ConfigurePlayerAnimator(false);heroPose.DuelSlash();BeachBoatSoundscape.Instance?.PlaySwordSwing();return true;
+        }
+        static bool BladeStrikePhase(Animator rig)
+        {
+            var state=rig.GetCurrentAnimatorStateInfo(0);if(rig.IsInTransition(0)){var next=rig.GetNextAnimatorStateInfo(0);if(next.IsName("Attack")||next.IsName("Attack2"))state=next;}
+            // Sampled from the actual equipped-blade trajectory: ignore lifting/recovery.
+            float t=state.normalizedTime;
+            return state.IsName("Attack")?t>=.52f&&t<=.82f:state.IsName("Attack2")&&t>=.66f&&t<=.83f;
+        }
+        bool BladeTouches(RiverFighterPose pose,DuelBladeContact target,ref bool previous,ref Vector3 oldRoot,ref Vector3 oldTip,out Vector3 point)
+        {
+            point=default;if(!BladeStrikePhase(pose.Animator)||!pose.TryBladeSegment(out var root,out var tip,out float radius)){previous=false;return false;}
+            bool hit=target.Touches(previous?oldRoot:root,previous?oldTip:tip,root,tip,radius,out point);oldRoot=root;oldTip=tip;previous=true;return hit;
+        }
+        void ResolveBladeContacts()
+        {
+            if(!IsFighting||vitals.Health<=0||BeachBoatQuestSession.InputBlocked||Time.timeScale<=0){heroBladePrevious=bossBladePrevious=false;return;}
+            if(heroStrikeArmed&&(Time.time-heroStrikeAt>1.2f||!heroPose.SwordVisible))heroStrikeArmed=false;
+            if(bossStrikeArmed&&(Time.time-bossStrikeAt>1.2f||!bossPose.SwordVisible))bossStrikeArmed=false;
+            if(heroStrikeArmed&&BladeTouches(heroPose,bossBody,ref heroBladePrevious,ref heroBladeRoot,ref heroBladeTip,out var point))
+            {heroStrikeArmed=false;PlayerMeleeHits++;LastBladeContact=point;TakeHit(12,CombatImpactKind.Sword);}
+            if(!IsFighting)return;
+            if(bossStrikeArmed&&!attackHit&&BladeTouches(bossPose,heroBody,ref bossBladePrevious,ref bossBladeRoot,ref bossBladeTip,out point))
+            {
+                attackHit=true;bossStrikeArmed=false;BossMeleeHits++;LastBladeContact=point;var incoming=boss.position-session.player.transform.position;incoming.y=0;
+                bool block=PlayerShield.Instance?.IsGuarding==true&&Vector3.Dot(session.player.transform.forward,incoming.normalized)>.4f&&vitals.Stamina>=14&&vitals.TryExert(14,1);
+                vitals.TakeImpact(block?4:bossStrikeDamage,block?"Khiên đỡ kiếm":"Trúng kiếm tướng địch",CombatImpactKind.Sword);
+            }
         }
         public bool TakeHit(int damage,CombatImpactKind kind)
         {
@@ -311,24 +381,14 @@ namespace BeachBoatStory
             if(room.magnitude<18){side=-side;room=ClampDeck(boss.position+side*30)-boss.position;}if(room.magnitude<18)return false;
             bossDodgeDirection=side;bossDodgeRemaining=.3f;nextBossDodge=Time.time+3;DodgedArrows++;bossPose.Walk(true);BeachBoatSoundscape.Instance?.PlayFootstep(true);return true;
         }
-        void MoveBoss(Vector3 motion)
+        Vector3 SeparateOnDeck(Vector3 point,Vector3 other,float radius,Vector3 fallback)
         {
-            var next=ClampDeck(boss.position+motion);var hero=session.player.transform.position;var away=next-hero;away.y=0;
-            if(away.sqrMagnitude<16*16)
-            {
-                if(away.sqrMagnitude<.01f){away=boss.position-hero;away.y=0;if(away.sqrMagnitude<.01f)away=-boss.forward;}
-                var radial=away.normalized*16;float best=float.PositiveInfinity;var clear=next;
-                // Near a rail, choose a real inboard separation instead of clamping back into the player.
-                for(int i=0;i<16;i++)
-                {
-                    var candidate=hero+Quaternion.Euler(0,i*22.5f,0)*radial;candidate.y=next.y;var bounded=ClampDeck(candidate);
-                    if(QuestRowboat.FlatDistance(bounded,hero)<15.9f)continue;
-                    float cost=(bounded-next).sqrMagnitude;if(cost>=best)continue;best=cost;clear=bounded;
-                }
-                next=clear;
-            }
-            boss.position=next;
+            var away=point-other;away.y=0;if(away.sqrMagnitude>=radius*radius)return point;
+            if(away.sqrMagnitude<.01f){away=fallback;away.y=0;if(away.sqrMagnitude<.01f)away=Vector3.back;}
+            var radial=away.normalized*radius;float best=float.PositiveInfinity;var clear=point;
+            for(int i=0;i<16;i++){var candidate=other+Quaternion.Euler(0,i*22.5f,0)*radial;candidate.y=point.y;var bounded=ClampDeck(candidate);if(QuestRowboat.FlatDistance(bounded,other)<radius-.1f)continue;float cost=(bounded-point).sqrMagnitude;if(cost>=best)continue;best=cost;clear=bounded;}return clear;
         }
+        void MoveBoss(Vector3 motion)=>boss.position=SeparateOnDeck(ClampDeck(boss.position+motion),session.player.transform.position,16,boss.position-session.player.transform.position);
         public void StepBoss(float dt)
         {
             if(!IsFighting||dt<=0)return;MoveBoss(Vector3.zero);
@@ -337,14 +397,14 @@ namespace BeachBoatStory
             bool heavy=attackNumber%3==0;
             if(attackPhase==0)
             {
-                actionText.text="WASD di chuyển • SHIFT né • Chuột phải ngắm cung • H hồi máu";
+                actionText.text=DuelControls;
                 if(Time.time<recoverAt){bossPose.Walk(false);return;}
                 var direction=distance>.01f?delta/distance:boss.forward;
-                float travel=Mathf.Min(Mathf.Max(0,distance-22),52*dt);
-                MoveBoss(direction*travel);bossPose.Walk(travel>.01f);
+                float travel=Mathf.Min(Mathf.Max(0,distance-20),52*dt);
+                MoveBoss(direction*travel);bossPose.Walk(travel>.01f);bossPose.Animator.SetBool("isRunning",travel>.01f&&distance>45);
                 if(distance>.01f)boss.rotation=Quaternion.Slerp(boss.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-13*dt));
                 // Close the real gap before committing a strike; do not swing from 65 units away.
-                if(distance-travel<=38&&Time.time>=attackAt)
+                if(distance-travel<=32&&Time.time>=attackAt)
                 {attackPhase=1;attackClock=0;attackDirection=direction;attackNumber++;attackHit=false;comboRemaining=attackNumber%3==1?1:0;bossPose.Walk(false);}
                 return;
             }
@@ -355,24 +415,17 @@ namespace BeachBoatStory
                 // Track during preparation, then lock the last 0.16s so a deliberate dodge works.
                 if(attackClock<windup-.16f&&distance>.01f)
                 {attackDirection=Vector3.RotateTowards(attackDirection,delta/distance,7*dt,0);boss.rotation=Quaternion.LookRotation(attackDirection);}
-                if(distance>23)MoveBoss(attackDirection*Mathf.Min(distance-23,38*dt));
-                if(attackClock>=windup){attackPhase=2;bossPose.Slash();BeachBoatSoundscape.Instance?.PlaySwordSwing();}
+                if(distance>18)MoveBoss(attackDirection*Mathf.Min(distance-18,38*dt));
+                if(attackClock>=windup){attackPhase=2;bossStrikeArmed=true;bossBladePrevious=false;bossStrikeAt=Time.time;bossStrikeDamage=heavy?28:19;attackHit=false;bossPose.DuelSlash(heavy);BeachBoatSoundscape.Instance?.PlaySwordSwing();}
             }
             if(attackPhase==2)
             {
                 var gap=session.player.transform.position-boss.position;gap.y=0;
                 if(attackClock<windup+.22f&&gap.magnitude>18)
                     MoveBoss(attackDirection*Mathf.Min(gap.magnitude-18,(heavy?100:85)*dt));
-                gap=session.player.transform.position-boss.position;gap.y=0;
-                // Test the active sword window, not a single delayed endpoint after the player escaped.
-                if(!attackHit&&attackClock<=windup+.28f&&gap.magnitude<(heavy?38:32)&&Vector3.Dot(attackDirection,gap.normalized)>.25f&&Time.time>=dodgeUntil)
-                {
-                    attackHit=true;bool block=PlayerShield.Instance?.IsGuarding==true&&Vector3.Dot(session.player.transform.forward,-gap.normalized)>.4f&&vitals.Stamina>=14&&vitals.TryExert(14,1);
-                    vitals.TakeImpact(block?4:heavy?28:19,block?"Khiên đỡ kiếm":"Trúng kiếm tướng địch",CombatImpactKind.Sword);
-                }
                 if(attackClock>=windup+.28f)attackPhase=3;
             }
-            if(attackPhase==3&&attackClock>windup+.42f)
+            if(attackPhase==3&&attackClock>windup+(heavy?1.05f:.84f))
             {
                 if(comboRemaining>0&&distance<52)
                 {comboRemaining--;attackPhase=1;attackClock=0;attackNumber++;attackHit=false;attackDirection=delta.sqrMagnitude>.01f?delta.normalized:boss.forward;}
@@ -383,7 +436,7 @@ namespace BeachBoatStory
         {
             Smartomano.OptiWater.Underwater.OptiWaterUnderwaterFeature.GlobalEnabled=previousUnderwater;
             var actor=session.player;actor.GetComponent<Character_Movement>().enabled=oldMotor;actor.GetComponent<CapsuleCollider>().enabled=oldCollider;var body=actor.GetComponent<Rigidbody>();body.isKinematic=oldKinematic;body.interpolation=RigidbodyInterpolation.Interpolate;
-            heroPose?.Restore();if(heroPose!=null){heroPose.Animator.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;heroPose.Animator.enabled=true;}
+            ResetDuelMotion();heroPose?.Restore();if(heroPose!=null){if(heroSwordBeforeDuel!=null)heroPose.swordController=heroSwordBeforeDuel;heroSwordBeforeDuel=null;heroPose.Animator.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;heroPose.Animator.enabled=true;}
         }
         public void ReturnFromDuel()
         {

@@ -139,9 +139,9 @@ public static class BeachBoatEpiloguePlaytest
             {
                 if(BeachBoatQuestSession.InputBlocked)return;
                 ProbeDeckPoses();
-                actor.position=boss.Boss.position-Vector3.forward*25;actor.rotation=Quaternion.identity;int hp=boss.Health;Check(boss.TryPlayerStrike()&&boss.Health==hp-12,"A near facing sword strike removes twelve boss health");
+                actor.position=boss.Boss.position-Vector3.forward*25;actor.rotation=Quaternion.identity;int hp=boss.Health;Check(boss.TryPlayerStrike()&&boss.Health==hp,"A sword strike arms the physical blade without subtracting health before animation contact");
                 save=BachDangSaveSystem.Capture("QA mid duel");BachDangSaveSystem.Apply(save);
-                Check(boss.IsFighting&&boss.Health==hp-12&&Vector3.Distance(actor.position,save.playerPosition)<1,"Mid-duel load restores boss health and player deck position");
+                Check(boss.IsFighting&&boss.Health==hp&&Vector3.Distance(actor.position,save.playerPosition)<1,"Mid-duel load restores boss health and player deck position");
                 Check(!actor.GetComponent<BeachBoatStory.Character_Movement>().enabled&&actor.GetComponent<Rigidbody>().isKinematic,"Mid-duel load restores the dedicated 3D combat controller");
                 var rig=boss.Boss.GetComponentInChildren<Animator>();BeachBoatReview29Playtest.Picture("Boss_Deck",actor.position-Vector3.forward*55+Vector3.up*35,boss.Boss.position+Vector3.up*12);
                 mark=Time.time;phase=1;return;
@@ -157,7 +157,7 @@ public static class BeachBoatEpiloguePlaytest
                 var beforeDodge=boss.Boss.position;var shotStart=boss.Boss.GetComponentInChildren<Animator>().GetBoneTransform(HumanBodyBones.Chest).position-Vector3.forward*150;
                 Check(boss.ReactToArrow(shotStart,Vector3.forward*560),"The boss reacts to some well-aimed distant arrows");boss.StepBoss(.3f);
                 Check(QuestRowboat.FlatDistance(beforeDodge,boss.Boss.position)>=25&&boss.DodgedArrows>0,"Arrow evasion physically moves the boss sideways rather than making hits invulnerable");
-                actor.position=boss.Boss.position+boss.Boss.forward*24;health=vitals.Health;Check(boss.TryDodge(Vector3.right),"A directional dodge consumes stamina and opens its short invulnerability window");boss.StepBoss(.1f);boss.StepBoss(1);boss.StepBoss(.3f);Check(vitals.Health==health,"A timed dodge avoids the committed boss sword strike");
+                actor.position=boss.Boss.position+boss.Boss.forward*24;health=vitals.Health;Check(boss.TryDodge(Vector3.right),"A directional dodge consumes stamina and starts physical evasive movement");var dodgeStart=actor.position;boss.StepPlayerInput(.1f,Vector2.zero,false);boss.SupportAfterAnimation();Check(QuestRowboat.FlatDistance(dodgeStart,actor.position)>8,"A dodge actually moves the player away instead of relying on a damage immunity timer");
                 mark=Time.time;phase=2;return;
             }
             if(phase==2)

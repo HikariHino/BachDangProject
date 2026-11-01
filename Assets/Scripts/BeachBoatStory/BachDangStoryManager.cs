@@ -266,7 +266,7 @@ public class BachDangStoryManager : MonoBehaviour
                 break;
             case StoryState.Act3_CommanderDuel:
                 title="Soái hạm • Đấu tướng địch";
-                desc="- Hạ tướng địch trên boong soái hạm.\n- Quan sát lúc lấy đà, né rồi phản công.\n- H hồi máu • SHIFT né đòn.";
+                desc="- Hạ tướng địch trên boong soái hạm.\n- Quan sát lúc lấy đà, né rồi phản công.\n- SHIFT chạy • SPACE nhảy • CTRL né.\n- H hồi máu • G rút khiên.";
                 break;
             case StoryState.Act3_FinalReport:
                 title="Trở về • Báo cáo Ngô Quyền";

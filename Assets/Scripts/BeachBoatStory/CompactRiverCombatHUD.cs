@@ -10,7 +10,7 @@ namespace BeachBoatStory
         RiverPlayerCombat combat;
         TMP_Text enemy,kills,allied,ammo,notice,tideLabel;
         Image tideFill;TMP_Text shieldState;
-        CombatHudIcon[] actions;
+        CombatHudIcon[] actions;TMP_Text[] actionKeys,actionCaptions;bool duelActions;
         public RectTransform Cluster {get;private set;}
         public int ActionIconCount=>actions?.Length??0;
         static readonly Color Gold=new Color(1,.80f,.43f),White=new Color(.92f,.96f,.94f),Panel=new Color(.025f,.045f,.055f,.80f);
@@ -36,14 +36,14 @@ namespace BeachBoatStory
             Icon("PlayerKillsIcon",stats.transform,77,8,21,CombatHudIcon.Symbol.Sword,Gold);kills=Text("PlayerKills",stats.transform,103,2,30,32,18);
             Icon("AlliedKillsIcon",stats.transform,147,8,21,CombatHudIcon.Symbol.Allies,new Color(.56f,.80f,1));allied=Text("AlliedKills",stats.transform,176,2,40,32,18);
             var weapon=Rect("ArrowSupply",group.transform,0,64,224,36);Back(weapon,Panel);Icon("BowIcon",weapon.transform,10,2,32,CombatHudIcon.Symbol.Bow,White);ammo=Text("ArrowCount",weapon.transform,53,0,165,36,26);
-            actions=new CombatHudIcon[4];var symbols=new[]{CombatHudIcon.Symbol.Sword,CombatHudIcon.Symbol.Swim,CombatHudIcon.Symbol.Climb,CombatHudIcon.Symbol.Reload};
+            actions=new CombatHudIcon[4];actionKeys=new TMP_Text[4];actionCaptions=new TMP_Text[4];var symbols=new[]{CombatHudIcon.Symbol.Sword,CombatHudIcon.Symbol.Swim,CombatHudIcon.Symbol.Climb,CombatHudIcon.Symbol.Reload};
             string[] keys={"Q","F","SPACE","R"},labels={"KIẾM","BƠI","LEO TÀU","NẠP TÊN"};
             for(int i=0;i<4;i++)
             {
                 var tile=Rect("Action_"+keys[i],group.transform,i*57,0,53,58);Back(tile,Panel);
                 actions[i]=Icon("Icon",tile.transform,12,22,29,symbols[i],White);
-                var key=Text("Key",tile.transform,1,1,51,17,11,keys[i]);key.alignment=TextAlignmentOptions.Center;key.color=Gold;
-                var caption=Text("Caption",tile.transform,0,49,53,9,8,labels[i]);caption.alignment=TextAlignmentOptions.Center;
+                var key=Text("Key",tile.transform,1,1,51,17,11,keys[i]);key.alignment=TextAlignmentOptions.Center;key.color=Gold;actionKeys[i]=key;
+                var caption=Text("Caption",tile.transform,0,49,53,9,8,labels[i]);caption.alignment=TextAlignmentOptions.Center;actionCaptions[i]=caption;
             }
             var water=Rect("TideProgress",group.transform,0,147,224,51);Back(water,Panel);Icon("TideIcon",water.transform,8,15,26,CombatHudIcon.Symbol.Swim,new Color(.50f,.83f,.95f));
             tideLabel=Text("TideState",water.transform,43,11,174,37,13);var track=Rect("TideTrack",water.transform,8,6,208,3);Back(track,new Color(.23f,.30f,.31f));
@@ -56,10 +56,19 @@ namespace BeachBoatStory
         {
             enemy.text=combat.RemainingEnemies.ToString();kills.text=combat.Kills.ToString();allied.text=combat.AlliedKills.ToString();
             ammo.text=combat.IsReloading?"ĐANG NẠP…":$"{combat.Arrows} <size=17><color=#9AAEAB>/ 6</color></size>";
+            bool duel=RiverBossEncounter.Instance?.IsFighting==true;
+            if(duel!=duelActions)
+            {
+                duelActions=duel;
+                string[] keys=duel?new[]{"SHIFT","CTRL","SPACE","R"}:new[]{"Q","F","SPACE","R"};
+                string[] captions=duel?new[]{"CHẠY","NÉ ĐÒN","NHẢY","NẠP TÊN"}:new[]{"KIẾM","BƠI","LEO TÀU","NẠP TÊN"};
+                var symbols=duel?new[]{CombatHudIcon.Symbol.Run,CombatHudIcon.Symbol.Dodge,CombatHudIcon.Symbol.Jump}:new[]{CombatHudIcon.Symbol.Sword,CombatHudIcon.Symbol.Swim,CombatHudIcon.Symbol.Climb};
+                for(int i=0;i<4;i++){actionKeys[i].text=keys[i];actionCaptions[i].text=captions[i];if(i<3){actions[i].symbol=symbols[i];actions[i].SetVerticesDirty();}}
+            }
             var boarding=RiverBoardingCombat.Instance;
-            actions[0].color=boarding!=null&&boarding.SwordDrawn?Gold:White;
-            actions[1].color=boarding!=null&&boarding.State==RiverBoardingCombat.PlayerState.Swimming?Gold:White;
-            actions[2].color=boarding!=null&&boarding.State==RiverBoardingCombat.PlayerState.Climbing?Gold:White;
+            actions[0].color=duel?RiverBossEncounter.Instance.IsRunning?Gold:White:boarding!=null&&boarding.SwordDrawn?Gold:White;
+            actions[1].color=duel?White:boarding!=null&&boarding.State==RiverBoardingCombat.PlayerState.Swimming?Gold:White;
+            actions[2].color=duel?RiverBossEncounter.Instance.IsAirborne?Gold:White:boarding!=null&&boarding.State==RiverBoardingCombat.PlayerState.Climbing?Gold:White;
             actions[3].color=combat.IsReloading?Gold:combat.Arrows==6?new Color(.45f,.53f,.52f):White;
             var shield=PlayerShield.Instance;shieldState.text=shield?.IsGuarding==true?"ĐANG ĐỠ TÊN • MỖI TÊN: 8 THỂ LỰC":shield?.Equipped==true?"KHIÊN ĐÃ RÚT • GIỮ CHUỘT PHẢI ĐỠ":"G • RÚT KHIÊN";
             notice.text=shield!=null&&Time.unscaledTime<shield.FeedbackUntil?shield.Feedback:message;notice.color=threat?new Color(1,.44f,.33f):White;

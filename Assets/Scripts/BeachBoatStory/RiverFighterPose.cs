@@ -32,7 +32,7 @@ namespace BeachBoatStory
         Transform indexKnuckle,littleKnuckle,indexMiddle,littleMiddle;
         static readonly HumanBodyBones[] swordFingers={HumanBodyBones.RightIndexProximal,HumanBodyBones.RightMiddleProximal,HumanBodyBones.RightRingProximal,HumanBodyBones.RightLittleProximal};
         float swordScale;
-        Vector3 gripInMesh;
+        Vector3 gripInMesh;Bounds swordMeshBounds;
         public Transform Weapon=>weapon;
         public Vector3 GripPosition {get;private set;}
         public Vector3 BladeDirection {get;private set;}
@@ -82,7 +82,7 @@ namespace BeachBoatStory
             weapon=Instantiate(sword,animator.GetBoneTransform(HumanBodyBones.RightHand),false).transform;weapon.name="River_Combat_Sword";
             foreach(var c in weapon.GetComponentsInChildren<Collider>(true))Destroy(c);
             foreach(var lod in weapon.GetComponentsInChildren<LODGroup>(true))lod.enabled=false;
-            var bounds=weapon.GetComponent<MeshFilter>().sharedMesh.bounds;
+            var bounds=weapon.GetComponent<MeshFilter>().sharedMesh.bounds;swordMeshBounds=bounds;
             swordScale=length/bounds.size.y;
             // This mesh is centred on the blade, with the handle in its negative-Y end.
             gripInMesh=new Vector3(bounds.center.x,bounds.min.y+bounds.size.y*.105f,bounds.center.z);
@@ -111,6 +111,16 @@ namespace BeachBoatStory
             if(!value&&!ranged)HumanoidGripMesh.Restore(Animator);
         }
         public void Slash(){if(!SwordVisible)return;Animator.enabled=true;Animator.SetBool("isWalking",false);Animator.SetBool("isRunning",false);Animator.SetTrigger("attack");}
+        public void DuelSlash(bool heavy=false)
+        {
+            if(!SwordVisible)return;Animator.enabled=true;Animator.SetBool("isWalking",false);Animator.SetBool("isRunning",false);Animator.ResetTrigger("attack");Animator.ResetTrigger("attack2");Animator.CrossFadeInFixedTime(heavy?"Attack2":"Attack",.045f,0,0);
+        }
+        public bool TryBladeSegment(out Vector3 root,out Vector3 tip,out float radius)
+        {
+            root=tip=default;radius=0;if(!SwordVisible||weapon==null||!weapon.gameObject.activeInHierarchy)return false;
+            var start=swordMeshBounds.center;start.y=Mathf.Lerp(swordMeshBounds.min.y,swordMeshBounds.max.y,.23f);var end=start;end.y=swordMeshBounds.max.y;
+            root=weapon.TransformPoint(start);tip=weapon.TransformPoint(end);radius=Mathf.Clamp(swordMeshBounds.size.x*swordScale*.12f,.12f,.35f);return true;
+        }
         public void Walk(bool value){if(usingSword)Animator.SetBool("isWalking",value);}
         public void Restore()
         {

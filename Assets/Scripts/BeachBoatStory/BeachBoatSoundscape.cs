@@ -107,6 +107,12 @@ namespace BeachBoatStory
             if(Muted||dead||!session.storyMode)return;
             if(Time.time>=nextBird){nextBird=Time.time+Random.Range(8,15);birds.panStereo=Random.Range(-.6f,.6f);Play(birds,bird,.22f,Random.Range(.94f,1.08f));}
             if(BeachBoatQuestSession.InputBlocked)return;
+            var duel=RiverBossEncounter.Instance;
+            if(duel!=null&&duel.InArena)
+            {
+                if(!duel.IntroActive&&!duel.IsAirborne&&moved<10){distance+=moved;bool fast=duel.IsRunning;if(moved>.001f&&distance>=(fast?8:10)&&Time.time>=nextStep){distance=0;nextStep=Time.time+(fast?.23f:.38f);PlayFootstep(fast);}}else distance=0;
+                return;
+            }
             bool aboard=QuestRowboat.Instance!=null&&QuestRowboat.Instance.IsAboard&&!(RiverBoardingCombat.Instance?.State==RiverBoardingCombat.PlayerState.Land);
             if(RiverBoardingCombat.Instance!=null&&RiverBoardingCombat.Instance.PlayerAway&&RiverBoardingCombat.Instance.State!=RiverBoardingCombat.PlayerState.Land&&carrier==null){distance=0;return;}
             if(carrier!=null)aboard=false;
@@ -128,7 +134,7 @@ namespace BeachBoatStory
         {if(Muted||source==null||clip==null)return;source.pitch=pitch;source.PlayOneShot(clip,volume*masterVolume);EffectsPlayed++;}
         public void PlayFootstep(bool running=false)
         {
-            bool deck=RiverBoardingCombat.Instance?.PlayerDeckCarrier!=null&&deckFootsteps!=null&&deckFootsteps.Length>0;
+            bool deck=(RiverBoardingCombat.Instance?.PlayerDeckCarrier!=null||RiverBossEncounter.Instance?.InArena==true)&&deckFootsteps!=null&&deckFootsteps.Length>0;
             var clips=deck?deckFootsteps:running&&runningFootsteps!=null&&runningFootsteps.Length>0?runningFootsteps:footsteps;
             if(clips.Length==0)return;
             // Recorded pairs alternate left/right, with varied takes of each foot.

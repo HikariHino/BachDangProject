@@ -23,3 +23,7 @@ The mobile-boss fixture starts 160 units away, retreats at normal hero speed, th
 With ten wrecks and all thirty support skiffs/sixty crew, wreck activation measured 17.49 ms; AI sections averaged 4.92 ms with p95 6.92 ms, and first sword/arrow hits 4.18 ms/0.065 ms. The ordinary Editor main-thread recorder averaged 38.81 ms in this fixture. These are local measurements, not an FPS promise; the earlier headless run and its empty ordinary-Editor meshes are not valid before/after rendering baselines. All thirteen player save/backup files retain their hashes.
 
 Local proof: `Logs/Review29_Low_Tide_Stakes.png`; geometry/AI report: `Logs/StakeBoss01Playtest.json`.
+
+## Subsequent duel controls/contact correction
+
+The radial melee check described above has been replaced by actual animated blade/body contact, and the committed attack threshold is now 32 units. See [Boss deck controls and blade contact](BossDeckControlsAndBladeContact.md) for held sprint, jumping, separate Ctrl dodge, downward swing timing and the current regression results. The earlier measurements above remain historical results for that revision.

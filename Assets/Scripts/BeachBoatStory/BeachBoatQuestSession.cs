@@ -182,7 +182,7 @@ namespace BeachBoatStory
                 {
                     controlsText.text = "W/S • Chèo    A/D • Lái\nSHIFT • Tăng tốc    M • Bản đồ";
                 }
-                else if(RiverBossEncounter.Instance?.IsFighting==true){controlsText.text="WASD • Di chuyển    SHIFT • Né đòn\nChuột trái • Chém    Chuột phải • Cung / khiên    H • Thuốc";}
+                else if(RiverBossEncounter.Instance?.IsFighting==true){controlsText.text="WASD • Di chuyển    SHIFT • Chạy    SPACE • Nhảy    CTRL • Né\nChuột trái • Chém    Chuột phải • Cung / khiên    H • Thuốc";}
                 else if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard)
                 {
                     controlsText.text = "W/S • Chèo    A/D • Lái    SHIFT • Tăng tốc\nE • Hành động    M • Bản đồ";
