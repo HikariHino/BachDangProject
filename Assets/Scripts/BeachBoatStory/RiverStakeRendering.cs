@@ -26,6 +26,7 @@ namespace BeachBoatStory
         {
             zone=GetComponent<RiverStakeZone>();
             var groups=new Dictionary<(int,int,Material,int),Group>();
+            var fieldMesh=Resources.Load<Mesh>("BachDang938/Wrecks/FieldStake");
             int count=0;
             foreach(var stake in zone.fieldStakes)
             {
@@ -33,7 +34,8 @@ namespace BeachBoatStory
                 foreach(var filter in stake.GetComponentsInChildren<MeshFilter>(true))
                 {
                     var renderer=filter.GetComponent<MeshRenderer>();var source=filter.sharedMesh;
-                    if(renderer==null||!renderer.enabled||source==null)continue;
+                    if(source!=null&&source.name=="Wood_Spike_02_base"&&fieldMesh!=null)source=fieldMesh;
+                    if(renderer==null||!renderer.enabled||source==null||!source.isReadable)continue;
                     int x=Mathf.FloorToInt(filter.transform.position.x/128),z=Mathf.FloorToInt(filter.transform.position.z/128);
                     var materials=renderer.sharedMaterials;bool included=false;
                     for(int sub=0;sub<source.subMeshCount&&sub<materials.Length;sub++)
@@ -47,15 +49,20 @@ namespace BeachBoatStory
                 }
                 if(++count%96==0)yield return null;
             }
-            int prepared=0;
+            int prepared=0;bool failed=false;
             foreach(var group in groups.Values)
             {
                 var go=new GameObject("Static_stake_chunk",typeof(MeshFilter),typeof(MeshRenderer));go.transform.SetParent(transform,true);go.transform.position=group.center;go.layer=group.layer;
-                var mesh=new Mesh{name="River stakes 128-unit chunk",indexFormat=IndexFormat.UInt32};mesh.CombineMeshes(group.pieces.ToArray(),true,true);meshes.Add(mesh);
-                go.GetComponent<MeshFilter>().sharedMesh=mesh;var renderer=go.GetComponent<MeshRenderer>();renderer.sharedMaterial=group.material;renderer.shadowCastingMode=ShadowCastingMode.On;
+                var mesh=new Mesh{name="River stakes 128-unit chunk",indexFormat=IndexFormat.UInt32};mesh.CombineMeshes(group.pieces.ToArray(),true,true);
+                if(mesh.vertexCount==0){failed=true;Destroy(mesh);Destroy(go);continue;}
+                mesh.UploadMeshData(true);meshes.Add(mesh);
+                go.GetComponent<MeshFilter>().sharedMesh=mesh;var renderer=go.GetComponent<MeshRenderer>();renderer.sharedMaterial=group.material;renderer.shadowCastingMode=ShadowCastingMode.Off;
                 go.SetActive(false);chunks.Add(go);if(++prepared%8==0)yield return null;
             }
-            foreach(var renderer in originals)if(renderer!=null)renderer.enabled=false;
+            // Keep every original if a build unexpectedly fails; never replace visible stakes with empty geometry.
+            if(failed){foreach(var chunk in chunks)Destroy(chunk);chunks.Clear();foreach(var mesh in meshes)Destroy(mesh);meshes.Clear();originals.Clear();}
+            // Unsupported/unreadable source meshes retain their original renderer.
+            if(chunks.Count>0)foreach(var renderer in originals)if(renderer!=null)renderer.enabled=false;
             Ready=true;SetVisible(zone.IsFieldRevealed);
         }
         public void SetVisible(bool visible){if(!Ready)return;foreach(var chunk in chunks)chunk.SetActive(visible);}

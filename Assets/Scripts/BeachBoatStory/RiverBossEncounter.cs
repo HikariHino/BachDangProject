@@ -33,6 +33,7 @@ namespace BeachBoatStory
         bool oldMotor,oldCollider,oldKinematic;float attackAt,recoverAt,playerSwing,dodgeUntil,attackClock;int attackPhase,attackNumber;
         Vector3 attackDirection,dodgeDirection;Material timber,iron,crimson;
         Transform heroVisual;Quaternion heroVisualRest;Transform[] introBones;Quaternion[] introRotations;Vector3[] introPositions;bool introStrike,introLanding,introOrbitEnabled;float introFov;Vector3 introStart,introLand,introDirection;bool introTransition;float bossDodgeRemaining,nextBossDodge;Vector3 bossDodgeDirection;int aimedShots;
+        int comboRemaining;bool attackHit;
         public int DodgedArrows {get;private set;}
         void Awake(){Instance=this;}
         void Start()
@@ -54,7 +55,7 @@ namespace BeachBoatStory
             }
         }
         public void StopVictoryCheer(){victory?.Stop();}
-        public void ResetForLoad(){bool hadIntro=IntroActive;CancelIntroduction();challenge?.Stop();bossDodgeRemaining=0;aimedShots=DodgedArrows=0;nextBossDodge=0;for(int i=0;i<captives.Length;i++)if(captives[i]!=null){captives[i].SetActive(false);Destroy(captives[i]);captives[i]=null;}if(InArena||hadIntro)RestoreMotor();InArena=false;if(arena!=null)arena.SetActive(false);if(ui!=null)ui.SetActive(false);victory?.Stop();attackPhase=0;dodgeUntil=0;}
+        public void ResetForLoad(){bool hadIntro=IntroActive;CancelIntroduction();challenge?.Stop();bossDodgeRemaining=0;comboRemaining=0;aimedShots=DodgedArrows=0;nextBossDodge=0;for(int i=0;i<captives.Length;i++)if(captives[i]!=null){captives[i].SetActive(false);Destroy(captives[i]);captives[i]=null;}if(InArena||hadIntro)RestoreMotor();InArena=false;if(arena!=null)arena.SetActive(false);if(ui!=null)ui.SetActive(false);victory?.Stop();attackPhase=0;dodgeUntil=0;}
         void Update()
         {
             if(session==null)return;
@@ -310,31 +311,72 @@ namespace BeachBoatStory
             if(room.magnitude<18){side=-side;room=ClampDeck(boss.position+side*30)-boss.position;}if(room.magnitude<18)return false;
             bossDodgeDirection=side;bossDodgeRemaining=.3f;nextBossDodge=Time.time+3;DodgedArrows++;bossPose.Walk(true);BeachBoatSoundscape.Instance?.PlayFootstep(true);return true;
         }
+        void MoveBoss(Vector3 motion)
+        {
+            var next=ClampDeck(boss.position+motion);var hero=session.player.transform.position;var away=next-hero;away.y=0;
+            if(away.sqrMagnitude<16*16)
+            {
+                if(away.sqrMagnitude<.01f){away=boss.position-hero;away.y=0;if(away.sqrMagnitude<.01f)away=-boss.forward;}
+                var radial=away.normalized*16;float best=float.PositiveInfinity;var clear=next;
+                // Near a rail, choose a real inboard separation instead of clamping back into the player.
+                for(int i=0;i<16;i++)
+                {
+                    var candidate=hero+Quaternion.Euler(0,i*22.5f,0)*radial;candidate.y=next.y;var bounded=ClampDeck(candidate);
+                    if(QuestRowboat.FlatDistance(bounded,hero)<15.9f)continue;
+                    float cost=(bounded-next).sqrMagnitude;if(cost>=best)continue;best=cost;clear=bounded;
+                }
+                next=clear;
+            }
+            boss.position=next;
+        }
         public void StepBoss(float dt)
         {
-            if(!IsFighting)return;
-            if(bossDodgeRemaining>0){float step=Mathf.Min(dt,bossDodgeRemaining);bossDodgeRemaining-=step;boss.position=ClampDeck(boss.position+bossDodgeDirection*100*step);bossPose.Walk(true);return;}
+            if(!IsFighting||dt<=0)return;MoveBoss(Vector3.zero);
+            if(bossDodgeRemaining>0){float step=Mathf.Min(dt,bossDodgeRemaining);bossDodgeRemaining-=step;MoveBoss(bossDodgeDirection*100*step);bossPose.Walk(true);return;}
             var delta=session.player.transform.position-boss.position;delta.y=0;float distance=delta.magnitude;
+            bool heavy=attackNumber%3==0;
             if(attackPhase==0)
             {
                 actionText.text="WASD di chuyển • SHIFT né • Chuột phải ngắm cung • H hồi máu";
                 if(Time.time<recoverAt){bossPose.Walk(false);return;}
-                if(distance>25){boss.position=ClampDeck(boss.position+delta.normalized*Mathf.Min(distance-25,32*dt));bossPose.Walk(true);}else bossPose.Walk(false);
-                if(delta.sqrMagnitude>.01f)boss.rotation=Quaternion.Slerp(boss.rotation,Quaternion.LookRotation(delta),1-Mathf.Exp(-8*dt));
-                if(distance<65&&Time.time>=attackAt){attackPhase=1;attackClock=0;attackDirection=delta.normalized;attackNumber++;bossPose.Walk(false);}
+                var direction=distance>.01f?delta/distance:boss.forward;
+                float travel=Mathf.Min(Mathf.Max(0,distance-22),52*dt);
+                MoveBoss(direction*travel);bossPose.Walk(travel>.01f);
+                if(distance>.01f)boss.rotation=Quaternion.Slerp(boss.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-13*dt));
+                // Close the real gap before committing a strike; do not swing from 65 units away.
+                if(distance-travel<=38&&Time.time>=attackAt)
+                {attackPhase=1;attackClock=0;attackDirection=direction;attackNumber++;attackHit=false;comboRemaining=attackNumber%3==1?1:0;bossPose.Walk(false);}
+                return;
             }
-            else
+            attackClock+=dt;heavy=attackNumber%3==0;float windup=heavy?.72f:.42f;
+            actionText.text=attackClock<windup?(heavy?"TƯỚNG ĐỊCH LẤY ĐÀ • NÉ ĐÒN NẶNG!":"ĐỊCH ÁP SÁT • CHUẨN BỊ NÉ!"):"COI CHỪNG ĐÒN NỐI • NÉ / ĐỠ KIẾM!";
+            if(attackPhase==1)
             {
-                attackClock+=dt;bool heavy=attackNumber%3==0;float windup=heavy?.95f:.62f;actionText.text=attackClock<windup?(heavy?"TƯỚNG ĐỊCH LẤY ĐÀ • NÉ ĐÒN NẶNG!":"ĐỊCH CHUẨN BỊ CHÉM • ĐỔI HƯỚNG / NÉ!"):"ĐỊCH HỞ SƯỜN • PHẢN CÔNG!";
-                if(attackPhase==1&&attackClock>=windup){attackPhase=2;bossPose.Slash();BeachBoatSoundscape.Instance?.PlaySwordSwing();}
-                if(attackPhase==2&&attackClock<windup+.25f)boss.position=ClampDeck(boss.position+attackDirection*(heavy?65:35)*dt);
-                if(attackPhase==2&&attackClock>=windup+.25f)
+                // Track during preparation, then lock the last 0.16s so a deliberate dodge works.
+                if(attackClock<windup-.16f&&distance>.01f)
+                {attackDirection=Vector3.RotateTowards(attackDirection,delta/distance,7*dt,0);boss.rotation=Quaternion.LookRotation(attackDirection);}
+                if(distance>23)MoveBoss(attackDirection*Mathf.Min(distance-23,38*dt));
+                if(attackClock>=windup){attackPhase=2;bossPose.Slash();BeachBoatSoundscape.Instance?.PlaySwordSwing();}
+            }
+            if(attackPhase==2)
+            {
+                var gap=session.player.transform.position-boss.position;gap.y=0;
+                if(attackClock<windup+.22f&&gap.magnitude>18)
+                    MoveBoss(attackDirection*Mathf.Min(gap.magnitude-18,(heavy?100:85)*dt));
+                gap=session.player.transform.position-boss.position;gap.y=0;
+                // Test the active sword window, not a single delayed endpoint after the player escaped.
+                if(!attackHit&&attackClock<=windup+.28f&&gap.magnitude<(heavy?38:32)&&Vector3.Dot(attackDirection,gap.normalized)>.25f&&Time.time>=dodgeUntil)
                 {
-                    attackPhase=3;var gap=session.player.transform.position-boss.position;gap.y=0;
-                    if(gap.magnitude<(heavy?37:29)&&Vector3.Dot(attackDirection,gap.normalized)>.05f&&Time.time>=dodgeUntil)
-                    {bool block=PlayerShield.Instance?.IsGuarding==true&&Vector3.Dot(session.player.transform.forward,-gap.normalized)>.4f&&vitals.Stamina>=14&&vitals.TryExert(14,1);vitals.TakeImpact(block?4:heavy?28:19,block?"Khiên đỡ kiếm":"Trúng kiếm tướng địch",CombatImpactKind.Sword);}
+                    attackHit=true;bool block=PlayerShield.Instance?.IsGuarding==true&&Vector3.Dot(session.player.transform.forward,-gap.normalized)>.4f&&vitals.Stamina>=14&&vitals.TryExert(14,1);
+                    vitals.TakeImpact(block?4:heavy?28:19,block?"Khiên đỡ kiếm":"Trúng kiếm tướng địch",CombatImpactKind.Sword);
                 }
-                if(attackClock>windup+.65f){attackPhase=0;recoverAt=Time.time+(heavy?1.2f:.72f);attackAt=recoverAt+.55f;}
+                if(attackClock>=windup+.28f)attackPhase=3;
+            }
+            if(attackPhase==3&&attackClock>windup+.42f)
+            {
+                if(comboRemaining>0&&distance<52)
+                {comboRemaining--;attackPhase=1;attackClock=0;attackNumber++;attackHit=false;attackDirection=delta.sqrMagnitude>.01f?delta.normalized:boss.forward;}
+                else{attackPhase=0;recoverAt=Time.time+(heavy?.65f:.32f);attackAt=recoverAt+.12f;}
             }
         }
         void RestoreMotor()

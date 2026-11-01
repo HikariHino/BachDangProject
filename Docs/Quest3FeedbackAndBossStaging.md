@@ -1,5 +1,7 @@
 # Quest 3 feedback and boss staging — 1 November 2026
 
+Follow-up: [stake visibility and mobile boss](StakeVisibilityAndMobileBoss.md) corrects a normal-Editor rendering regression that the earlier batch checks missed. The old checks counted chunks/colliders without asserting nonempty geometry.
+
 Ngô Quyền gives his voiced order and a visible command gesture after the second distinct bow threat or a weapon hit. Soldiers use separate surrounding goals and actual attacks; defeat waits for player health to reach zero. Earlier checkpoint loads clear retaliation according to their saved state.
 
 Construction teams use deterministic irregular positions and varied headings at all five sites. A layout version migrates unfinished old rows while preserving completed or parked legacy support fleets. New layouts reload their saved transforms. Thirty support boats and sixty soldiers survive recovery and repeated loads. Spawned crew now receive the existing distance-based character meshes and shadow settings.

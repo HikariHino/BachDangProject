@@ -50,6 +50,7 @@ public static class BeachBoatWreckPerformancePlaytest
             if(phase==1)
             {
                 boarding.enabled=false;
+                var visuals=BeachBoatStory.RiverStakeZone.Instance.GetComponentsInChildren<MeshFilter>().Where(f=>f.name=="Static_stake_chunk").ToArray();Check(visuals.Length>0&&visuals.All(f=>f.sharedMesh.vertexCount>0),"Performance scenario renders real stake geometry, not empty combined meshes");
                 Check(fleet.enemyShips.All(s=>s.GetComponent<ShipwreckPresentation>().Colliders.Length>0),"Every split-hull collision mesh is prepared before the sinking frame");
                 var clock=System.Diagnostics.Stopwatch.StartNew();foreach(var ship in fleet.enemyShips)ship.TakeDamage();clock.Stop();activationMs=clock.Elapsed.TotalMilliseconds;BachDangBattleTimeline.Instance.BeginAmbush();
                 Check(fleet.enemyShips.All(s=>s.isDestroyed&&s.HasSolidWreck),"All ten wrecks activate together with solid broken hulls");

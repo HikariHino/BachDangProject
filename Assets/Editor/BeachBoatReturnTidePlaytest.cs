@@ -82,7 +82,7 @@ public static class BeachBoatReturnTidePlaytest
     static void BattleAndVictory()
     {
         var tide=TideSystem.Instance;var fleet=EnemyFleetDirector.Instance;var story=Story.Instance;
-        story.TransitionTo(Story.StoryState.Act3_BattleInProgress,true);fleet.StartBattle();fleet.StopAllCoroutines();
+        story.TransitionTo(Story.StoryState.Act3_BattleInProgress,true);fleet.StartBattle();fleet.StopAllCoroutines();RiverInvasionIntro.Instance?.Cancel();
         BachDangBattleTimeline.Instance.BeginEbb();Advance(3);var ebb=DiskRoundTrip("During battle ebb");Apply(ebb);
         Check(tide.IsControlledEbb&&tide.TargetWaterHeight==tide.lowTideY&&Mathf.Abs(tide.CaptureSave().elapsed-ebb.tide.elapsed)<.01f,"Battle save retains controlled ebb and elapsed time; return policy does not raise water during combat");
         float before=TideSystem.CurrentWaterHeight;Advance(.5f);Check(TideSystem.CurrentWaterHeight<before,"Loaded battle ebb continues falling");
@@ -126,7 +126,25 @@ public static class BeachBoatReturnTidePlaytest
         {
             if(runtimeError!=null)throw new Exception(runtimeError);if(EditorApplication.timeSinceStartup-began>180)throw new Exception("Returning tide QA timed out");
             if(phase==0){PlantingSetup();phase=1;return;}
-            if(phase==1){if(!Zone.Instance.IsComplete)return;PlantingComplete();phase=2;return;}
+            if(phase==1)
+            {
+                // Planting is interactive now; exercise the real carry/aim/hammer inputs.
+                var work=StakeConstruction.Active;
+                if(work!=null)
+                {
+                    if(work.Step==StakeConstruction.WorkStep.TakeBundle)work.Interact();
+                    else if(work.Step==StakeConstruction.WorkStep.CarryBundle)
+                    {
+                        work.WalkBundle(Time.deltaTime);
+                        if(work.CarryProgress>=1)
+                        {if(!work.HasAimedStake)work.AimStake(Vector2.right*.02f);else if(!work.PlacementValid)work.AimStake(new Vector2(Mathf.Cos(Time.time*2),Mathf.Sin(Time.time*2))*.12f);else{work.AdjustLean(work.RequiredLean-work.StakeLean);work.Interact();}}
+                    }
+                    else if(work.Step==StakeConstruction.WorkStep.Hammer)
+                    {work.AimHammer(-work.AimError);if(work.HammerLift<.8f)work.LiftHammer(.15f);else if(work.IsBeatReady)work.Strike();}
+                    return;
+                }
+                if(!Zone.Instance.IsComplete||BeachBoatStory.ScreenFader.Instance.IsTransitioning)return;PlantingComplete();phase=2;return;
+            }
             if(phase==2){BattleAndVictory();phase=3;return;}
             if(phase==3)
             {
