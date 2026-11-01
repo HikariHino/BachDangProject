@@ -15,11 +15,11 @@ public static class BeachBoatAudioBattlePlaytest
     const string Flag="AudioBattle938QA";static int phase,lastFrame=-1;static double began,waitUntil;static string runtimeError;
     static readonly List<string> checks=new List<string>();static EnemyShip sinking;static double sinkMilliseconds;static EnemyDeckGuard hitVictim;
     static readonly Vector3 OpenWater=new Vector3(-2400,0,1400);
-    public static void RunInEditor(){phase=0;lastFrame=-1;began=0;waitUntil=0;runtimeError=null;checks.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){phase=0;lastFrame=-1;began=0;waitUntil=0;runtimeError=null;checks.Clear();BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/AudioBattle/"+DateTime.Now.ToString("yyyyMMddHHmmssfff"));SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Record;Application.logMessageReceived+=Record;}
     static void Record(string text,string stack,LogType type){if(SessionState.GetBool(Flag,false)&&EditorApplication.isPlaying&&(type==LogType.Error||type==LogType.Exception))runtimeError=text+"\n"+stack;}
     static void Check(bool value,string label){if(!value)throw new Exception(label);checks.Add(label);}
-    static void Finish(string failure){Directory.CreateDirectory("Logs");File.WriteAllText("Logs/AudioBattlePlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=failure==null,error=failure,phase,sinkMilliseconds,checks},Newtonsoft.Json.Formatting.Indented));SessionState.SetBool(Flag,false);Time.timeScale=1;EditorApplication.isPlaying=false;}
+    static void Finish(string failure){Directory.CreateDirectory("Logs");File.WriteAllText("Logs/AudioBattlePlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=failure==null,error=failure,phase,sinkMilliseconds,checks},Newtonsoft.Json.Formatting.Indented));SessionState.SetBool(Flag,false);BachDangSaveSystem.TestDirectory=null;Time.timeScale=1;EditorApplication.isPlaying=false;}
     static void Click(string name)
     {
         var button=BachDangFrontEnd.Instance.GetComponentsInChildren<Button>(true).Single(b=>b.name==name&&b.gameObject.activeInHierarchy);
@@ -28,8 +28,9 @@ public static class BeachBoatAudioBattlePlaytest
     static void Setup()
     {
         Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
+        ArcheryTraining.Instance.Restore(40,true);
         BeachBoatStory.RiverStakeZone.Instance.RestoreCheckpoint(Enumerable.Repeat(true,5).ToArray());Story.Instance.collectedWood=5;Story.Instance.TransitionTo(Story.StoryState.Act3_WaitForLowTide,true);
-        var s=BeachBoatQuestSession.Instance;var boat=QuestRowboat.Instance;s.player.transform.position=boat.boardingPoint.position;Check(boat.TryBoard(),"Board battle fixture");
+        var s=BeachBoatQuestSession.Instance;var boat=QuestRowboat.Instance;s.player.transform.position=boat.boardingPoint.position;Check(boat.TryBoard(),"Board battle fixture after required archery training");EnemyFleetDirector.Instance.GetComponent<RiverInvasionIntro>()?.Cancel();BachDangBattleTimeline.Instance.BeginAmbush();
         var fleet=EnemyFleetDirector.Instance;fleet.StopAllCoroutines();RiverBoardingCombat.Instance.enabled=false;RiverPlayerCombat.Instance.enabled=false;RiverPlayerCombat.Instance.ReturnFireEnabled=false;
         foreach(var ship in fleet.enemyShips)ship.enabled=false;foreach(var friendly in RiverBoardingCombat.Instance.friendlyBoats)friendly.enabled=false;
         float stature=EnemyDeckGuard.RigHeight(s.player.GetComponentInChildren<Animator>());
@@ -131,7 +132,7 @@ public static class BeachBoatAudioBattlePlaytest
         var camera=session.storyCamera;camera.GetComponent<BeachBoatStory.Camera_Script>().enabled=false;camera.transform.position=player.position+new Vector3(24,15,-22);camera.transform.LookAt(guard.AimPoint);
         foreach(var particles in CombatHitFeedback.Instance.GetComponentsInChildren<ParticleSystem>())if(particles.particleCount>0)particles.Simulate(.14f,true,false,false);
         Capture("Blood_Hit_Checked");
-        var launch=typeof(RiverPlayerCombat).GetMethod("Launch",BindingFlags.Instance|BindingFlags.NonPublic);hits=CombatHitFeedback.Instance.ArrowHits;launch.Invoke(combat,new object[]{player.position+Vector3.up*10,guard.AimPoint,guard,1,false});combat.StepArrows(1);
+        var launch=typeof(RiverPlayerCombat).GetMethod("Launch",BindingFlags.Instance|BindingFlags.NonPublic);hits=CombatHitFeedback.Instance.ArrowHits;launch.Invoke(combat,new object[]{player.position+Vector3.up*10,guard.AimPoint,guard,1,false,1.1f});combat.StepArrows(1);
         hitVictim=guard;
         Check(guard.Health==0&&CombatHitFeedback.Instance.ArrowHits==hits+1,"Actual arrow arrival kills the target with one arrow impact effect");
         Check(CombatHitFeedback.Instance.LivingParticles>0,"Confirmed combat hits leave visible live blood particles");
@@ -151,6 +152,7 @@ public static class BeachBoatAudioBattlePlaytest
             switch(phase)
             {
                 case 0:
+                    BachDangAutoSave.Instance.enabled=false;
                     Check(Time.timeScale==0&&BachDangMenuAudio.Instance.Music.isPlaying&&BachDangMenuAudio.Instance.EntriesPlayed==1,"Title entry and looping music play while game time is paused");
                     Click("Settings");Click("Back");Click("RankingGuide");CampaignJournalUI.Instance.Close();Check(BachDangMenuAudio.Instance.EntriesPlayed==1,"Navigating title pages does not repeat the startup sound");Click("Play");waitUntil=EditorApplication.timeSinceStartup+1;break;
                 case 1:Check(!BachDangMenuAudio.Instance.Music.isPlaying,"Lobby music fades out after starting gameplay");Setup();break;

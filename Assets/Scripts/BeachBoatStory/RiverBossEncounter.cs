@@ -34,7 +34,7 @@ namespace BeachBoatStory
         Vector3 attackDirection,dodgeDirection;Material timber,iron,crimson;
         Transform heroVisual;Quaternion heroVisualRest;Transform[] introBones;Quaternion[] introRotations;Vector3[] introPositions;bool introStrike,introLanding,introOrbitEnabled;float introFov;Vector3 introStart,introLand,introDirection;bool introTransition;float bossDodgeRemaining,nextBossDodge;Vector3 bossDodgeDirection;int aimedShots;
         int comboRemaining;bool attackHit;
-        RuntimeAnimatorController heroSwordBeforeDuel,duelSword,duelFoot,duelBow;
+        RuntimeAnimatorController heroSwordBeforeDuel,duelSword,duelFoot,duelBow;AnimatorCullingMode heroCullingBeforeDuel;
         DuelBladeContact heroBody,bossBody;bool heroStrikeArmed,bossStrikeArmed,heroBladePrevious,bossBladePrevious;
         Vector3 heroBladeRoot,heroBladeTip,bossBladeRoot,bossBladeTip;float heroStrikeAt,bossStrikeAt;int bossStrikeDamage;
         bool airborne;float duelHeight;float jumpElapsed,jumpDuration,jumpVelocity,jumpGravity,jumpOffset,nextDodge;
@@ -272,7 +272,7 @@ namespace BeachBoatStory
             oldMotor=actor.GetComponent<Character_Movement>().enabled;oldCollider=actor.GetComponent<CapsuleCollider>().enabled;oldKinematic=body.isKinematic;
             RiverBoardingCombat.Instance.PrepareRowboatBoarding();QuestRowboat.Instance.LeaveForCheckpoint();oldMotor=true;oldCollider=true;oldKinematic=false;
             actor.GetComponent<Character_Movement>().enabled=false;body.isKinematic=true;body.interpolation=RigidbodyInterpolation.None;actor.GetComponent<CapsuleCollider>().enabled=false;
-            heroPose=actor.GetComponent<RiverFighterPose>();WarmDuel();if(heroSwordBeforeDuel==null)heroSwordBeforeDuel=heroPose.swordController;if(duelSword!=null)heroPose.swordController=duelSword;heroPose.FinishTraversal();heroPose.SetSword(true);heroPose.Animator.enabled=true;
+            heroPose=actor.GetComponent<RiverFighterPose>();WarmDuel();if(heroSwordBeforeDuel==null){heroSwordBeforeDuel=heroPose.swordController;heroCullingBeforeDuel=heroPose.Animator.cullingMode;}heroPose.Animator.cullingMode=AnimatorCullingMode.AlwaysAnimate;if(duelSword!=null)heroPose.swordController=duelSword;heroPose.FinishTraversal();heroPose.SetSword(true);heroPose.Animator.enabled=true;
         }
         void OpenArena(bool fresh)
         {
@@ -324,7 +324,7 @@ namespace BeachBoatStory
             bool dodging=Time.time<dodgeUntil&&dodgeDirection.sqrMagnitude>.1f;
             IsRunning=runHeld&&direction.sqrMagnitude>.01f&&!aiming&&!dodging&&PlayerShield.Instance?.IsGuarding!=true&&vitals.TryExert(13,dt);
             var move=(dodging?dodgeDirection*100:direction*(IsRunning?48:aiming?20:28))*dt;
-            var next=SeparateOnDeck(ClampDeck(actor.position+move),boss.position,14,actor.position-boss.position);
+            var next=SeparateOnDeck(ClampDeck(actor.position+move),boss.position,9,actor.position-boss.position);
             actor.position=next;if(move.sqrMagnitude>.01f&&!aiming)actor.rotation=Quaternion.Slerp(actor.rotation,Quaternion.LookRotation(move),1-Mathf.Exp(-12*dt));
             if(airborne)
             {
@@ -388,7 +388,7 @@ namespace BeachBoatStory
             var radial=away.normalized*radius;float best=float.PositiveInfinity;var clear=point;
             for(int i=0;i<16;i++){var candidate=other+Quaternion.Euler(0,i*22.5f,0)*radial;candidate.y=point.y;var bounded=ClampDeck(candidate);if(QuestRowboat.FlatDistance(bounded,other)<radius-.1f)continue;float cost=(bounded-point).sqrMagnitude;if(cost>=best)continue;best=cost;clear=bounded;}return clear;
         }
-        void MoveBoss(Vector3 motion)=>boss.position=SeparateOnDeck(ClampDeck(boss.position+motion),session.player.transform.position,16,boss.position-session.player.transform.position);
+        void MoveBoss(Vector3 motion)=>boss.position=SeparateOnDeck(ClampDeck(boss.position+motion),session.player.transform.position,9,boss.position-session.player.transform.position);
         public void StepBoss(float dt)
         {
             if(!IsFighting||dt<=0)return;MoveBoss(Vector3.zero);
@@ -400,7 +400,7 @@ namespace BeachBoatStory
                 actionText.text=DuelControls;
                 if(Time.time<recoverAt){bossPose.Walk(false);return;}
                 var direction=distance>.01f?delta/distance:boss.forward;
-                float travel=Mathf.Min(Mathf.Max(0,distance-20),52*dt);
+                float travel=Mathf.Min(Mathf.Max(0,distance-12),52*dt);
                 MoveBoss(direction*travel);bossPose.Walk(travel>.01f);bossPose.Animator.SetBool("isRunning",travel>.01f&&distance>45);
                 if(distance>.01f)boss.rotation=Quaternion.Slerp(boss.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-13*dt));
                 // Close the real gap before committing a strike; do not swing from 65 units away.
@@ -415,14 +415,14 @@ namespace BeachBoatStory
                 // Track during preparation, then lock the last 0.16s so a deliberate dodge works.
                 if(attackClock<windup-.16f&&distance>.01f)
                 {attackDirection=Vector3.RotateTowards(attackDirection,delta/distance,7*dt,0);boss.rotation=Quaternion.LookRotation(attackDirection);}
-                if(distance>18)MoveBoss(attackDirection*Mathf.Min(distance-18,38*dt));
+                if(distance>10)MoveBoss(attackDirection*Mathf.Min(distance-10,38*dt));
                 if(attackClock>=windup){attackPhase=2;bossStrikeArmed=true;bossBladePrevious=false;bossStrikeAt=Time.time;bossStrikeDamage=heavy?28:19;attackHit=false;bossPose.DuelSlash(heavy);BeachBoatSoundscape.Instance?.PlaySwordSwing();}
             }
             if(attackPhase==2)
             {
                 var gap=session.player.transform.position-boss.position;gap.y=0;
-                if(attackClock<windup+.22f&&gap.magnitude>18)
-                    MoveBoss(attackDirection*Mathf.Min(gap.magnitude-18,(heavy?100:85)*dt));
+                if(attackClock<windup+.22f&&gap.magnitude>10)
+                    MoveBoss(attackDirection*Mathf.Min(gap.magnitude-10,(heavy?100:85)*dt));
                 if(attackClock>=windup+.28f)attackPhase=3;
             }
             if(attackPhase==3&&attackClock>windup+(heavy?1.05f:.84f))
@@ -436,7 +436,7 @@ namespace BeachBoatStory
         {
             Smartomano.OptiWater.Underwater.OptiWaterUnderwaterFeature.GlobalEnabled=previousUnderwater;
             var actor=session.player;actor.GetComponent<Character_Movement>().enabled=oldMotor;actor.GetComponent<CapsuleCollider>().enabled=oldCollider;var body=actor.GetComponent<Rigidbody>();body.isKinematic=oldKinematic;body.interpolation=RigidbodyInterpolation.Interpolate;
-            ResetDuelMotion();heroPose?.Restore();if(heroPose!=null){if(heroSwordBeforeDuel!=null)heroPose.swordController=heroSwordBeforeDuel;heroSwordBeforeDuel=null;heroPose.Animator.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;heroPose.Animator.enabled=true;}
+            ResetDuelMotion();heroPose?.Restore();if(heroPose!=null){if(heroSwordBeforeDuel!=null)heroPose.swordController=heroSwordBeforeDuel;heroPose.Animator.cullingMode=heroCullingBeforeDuel;heroSwordBeforeDuel=null;heroPose.Animator.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;heroPose.Animator.enabled=true;}
         }
         public void ReturnFromDuel()
         {

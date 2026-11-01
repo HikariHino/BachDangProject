@@ -19,3 +19,7 @@ Boss pursuit remains active. It approaches to real reach and finishes the visibl
 Headless Unity Play Mode uses the real scene, real rig and real controllers. `BeachBoatDuelContactPlaytest` checks sprint distance/stamina, real jump animation, independently CPU-skinned boot clearance, landing, retry movement, inactive lift overlap, actual normal/heavy contact, missed swings inside the former radial damage zone, one hit per swing, and physical contact during a dodge. Player save/backup files are hashed and all test writes use an isolated directory.
 
 All 320 final checks passed: duel controls/contact 50, epilogue/save/retry 112, stake/mobile boss 23, moving bow 51, shield/crowd 27 and HUD layout 57. The final new-control run also verifies real bow/shield jump states and matching compact HUD keys. Local proof: `Logs/Review29_Boss_Duel_Jump.png`; machine-readable results: `Logs/DuelContactPlaytest.json`.
+
+## Natural-attack and short-draw follow-up
+
+[Boss melee and short draws](BossSwordAndPartialDraw.md) documents the subsequent normal-approach reproduction, corrected body spacing, actual duel wrist/sword retargeting, short bow releases and replacement dry deck recordings. The earlier isolated contact fixture alone did not establish that a normal forward swing could reach an opponent.

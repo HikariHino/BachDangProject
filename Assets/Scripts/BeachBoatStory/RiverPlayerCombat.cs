@@ -68,7 +68,7 @@ namespace BeachBoatStory
         GameObject hud;
         CompactRiverCombatHUD compactHUD;
         Image chargeFill,reticle;TMP_Text drawHint;
-        float charge,nextShot,reloadUntil,nextThreat,threatUntil,noticeUntil,hitUntil;
+        bool drawStarted;float charge,nextShot,reloadUntil,nextThreat,threatUntil,noticeUntil,hitUntil;
         EnemyDeckGuard threat;
         bool wasBattle;
         bool savedAim;
@@ -104,7 +104,7 @@ namespace BeachBoatStory
         {
             Kills=data.kills;AlliedKills=data.alliedKills;Arrows=Mathf.Clamp(data.arrows,0,6);ShotsFired=data.shots;Hits=data.hits;
             suppressed.Clear();foreach(int wave in data.suppressed??System.Array.Empty<int>())suppressed.Add(wave);
-            wasBattle=data.active;threat=null;reloadUntil=nextShot=0;nextThreat=Time.time+4;
+            wasBattle=data.active;threat=null;charge=0;drawStarted=false;reloadUntil=nextShot=0;nextThreat=Time.time+4;
         }
         public void RegisterKill(EnemyDeckGuard guard)
         {
@@ -140,10 +140,18 @@ namespace BeachBoatStory
             SetAim(PlayerShield.Instance?.Equipped!=true&&(boarding==null||!boarding.SwordDrawn&&!boarding.IsTraversing)&&Input.GetMouseButton(1)&&Cursor.lockState==CursorLockMode.Locked);
             if(Input.GetKeyDown(KeyCode.R))Reload();
             AimedGuard=FindTarget(camera.ViewportPointToRay(new Vector3(.5f,.5f)),out _);
-            if(IsAiming&&!IsReloading&&Input.GetMouseButton(0))charge=Mathf.Min(1.1f,charge+Time.deltaTime);
-            if(IsAiming&&Input.GetMouseButtonUp(0)&&charge>=.15f){TryFire(camera.ViewportPointToRay(new Vector3(.5f,.5f)),charge);charge=0;}
-            if(!IsAiming)charge=0;
+            StepBowDraw(Time.deltaTime,Input.GetMouseButtonDown(0),Input.GetMouseButton(0),Input.GetMouseButtonUp(0));
             if(!PracticeActive&&BattleActive)UpdateThreat();UpdateHUD();
+        }
+        /// <summary>One release rule everywhere: a short draw fires a weaker arrow, never requires a full meter.</summary>
+        public bool StepBowDraw(float dt,bool pressed,bool held,bool released)
+        {
+            if(!IsAiming||IsReloading||BeachBoatQuestSession.InputBlocked){charge=0;drawStarted=false;return false;}
+            if(pressed){drawStarted=true;charge=0;}
+            if(held){drawStarted=true;charge=Mathf.Min(1.1f,charge+Mathf.Max(0,dt));}
+            if(!released)return false;
+            bool pending=drawStarted;float draw=Mathf.Max(.04f,charge);charge=0;drawStarted=false;
+            return pending&&TryFire(camera.ViewportPointToRay(new Vector3(.5f,.5f)),draw);
         }
         public void SetAim(bool value)
         {
@@ -159,7 +167,7 @@ namespace BeachBoatStory
             }
             else
             {orbit.enableShoulderAim=savedAim;orbit.aimDistance=savedAimDistance;orbit.aimFieldOfView=savedAimFov;orbit.rightOffset=savedRightOffset;orbit.heightOffset=savedHeight;}
-            IsAiming=value;if(!value)poseTension=0;
+            IsAiming=value;if(!value){poseTension=charge=0;drawStarted=false;}
             orbit.SetCombatAim(value);UpdateHandGrips();
             if(animator!=null&&QuestRowboat.Instance?.IsAboard!=true)
             {if(value){groundAimController=animator.runtimeAnimatorController;if(bowController!=null)animator.runtimeAnimatorController=bowController;}else if(groundAimController!=null)animator.runtimeAnimatorController=groundAimController;animator.applyRootMotion=false;animator.speed=1;}

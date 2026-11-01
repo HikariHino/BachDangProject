@@ -15,3 +15,7 @@ These permissions are creator statements; the videos do not expose a standardize
 Processing: mono downmix, 32 kHz resampling, short individual cuts, gentle rumble/hiss filtering, RMS matching, peak ceiling 0.72 and short fades. Running uses separate source takes with a small speed adjustment. No music, speech, subscription prompts or long loops are included. `Tools/prepare_youtube_action_audio.py` reproduces 31 cuts from the five source WebM/M4A files. `Tools/action_audio_manifest.json` records source timestamps, measured levels and output hashes.
 
 Unity imports these short clips as preloaded, decompressed PCM. WAV assets total 927,216 bytes. The Unity CLI audio/battle playtest passed 106 checks on 2026-10-26, including imported sample data, varied action playback, mute, footsteps relative to a moving deck, actual sword/arrow hits, and wreck/combat regression checks. The generated report is `Logs/AudioBattlePlaytest.json`.
+
+## Dry deck replacement — 1 November 2026
+
+Six different takes from the existing CC0 wood source replace the previous deck footsteps. Each is 160 ms with a short decay envelope and lower 2.4 kHz cutoff, removing sustained wooden ringing and overlap at the sprint cadence. Rebuild with `Tools/prepare_youtube_action_audio.py --deck-only`. Updated hashes and timestamps are in `Tools/action_audio_manifest.json`; the other 25 recordings retain their existing content. See `BossSwordAndPartialDraw.md` for gameplay validation.

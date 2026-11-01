@@ -76,7 +76,7 @@ public static class BeachBoatStakeBoss01Playtest
                 else if(elapsed<8)actor.position=boss.ClampDeck(actor.position+Vector3.right*(Mathf.Sin(elapsed*1.3f)>=0?28:-28)*dt);
                 boss.StepBoss(dt);boss.SupportAfterAnimation();minGap=Mathf.Min(minGap,QuestRowboat.FlatDistance(actor.position,boss.Boss.position));
                 if(elapsed<8)return;
-                Check(minGap>=14&&minGap<30&&startGap-minGap>120,"Boss actively catches a retreating player and closes to real sword range");
+                Check(minGap>=8.9f&&minGap<20&&startGap-minGap>120,"Boss actively catches a retreating player and closes to real sword range");
                 float damage=startHealth-session.player.GetComponent<PlayerVitals>().Health;Check(damage>=19,"Boss lands real sword damage against continuous ordinary movement: "+damage);
                 int count=(int)typeof(RiverBossEncounter).GetField("attackNumber",BindingFlags.NonPublic|BindingFlags.Instance).GetValue(boss);Check(count>=2,"Boss follows pressure with multiple committed attacks: "+count);
                 Check(Vector3.Distance(boss.Boss.position,boss.ClampDeck(boss.Boss.position))<.1f,"Mobile boss stays inside the solid duel rails");

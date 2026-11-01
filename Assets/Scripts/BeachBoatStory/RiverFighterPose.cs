@@ -51,7 +51,7 @@ namespace BeachBoatStory
         Quaternion[] rotations;
         Quaternion modelRotation;
         RuntimeAnimatorController previousController;
-        bool usingSword;
+        bool usingSword,duelSwingPose;
         Transform hips,neck,head,leftFoot,rightFoot;
         Transform[] traversalBones;
         Quaternion[] traversalRotations;
@@ -106,6 +106,7 @@ namespace BeachBoatStory
             if(value){SetRanged(false);if(Traversal==Motion.Idle)Animator.enabled=true;Animator.applyRootMotion=false;}
             if(value&&!usingSword){previousController=Animator.runtimeAnimatorController;Animator.runtimeAnimatorController=swordController;usingSword=true;Animator.SetBool("isWalking",false);Animator.SetBool("isRunning",false);Animator.SetInteger("Pose",0);Animator.Play("sword_idle",0,0);if(Animator.gameObject.activeInHierarchy){Animator.Update(0);MatchFriendlyStature();}}
             if(value&&Traversal==Motion.Idle&&Animator.runtimeAnimatorController!=swordController)Animator.runtimeAnimatorController=swordController;
+            if(!value)duelSwingPose=false;
             if(!value&&usingSword){Animator.runtimeAnimatorController=previousController;usingSword=false;}
             SwordVisible=value;if(weapon!=null)weapon.gameObject.SetActive(value);Animator.speed=1;
             if(!value&&!ranged)HumanoidGripMesh.Restore(Animator);
@@ -113,7 +114,7 @@ namespace BeachBoatStory
         public void Slash(){if(!SwordVisible)return;Animator.enabled=true;Animator.SetBool("isWalking",false);Animator.SetBool("isRunning",false);Animator.SetTrigger("attack");}
         public void DuelSlash(bool heavy=false)
         {
-            if(!SwordVisible)return;Animator.enabled=true;Animator.SetBool("isWalking",false);Animator.SetBool("isRunning",false);Animator.ResetTrigger("attack");Animator.ResetTrigger("attack2");Animator.CrossFadeInFixedTime(heavy?"Attack2":"Attack",.045f,0,0);
+            if(!SwordVisible)return;duelSwingPose=true;Animator.enabled=true;Animator.SetBool("isWalking",false);Animator.SetBool("isRunning",false);Animator.ResetTrigger("attack");Animator.ResetTrigger("attack2");Animator.CrossFadeInFixedTime(heavy?"Attack2":"Attack",.045f,0,0);
         }
         public bool TryBladeSegment(out Vector3 root,out Vector3 tip,out float radius)
         {
@@ -131,7 +132,7 @@ namespace BeachBoatStory
         {
             if(Animator==null)return;
             if(sizeChecks>0&&Traversal==Motion.Idle){sizeChecks--;MatchFriendlyStature();}
-            if(SwordVisible){FitSwordGuard();FitSwordToGrip();CloseSwordHand();HumanoidGripMesh.Apply(Animator,leftGrip,rightGrip,0,1);}
+            if(SwordVisible){FitSwordGuard();PoseDuelSwing();FitSwordToGrip();CloseSwordHand();HumanoidGripMesh.Apply(Animator,leftGrip,rightGrip,0,1);}
             if(Traversal==Motion.Idle)
             {
                 if(ranged&&rangedBow!=null)
@@ -252,6 +253,25 @@ namespace BeachBoatStory
             if(normal.sqrMagnitude<.5f)normal=rightHand.forward;
             var rotation=Quaternion.LookRotation(normal,BladeDirection);
             weapon.SetPositionAndRotation(GripPosition-rotation*(gripInMesh*swordScale),rotation);
+        }
+        void PoseDuelSwing()
+        {
+            if(!duelSwingPose)return;
+            var state=Animator.GetCurrentAnimatorStateInfo(0);
+            if(Animator.IsInTransition(0)){var next=Animator.GetNextAnimatorStateInfo(0);if(next.IsName("Attack")||next.IsName("Attack2"))state=next;}
+            if((!state.IsName("Attack")&&!state.IsName("Attack2"))||state.normalizedTime>1){duelSwingPose=false;return;}
+            // Retarget the actual gripping hand, not just a weapon or an invisible damage volume.
+            // Imported wrist axes otherwise turn the player's cutting edge behind the body.
+            float h=EnemyDeckGuard.RigHeight(Animator),t=Mathf.Clamp01(state.normalizedTime),start=state.IsName("Attack2")?.66f:.52f,end=state.IsName("Attack2")?.83f:.82f;
+            var forward=transform.forward;var right=transform.right;
+            var guard=hips.position+forward*h*.23f+right*h*.18f+Vector3.up*h*.10f;
+            var raised=hips.position+forward*h*.08f+right*h*.22f+Vector3.up*h*.40f;
+            var finish=hips.position+forward*h*.32f-right*h*.12f;
+            Vector3 contact,axis;
+            if(t<start){float u=Mathf.SmoothStep(0,1,t/start);contact=Vector3.Lerp(guard,raised,u);axis=Vector3.Slerp((forward+Vector3.up).normalized,(Vector3.up-forward*.15f).normalized,u);}
+            else if(t<=end){float u=Mathf.SmoothStep(0,1,Mathf.InverseLerp(start,end,t));contact=Vector3.Lerp(raised,finish,u);axis=Vector3.Slerp((Vector3.up-forward*.15f).normalized,(forward-Vector3.up*.45f).normalized,u);}
+            else{float u=Mathf.SmoothStep(0,1,Mathf.InverseLerp(end,1,t));contact=Vector3.Lerp(finish,guard,u);axis=Vector3.Slerp((forward-Vector3.up*.45f).normalized,(forward+Vector3.up).normalized,u);}
+            rightGrip.Align(bones[1],bones[3],contact,bones[1].position+right*h*.28f,axis);
         }
         void FitSwordGuard()
         {
