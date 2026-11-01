@@ -35,6 +35,11 @@ public static class BeachBoatSupportFleetPlaytest
                 BeachBoatStory.RiverStakeZone.Instance.RestoreCheckpoint(Enumerable.Repeat(true,5).ToArray());BeachBoatStory.BachDangStoryManager.Instance.TransitionTo(BeachBoatStory.BachDangStoryManager.StoryState.Act2_CompleteReturnToCamp,true);
                 var legacy=BachDangSaveSystem.Capture("QA old missing fleet");legacy.constructionSites=Array.Empty<BachDangSaveData.ConstructionSite>();BachDangSaveSystem.Apply(legacy);
                 Check(camp.Workers==60&&boarding.friendlyBoats.Count(b=>b.IsConstructionSupport)==30,"A completed old save with no construction data recovers thirty skiffs and sixty soldiers: "+camp.Workers+" / "+boarding.friendlyBoats.Count(b=>b.IsConstructionSupport));
+                var crowd=boarding.friendlyBoats.Where(b=>b.IsConstructionSupport).SelectMany(b=>b.GetComponentsInChildren<CinematicCharacterLOD>(true)).ToArray();
+                Check(crowd.Length>=60,"All spawned support soldiers receive distance-based mesh detail, including legacy save recovery");
+                var sample=crowd[0];var camera=new GameObject("QA_Crew_LOD_Camera").AddComponent<Camera>();camera.enabled=false;camera.transform.position=sample.transform.position+Vector3.up*12+Vector3.back*400;CinematicCharacterLOD.RefreshForCamera(camera);int farVertices=sample.target.sharedMesh.vertexCount;
+                camera.transform.position=sample.transform.position+Vector3.up*12+Vector3.back*45;CinematicCharacterLOD.RefreshForCamera(camera);int closeVertices=sample.target.sharedMesh.vertexCount;
+                Check(farVertices<closeVertices*.5f,"A distant support soldier renders fewer than half the close-up vertices: "+farVertices+" / "+closeVertices);Object.DestroyImmediate(camera.gameObject);CinematicCharacterLOD.RefreshForCamera(BeachBoatQuestSession.Instance.storyCamera);
                 saved=BachDangSaveSystem.Capture("QA recovered support");
                 Check(saved.boarding.defenders.Count(d=>d.boat.Contains("Thuyen_cong_binh"))==60&&saved.patrols.Count(p=>p.name.Contains("Thuyen_cong_binh"))==30,"Support crew health and each vessel position enter the normal boarding and patrol save data");
                 var injured=saved.boarding.defenders.First(d=>d.boat.Contains("Thuyen_cong_binh"));injured.health=2;

@@ -20,6 +20,15 @@ namespace BeachBoatStory
             if(Time.unscaledTime<nextUpdate)return;nextUpdate=Time.unscaledTime+.2f;
             RefreshForCamera(Camera.main);
         }
+        public static void Ensure(Animator rig)
+        {
+            foreach(var skin in rig.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                var existing=skin.GetComponentInParent<CinematicCharacterLOD>();if(existing!=null&&existing.target==skin)continue;
+                if(!CombatHandSources.Crowd(skin.sharedMesh,out var close,out var middle,out var far))continue;
+                var lod=skin.GetComponent<CinematicCharacterLOD>()??skin.gameObject.AddComponent<CinematicCharacterLOD>();lod.target=skin;lod.closeMesh=close;lod.middleMesh=middle;lod.farMesh=far;
+            }
+        }
         public static void RefreshForCamera(Camera camera)
         {
             if(camera==null)return;

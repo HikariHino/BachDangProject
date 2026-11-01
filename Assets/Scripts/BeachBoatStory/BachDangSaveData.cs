@@ -26,7 +26,7 @@ namespace BeachBoatStory
         public bool aboard;
         public bool[] woods,stakes;
         public ConstructionSite[] constructionSites;
-        [Serializable] public sealed class ConstructionSite{public int index;public float elapsed;public Vector3 origin;public Quaternion rotation=Quaternion.identity;public bool parked;public Vector3[] boats,posts;public Quaternion[] boatRotations,postRotations;}
+        [Serializable] public sealed class ConstructionSite{public int index,layoutVersion;public float elapsed;public Vector3 origin;public Quaternion rotation=Quaternion.identity;public bool parked;public Vector3[] boats,posts;public Quaternion[] boatRotations,postRotations;}
         public int stakeSamplesVersion;
         public Vector3[] stakeSamplePositions;
         public Quaternion[] stakeSampleRotations;

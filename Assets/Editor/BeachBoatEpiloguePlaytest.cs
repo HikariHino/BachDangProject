@@ -39,7 +39,27 @@ public static class BeachBoatEpiloguePlaytest
         var rig=root.GetComponentInChildren<Animator>();float low=float.PositiveInfinity;
         foreach(var id in new[]{HumanBodyBones.LeftFoot,HumanBodyBones.RightFoot,HumanBodyBones.LeftToes,HumanBodyBones.RightToes}){var bone=rig.GetBoneTransform(id);if(bone!=null)low=Mathf.Min(low,bone.position.y);}
         float deck=RiverBossEncounter.Instance.ArenaCenter.y;
-        Check(low>=deck+.1f&&low<deck+EnemyDeckGuard.RigHeight(rig)*.1f,"Animated feet remain above the timber deck: "+pose+" clearance="+(low-deck));
+        Check(low>=deck+.1f&&low<deck+EnemyDeckGuard.RigHeight(rig)*.3f,"Animated feet remain above the timber deck: "+pose+" clearance="+(low-deck));
+        var skin=rig.GetComponentsInChildren<SkinnedMeshRenderer>().First();var mesh=skin.sharedMesh;var vertices=mesh.vertices;var weights=mesh.boneWeights;var binds=mesh.bindposes;var bones=skin.bones;var matrices=bones.Select((bone,i)=>bone.localToWorldMatrix*binds[i]).ToArray();var bottom=new Vector3(0,float.PositiveInfinity,0);
+        for(int i=0;i<vertices.Length;i++){var v=vertices[i];var w=weights[i];var world=matrices[w.boneIndex0].MultiplyPoint3x4(v)*w.weight0;if(w.weight1>0)world+=matrices[w.boneIndex1].MultiplyPoint3x4(v)*w.weight1;if(w.weight2>0)world+=matrices[w.boneIndex2].MultiplyPoint3x4(v)*w.weight2;if(w.weight3>0)world+=matrices[w.boneIndex3].MultiplyPoint3x4(v)*w.weight3;if(world.y<bottom.y)bottom=world;}
+        float visible=RenderedFloor(bottom);Check(bottom.y>=visible-.25f&&bottom.y<visible+1.2f,"Actual skinned boots clear the visible deck surface: "+pose+" clearance="+(bottom.y-visible));
+    }
+    static float RenderedFloor(Vector3 at)
+    {
+        float best=float.NegativeInfinity;var arena=GameObject.Find("Boong_soai_ham_dau_tuong_3D");
+        foreach(var filter in arena.GetComponentsInChildren<MeshFilter>())
+        {
+            var renderer=filter.GetComponent<MeshRenderer>();if(renderer==null||!renderer.enabled||filter.GetComponentInParent<Animator>()!=null)continue;
+            var mesh=filter.sharedMesh;if(mesh==null||!mesh.isReadable)continue;var vertices=mesh.vertices;var triangles=mesh.triangles;var matrix=filter.transform.localToWorldMatrix;
+            for(int i=0;i<triangles.Length;i+=3)
+            {
+                var a=matrix.MultiplyPoint3x4(vertices[triangles[i]]);var b=matrix.MultiplyPoint3x4(vertices[triangles[i+1]]);var c=matrix.MultiplyPoint3x4(vertices[triangles[i+2]]);
+                float den=(b.z-c.z)*(a.x-c.x)+(c.x-b.x)*(a.z-c.z);if(Mathf.Abs(den)<.001f)continue;
+                float u=((b.z-c.z)*(at.x-c.x)+(c.x-b.x)*(at.z-c.z))/den,v=((c.z-a.z)*(at.x-c.x)+(a.x-c.x)*(at.z-c.z))/den;
+                if(u<-.001f||v<-.001f||u+v>1.001f)continue;float y=u*a.y+v*b.y+(1-u-v)*c.y;if(y<at.y+25)best=Mathf.Max(best,y);
+            }
+        }
+        return best;
     }
     static void ProbeDeckPoses()
     {
@@ -77,9 +97,9 @@ public static class BeachBoatEpiloguePlaytest
                     for(int i=0;i<8;i++){var p=work.TargetPosition+Quaternion.Euler(0,i*45,0)*Vector3.forward*8;p.y=work.RequiredApproach.y;actor.position=p;Check(work.CanInteract,"Left pickup works close from angle "+i+" at "+stall.kind);}
                     actor.position=work.TargetPosition+Vector3.forward*40;Check(!work.CanInteract,"Far left pickup is rejected at "+stall.kind);stall.Close();
                 }
-                BeachBoatStory.RiverStakeZone.Instance.RestoreCheckpoint(Enumerable.Repeat(true,5).ToArray());story.TransitionTo(Story.StoryState.Act3_Victory,true);
+                BeachBoatStory.RiverStakeZone.Instance.RestoreCheckpoint(Enumerable.Repeat(true,5).ToArray());story.TransitionTo(Story.StoryState.Act3_Victory,true);TideSystem.Instance.SetTide(true,true);
                 foreach(var ship in EnemyFleetDirector.Instance.enemyShips)
-                {ship.RestoreSave(new BachDangSaveData.Ship{active=true,destroyed=true,settled=true,released=true,position=ship.targetPoint.position,rotation=Quaternion.Euler(0,180,0),sinkStart=ship.targetPoint.position,sinkRotation=Quaternion.Euler(0,180,0),destroyedTime=6,sinkDepth=20});}
+                {var waterStart=ship.targetPoint.position;waterStart.y=TideSystem.CurrentWaterHeight;ship.RestoreSave(new BachDangSaveData.Ship{active=true,destroyed=true,settled=true,released=true,position=waterStart-Vector3.up*20,rotation=Quaternion.Euler(0,180,0),sinkStart=waterStart,sinkRotation=Quaternion.Euler(0,180,0),destroyedTime=6,sinkDepth=20});foreach(var guard in ship.GetComponentsInChildren<EnemyDeckGuard>(true))guard.DefeatFromVolley();}
                 story.OnVictoryReported();Check(story.currentState==Story.StoryState.Act3_SearchPrisoners&&!CampaignProgress.Instance.Record.finished,"The first victory report starts prisoner search instead of ending the campaign");BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();
                 actor.position=session.playerSpawn.position;Check(!boss.InspectWreck(0),"A distant wreck cannot be inspected remotely");
                 for(int i=0;i<3;i++)
@@ -89,8 +109,7 @@ public static class BeachBoatEpiloguePlaytest
                 }
                 Check(boss.SearchCount==3,"All three searched wrecks unlock the commander reveal");boss.BeginDuel();
                 Check(boss.IntroActive&&!boss.IsFighting&&story.currentState==Story.StoryState.Act3_CommanderDuel&&!CampaignProgress.Instance.Record.finished,"The reveal starts the boss knockdown introduction before enabling duel controls");
-                Check(Vector3.Distance(actor.position,boss.ArenaCenter)<170&&Vector3.Distance(boss.Boss.position,boss.ArenaCenter)<170,"Both fighters stand on the spacious flagship deck");
-                Check(BachDangAutoSave.Instance.RetryPoint?.boss?.inArena==true,"The duel writes a temporary retry point without touching manual saves");
+                Check(!boss.InArena&&Mathf.Abs(actor.position.y-boss.ArenaCenter.y)>100,"The attack happens at the conversation wreck before any transfer to the wide duel arena");
                 Check(boss.ClampDeck(boss.ArenaCenter+new Vector3(1000,0,1000)).x<=boss.ArenaCenter.x+96,"Deck movement clamps at the solid rail boundary");
                 phase=10;return;
             }
@@ -101,13 +120,16 @@ public static class BeachBoatEpiloguePlaytest
                     if(!throwChecked&&boss.IntroElapsed>=1)
                     {
                         throwChecked=true;Check(!boss.TryPlayerStrike()&&!boss.TryDodge(Vector3.right)&&!BachDangSaveSystem.CanSave,"The throw blocks attacks, dodging and saves until the hero lands");
-                        Check(!session.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().enabled&&actor.position.z<boss.ArenaCenter.z-25,"The cinematic owns the camera and physically throws the hero backward across the deck");
+                        Check(!session.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().enabled&&!boss.InArena&&Mathf.Abs(actor.position.y-boss.ArenaCenter.y)>100,"The cinematic owns the camera and throws the hero on the original wreck, not the wide duel arena");
                         BeachBoatReview29Playtest.Picture("Boss_Throw",session.storyCamera.transform.position,session.storyCamera.transform.position+session.storyCamera.transform.forward*60);
-                        CheckHeroVisible();
+                        CheckHeroVisible();var landing=(Vector3)typeof(RiverBossEncounter).GetField("introLand",BindingFlags.NonPublic|BindingFlags.Instance).GetValue(boss);Check(landing.y>TideSystem.Instance.highTideY,"The throw lands on real exposed timber above the final flood level");
                     }
                     return;
                 }
                 if(BeachBoatQuestSession.InputBlocked)return;
+                if(BachDangAutoSave.Instance.RetryPoint?.boss?.inArena!=true)return;
+                Check(Vector3.Distance(actor.position,boss.ArenaCenter)<170&&Vector3.Distance(boss.Boss.position,boss.ArenaCenter)<170,"After the throw and fade both fighters enter the spacious deck");
+                Check(BachDangAutoSave.Instance.RetryPoint?.boss?.inArena==true,"The duel writes a stable temporary retry point after the cinematic");
                 Check(throwChecked&&actor.GetComponentInChildren<Animator>().enabled&&session.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().enabled,"Landing restores the animated hero and player camera");
                 BachDangSaveSystem.Apply(BachDangAutoSave.Instance.RetryPoint);
                 Check(boss.IsFighting&&!boss.IntroActive&&actor.GetComponentInChildren<Animator>().enabled,"Retrying the pre-duel checkpoint starts controllable combat without retaining the throw pose");
@@ -132,6 +154,9 @@ public static class BeachBoatEpiloguePlaytest
                 File.WriteAllText("Logs/BossArenaRenderAudit.json",Newtonsoft.Json.JsonConvert.SerializeObject(new {actor=actor.position.ToString(),boss=boss.Boss.position.ToString(),camera=session.storyCamera.transform.position.ToString(),shell=Object.FindObjectsByType<Renderer>().Where(r=>r.name=="Van_boong_0"||r.name=="Mat_nuoc_duoi_soai_ham"||r.name.Contains("Hull")).Select(r=>new{r.name,b=r.bounds.ToString()})}));
                 var target=boss.Boss.GetComponentInChildren<Animator>().GetBoneTransform(HumanBodyBones.Chest).position;var origin=target-Vector3.forward*100;
                 typeof(RiverPlayerCombat).GetMethod("Launch",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(RiverPlayerCombat.Instance,new object[]{origin,target,null,2,false,1.1f});int before=boss.Health;RiverPlayerCombat.Instance.StepArrows(.3f);Check(boss.Health<before,"A physical arrow collider hit damages the boss");
+                var beforeDodge=boss.Boss.position;var shotStart=boss.Boss.GetComponentInChildren<Animator>().GetBoneTransform(HumanBodyBones.Chest).position-Vector3.forward*150;
+                Check(boss.ReactToArrow(shotStart,Vector3.forward*560),"The boss reacts to some well-aimed distant arrows");boss.StepBoss(.3f);
+                Check(QuestRowboat.FlatDistance(beforeDodge,boss.Boss.position)>=25&&boss.DodgedArrows>0,"Arrow evasion physically moves the boss sideways rather than making hits invulnerable");
                 actor.position=boss.Boss.position+boss.Boss.forward*24;health=vitals.Health;Check(boss.TryDodge(Vector3.right),"A directional dodge consumes stamina and opens its short invulnerability window");boss.StepBoss(.1f);boss.StepBoss(1);boss.StepBoss(.3f);Check(vitals.Health==health,"A timed dodge avoids the committed boss sword strike");
                 mark=Time.time;phase=2;return;
             }

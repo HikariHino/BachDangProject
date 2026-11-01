@@ -99,12 +99,12 @@ public static class BeachBoatDisciplinePlaytest
             if(phase==5)
             {
                 if(BeachBoatQuestSession.InputBlocked||Time.time-mark<.8f)return;
-                Check(boarding.ToggleSword()&&boarding.TrySlash()&&QuestCheckpoint.Instance.IsDefeated&&discipline.ArmyHostile&&discipline.RetaliatingSoldiers>10,"Striking Ngo Quyen orders the whole allied army against the player and immediately loses");
+                Check(boarding.ToggleSword()&&boarding.TrySlash()&&!QuestCheckpoint.Instance.IsDefeated&&discipline.ArmyHostile&&discipline.RetaliatingSoldiers>10,"Striking Ngo Quyen orders the allied army to attack while gameplay continues");
                 Recover();Place(commander);phase=6;return;
             }
             if(phase==6)
             {
-                if(BeachBoatQuestSession.InputBlocked)return;Shoot(commander);Check(QuestCheckpoint.Instance.IsDefeated&&discipline.ArmyHostile,"A physical arrow at Ngo Quyen receives the same immediate execution response");
+                if(BeachBoatQuestSession.InputBlocked)return;Shoot(commander);Check(!QuestCheckpoint.Instance.IsDefeated&&discipline.ArmyHostile,"An arrow at Ngo Quyen starts a real army retaliation without an immediate game-over overlay");
                 Recover();Place(commander);phase=7;return;
             }
             if(phase==7)
@@ -115,8 +115,15 @@ public static class BeachBoatDisciplinePlaytest
                 var voice=(DialogueVoice)typeof(CampDiscipline).GetField("voice",BindingFlags.NonPublic|BindingFlags.Instance).GetValue(discipline);Check(voice.CurrentClip!=null,"The first commander warning has a real Vietnamese voice clip");
                 discipline.ObserveCommanderAim(true,new Ray(commander.AimPoint-Vector3.forward*80,Vector3.right),.2f);discipline.ObserveCommanderAim(true,CommandRay(),.01f);Check(discipline.CommanderWarnings==1,"Brief sight jitter does not create a second aiming offence");
                 var warn=BachDangSaveSystem.Capture("QA warned commander");BachDangSaveSystem.Apply(warn);Check(discipline.CommanderWarnings==1,"The commander warning count survives a save/load");
-                discipline.ObserveCommanderAim(false,CommandRay(),.1f);discipline.ObserveCommanderAim(true,CommandRay(),.1f);Check(discipline.CommanderWarnings==2&&QuestCheckpoint.Instance.IsDefeated&&discipline.ArmyHostile,"A distinct second aim immediately calls the army and defeats the player");
+                discipline.ObserveCommanderAim(false,CommandRay(),.1f);discipline.ObserveCommanderAim(true,CommandRay(),.1f);Check(discipline.CommanderWarnings==2&&!QuestCheckpoint.Instance.IsDefeated&&discipline.ArmyHostile,"A distinct second aim voices the order and calls the army while the player remains alive");
                 Check(voice.CurrentClip!=null,"The execution order has a real voice clip");
+                int index=0;foreach(var guard in discipline.Actors.Where(a=>a.Type==ProtectedCampNPC.Kind.Soldier&&a.gameObject.activeInHierarchy).Take(8)){float angle=index++*Mathf.PI*.25f;guard.transform.position=session.player.transform.position+new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle))*65;}
+                mark=Time.time;phase=8;return;
+            }
+            if(phase==8)
+            {
+                if(!QuestCheckpoint.Instance.IsDefeated){if(Time.time-mark>25)throw new Exception("The ordered army did not physically defeat the player");return;}
+                Check(session.player.GetComponent<PlayerVitals>().Health<=0&&discipline.RetaliatingSoldiers>10,"Game over follows real soldier attacks reducing health to zero, not the command trigger");
                 Recover();Check(discipline.CommanderWarnings==0&&discipline.RetaliatingSoldiers==0&&!civilian.Dead,"Retrying the earlier save clears offences and restores the civilian");
                 foreach(var pair in hashes)Check(File.Exists(pair.Key)&&Hash(pair.Key)==pair.Value,"User save unchanged: "+Path.GetFileName(pair.Key));Finish(null);
             }

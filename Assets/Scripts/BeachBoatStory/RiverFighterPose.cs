@@ -76,7 +76,7 @@ namespace BeachBoatStory
         }
         public void Initialize(Animator animator,GameObject sword,RuntimeAnimatorController controller,float length)
         {
-            Animator=animator;swordController=controller;modelRotation=animator.transform.localRotation;actorHeight=length*1.6f;
+            Animator=animator;CinematicCharacterLOD.Ensure(animator);swordController=controller;modelRotation=animator.transform.localRotation;actorHeight=length*1.6f;
             var ids=new[]{HumanBodyBones.LeftUpperArm,HumanBodyBones.RightUpperArm,HumanBodyBones.LeftLowerArm,HumanBodyBones.RightLowerArm,HumanBodyBones.LeftUpperLeg,HumanBodyBones.RightUpperLeg,HumanBodyBones.LeftLowerLeg,HumanBodyBones.RightLowerLeg};
             bones=new Transform[ids.Length];rotations=new Quaternion[ids.Length];for(int i=0;i<ids.Length;i++){bones[i]=animator.GetBoneTransform(ids[i]);rotations[i]=bones[i].localRotation;}
             weapon=Instantiate(sword,animator.GetBoneTransform(HumanBodyBones.RightHand),false).transform;weapon.name="River_Combat_Sword";

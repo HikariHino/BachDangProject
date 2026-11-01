@@ -56,7 +56,7 @@ namespace BeachBoatStory
             title = null;
             if (story == null || session.player == null) return null;
             var state = story.currentState;
-            if(state==BachDangStoryManager.StoryState.Act3_SearchPrisoners){title="Kiểm tra thuyền đắm • Tìm lính đầu hàng";return RiverBossEncounter.Instance?.GuideTarget;}
+            if(state==BachDangStoryManager.StoryState.Act3_SearchPrisoners){title="Kiểm tra thuyền đắm • Tìm lính đầu hàng";return ThroughGate(RiverBossEncounter.Instance?.GuideTarget,ref title);}
             if(state==BachDangStoryManager.StoryState.Act3_CommanderDuel){title="Đấu tướng địch • Né rồi phản công";return null;}
             if(state==BachDangStoryManager.StoryState.Act3_FinalReport){title="Báo cáo Ngô Quyền • Tướng giặc đã bị hạ";return ThroughGate(boatForReport(),ref title);}
             var range=ArcheryTraining.Instance;

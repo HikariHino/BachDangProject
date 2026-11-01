@@ -4,9 +4,11 @@ Swimmer crowd queries now use the ActorSolid layer (14), which was unused by aut
 
 Closed-hand geometry variants and renderer bindings are prepared over startup frames. Unchanged grip poses reuse the same mesh and cached renderer list, including on restoration. Blood particle systems, the bounded damage-number pool and number glyphs are prepared before the first combat impact. The boss arena is also prepared before its reveal.
 
-The third wreck search now leads to a 3.6-second scripted knockdown, backward throw, landing and recovery before combat control resumes. It reuses the humanoid rig with bounded arm solving and existing impact/sword sounds; it is not a newly recorded animation clip. A camera frames both fighters. The source warship's raised stern cabins are omitted in the isolated duel so their roof cannot obscure the throw. Attacks, dodges and manual/automatic saving are blocked during the throw. The temporary checkpoint is captured at stable duel positions beforehand; retry enters controllable combat rather than retaining the cinematic pose.
+Updated on 1 November: the third wreck search starts the boss challenge during the encounter on the original wreck. The hero is knocked back and thrown onto an exposed timber landing there before a fade moves both fighters to the separate wide duel deck. The 3.6-second scripted sequence reuses the humanoid rig and existing recorded challenge/impact sounds; it is not a newly recorded animation clip. Attacks, dodges and saving are blocked during the throw. The temporary retry point is captured after the fade at stable duel positions.
 
-Both fighters receive deck support after Animator and procedural weapon poses, at execution order 1100. This prevents later animation from undoing an earlier foot correction. A continuous solid floor fills the seams between visible planks. Returning to the river restores the normal camera, animator and motor; existing duel save fields retain their format and meaning.
+Both fighters receive deck support after Animator and procedural weapon poses, at execution order 1100. Support uses a cached skinned boot envelope rather than foot joints alone. The isolated arena omits the source ship's raised stern cabins and sloped original deck; those surfaces previously protruded above the flat duel floor and buried the fighters' boots. A continuous solid floor fills the visible plank seams. Returning to the river restores the camera, animator and motor.
+
+The measurements and validation totals below describe the earlier 31 October fixture. See [1 November fixes](Quest3FeedbackAndBossStaging.md) for the revised full-support-fleet fixture, current results and CLI command. The two fixtures are not a direct performance comparison.
 
 ## CPU measurements
 

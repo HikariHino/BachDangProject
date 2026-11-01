@@ -98,6 +98,7 @@ namespace BeachBoatStory
         int workingIndex = -1;
         public int WorkingIndex=>workingIndex;
         bool fieldRevealed;
+        public bool IsFieldRevealed=>fieldRevealed;
         Transform[] samplePosts;
         GameObject lostStake;
         bool recoveryTriggered;
@@ -105,6 +106,7 @@ namespace BeachBoatStory
         void Awake()
         {
             Instance = this;
+            if(GetComponent<RiverStakeRendering>()==null)gameObject.AddComponent<RiverStakeRendering>();
             int count = RequiredCount;
             finalPositions = new Vector3[count]; centers = new Vector3[count];
             stakeTops = new float[count];
@@ -293,6 +295,7 @@ namespace BeachBoatStory
                 foreach(int i in placements[p].stakeIndices)if(i>=0&&i<fieldStakes.Length&&fieldStakes[i]!=null&&!finished[i])
                 {finished[i]=true;fieldStakes[i].gameObject.SetActive(fieldRevealed);PlantedCount++;}
             }
+            GetComponent<RiverStakeRendering>()?.SetVisible(fieldRevealed);
             recoveryTriggered=CompletedClusterCount>=3;
         }
 

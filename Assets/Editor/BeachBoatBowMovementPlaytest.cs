@@ -77,7 +77,7 @@ public static class BeachBoatBowMovementPlaytest
         {
             Physics.simulationMode=SimulationMode.Script;motorType.GetField("orbit",Private).SetValue(motor,null);motorType.GetField("view",Private).SetValue(motor,camera.transform);motorType.GetField("freeLook",Private).SetValue(motor,false);motorType.GetField("sprint",Private).SetValue(motor,false);motorType.GetField("aim",Private).SetValue(motor,true);
             body.position=origin+Vector3.up*4;body.rotation=Quaternion.Euler(0,35,0);player.transform.SetPositionAndRotation(body.position,body.rotation);Physics.SyncTransforms();
-            combat.SetAim(true);Check(rig.runtimeAnimatorController.name=="Player_Bow_Locomotion"&&rig.layerCount==2,"Aiming selects separate locomotion and upper-body bow layers");
+            combat.SetAim(true);rig.Update(0);Check(rig.runtimeAnimatorController.name=="Player_Bow_Locomotion"&&rig.layerCount==2,"Aiming selects separate locomotion and upper-body bow layers: aim="+combat.IsAiming+" controller="+rig.runtimeAnimatorController.name+" layers="+rig.layerCount+" shield="+PlayerShield.Instance.Equipped+" sword="+RiverBoardingCombat.Instance.SwordDrawn);
             // The synchronous simulation below manually invokes FixedUpdate,
             // but must retain the real walking ownership flag for bow posing.
             motor.enabled=true;

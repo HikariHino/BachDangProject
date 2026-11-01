@@ -222,6 +222,7 @@ namespace BeachBoatStory
             shot.practiceTarget=null;shot.practiceScore=0;shot.practice=PracticeActive;
             shot.start=from;shot.end=to;shot.target=target;shot.damage=damage;shot.hostile=hostile;
             shot.retaliationShooter=null;shot.elapsed=0;float speed=ArrowSpeed(draw);shot.velocity=(to-from).normalized*speed+Vector3.up*(ArrowGravity*80/(2*speed));
+            if(!hostile&&!shot.practice)RiverBossEncounter.Instance?.ReactToArrow(from,shot.velocity);
             shot.duration=hostile?Mathf.Clamp(Vector3.Distance(from,to)/560,.12f,.8f):(PracticeActive?220:range)/speed+.05f;shot.active=true;shot.visual.position=from;shot.visual.gameObject.SetActive(true);
         }
         void FinishPlayerArrow(Arrow a,Collider hit,Vector3 point)

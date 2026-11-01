@@ -93,7 +93,7 @@ public static class BeachBoatConcurrentBattlePlaytest
             lure=fleet?.Pursuit.Stage.ToString(),boatDistance,maxYawRate,maxSlip,motionSamples,boat=QuestRowboat.Instance?.transform.position.ToString(),field=StakeZone.Instance?.FieldBounds.ToString(),
             ships=fleet?.enemyShips.Select(s=>new{s.name,active=s.gameObject.activeSelf,s.isDestroyed,s.HasSettled,inside=s.IsHullInsideStakeField,p=s.transform.position.ToString(),spawn=s.spawnPoint.ToString(),goal=s.targetPoint.position.ToString(),blocker=s.GetComponent<BoatHullCollision>()?.LastBlocker?.name})},Formatting.Indented));
         SessionState.SetBool(Flag,false);BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
-        if(Application.isBatchMode)BeachBoatQAExit.AfterPlayMode(error==null?0:1);
+        if(Application.isBatchMode&&!BeachBoatBatchRevision31.IsRunning)BeachBoatQAExit.AfterPlayMode(error==null?0:1);
     }
     static void Tick()
     {

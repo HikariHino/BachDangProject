@@ -28,17 +28,22 @@ namespace BeachBoatStory
             var fx=new GameObject("Cong_binh_nuoc_ban");fx.transform.SetParent(parent,false);spray=fx.AddComponent<ParticleSystem>();spray.Stop();var main=spray.main;main.loop=true;main.playOnAwake=false;main.simulationSpace=ParticleSystemSimulationSpace.World;main.startLifetime=.65f;main.startSize=.35f;main.gravityModifier=1;main.maxParticles=70;main.startColor=new Color(.7f,.87f,.86f,.8f);var emission=spray.emission;emission.enabled=false;water=new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));spray.GetComponent<ParticleSystemRenderer>().sharedMaterial=water;spray.Play();
             for(int i=0;i<(saved.boats!=null?saved.boats.Length:6);i++)
             {
-                Vector3 at=origin+orientation*Vector3.right*(i%2==0?-120:120)+orientation*Vector3.forward*(45+i/2*95);
-                bool clear=saved.boats!=null;
+                // Stable, irregular work groups instead of two rigid rows.
+                var random=new System.Random(938+saved.index*131+i*37);float angle=-155+i*58+(float)random.NextDouble()*25;float radius=145+(float)random.NextDouble()*90;
+                Vector3 at=origin+orientation*Quaternion.Euler(0,angle,0)*Vector3.forward*radius;
+                bool legacy=saved.layoutVersion==0&&!saved.parked&&RiverStakeZone.Instance?.IsComplete!=true;
+                bool clear=saved.boats!=null&&!legacy;
                 if(clear)at=saved.boats[i];
-                for(int n=0;n<10&&!clear;n++)
+                var heading=clear&&saved.boatRotations!=null&&i<saved.boatRotations.Length?saved.boatRotations[i]:orientation*Quaternion.Euler(0,-32+(float)random.NextDouble()*64,0);
+                Physics.SyncTransforms();
+                for(int n=0;n<49&&!clear;n++)
                 {
-                    var candidate=at+orientation*Vector3.forward*n*30;bool dry=false;
+                    var candidate=at;if(n>0)candidate+=orientation*Quaternion.Euler(0,((n-1)%8)*45,0)*Vector3.forward*(((n-1)/8+1)*30);bool dry=false;
                     foreach(var terrain in Terrain.activeTerrains){var local=candidate-terrain.transform.position;var size=terrain.terrainData.size;if(local.x>=0&&local.z>=0&&local.x<=size.x&&local.z<=size.z&&terrain.SampleHeight(candidate)+terrain.transform.position.y>TideSystem.CurrentWaterHeight-8)dry=true;}
-                    if(!dry&&RiverHullCollision.ClearAt(candidate+Vector3.up*8,42,null,sourceHull)){at=candidate;clear=true;break;}
+                    if(!dry&&RiverHullCollision.ClearAt(candidate+Vector3.up*8,55)){at=candidate;clear=true;break;}
                 }
                 if(!clear)continue;
-                var boat=new GameObject(parent.name+"_Thuyen_cong_binh_"+i);boat.transform.SetParent(parent,true);at.y=TideSystem.CurrentWaterHeight;boat.transform.SetPositionAndRotation(at,saved.boatRotations!=null&&i<saved.boatRotations.Length?saved.boatRotations[i]:orientation);boat.transform.localScale=source.transform.lossyScale;boats.Add(boat);
+                var boat=new GameObject(parent.name+"_Thuyen_cong_binh_"+i);boat.transform.SetParent(parent,true);at.y=TideSystem.CurrentWaterHeight;boat.transform.SetPositionAndRotation(at,heading);boat.transform.localScale=source.transform.lossyScale;boats.Add(boat);
                 var visual=new GameObject("Thuyen_Go_Song").transform;visual.SetParent(boat.transform,false);
                 foreach(var f in filters)
                 {
@@ -59,13 +64,18 @@ namespace BeachBoatStory
                     floor.x=reference.x;floor.z=reference.z;
                     var actor=new GameObject("Cong_binh_"+i+"_"+member).transform;actor.SetParent(boat.transform,true);actor.position=boat.transform.TransformPoint(source.transform.InverseTransformPoint(floor));actor.rotation=boat.transform.rotation*Quaternion.Euler(0,90,0);
                     float platformHeight=member==1?6:.6f;var platform=GameObject.CreatePrimitive(PrimitiveType.Cube);platform.name=member==1?"San_go_nguoi_nen_coc":"Van_go_nguoi_giu_coc";platform.transform.SetParent(boat.transform,true);platform.transform.SetPositionAndRotation(actor.position+Vector3.up*(platformHeight*.5f),boat.transform.rotation);platform.transform.localScale=new Vector3(8,platformHeight,7);platform.GetComponent<Renderer>().sharedMaterial=timber;actor.position+=Vector3.up*platformHeight;
-                    var model=Object.Instantiate(RiverBoardingCombat.Instance.allyPrefab,actor,false);var rig=model.GetComponentInChildren<Animator>();rig.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;rig.enabled=true;rig.Update(0);
+                    var model=Object.Instantiate(RiverBoardingCombat.Instance.allyPrefab,actor,false);var rig=model.GetComponentInChildren<Animator>();rig.runtimeAnimatorController=RiverBoardingCombat.Instance.FootController;rig.enabled=true;rig.Update(0);CinematicCharacterLOD.Ensure(rig);
                     rig.transform.localScale*=EnemyDeckGuard.RigHeight(BeachBoatQuestSession.Instance.player.GetComponentInChildren<Animator>())/Mathf.Max(.01f,EnemyDeckGuard.RigHeight(rig));rig.Update(0);
                     ActorSolidBody.WalkingDimensions(rig,out _,out float sole,out _);actor.position-=Vector3.up*sole;rig.enabled=false;
                     foreach(var c in model.GetComponentsInChildren<Collider>(true)){c.enabled=false;Object.Destroy(c);}
                     ActorSolidBody.Ensure(actor.gameObject,rig);
                     if(teamStake==null){teamStake=StakeWorkVisual.Create("Coc_nhon_cong_binh",parent,template);var middle=source.transform.InverseTransformPoint(source.seat.position);var pole=boat.transform.TransformPoint(new Vector3(box.center.x+box.size.x*.5f+6/Mathf.Abs(source.transform.lossyScale.x),0,middle.z));pole.y=TideSystem.CurrentWaterHeight+12;teamStake.position=pole;teamStake.rotation=boat.transform.rotation*Quaternion.Euler(0,0,-12);
-                        if(saved.posts!=null&&i<saved.posts.Length)teamStake.SetPositionAndRotation(saved.posts[i],saved.postRotations[i]);
+                        if(saved.posts!=null&&i<saved.posts.Length)
+                        {
+                            var rotation=saved.postRotations!=null&&i<saved.postRotations.Length?saved.postRotations[i]:teamStake.rotation;
+                            if(legacy&&saved.boats!=null&&i<saved.boats.Length){var old=saved.boatRotations!=null&&i<saved.boatRotations.Length?saved.boatRotations[i]:orientation;teamStake.SetPositionAndRotation(at+heading*(Quaternion.Inverse(old)*(saved.posts[i]-saved.boats[i])),heading*Quaternion.Inverse(old)*rotation);}
+                            else teamStake.SetPositionAndRotation(saved.posts[i],rotation);
+                        }
                         poles.Add(teamStake);var poleCollider=teamStake.gameObject.AddComponent<CapsuleCollider>();poleCollider.height=24;poleCollider.radius=.8f;}
                     var stake=teamStake;var facing=stake.position-actor.position;facing.y=0;actor.rotation=Quaternion.LookRotation(facing);
                     Transform hammer=null;if(member==1){hammer=new GameObject("Bua_cong_binh").transform;hammer.SetParent(boat.transform,true);Part(hammer,PrimitiveType.Cylinder,Vector3.zero,new Vector3(.6f,5.5f,.6f));Part(hammer,PrimitiveType.Cube,Vector3.up*4,new Vector3(4.5f,2.5f,2.5f));}
@@ -79,7 +89,7 @@ namespace BeachBoatStory
         }
         void Part(Transform parent,PrimitiveType type,Vector3 at,Vector3 size)
         {var go=GameObject.CreatePrimitive(type);go.transform.SetParent(parent,false);go.transform.localPosition=at;go.transform.localScale=size;var c=go.GetComponent<Collider>();c.enabled=false;Object.Destroy(c);go.GetComponent<Renderer>().sharedMaterial=timber;}
-        public BachDangSaveData.ConstructionSite Capture(int index,float elapsed)=>new BachDangSaveData.ConstructionSite{index=index,elapsed=elapsed,origin=origin,rotation=orientation,parked=Parked,boats=boats.ConvertAll(b=>b.transform.position).ToArray(),boatRotations=boats.ConvertAll(b=>b.transform.rotation).ToArray(),posts=poles.ConvertAll(p=>p.position).ToArray(),postRotations=poles.ConvertAll(p=>p.rotation).ToArray()};
+        public BachDangSaveData.ConstructionSite Capture(int index,float elapsed)=>new BachDangSaveData.ConstructionSite{index=index,layoutVersion=1,elapsed=elapsed,origin=origin,rotation=orientation,parked=Parked,boats=boats.ConvertAll(b=>b.transform.position).ToArray(),boatRotations=boats.ConvertAll(b=>b.transform.rotation).ToArray(),posts=poles.ConvertAll(p=>p.position).ToArray(),postRotations=poles.ConvertAll(p=>p.rotation).ToArray()};
         public void PrepareBattle(bool restorePosition=false)
         {
             callVoice.Stop();CurrentCall="";

@@ -14,11 +14,11 @@ public static class BeachBoatCasualWorkPlaytest
     const string Flag="CasualWork938QA";
     static int phase,lastFrame,cluster,hammerFrame,badStrikePhase;static double began;static bool captured,capturedHammer,impactTimingChecked,hammerCaptureReady,leanChecked;static string runtimeError;
     static readonly List<string> checks=new List<string>();static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
-    static float maxHammerGripError,maxHammerWristAngle,maxCrewHandMotion;static Vector3 firstCrewHand;static int hammerSamples;
+    static float firstCrewObserved;static float maxHammerGripError,maxHammerWristAngle,maxCrewHandMotion;static Vector3 firstCrewHand;static int hammerSamples;
     static string Hash(string p)=>Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(File.ReadAllBytes(p)));
     static void Check(bool ok,string message){if(!ok)throw new Exception(message);checks.Add(message);}
     public static void RunBatch(){UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
-    public static void RunInEditor(){phase=cluster=badStrikePhase=0;lastFrame=-1;began=0;runtimeError=null;hammerFrame=hammerSamples=0;maxHammerGripError=maxHammerWristAngle=maxCrewHandMotion=0;captured=capturedHammer=impactTimingChecked=hammerCaptureReady=leanChecked=false;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){phase=cluster=badStrikePhase=0;lastFrame=-1;began=0;runtimeError=null;hammerFrame=hammerSamples=0;maxHammerGripError=maxHammerWristAngle=maxCrewHandMotion=0;firstCrewObserved=0;captured=capturedHammer=impactTimingChecked=hammerCaptureReady=leanChecked=false;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Log;Application.logMessageReceived+=Log;}
     static void Log(string m,string stack,LogType kind){if(SessionState.GetBool(Flag,false)&&(kind==LogType.Error||kind==LogType.Exception))runtimeError=m+"\n"+stack;}
     static void PlacePlayer(Vector3 p){var player=BeachBoatQuestSession.Instance.player;player.transform.position=p;player.GetComponent<Rigidbody>().position=p;Physics.SyncTransforms();}
@@ -44,7 +44,7 @@ public static class BeachBoatCasualWorkPlaytest
     {
         SessionState.SetBool(Flag,false);File.WriteAllText("Logs/CasualWorkPlaytest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,phase,hammerSamples,maxHammerGripError,maxHammerWristAngle,maxCrewHandMotion,checks},Newtonsoft.Json.Formatting.Indented));
         BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
-        if(Application.isBatchMode)EditorApplication.Exit(error==null?0:1);
+        if(Application.isBatchMode&&!BeachBoatBatchRevision31.IsRunning)BeachBoatQAExit.AfterPlayMode(error==null?0:1);
     }
     public static void ObserveHammer()
     {
@@ -56,9 +56,9 @@ public static class BeachBoatCasualWorkPlaytest
             var rc=right.TransformPoint(profile.rightRodCenter);var lc=left.TransformPoint(profile.leftCenter);
             maxHammerGripError=Mathf.Max(maxHammerGripError,StakeConstruction.Active.HandContactError);
             var crewHand=UnityEngine.Object.FindObjectsByType<Transform>().First(t=>t.name=="Cong_binh_0_1").GetComponentInChildren<Animator>().GetBoneTransform(HumanBodyBones.RightHand).position;
-            if(hammerSamples==0)firstCrewHand=crewHand;else maxCrewHandMotion=Mathf.Max(maxCrewHandMotion,Vector3.Distance(crewHand,firstCrewHand));
+            if(hammerSamples==0){firstCrewHand=crewHand;firstCrewObserved=Time.time;}else maxCrewHandMotion=Mathf.Max(maxCrewHandMotion,Vector3.Distance(crewHand,firstCrewHand));
             maxHammerWristAngle=Mathf.Max(maxHammerWristAngle,StakeConstruction.Active.HandWristAngle);hammerSamples++;
-            if(!hammerCaptureReady)return;hammerCaptureReady=false;
+            if(!hammerCaptureReady)return;if(maxCrewHandMotion<=.15f&&Time.time-firstCrewObserved<3)return;hammerCaptureReady=false;
             File.WriteAllText("Logs/HammerGripContact.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{right=rc.ToString(),left=lc.ToString(),shaft=hammer.position.ToString(),direction=hammer.up.ToString(),leftShoulder=rig.GetBoneTransform(HumanBodyBones.LeftUpperArm).position.ToString(),rightShoulder=rig.GetBoneTransform(HumanBodyBones.RightUpperArm).position.ToString(),leftWrist=left.position.ToString(),rightWrist=right.position.ToString()},Newtonsoft.Json.Formatting.Indented));
             Check(StakeConstruction.Active.HandsOnly,"Only work hands render while hammering, leaving the stake unobstructed");
             Check(StakeConstruction.Active.SupportedOnDeck,"The work position keeps both boots over the actual plank deck");
@@ -68,6 +68,7 @@ public static class BeachBoatCasualWorkPlaytest
             CaptureCarry("Hammer");
             Check(view.transform.forward.y<-.05f,"The hammer view looks down towards the supported work position, not up at the sky • "+view.transform.forward+" eye "+view.transform.position);
             Check(StakeConstruction.Active.StakeMesh==Zone.Instance.fieldStakes[0].GetComponentInChildren<MeshFilter>(true).sharedMesh,"The sampled stake uses the completed field's pointed timber mesh");
+            var camp=Zone.Instance.GetComponent<RiverConstructionCamp>();var snapshots=camp.Capture();File.WriteAllText("Logs/CrewMotionAudit.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{maxCrewHandMotion,states=snapshots.Select(x=>new{x.index,x.elapsed,x.parked,x.layoutVersion}),working=Zone.Instance.WorkingIndex,campEnabled=camp.enabled,paused=Time.timeScale,dialogue=BeachBoatStory.StoryDialogueUI.Instance.IsOpen,fade=BeachBoatStory.ScreenFader.Instance.IsTransitioning,army=CampDiscipline.Instance.ArmyHostile,rigs=UnityEngine.Object.FindObjectsByType<Transform>().Where(t=>t.name=="Cong_binh_0_1").Select(t=>new{parent=t.parent.name,position=t.position.ToString(),rigEnabled=t.GetComponentInChildren<Animator>().enabled,carrier=t.GetComponentInParent<AmbientRiverBoat>()?.IsConstructionSupport})},Newtonsoft.Json.Formatting.Indented));
             Check(maxCrewHandMotion>.15f,"A construction hammer hand actually moves while the player is hammering, despite the player interaction lock");
             Check(StakeConstruction.Active.WorkingCrew>=12,"More construction soldiers cooperate in holder/hammer pairs on separate boats");
             Check(StakeConstruction.Active.HandContactError<.02f&&StakeConstruction.Active.HandSegmentError<.001f,"Both fixed-length display arms hold the actual hammer shaft");

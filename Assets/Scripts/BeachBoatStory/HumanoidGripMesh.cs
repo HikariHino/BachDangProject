@@ -14,6 +14,7 @@ namespace BeachBoatStory
         static Material material;
         static bool preparing;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]static void Reset(){originals.Clear();variants.Clear();hands.Clear();material=null;preparing=false;}
+        public static Mesh SourceMesh(Mesh mesh)=>mesh!=null&&originals.TryGetValue(mesh,out var source)?source:mesh;
         public static void Apply(Animator rig,HumanoidHandGrip left,HumanoidHandGrip right,float lw,float rw)
         {
             if(rig.GetBoneTransform(HumanBodyBones.RightIndexProximal)!=null)return;

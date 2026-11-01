@@ -89,7 +89,7 @@ namespace BeachBoatStory
             return true;
         }
         public void Execute(string reason)
-        {ArmyHostile=true;foreach(var a in Actors)if(a!=null&&a.Type==ProtectedCampNPC.Kind.Soldier)a.Retaliate();Speak("Ngô Quyền",ExecutionLine);QuestCheckpoint.Instance.Defeat("BỊ XỬ VÌ PHẢN NGHỊCH",reason+"\nNgô Quyền đã ra lệnh toàn quân bắt giết bạn.");}
+        {if(ArmyHostile)return;ArmyHostile=true;foreach(var a in Actors)if(a!=null){if(a.Type==ProtectedCampNPC.Kind.Soldier)a.Retaliate();else if(a.Type==ProtectedCampNPC.Kind.Commander)a.GiveOrder();}Speak("Ngô Quyền",ExecutionLine);}
         public BachDangSaveData.Discipline Capture()=>new BachDangSaveData.Discipline{warnings=CommanderWarnings,armyHostile=ArmyHostile,attackers=Actors.Where(a=>a!=null&&a.Retaliating).Select(a=>a.Id).ToArray(),pursuers=Actors.Where(a=>a!=null&&a.Retaliating).Select(a=>a.CapturePursuit()).ToArray()};
         public void Restore(BachDangSaveData.Discipline data)
         {ResetAll();CommanderWarnings=data?.warnings??0;ArmyHostile=data?.armyHostile??false;foreach(var id in data?.attackers??Array.Empty<string>())savedAttackers.Add(id);Discover();foreach(var a in Actors)if(a!=null&&a.Type==ProtectedCampNPC.Kind.Soldier&&(ArmyHostile||savedAttackers.Contains(a.Id))){a.Retaliate();var saved=(data?.pursuers??Array.Empty<BachDangSaveData.DisciplineActor>()).FirstOrDefault(p=>p.id==a.Id);if(saved!=null)a.RestorePursuit(saved);}}
@@ -129,6 +129,16 @@ namespace BeachBoatStory
             if(!Dead&&!Retaliating)return;if(pose!=null)pose.Restore();Retaliating=Dead=false;fireAt=strikeAt=0;rig.transform.localRotation=restRotation;rig.runtimeAnimatorController=controller;rig.enabled=rigEnabled;
             if(transform.parent!=homeParent){transform.SetParent(homeParent,true);transform.SetSiblingIndex(homeSibling);}transform.SetPositionAndRotation(originalPosition,originalRotation);if(walker!=null)walker.enabled=walkerEnabled;if(daily!=null)daily.enabled=dailyEnabled;if(campPose!=null)campPose.enabled=campEnabled;for(int i=0;i<talkers.Length;i++)talkers[i].enabled=talkerEnabled[i];route.Clear();swimNavigation.Reset();
         }
+        float orderUntil;
+        public void GiveOrder(){orderUntil=Time.time+2.4f;}
+        void LateUpdate()
+        {
+            if(Type!=Kind.Commander||Time.time>=orderUntil||!owner.ArmyHostile)return;
+            var direction=BeachBoatQuestSession.Instance.player.transform.position-transform.position;direction.y=0;
+            if(direction.sqrMagnitude>.1f)transform.rotation=Quaternion.LookRotation(direction);
+            var upper=rig.GetBoneTransform(HumanBodyBones.RightUpperArm);var lower=rig.GetBoneTransform(HumanBodyBones.RightLowerArm);var hand=rig.GetBoneTransform(HumanBodyBones.RightHand);float h=EnemyDeckGuard.RigHeight(rig);
+            QuestRowboat.SolveArm(upper,lower,hand,upper.position+transform.forward*h*.38f+Vector3.up*h*.12f,upper.position+transform.right*h*.25f);
+        }
         public void StepRetaliation(float dt)
         {
             if(!Retaliating||dt<=0||QuestCheckpoint.Instance.IsDefeated)return;var player=BeachBoatQuestSession.Instance.player.transform;var delta=player.position-transform.position;var flat=delta;flat.y=0;float distance=flat.magnitude;
@@ -140,7 +150,7 @@ namespace BeachBoatStory
                 var nav=walker?.Navigation;var next=transform.position;
                 if(nav!=null)
                 {
-                    if(Time.time>=nextPlan){nextPlan=Time.time+1;route.Clear();point=0;nav.Route(transform.position,player.position,route);}
+                    if(Time.time>=nextPlan){nextPlan=Time.time+1;route.Clear();point=0;int slot=owner.Actors.IndexOf(this);float angle=slot*2.399963f;var surround=player.position+new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle))*(19+slot%3*2);nav.Route(transform.position,surround,route);}
                     while(point<route.Count&&QuestRowboat.FlatDistance(transform.position,route[point])<5)point++;
                     if(route.Count==0)ranged=true;
                     if(point<route.Count){var wanted=Vector3.MoveTowards(transform.position,route[point],34*dt);if(nav.Project(wanted,out var ground)&&nav.Clear(transform.position,ground,true))next=ground;}

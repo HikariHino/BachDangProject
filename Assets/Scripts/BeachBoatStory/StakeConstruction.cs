@@ -42,11 +42,11 @@ namespace BeachBoatStory
         Material previewGood,previewBad;
         ParticleSystem splash;Material waterMaterial,bindingMaterial;float lean=12;
         Transform[] legs;Quaternion[] legRest;
-        Camera_Script camera;Vector3 cameraSettings,localStart;GameObject props;
+        Camera_Script camera;Vector3 cameraSettings,localStart,walkEnd;GameObject props;
         Material timber;
         LineRenderer impactRing;
         StakeWorkCrew crew;
-        float workStarted;
+        float workStarted;Transform walkway;BoxCollider[] walkingPlanks;int footBeat;Vector3 lastPlankPosition;Quaternion lastPlankRotation;
         public float BeatPosition=>Mathf.PingPong((Time.time-workStarted)/1.2f,1);
         public bool IsBeatReady=>BeatPosition>=.38f&&BeatPosition<=.82f;
         public bool SupportedOnDeck {get;private set;}
@@ -71,9 +71,11 @@ namespace BeachBoatStory
             camera=BeachBoatQuestSession.Instance.storyCamera.GetComponent<Camera_Script>();cameraSettings=new Vector3(camera.distance,camera.heightOffset,camera.rightOffset);
             cameraElevation=camera.Elevation;camera.distance=32;camera.heightOffset=14;camera.rightOffset=9;
             localStart=boat.transform.InverseTransformPoint(boat.seat.position);localStart.y=0;
+
             bundles=hits=0;CarryProgress=0;Step=WorkStep.TakeBundle;Active=this;
             workStarted=Time.time;
-            props=new GameObject("Stake_Work_3D_Props");timber=zone.fieldStakes[0].GetComponentInChildren<Renderer>(true).sharedMaterial;
+            props=new GameObject("Stake_Work_3D_Props");props.transform.SetParent(boat.transform,true);timber=zone.fieldStakes[0].GetComponentInChildren<Renderer>(true).sharedMaterial;
+            BuildWalkway();
             crew=RiverConstructionCamp.Ensure(zone).BeginSite(zone.WorkingIndex);
             stack=new GameObject("Bo_coc_tren_thuyen").transform;stack.SetParent(props.transform,false);
             for(int i=0;i<6;i++)
@@ -114,7 +116,7 @@ namespace BeachBoatStory
             return false;
         }
         public void WalkBundle(float dt)
-        {if(Active==this&&Step==WorkStep.CarryBundle&&Time.timeScale>0&&!BachDangFrontEnd.IsBlocking){CarryProgress=Mathf.Clamp01(CarryProgress+Mathf.Max(0,dt)/1.6f);walkingUntil=Time.time+.12f;}}
+        {if(Active==this&&Step==WorkStep.CarryBundle&&Time.timeScale>0&&!BachDangFrontEnd.IsBlocking){CarryProgress=Mathf.Clamp01(CarryProgress+Mathf.Max(0,dt)/1.6f);walkingUntil=Time.time+.12f;rig.enabled=true;rig.SetBool("isWalking",CarryProgress<1);if(Mathf.FloorToInt(CarryProgress*4)>footBeat){footBeat=Mathf.FloorToInt(CarryProgress*4);BeachBoatSoundscape.Instance?.PlayFootstep();}}}
         public bool Strike()
         {
             if(Active!=this||Step!=WorkStep.Hammer||pendingStrike||HammerLift<.25f||Time.time<nextHit||Time.timeScale<=0||BachDangFrontEnd.IsBlocking)return false;
@@ -149,6 +151,7 @@ namespace BeachBoatStory
         void Update()
         {
             if(Active!=this||Time.timeScale<=0||BachDangFrontEnd.IsBlocking)return;
+            if(Step==WorkStep.CarryBundle){rig.enabled=true;rig.applyRootMotion=false;rig.speed=.8f;rig.SetBool("isWalking",CarryProgress<1&&Time.time<walkingUntil);rig.SetBool("isRunning",false);}else rig.enabled=false;
             if(Input.GetKeyDown(KeyCode.X)){zone.RestoreCheckpoint(zone.CaptureCheckpoint());return;}
             if(Input.GetKeyDown(KeyCode.E))Interact();
             if(Input.GetKey(KeyCode.W))WalkBundle(Time.deltaTime);
@@ -165,22 +168,21 @@ namespace BeachBoatStory
             swing=Mathf.Max(0,swing-Time.deltaTime);
             if(pendingStrike&&swing<=0)Impact();
         }
-        Vector3 SafeDeckPoint(BoatHullCollision hull,Vector3 requested,out bool supported)
+        void BuildWalkway()
         {
-            bool Supported(Vector3 p,out Vector3 floor)
-            {
-                if(!hull.TryDeckSurface(p,out floor))return false;
-                foreach(var offset in new[]{boat.transform.right*3,-boat.transform.right*3,boat.transform.forward*3,-boat.transform.forward*3})
-                    if(!hull.TryDeckSurface(p+offset,out var foot)||Mathf.Abs(foot.y-floor.y)>2.5f)return false;
-                return true;
-            }
-            if(Supported(requested,out var point)){supported=true;return point;}
-            for(int ring=1;ring<=6;ring++)for(int i=0;i<12;i++)
-            {
-                float a=i*Mathf.PI/6;var test=requested+(boat.transform.right*Mathf.Cos(a)+boat.transform.forward*Mathf.Sin(a))*ring*2;
-                if(Supported(test,out point)){supported=true;return point;}
-            }
-            supported=false;return hull.TryDeckSurface(boat.seat.position,out point)?point:boat.seat.position;
+            var hull=BoatHullCollision.Get(boat.transform);var box=hull.SolidHull;var scale=boat.transform.lossyScale;
+            localStart=boat.transform.InverseTransformPoint(boat.seat.position);localStart.x=box.center.x;
+            localStart.z=Mathf.Clamp(localStart.z,box.center.z-box.size.z*.5f+10/Mathf.Abs(scale.z),box.center.z+box.size.z*.5f-30/Mathf.Abs(scale.z));
+            walkEnd=localStart+new Vector3(1.5f/Mathf.Abs(scale.x),0,18/Mathf.Abs(scale.z));
+            float top=float.NegativeInfinity;
+            for(int i=0;i<=12;i++)for(int side=-1;side<=1;side++)
+            {var at=boat.transform.TransformPoint(Vector3.Lerp(localStart,walkEnd,i/12f))+boat.transform.right*side*3;if(hull.TryDeckSurface(at,out var floor))top=Mathf.Max(top,floor.y);}
+            if(float.IsNegativeInfinity(top))top=boat.seat.position.y;top+=.15f;
+            var middle=boat.transform.TransformPoint((localStart+walkEnd)*.5f);middle.y=top-.225f;
+            walkway=new GameObject("Van_di_cong_binh").transform;walkway.SetParent(props.transform,true);walkway.SetPositionAndRotation(middle,boat.transform.rotation);walkingPlanks=new BoxCollider[3];
+            for(int i=0;i<3;i++){var plank=GameObject.CreatePrimitive(PrimitiveType.Cube);plank.name="Van_go_di_bo_"+i;plank.transform.SetParent(walkway,false);plank.transform.localPosition=Vector3.right*((i-1)*3.5f);plank.transform.localScale=new Vector3(3.55f,.45f,26);plank.GetComponent<Renderer>().sharedMaterial=timber;walkingPlanks[i]=plank.GetComponent<BoxCollider>();}
+            var start=boat.transform.TransformPoint(localStart);start.y=top;localStart=boat.transform.InverseTransformPoint(start);var end=boat.transform.TransformPoint(walkEnd);end.y=top;walkEnd=boat.transform.InverseTransformPoint(end);
+            var standing=start-Vector3.up*(sole-.2f);player.position=standing;player.GetComponent<Rigidbody>().position=standing;Physics.SyncTransforms();lastPlankPosition=walkway.position;lastPlankRotation=walkway.rotation;footBeat=0;
         }
         void LateUpdate()
         {
@@ -188,8 +190,11 @@ namespace BeachBoatStory
             hands.Show(Step==WorkStep.Hammer);hands.Grip(WorkbenchHands.GripPose.Rod,WorkbenchHands.GripPose.Rod);
             float walk=Step==WorkStep.CarryBundle?CarryProgress:Step==WorkStep.Hammer?1:0;
             var hull=BoatHullCollision.Get(boat.transform);var box=hull.SolidHull;var scale=boat.transform.lossyScale;
-            var end=localStart;end.x=box.center.x+Mathf.Max(0,box.size.x*.5f-10/Mathf.Abs(scale.x));end.z=Mathf.Clamp(localStart.z+4/Mathf.Abs(scale.z),box.center.z-box.size.z*.3f,box.center.z+box.size.z*.3f);
-            var wanted=boat.transform.TransformPoint(Vector3.Lerp(localStart,end,walk));var p=SafeDeckPoint(hull,wanted,out bool supported);SupportedOnDeck=supported;
+            var end=walkEnd;
+            var wanted=boat.transform.TransformPoint(Vector3.Lerp(localStart,end,walk));var p=wanted;
+            if((walkway.position-lastPlankPosition).sqrMagnitude>.00001f||Quaternion.Angle(walkway.rotation,lastPlankRotation)>.01f){Physics.SyncTransforms();lastPlankPosition=walkway.position;lastPlankRotation=walkway.rotation;}
+            SupportedOnDeck=true;
+            for(int side=-1;side<=1;side++){bool hit=false;var origin=wanted+boat.transform.right*side*2.5f+Vector3.up*3;foreach(var plank in walkingPlanks)if(plank.Raycast(new Ray(origin,Vector3.down),out _,6)){hit=true;break;}SupportedOnDeck&=hit;}
             p.y-=sole-.2f;
             player.SetPositionAndRotation(p,boat.transform.rotation);var body=player.GetComponent<Rigidbody>();body.position=p;body.rotation=player.rotation;
             var stock=boat.transform.position-boat.transform.right*6-boat.transform.forward*3;
@@ -245,10 +250,8 @@ namespace BeachBoatStory
                 HammerHeadError=Vector3.Distance(hammer.TransformPoint(Vector3.up*4),headGoal);
                 hands.Pose(camera.transform,contact,contact-direction*3.6f,false,false,direction,direction,true);
             }
-            float stride=Step==WorkStep.CarryBundle&&CarryProgress<1&&Time.time<walkingUntil?Mathf.Sin(CarryProgress*Mathf.PI*4):0;
-            // Imported leg-bone X axes are not the actor's knee hinge. Swing
-            // around the character's actual right axis, keeping knees forward.
-            for(int i=0;i<4;i++){float side=i%2==0?1:-1;float angle=i<2?stride*side*12:Mathf.Max(0,-stride*side)*14;legs[i].localRotation=legRest[i];legs[i].rotation=Quaternion.AngleAxis(angle,player.right)*legs[i].rotation;}
+            // Keep the actual walking leg animation while carrying on the continuous work planks.
+            if(Step!=WorkStep.CarryBundle)for(int i=0;i<4;i++)legs[i].localRotation=legRest[i];
             // The scene-owned construction camp animates its teams after this session ends.
             if(Step==WorkStep.Hammer)camera.FocusHandwork(rig.GetBoneTransform(HumanBodyBones.Head).position+player.forward*1.5f,stake.position+stake.up*12+Vector3.up*2);
             else if(Step==WorkStep.CarryBundle&&CarryProgress>=1)camera.FocusWork(Vector3.Lerp(chest.position,work+Vector3.up*12,.5f),boat.transform.right,27);

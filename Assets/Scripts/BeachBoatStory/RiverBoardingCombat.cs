@@ -298,7 +298,7 @@ namespace BeachBoatStory
         }
         void Update()
         {
-            if(RiverBossEncounter.Instance?.InArena==true)return;
+            if(RiverBossEncounter.Instance?.InArena==true||RiverBossEncounter.Instance?.IntroActive==true)return;
             bool battle=archery!=null&&archery.BattleActive;
             if(!battle)
             {
@@ -368,7 +368,8 @@ namespace BeachBoatStory
             }
             if(State==PlayerState.Land)return false;
             var carrier=deckAnchor!=null?deckAnchor:QuestRowboat.Instance.transform;
-            if(!BoatHullCollision.Get(carrier).TryWaterExit(session.player.transform.position,4,session.player.transform,out var exit))return false;
+            Vector3 exit;bool found=deckShip!=null&&deckShip.isDestroyed?deckShip.TryWreckWaterExit(session.player.transform.position,4,session.player.transform,out exit):BoatHullCollision.Get(carrier).TryWaterExit(session.player.transform.position,4,session.player.transform,out exit);
+            if(!found)return false;
             traversalInputFrame=Time.frameCount;BeginSwim(exit);
             if(TryWalkAshore(exit))session.storyCamera.GetComponent<Camera_Script>().SnapToTarget();
             return true;
@@ -396,7 +397,7 @@ namespace BeachBoatStory
         {
             if(!QuestRowboat.Instance.IsAboard)BeginFreeWater();
             archery.SetAim(false);playerPose.SetSword(false);SwordDrawn=false;QuestRowboat.Instance.SetShoreWalking(false);
-            deckShip=null;deckAnchor=null;p.y=TideSystem.CurrentWaterHeight-5;MovePlayer(p,session.player.transform.rotation);State=PlayerState.Swimming;playerPose.Traversal=RiverFighterPose.Motion.Swim;SwimsStarted++;
+            deckShip=null;deckAnchor=null;p.y=TideSystem.CurrentWaterHeight-5;State=PlayerState.Swimming;playerPose.Traversal=RiverFighterPose.Motion.Swim;MovePlayer(p,session.player.transform.rotation);SwimsStarted++;
             BeachBoatSoundscape.Instance?.PlayWaterEntry();
             var camera=session.storyCamera.GetComponent<Camera_Script>();camera.distance=70;camera.heightOffset=27;camera.SnapToTarget();
         }

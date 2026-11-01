@@ -56,6 +56,34 @@ namespace BeachBoatStory
             }
             return !float.IsPositiveInfinity(best);
         }
+        public bool TryExposedWreckDeck(Vector3 near,out Vector3 surface)
+        {
+            surface=default;if(!HasSolidWreck)return false;Physics.SyncTransforms();bool found=false;Bounds area=default;
+            foreach(var c in wreckColliders)if(c!=null&&c.enabled&&c.gameObject.activeInHierarchy){if(!found){area=c.bounds;found=true;}else area.Encapsulate(c.bounds);}
+            if(!found)return false;float minimum=Mathf.Max(TideSystem.CurrentWaterHeight,TideSystem.Instance.highTideY)+.8f,best=float.PositiveInfinity;
+            bool Cast(Vector3 p,out Vector3 point)
+            {point=default;float height=float.NegativeInfinity;foreach(var c in wreckColliders)if(c!=null&&c.enabled&&c.gameObject.activeInHierarchy&&c.Raycast(new Ray(new Vector3(p.x,area.max.y+4,p.z),Vector3.down),out var hit,area.size.y+8)&&hit.normal.y>.6f&&hit.point.y>=minimum&&hit.point.y>height){height=hit.point.y;point=hit.point;}return !float.IsNegativeInfinity(height);}
+            for(float x=area.min.x+2;x<=area.max.x-2;x+=10)for(float z=area.min.z+2;z<=area.max.z-2;z+=10)
+            {
+                if(!Cast(new Vector3(x,0,z),out var point))continue;bool supported=true;
+                for(int i=0;i<4;i++){var offset=(i<2?Vector3.right:Vector3.forward)*(i%2==0?2.5f:-2.5f);if(!Cast(point+offset,out var foot)||Mathf.Abs(point.y-foot.y)>3){supported=false;break;}}
+                if(!supported)continue;float cost=QuestRowboat.FlatDistance(point,near)+(point.y-minimum)*.3f;if(cost>=best)continue;best=cost;surface=point;found=true;
+            }
+            return !float.IsPositiveInfinity(best);
+        }
+        public bool TryWreckWaterExit(Vector3 from,float radius,Transform actor,out Vector3 exit)
+        {
+            Physics.SyncTransforms();float water=TideSystem.CurrentWaterHeight-5;
+            var up=Vector3.up*Mathf.Max(18,TideSystem.CurrentWaterHeight+20-from.y);var high=from+up;
+            for(int ring=0;ring<=16;ring++)for(int i=0;i<(ring==0?1:16);i++)
+            {
+                int turn=i==0?0:(i+1)/2*(i%2==0?-1:1);var direction=Quaternion.Euler(0,turn*22.5f,0)*(actor!=null?actor.forward:transform.right);
+                var point=from+direction*(ring*4);point.y=water;var above=new Vector3(point.x,high.y,point.z);
+                if(!RiverHullCollision.ClearAt(point,radius,actor)||!RiverHullCollision.ClearSegment(high,above,radius,actor)||!RiverHullCollision.ClearSegment(above,point,radius,actor))continue;
+                exit=point;return true;
+            }
+            exit=from;return false;
+        }
         public void PrepareWreck()
         {
             if(presentation==null)presentation=GetComponent<ShipwreckPresentation>()??gameObject.AddComponent<ShipwreckPresentation>();
