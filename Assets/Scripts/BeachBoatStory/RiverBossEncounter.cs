@@ -36,7 +36,7 @@ namespace BeachBoatStory
         int comboRemaining;bool attackHit;
         RuntimeAnimatorController heroSwordBeforeDuel,duelSword,duelFoot,duelBow;AnimatorCullingMode heroCullingBeforeDuel;
         DuelBladeContact heroBody,bossBody;bool heroStrikeArmed,bossStrikeArmed,heroBladePrevious,bossBladePrevious;
-        Vector3 heroBladeRoot,heroBladeTip,bossBladeRoot,bossBladeTip;float heroStrikeAt,bossStrikeAt;int bossStrikeDamage;
+        Vector3 heroBladeRoot,heroBladeTip,bossBladeRoot,bossBladeTip;float heroBladeTime,bossBladeTime;int heroBladeState,bossBladeState;float heroStrikeAt,bossStrikeAt;int bossStrikeDamage;
         bool airborne;float duelHeight;float jumpElapsed,jumpDuration,jumpVelocity,jumpGravity,jumpOffset,nextDodge;
         public bool IsRunning {get;private set;}
         public bool IsAirborne=>airborne;
@@ -63,7 +63,7 @@ namespace BeachBoatStory
             if(data?.inArena==true&&(story.currentState==BachDangStoryManager.StoryState.Act3_CommanderDuel||story.currentState==BachDangStoryManager.StoryState.Act3_FinalReport))
             {
                 returnPosition=data.returnPosition;returnRotation=data.returnRotation;returnAboard=data.returnAboard;returnBoatPosition=data.returnBoat;returnBoatRotation=data.boatRotation;
-                var playerPosition=session.player.transform.position;OpenArena(false);session.player.transform.position=ClampDeck(playerPosition);boss.position=ClampDeck(ArenaCenter+data.bossPosition);if(Defeated){bossPose.SetSword(false);bossPose.Animator.enabled=false;boss.rotation=Quaternion.Euler(0,0,75);}
+                var playerPosition=session.player.transform.position;OpenArena(false);session.player.transform.position=ClampDeck(playerPosition);boss.position=ClampDeck(ArenaCenter+data.bossPosition);ResetBladeContactHistory();if(Defeated){bossPose.SetSword(false);bossPose.Animator.enabled=false;boss.rotation=Quaternion.Euler(0,0,75);}
             }
         }
         public void StopVictoryCheer(){victory?.Stop();}
@@ -283,15 +283,16 @@ namespace BeachBoatStory
             bossPose.Animator.enabled=true;bossPose.SetSword(true);boss.rotation=Quaternion.Euler(0,180,0);
             InArena=true;ResetDuelMotion();ConfigurePlayerAnimator(false);attackPhase=0;attackAt=Time.time+1.5f;recoverAt=0;dodgeUntil=-1;
             if(fresh){actor.transform.SetPositionAndRotation(ArenaCenter+new Vector3(0,0,-85),Quaternion.identity);boss.SetPositionAndRotation(ArenaCenter+new Vector3(0,0,70),Quaternion.Euler(0,180,0));}
-            FitFeet(actor.transform,heroPose.Animator);FitFeet(boss,bossPose.Animator);camera.SnapToTarget();
+            FitFeet(actor.transform,heroPose.Animator);FitFeet(boss,bossPose.Animator);ResetBladeContactHistory();camera.SnapToTarget();
         }
         static void FitFeet(Transform root,Animator rig,float lift=0){if(HumanoidFootSupport.Lowest(rig,out float bottom))root.position+=Vector3.up*(Instance.ArenaCenter.y+.15f+lift-bottom);else{ActorSolidBody.WalkingDimensions(rig,out _,out float sole,out _);root.position+=Vector3.up*(Instance.ArenaCenter.y+.15f+lift-rig.transform.position.y-sole);}}
         public void SupportAfterAnimation()
         {
             if(IntroActive){PoseIntroduction();return;}if(!InArena)return;
             FitFeet(session.player.transform,heroPose.Animator,jumpOffset);var body=session.player.GetComponent<Rigidbody>();body.position=session.player.transform.position;
-            if(!Defeated)FitFeet(boss,bossPose.Animator);ResolveBladeContacts();
+            if(!Defeated)FitFeet(boss,bossPose.Animator);ResolveBladeContacts();heroBody?.CapturePose();bossBody?.CapturePose();
         }
+        public void ResetBladeContactHistory(){heroBladePrevious=bossBladePrevious=false;heroBody?.CapturePose();bossBody?.CapturePose();}
         public Vector3 ClampDeck(Vector3 p){p.x=Mathf.Clamp(p.x,ArenaCenter.x-96,ArenaCenter.x+96);p.z=Mathf.Clamp(p.z,ArenaCenter.z-136,ArenaCenter.z+136);return p;}
         public bool TryDodge(Vector3 direction)
         {
@@ -339,27 +340,31 @@ namespace BeachBoatStory
             if(!IsFighting||BeachBoatQuestSession.InputBlocked||Time.time<playerSwing||vitals.Stamina<9||!vitals.TryExert(9,1))return false;
             playerSwing=Time.time+.7f;heroPose.SetSword(true);heroStrikeArmed=true;heroBladePrevious=false;heroStrikeAt=Time.time;ConfigurePlayerAnimator(false);heroPose.DuelSlash();BeachBoatSoundscape.Instance?.PlaySwordSwing();return true;
         }
-        static bool BladeStrikePhase(Animator rig)
+        bool BladeTouches(RiverFighterPose pose,DuelBladeContact target,ref bool previous,ref Vector3 oldRoot,ref Vector3 oldTip,ref float oldTime,ref int oldState,out Vector3 point)
         {
-            var state=rig.GetCurrentAnimatorStateInfo(0);if(rig.IsInTransition(0)){var next=rig.GetNextAnimatorStateInfo(0);if(next.IsName("Attack")||next.IsName("Attack2"))state=next;}
-            // Sampled from the actual equipped-blade trajectory: ignore lifting/recovery.
-            float t=state.normalizedTime;
-            return state.IsName("Attack")?t>=.52f&&t<=.82f:state.IsName("Attack2")&&t>=.66f&&t<=.83f;
-        }
-        bool BladeTouches(RiverFighterPose pose,DuelBladeContact target,ref bool previous,ref Vector3 oldRoot,ref Vector3 oldTip,out Vector3 point)
-        {
-            point=default;if(!BladeStrikePhase(pose.Animator)||!pose.TryBladeSegment(out var root,out var tip,out float radius)){previous=false;return false;}
-            bool hit=target.Touches(previous?oldRoot:root,previous?oldTip:tip,root,tip,radius,out point);oldRoot=root;oldTip=tip;previous=true;return hit;
+            point=default;var state=pose.Animator.GetCurrentAnimatorStateInfo(0);
+            if(pose.Animator.IsInTransition(0)){var next=pose.Animator.GetNextAnimatorStateInfo(0);if(next.IsName("Attack")||next.IsName("Attack2"))state=next;}
+            if((!state.IsName("Attack")&&!state.IsName("Attack2"))||!pose.TryBladeSegment(out var root,out var tip,out float radius)){previous=false;return false;}
+            float t=state.normalizedTime,start=state.IsName("Attack2")?.66f:.52f,end=state.IsName("Attack2")?.83f:.82f;
+            bool swept=previous&&oldState==state.shortNameHash&&t>=oldTime&&t-oldTime<=.6f;var fromRoot=root;var fromTip=tip;var toRoot=root;var toTip=tip;bool active=t>=start&&t<=end;float targetFrom=0,targetTo=1;
+            // Retain the samples before/after the cut so a frame spanning either edge cannot lose a real hit.
+            if(swept&&t>oldTime+.00001f)
+            {
+                float from=Mathf.Max(start,oldTime),to=Mathf.Min(end,t);active=to>=from;
+                if(active){targetFrom=(from-oldTime)/(t-oldTime);targetTo=(to-oldTime)/(t-oldTime);fromRoot=Vector3.Lerp(oldRoot,root,(from-oldTime)/(t-oldTime));fromTip=Vector3.Lerp(oldTip,tip,(from-oldTime)/(t-oldTime));toRoot=Vector3.Lerp(oldRoot,root,(to-oldTime)/(t-oldTime));toTip=Vector3.Lerp(oldTip,tip,(to-oldTime)/(t-oldTime));}
+            }
+            oldRoot=root;oldTip=tip;oldTime=t;oldState=state.shortNameHash;previous=true;
+            return active&&target.Touches(fromRoot,fromTip,toRoot,toTip,radius,out point,swept,targetFrom,targetTo);
         }
         void ResolveBladeContacts()
         {
             if(!IsFighting||vitals.Health<=0||BeachBoatQuestSession.InputBlocked||Time.timeScale<=0){heroBladePrevious=bossBladePrevious=false;return;}
             if(heroStrikeArmed&&(Time.time-heroStrikeAt>1.2f||!heroPose.SwordVisible))heroStrikeArmed=false;
             if(bossStrikeArmed&&(Time.time-bossStrikeAt>1.2f||!bossPose.SwordVisible))bossStrikeArmed=false;
-            if(heroStrikeArmed&&BladeTouches(heroPose,bossBody,ref heroBladePrevious,ref heroBladeRoot,ref heroBladeTip,out var point))
+            if(heroStrikeArmed&&BladeTouches(heroPose,bossBody,ref heroBladePrevious,ref heroBladeRoot,ref heroBladeTip,ref heroBladeTime,ref heroBladeState,out var point))
             {heroStrikeArmed=false;PlayerMeleeHits++;LastBladeContact=point;TakeHit(12,CombatImpactKind.Sword);}
             if(!IsFighting)return;
-            if(bossStrikeArmed&&!attackHit&&BladeTouches(bossPose,heroBody,ref bossBladePrevious,ref bossBladeRoot,ref bossBladeTip,out point))
+            if(bossStrikeArmed&&!attackHit&&BladeTouches(bossPose,heroBody,ref bossBladePrevious,ref bossBladeRoot,ref bossBladeTip,ref bossBladeTime,ref bossBladeState,out point))
             {
                 attackHit=true;bossStrikeArmed=false;BossMeleeHits++;LastBladeContact=point;var incoming=boss.position-session.player.transform.position;incoming.y=0;
                 bool block=PlayerShield.Instance?.IsGuarding==true&&Vector3.Dot(session.player.transform.forward,incoming.normalized)>.4f&&vitals.Stamina>=14&&vitals.TryExert(14,1);

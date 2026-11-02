@@ -167,7 +167,9 @@ public static class BeachBoatPhysicalVillagePlaytest
                     var clip=Resources.Load<AudioClip>("BachDang938/WorkAudio/Trade_"+cue);Check(clip!=null&&clip.samples>1000&&clip.channels==1,"Recorded work foley loads as a valid mono clip: "+cue);
                     var samples=new float[clip.samples];Check(clip.GetData(samples,0),"Recorded sample data is preloaded: "+cue);
                     float rms=Mathf.Sqrt(samples.Average(v=>v*v));float peak=samples.Max(v=>Mathf.Abs(v));
-                    Check(rms>.005f&&rms<.035f&&peak<=.225f,"Work clip has audible recorded content with bounded RMS and peaks: "+cue+" rms="+rms+" peak="+peak);
+                    bool louder=cue==VillageWorkFoley.Cue.Saw||cue==VillageWorkFoley.Cue.Rope||cue==VillageWorkFoley.Cue.Cloth||cue==VillageWorkFoley.Cue.Knot||cue==VillageWorkFoley.Cue.Crease;
+                    Check(rms>.005f&&rms<(louder?.084f:.035f)&&peak<=(louder?.535f:.225f),"Work clip has requested audible recorded content with bounded RMS and peaks: "+cue+" rms="+rms+" peak="+peak);
+                    if(louder){float baseline=cue==VillageWorkFoley.Cue.Saw?.02244f:cue==VillageWorkFoley.Cue.Rope?.01095f:cue==VillageWorkFoley.Cue.Cloth?.01997f:cue==VillageWorkFoley.Cue.Knot?.01581f:.01948f;Check(Mathf.Abs(rms-baseline*2.4f)<.0002f,"Requested action recording is 2.4 times louder: "+cue);}
                 }
                 var workHands=Resources.Load<Mesh>("BachDang938/Player/WorkbenchHandGrips");Check(workHands!=null&&workHands.blendShapeCount==6,"Work hands have independent left/right rod, pinch and support shapes");
                 for(int n=0;n<workHands.blendShapeCount;n++){var delta=new Vector3[workHands.vertexCount];workHands.GetBlendShapeFrameVertices(n,0,delta,null,null);Check(delta.Count(v=>v.sqrMagnitude>1e-12f)>200,"Finger flexion changes actual mesh vertices: "+workHands.GetBlendShapeName(n));}
@@ -181,6 +183,7 @@ public static class BeachBoatPhysicalVillagePlaytest
             }
             if(phase==1)
             {
+                if(VillageWorkStall.Active==null&&BeachBoatQuestSession.InteractionBlocked)return;
                 stall=VillagePreparationQuest.Instance.stalls.OrderBy(s=>s.kind).ElementAt(index);stall.RestoreLearningProgress(0);Place(stall.InteractionPosition);
                 Check(stall.Workstation!=null&&stall.Workstation.Environment!=null,"The complete working furniture is visible before pressing E: "+stall.kind);stationSnapshot=StationSignature();CaptureStation(stall.kind+"_Idle");
                 var crates=new[]{"Stock_crate","Delivery_crate"}.Select(n=>stall.Workstation.Environment.Find(n).GetComponent<Collider>());

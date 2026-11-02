@@ -7,10 +7,12 @@ namespace BeachBoatStory
     public sealed class DuelBladeContact
     {
         struct Part {public Transform a,b;public float radius;public Vector3 endOffset;}
+        readonly DuelArmorContact armor;
+        public void CapturePose()=>armor.CapturePose();
         readonly List<Part> parts=new List<Part>(20);
         public DuelBladeContact(Animator rig)
         {
-            float h=EnemyDeckGuard.RigHeight(rig);
+            armor=new DuelArmorContact(rig);float h=EnemyDeckGuard.RigHeight(rig);
             void Add(HumanBodyBones a,HumanBodyBones b,float radius,Vector3 offset=default)
             {var from=rig.GetBoneTransform(a);var to=rig.GetBoneTransform(b);if(from!=null&&to!=null)parts.Add(new Part{a=from,b=to,radius=h*radius,endOffset=offset});}
             Add(HumanBodyBones.Hips,HumanBodyBones.Chest,.09f);Add(HumanBodyBones.Chest,HumanBodyBones.Neck,.085f);
@@ -27,8 +29,9 @@ namespace BeachBoatStory
                 Add(left?HumanBodyBones.LeftFoot:HumanBodyBones.RightFoot,left?HumanBodyBones.LeftToes:HumanBodyBones.RightToes,.035f);
             }
         }
-        public bool Touches(Vector3 previousRoot,Vector3 previousTip,Vector3 root,Vector3 tip,float bladeRadius,out Vector3 contact)
+        public bool Touches(Vector3 previousRoot,Vector3 previousTip,Vector3 root,Vector3 tip,float bladeRadius,out Vector3 contact,bool movingTarget=false,float targetFrom=0,float targetTo=1)
         {
+            if(armor.Ready)return armor.Touches(previousRoot,previousTip,root,tip,bladeRadius,movingTarget,out contact,targetFrom,targetTo);
             contact=default;var sweep=new Bounds(root,Vector3.zero);sweep.Encapsulate(tip);sweep.Encapsulate(previousRoot);sweep.Encapsulate(previousTip);sweep.Expand(bladeRadius*2);
             foreach(var part in parts)
             {

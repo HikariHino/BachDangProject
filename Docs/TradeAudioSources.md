@@ -12,3 +12,7 @@ The eight short work clips now use recordings found on YouTube at the player's r
 These are third-party recordings; creator/source statements are preserved rather than claiming this project recorded them. The previous `author_trade_foley.py` generator is retired. `Tools/prepare_youtube_trade_audio.py` reproduces cuts and filtering, and `Tools/trade_audio_manifest.json` records exact source times, hashes, RMS and peaks.
 
 Processing: mono PCM 32 kHz, high-pass 90 Hz, low-pass 3.2–4.5 kHz, short endpoint fades, measured RMS 0.011–0.027 and maximum peak 0.22. No speech, music or channel intros are included. Unity imports remain preloaded PCM with normalization off. One friction channel and a two-slot fading action channel bound the number of voices; outgoing actions fade instead of being abruptly cut. Playback gain is reduced relative to the old synthesized sounds, with the game's existing master/mute settings retained.
+
+## Requested work-volume adjustment — 3 November 2026
+
+Saw, Rope, Knot, Cloth and Crease now apply a 2.4× post-cut amplitude gain (+7.6 dB). Updated clip RMS values are 0.020–0.054 across the library, with a maximum peak of 0.528. Scoop, Pour and the shared SetDown retain their exact previous hashes and levels. Run `Tools/prepare_youtube_trade_audio.py --boost-actions-only` to rebuild only the five changed actions. The existing bounded playback channels and master/mute behavior remain. See `DuelArmorContactAndWorkVolume.md` for the completed gameplay and imported-sample checks.

@@ -6,6 +6,7 @@ import hashlib
 import json
 import subprocess
 import wave
+import sys
 import numpy as np
 
 RATE = 32000
@@ -26,8 +27,14 @@ CUTS = [
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
+    louder = {'Saw', 'Rope', 'Knot', 'Cloth', 'Crease'}
+    actions_only = '--boost-actions-only' in sys.argv
     sources, records = {}, []
+    if actions_only:
+        records = [r for r in json.loads((ROOT/'Tools/trade_audio_manifest.json').read_text(encoding='utf-8')) if r['name'] not in louder]
     for name, video, start, end, rms, low in CUTS:
+        if actions_only and name not in louder:
+            continue
         if video not in sources:
             path = next(p for p in CACHE.glob(video + '.*') if p.suffix in ('.webm', '.m4a'))
             raw = subprocess.check_output(['ffmpeg', '-v', 'error', '-i', str(path), '-ac', '1', '-ar', str(RATE), '-f', 'f32le', '-'])
@@ -41,11 +48,16 @@ def main():
         audio *= gain
         fade = min(640, len(audio)//8)
         audio[:fade] *= np.linspace(0, 1, fade); audio[-fade:] *= np.linspace(1, 0, fade)
+        boost = 2.4 if name in louder else 1
+        audio *= boost
+        assert np.max(np.abs(audio)) < .8
         output = OUT / ('Trade_' + name + '.wav')
         with wave.open(str(output), 'wb') as w:
             w.setparams((1, 2, RATE, 0, 'NONE', 'PCM')); w.writeframes((audio*32767).astype('<i2').tobytes())
         records.append(dict(name=name, source='https://www.youtube.com/watch?v='+video, start=start, end=end,
-            rms=round(float(np.sqrt(np.mean(audio**2))), 5), peak=round(float(np.max(np.abs(audio))), 5), sha256=hashlib.sha256(output.read_bytes()).hexdigest()))
+            gain_db=round(float(20*np.log10(boost)),2), rms=round(float(np.sqrt(np.mean(audio**2))), 5), peak=round(float(np.max(np.abs(audio))), 5), sha256=hashlib.sha256(output.read_bytes()).hexdigest()))
+    order={cut[0]:i for i,cut in enumerate(CUTS)}
+    records.sort(key=lambda r:order[r['name']])
     (ROOT/'Tools/trade_audio_manifest.json').write_text(json.dumps(records, indent=2)+'\n', encoding='utf-8')
     print(json.dumps(records, indent=2))
 

@@ -4,27 +4,30 @@
     "source": "https://www.youtube.com/watch?v=UJ72WfPN4ek",
     "start": 14.05,
     "end": 15.25,
-    "rms": 0.02244,
-    "peak": 0.22,
-    "sha256": "210170305980ffce61e9c8ffbc3e33e79a3755d614de77a41c9cea7c11c35e73"
+    "gain_db": 7.6,
+    "rms": 0.05385,
+    "peak": 0.528,
+    "sha256": "811184fd054d1f4eaaf8bf4c7072ff8b376f386db7c8fca25361b996e9ca4385"
   },
   {
     "name": "Rope",
     "source": "https://www.youtube.com/watch?v=3XnP7nX_Z_s",
     "start": 12.0,
     "end": 13.1,
-    "rms": 0.01095,
-    "peak": 0.22,
-    "sha256": "77944ec3c12be5a762f1a19b0c092c8e911b1b3b8183ad6d26586c82f9d03b74"
+    "gain_db": 7.6,
+    "rms": 0.02628,
+    "peak": 0.528,
+    "sha256": "124980a1a4aef3d3f294a7df379e85bbafa818442ea3fbbc3ed4c0db6e2b400a"
   },
   {
     "name": "Cloth",
     "source": "https://www.youtube.com/watch?v=5JhQIIPQaE0",
     "start": 1.35,
     "end": 2.35,
-    "rms": 0.01997,
-    "peak": 0.21613,
-    "sha256": "743cb63f46b445c3e097e7fac051dcf52348017ae3134b1c88ae1bb5c42225f6"
+    "gain_db": 7.6,
+    "rms": 0.04792,
+    "peak": 0.51871,
+    "sha256": "bf047a269d27f6070f4a0eb7d46647f67dad31a1caca269a7223d5dc41d4a0d1"
   },
   {
     "name": "Scoop",
@@ -49,18 +52,20 @@
     "source": "https://www.youtube.com/watch?v=5JhQIIPQaE0",
     "start": 2.45,
     "end": 2.8,
-    "rms": 0.01948,
-    "peak": 0.19777,
-    "sha256": "d984f1f70284e5b32e6981fdcf26f2b1e6613c39fd43500ff1f78f1174dd5a40"
+    "gain_db": 7.6,
+    "rms": 0.04675,
+    "peak": 0.47466,
+    "sha256": "01885a0e5fd2f93deb1d9f8470ae3b56ed7e194fae9e93b076f5a12fdc01cfad"
   },
   {
     "name": "Knot",
     "source": "https://www.youtube.com/watch?v=3XnP7nX_Z_s",
     "start": 14.15,
     "end": 14.55,
-    "rms": 0.01581,
-    "peak": 0.11961,
-    "sha256": "13ce5710fbb9e0b6ff8c3b8253ee8fc595a6c80086fbf30f208481744a5ef3a4"
+    "gain_db": 7.6,
+    "rms": 0.03794,
+    "peak": 0.28706,
+    "sha256": "003badabe41c877dccb4003b46fc14cec7a2d61960c5e5f521cc64f906c4c0c0"
   },
   {
     "name": "SetDown",

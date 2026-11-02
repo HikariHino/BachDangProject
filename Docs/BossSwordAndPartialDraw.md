@@ -21,3 +21,7 @@ Rebuild only these six assets with `python Tools/prepare_youtube_action_audio.py
 ## Validation
 
 All 374 targeted checks passed in headless Unity: natural boss attacks/short draws 32, physical-contact and controls 50, mobile boss/stakes 23, epilogue/retry 112, moving bow 51 and action audio/battle 106. The older audio fixture was updated to complete mandatory archery, enter the actual counterattack phase and supply the current arrow-launch argument; its saves now use an isolated directory. Tests isolate save writes and verify all thirteen player save/backup hashes. Local reports: `Logs/BossCombat02Playtest.json`, `Logs/BossCombat02NaturalSword.json` and `Logs/DuelContactPlaytest.json`.
+
+## Subsequent armor/contact correction
+
+[Animated armor contact and work audio](DuelArmorContactAndWorkVolume.md) documents the later surface-coverage defect, mesh-fitted contact proxies, relative target motion and downstroke edge-frame handling. Those changes replace the earlier small hand-tuned body volumes described above.
