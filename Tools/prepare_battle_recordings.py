@@ -7,6 +7,7 @@ import hashlib
 import json
 import shutil
 import subprocess
+import sys
 import numpy as np
 
 ROOT=Path('Logs/BattleVoiceSources')
@@ -15,6 +16,7 @@ RATE=32000
 CLIPS=[
     ('Enemy_Advance_1','ok_KBwgS9eg',99.03,102.55),
     ('Enemy_Advance_2','ok_KBwgS9eg',230.28,233.35), # complete pursuit order, only when the bait engages
+    ('Enemy_Trap_Order','ok_KBwgS9eg',230.40,230.96), # complete initial human shout, before the following pursuit phrase
     ('Enemy_Cheer_Crowd','ok_KBwgS9eg',212.20,214.40),
     ('Enemy_Panic_1','ok_KBwgS9eg',308.35,310.10),
     ('Enemy_Panic_2','ok_KBwgS9eg',283.10,284.80),
@@ -26,14 +28,18 @@ def main():
     ffmpeg=shutil.which('ffmpeg')
     if not ffmpeg:raise RuntimeError('ffmpeg is required')
     OUT.mkdir(parents=True,exist_ok=True)
+    entry_only='--entry-only' in sys.argv
     sources={};entries=[]
+    if entry_only:
+        entries=[e for e in json.loads((OUT/'manifest.json').read_text(encoding='utf-8-sig'))['entries'] if e['name']!='Enemy_Trap_Order']
     for name,video,start,end in CLIPS:
+        if entry_only and name!='Enemy_Trap_Order':continue
         if video not in sources:
             source=next(p for p in ROOT.glob(video+'.*') if p.suffix in ('.webm','.m4a','.mp4'))
             result=subprocess.run([ffmpeg,'-v','error','-i',str(source),'-f','f32le','-ac','1','-ar',str(RATE),'-'],check=True,capture_output=True)
             sources[video]=np.frombuffer(result.stdout,'<f4').astype(float)
         audio=sources[video][round(start*RATE):round(end*RATE)].copy()
-        if name=='NgoQuyen_Attack':
+        if name in ('NgoQuyen_Attack','Enemy_Trap_Order'):
             source=next(p for p in ROOT.glob(video+'.*') if p.suffix in ('.webm','.m4a','.mp4'))
             raw=subprocess.check_output([ffmpeg,'-v','error','-i',str(source),'-f','f32le','-ac','2','-ar',str(RATE),'-'])
             stereo=np.frombuffer(raw,'<f4').reshape(-1,2)[round(start*RATE):round(end*RATE)].astype(float)
@@ -55,6 +61,7 @@ def main():
         subprocess.run([ffmpeg,'-v','error','-y','-f','f32le','-ar',str(RATE),'-ac','1','-i','-',
                         '-codec:a','libmp3lame','-b:a','96k',str(output)],input=audio.astype('<f4').tobytes(),check=True)
         entries.append(dict(name=name,source='https://www.youtube.com/watch?v='+video,start=start,end=end,tempo=1.0,kind='recorded-film-excerpt',sha256=hashlib.sha256(output.read_bytes()).hexdigest(),bytes=output.stat().st_size))
+        if name=='Enemy_Trap_Order':entries[-1]['text']='Giết!';entries[-1]['delivery']='original-human-shout'
         print(name,output.stat().st_size,flush=True)
     (OUT/'manifest.json').write_text(json.dumps(dict(entries=entries),indent=2)+'\n',encoding='utf-8')
 if __name__=='__main__':main()

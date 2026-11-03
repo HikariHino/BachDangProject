@@ -12,6 +12,7 @@ namespace BeachBoatStory
         TMP_Text caption;
         bool entryPlayed;
         public bool EntryPlayed=>entryPlayed;
+        public const string TrapEntryLine="Giết!";
         bool invasionPlayed,ambushPlayed,counterattackPlayed,pursuitPlayed,active,paused,secondCommand;
         float nextEnemy,commandTime,nextCommand,busy;
         int advanceMask,panicMask;
@@ -133,7 +134,7 @@ namespace BeachBoatStory
             else if(!ambush&&!pursuitPlayed&&fleet.Pursuit.IsPursuing&&ready)
             {pursuitPlayed=true;PursuitCues++;Play(pursuitCommand,false,"Giết! Đuổi theo bọn chúng cho ta!");nextEnemy=busy+4;}
             else if(!ambush&&fleet.Pursuit.HasEnteredTrap&&!entryPlayed&&ready)
-            {entryPlayed=true;Play(entryCommand,false,"Giết hết chúng nó!");nextEnemy=busy+4;}
+            {entryPlayed=true;Play(entryCommand,false,TrapEntryLine);nextEnemy=busy+4;}
             else if(ambush&&ready&&queuedWreck!=null)
             {var cry=queuedWreck;queuedWreck=null;wreckCalls++;Play(cry,false);nextEnemy=busy+8;}
             else if(ambush&&ready&&secondCommand&&nextCommand<=0)
