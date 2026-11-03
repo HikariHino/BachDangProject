@@ -70,7 +70,7 @@ public static class BeachBoatEscapePlaytest
                 case 4:
                     Check(front.HandleEscape()&&front.Page==BachDangFrontEnd.MenuPage.None&&Time.timeScale==1,"Escape from Pause resumes normal gameplay");break;
                 case 5:
-                    Move(drum.GetComponentInParent<DrumTrainingGround>().Approach);drum.BeginActivity();for(int i=0;i<16&&BeachBoatMinigameStation.Active==drum;i++)drum.SubmitRhythm(drum.ExpectedBeat);Check(drum.HasCompleted,"Earn the actual drum completion before an accidental replay");Dialogue.Instance.Close();Dialogue.Instance.DismissForCheckpoint();best=drum.BestTime;break;
+                    Move(drum.GetComponentInParent<DrumTrainingGround>().Approach);drum.BeginActivity();BeachBoatPhysicalDrumPlaytest.Solve(drum);Check(drum.HasCompleted,"Earn the actual drum completion before an accidental replay");Dialogue.Instance.Close();Dialogue.Instance.DismissForCheckpoint();best=drum.BestTime;break;
                 case 6:
                     Move(drum.GetComponentInParent<DrumTrainingGround>().Approach);drum.BeginActivity();Check(BeachBoatMinigameStation.Active==drum,"A completed drum can be replayed");Leave(front,"Accidental drum replay");Check(drum.HasCompleted&&drum.BestTime==best&&CampaignProgress.Instance.MiniRecord(0)!=null,"Leaving a replay preserves the completed drum, achievement and best time");index=0;break;
                 case 7:

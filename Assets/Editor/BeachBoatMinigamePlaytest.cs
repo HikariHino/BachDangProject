@@ -102,11 +102,8 @@ public static class BeachBoatMinigamePlaytest
         {
             timedOut = !drum.HasCompleted && story.currentState == Story.StoryState.Act1_Training;
             drum.RetryActivity();
-            beatChanged = drum.GetRhythmBeat(0) != SessionState.GetInt("BeachBoatMinigameFirstBeat", 0);
-            // One matching first beat is possible by chance; the following beats are also randomized.
-            int safety = 0;
-            while (BeachBoatMinigameStation.Active == drum && safety++ < 30)
-                drum.SubmitRhythm(drum.ExpectedBeat);
+            beatChanged = drum.PhysicalDrum.Running&&drum.Round==0;
+            BeachBoatPhysicalDrumPlaytest.Solve(drum);
             if (!drum.HasCompleted) { failure = "Drum did not complete after retry"; Finish(false, drum, supply); return; }
             phase = 3;
         }

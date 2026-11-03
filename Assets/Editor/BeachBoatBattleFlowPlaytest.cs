@@ -52,10 +52,8 @@ public static class BeachBoatBattleFlowPlaytest
                 BachDangFrontEnd.Instance.Play();Object.FindAnyObjectByType<BeachBoatStory.OpeningEvent>().SkipOpening();Dialogue.Instance.Close();
                 var drum=Object.FindObjectsByType<BeachBoatMinigameStation>().First(s=>s.kind==BeachBoatMinigameStation.ActivityKind.WarDrum);
                 story.TransitionTo(Story.StoryState.Act1_Training,true);Move(drum.transform.position,Quaternion.identity);drum.BeginActivity();
-                Check(BeachBoatMinigameStation.Active==drum&&drum.RhythmLength==8&&drum.TimeLimit==55,"Quest 1 has two shorter eight-beat rounds and 55 seconds");
-                drum.SubmitRhythm(drum.ExpectedBeat);drum.SubmitRhythm(drum.ExpectedBeat);drum.SubmitRhythm(drum.ExpectedBeat%3+1);
-                Check(drum.Progress==2&&drum.Mistakes==1&&drum.Elapsed==1,"A wrong drum beat costs one second without erasing correct beats");
-                for(int i=0;i<16&&BeachBoatMinigameStation.Active==drum;i++)drum.SubmitRhythm(drum.ExpectedBeat);
+                Check(BeachBoatMinigameStation.Active==drum&&drum.RhythmLength==4&&drum.TimeLimit==55,"Quest 1 teaches three physical four-beat military orders");
+                BeachBoatPhysicalDrumPlaytest.Solve(drum);
                 Dialogue.Instance.Close();Check(drum.HasCompleted&&story.currentState==Story.StoryState.Act1_GoToCampGate,"Completing easier training still advances the quest");Dialogue.Instance.Close();
                 var commander=session.GetComponentInChildren<BeachBoatStory.NPCQuestGiver>();story.TransitionTo(Story.StoryState.Act1_ExploreCamp,true);
                 Move(commander.transform.position+Vector3.forward*80,Quaternion.Euler(0,180,0));Check(!commander.CanReachPlayer&&!commander.TryTalk(),"Ngo Quyen rejects a distant conversation despite the old serialized radius");

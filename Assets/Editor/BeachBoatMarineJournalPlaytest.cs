@@ -83,8 +83,8 @@ public static class BeachBoatMarineJournalPlaytest
         camera.transform.position=ground.transform.position+new Vector3(-38,36,-64);camera.transform.LookAt(ground.transform.position+Vector3.up*13);Capture("Drum_Training_Ground");
         Move(approach+Vector3.back*70);drum.BeginActivity();Check(BeachBoatMinigameStation.Active!=drum,"The training drum cannot be activated from far away");Move(approach);drum.BeginActivity();Check(BeachBoatMinigameStation.Active==drum,"The rebuilt drum remains reachable by its nearby E interaction");
         var ui=BeachBoatMinigameUI.Instance;typeof(BeachBoatMinigameUI).GetMethod("Update",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(ui,null);
-        Check(ui.GetComponentsInChildren<DrumFaceGraphic>().Length==1&&ui.GetComponentsInChildren<TMP_Text>().Any(t=>t.name=="TimingGoals"&&t.text==CampaignProgress.Instance.TimingBands(0)),"The new military command screen includes its drum face and exact achievement deadlines");Capture("Drum_Command_Interface");Capture("Drum_Command_Interface_960",960,540);
-        int progress=drum.Progress;int expected=drum.ExpectedBeat;ui.GetComponentsInChildren<Button>().First(b=>b.name=="Drum"+expected).onClick.Invoke();Check(drum.Progress==progress+1,"The redesigned command buttons still submit the actual highlighted signal");
+        Check(drum.PhysicalDrum.Running&&drum.PhysicalDrum.HandsOnly,"Physical hands and drumsticks replace the number-button board");
+        Check(!drum.SubmitRhythm(1)&&drum.Progress==0,"A digit cannot complete a physical drum strike");Capture("Drum_Command_Interface");Capture("Drum_Command_Interface_960",960,540);
         typeof(BeachBoatMinigameStation).GetMethod("Finish",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(drum,new object[]{false});typeof(BeachBoatMinigameUI).GetMethod("Update",BindingFlags.NonPublic|BindingFlags.Instance).Invoke(ui,null);camera.transform.SetPositionAndRotation(oldPosition,oldRotation);orbit.enabled=enabled;
     }
     static void SeedPerfect()

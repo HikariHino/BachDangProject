@@ -19,10 +19,10 @@ namespace BeachBoatStory
         public int Progress => progress;
         public int Mistakes => mistakes;
         public int Round => round;
-        public int RhythmLength => rhythm.Length;
-        public int ExpectedBeat => progress < rhythm.Length ? rhythm[progress] : 0;
+        public int RhythmLength => PhysicalDrumGame.BeatsPerCommand;
+        public int ExpectedBeat => 0; // Retired number-button puzzle.
         public float Elapsed => elapsed;
-        public const int DrumBeats=8;
+        public const int DrumBeats=PhysicalDrumGame.BeatsPerCommand;
         public const float WarDrumTimeLimit=55f;
         public float TimeLimit => kind == ActivityKind.WarDrum ? WarDrumTimeLimit : 105f;
         public float TimeRemaining => Mathf.Max(0f, TimeLimit - elapsed);
@@ -40,20 +40,20 @@ namespace BeachBoatStory
             progress >= 0 && progress < checkpoints.Length && checkpoints[progress] != null
                 ? QuestRowboat.FlatDistance(player.position, checkpoints[progress].position) : 0f;
 
-        readonly int[] rhythm = new int[DrumBeats];
+        public PhysicalDrumGame PhysicalDrum {get;private set;}
         BachDangStoryManager story;
         Transform player;
         int progress, mistakes, round, requestedCargo, selectedCargo;
         float elapsed;
         bool showingPrompt, restoreCursorLock, returningToWarehouse;
 
-        public int GetRhythmBeat(int index) => index >= 0 && index < rhythm.Length ? rhythm[index] : 0;
+        public int GetRhythmBeat(int index) => 0; // Old editor-tool compatibility; cannot submit a physical hit.
 
         void Start()
         {
             story = BachDangStoryManager.Instance;
             player = story != null ? story.GetPlayerTransform() : null;
-            if(kind==ActivityKind.WarDrum)DrumTrainingGround.Ensure(this);
+            if(kind==ActivityKind.WarDrum){DrumTrainingGround.Ensure(this);PhysicalDrum=GetComponent<PhysicalDrumGame>()??gameObject.AddComponent<PhysicalDrumGame>();}
             if (kind == ActivityKind.SupplyRelay) displayName = "Chuẩn bị vật tư cho doanh trại";
             SetMarkers(-1);
         }
@@ -82,7 +82,7 @@ namespace BeachBoatStory
             bool wrongMandatoryStation = story != null &&
                 ((story.currentState == BachDangStoryManager.StoryState.Act1_Training && kind != ActivityKind.WarDrum) ||
                  (story.currentState == BachDangStoryManager.StoryState.Act2_SupplyPreparation && kind != ActivityKind.SupplyRelay));
-            return !wrongMandatoryStation && isActiveAndEnabled && session != null && session.storyMode && !OpeningEvent.IsOpeningActive &&
+            return !(kind==ActivityKind.WarDrum&&CampDiscipline.Instance?.ArmyHostile==true)&&!wrongMandatoryStation && isActiveAndEnabled && session != null && session.storyMode && !OpeningEvent.IsOpeningActive &&
                 !BeachBoatQuestSession.InteractionBlocked && (QuestRowboat.Instance == null || !QuestRowboat.Instance.IsAboard) &&
                 story.currentState != BachDangStoryManager.StoryState.Act3_BattleInProgress &&
                 (mandatory || story.currentState != BachDangStoryManager.StoryState.Act1_Training &&
@@ -108,57 +108,33 @@ namespace BeachBoatStory
             FeedbackVersion = 0;
             selectedCargo = 0;
             returningToWarehouse = false;
-            if (kind == ActivityKind.WarDrum) ShuffleRhythm();
+            if (kind == ActivityKind.WarDrum){PhysicalDrum=GetComponent<PhysicalDrumGame>()??gameObject.AddComponent<PhysicalDrumGame>();PhysicalDrum.Begin(this);}
             else requestedCargo = Random.Range(1, 4);
             SetMarkers(-1);
-            SetCursorFree(true);
-        }
-
-        void ShuffleRhythm()
-        {
-            for (int i = 0; i < rhythm.Length; i++)
-            {
-                rhythm[i] = Random.Range(1, 4);
-                if (i >= 2 && rhythm[i] == rhythm[i - 1] && rhythm[i] == rhythm[i - 2])
-                    rhythm[i] = rhythm[i] % 3 + 1;
-            }
+            if(kind!=ActivityKind.WarDrum)SetCursorFree(true);
         }
 
         void RunActivity()
         {
             if (Input.GetKeyDown(KeyCode.X)) { Finish(false); return; }
             if (Failed) { if (Input.GetKeyDown(KeyCode.R)) RetryActivity(); return; }
+            if(kind==ActivityKind.WarDrum){PhysicalDrum.ReadInput();AdvanceDrum(Time.unscaledDeltaTime);return;}
             elapsed += Time.unscaledDeltaTime;
             if (elapsed >= TimeLimit) { FailActivity(); return; }
-            if (kind == ActivityKind.WarDrum) RunDrum(); else RunSupply();
+            RunSupply();
         }
 
-        void RunDrum()
+        public void AdvanceDrum(float seconds)
         {
-            if (BeachBoatMinigameUI.Instance == null)
-                story.SetInteractPrompt(true, $"TRỐNG TRẬN • Lượt {round + 1}/2 • Còn {TimeRemaining:0}s\nNhịp cần đánh: {ExpectedBeat} • Sai {mistakes}", this);
-            int pressed = Input.GetKeyDown(KeyCode.Alpha1) ? 1 : Input.GetKeyDown(KeyCode.Alpha2) ? 2 : Input.GetKeyDown(KeyCode.Alpha3) ? 3 : 0;
-            if (pressed != 0) SubmitRhythm(pressed);
+            if(Active!=this||Failed||kind!=ActivityKind.WarDrum||seconds<=0||BachDangFrontEnd.IsBlocking||Time.timeScale<=0||CampaignJournalUI.IsOpen)return;
+            elapsed+=seconds;if(elapsed>=TimeLimit){FailActivity();return;}PhysicalDrum.Tick(seconds);
         }
-
-        public bool SubmitRhythm(int pressed)
-        {
-            if (Active != this || Failed || kind != ActivityKind.WarDrum || progress >= rhythm.Length || pressed < 1 || pressed > 3) return false;
-            bool correct = pressed == rhythm[progress];
-            BeachBoatSoundscape.Instance?.PlayDrum(pressed);
-            if (correct) progress++;
-            else { mistakes++; elapsed += 1f; }
-            LastInputCorrect = correct;
-            FeedbackVersion++;
-            if (elapsed >= TimeLimit) { FailActivity(); return false; }
-            if (progress >= rhythm.Length)
-            {
-                round++;
-                if (round >= 2) Finish(true);
-                else { progress = 0; ShuffleRhythm(); }
-            }
-            return correct;
-        }
+        public bool SubmitRhythm(int pressed)=>false;
+        internal void RecordPhysicalBeat(bool correct)
+        {if(Active!=this||Failed)return;LastInputCorrect=correct;FeedbackVersion++;if(correct)progress++;else{mistakes++;elapsed+=.6f;}if(elapsed>=TimeLimit)FailActivity();}
+        internal void CompletedPhysicalCommand(){round++;progress=0;}
+        internal void ReplayPhysicalCommand(){progress=0;}
+        internal void CompletePhysicalDrum(){if(Active==this&&!Failed&&round>=3)Finish(true);}
 
         void RunSupply()
         {
@@ -223,6 +199,7 @@ namespace BeachBoatStory
         void FailActivity()
         {
             Failed = true;
+            PhysicalDrum?.End();
             SetMarkers(-1);
             SetCursorFree(true);
             HidePrompt();
@@ -245,7 +222,7 @@ namespace BeachBoatStory
 
         void Finish(bool completed)
         {
-            HidePrompt(); SetMarkers(-1); Active = null;
+            PhysicalDrum?.End();HidePrompt(); SetMarkers(-1); Active = null;
             RestoreCursor();
             if (!completed) return;
             HasCompleted = true;
@@ -289,6 +266,7 @@ namespace BeachBoatStory
 
         void OnDisable()
         {
+            PhysicalDrum?.End();
             if (Active == this) { HidePrompt(); Active = null; RestoreCursor(); }
             SetMarkers(-1);
         }

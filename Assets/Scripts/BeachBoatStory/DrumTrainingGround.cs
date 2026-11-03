@@ -7,6 +7,11 @@ namespace BeachBoatStory
     public sealed class DrumTrainingGround : MonoBehaviour
     {
         Material timber,skin,iron,cloth;
+        public Renderer FrontHead {get;private set;}
+        public Collider StrikeSurface {get;private set;}
+        public Vector3 StrikeCenter=>transform.TransformPoint(new Vector3(0,15,-9.55f));
+        public Vector3 Eye=>transform.TransformPoint(new Vector3(0,25,-34));
+        public Vector3 SurfaceNormal=>-transform.forward;
         public Vector3 Approach=>transform.TransformPoint(new Vector3(0,0,-24));
         public static void Ensure(BeachBoatMinigameStation station)
         {
@@ -23,7 +28,9 @@ namespace BeachBoatStory
         GameObject Shape(string label,PrimitiveType shape,Vector3 p,Vector3 size,Material material,Quaternion rotation=default)
         {
             var go=GameObject.CreatePrimitive(shape);go.name=label;go.transform.SetParent(transform,false);go.transform.localPosition=p;go.transform.localScale=size;go.transform.localRotation=rotation==default?Quaternion.identity:rotation;
-            go.GetComponent<Renderer>().sharedMaterial=material;go.isStatic=true;return go;
+            go.GetComponent<Renderer>().sharedMaterial=material;
+            if(shape==PrimitiveType.Cylinder){var old=go.GetComponent<Collider>();old.enabled=false;Destroy(old);var solid=go.AddComponent<MeshCollider>();solid.sharedMesh=go.GetComponent<MeshFilter>().sharedMesh;solid.convex=true;}
+            go.isStatic=true;return go;
         }
         void Build(BeachBoatMinigameStation station)
         {
@@ -32,7 +39,7 @@ namespace BeachBoatStory
             timber=Make(sourceWood,"Training_Dark_Timber",new Color(.22f,.13f,.065f));skin=Make(original,"Training_Drum_Hide",new Color(.73f,.57f,.34f));iron=Make(original,"Training_Bronze",new Color(.37f,.26f,.10f));cloth=Make(original,"Training_Red_Banner",new Color(.40f,.065f,.035f));
             if(oldRim!=null)oldRim.gameObject.SetActive(false);
             station.transform.SetParent(transform,true);station.transform.SetPositionAndRotation(transform.position+Vector3.up*15,Quaternion.Euler(90,0,0));station.transform.localScale=new Vector3(16,9,16);
-            station.GetComponent<Renderer>().sharedMaterial=cloth;foreach(var c in station.GetComponents<Collider>())c.isTrigger=false;
+            station.GetComponent<Renderer>().sharedMaterial=cloth;foreach(var c in station.GetComponents<Collider>()){c.enabled=false;Destroy(c);}station.gameObject.AddComponent<BoxCollider>();
             station.displayName="Sân luyện hiệu lệnh trống trận";station.interactDistance=26;
             Shape("Woven_Drill_Mat",PrimitiveType.Cube,new Vector3(0,.08f,0),new Vector3(40,.16f,50),timber);
             for(int side=-1;side<=1;side+=2)
@@ -40,7 +47,8 @@ namespace BeachBoatStory
                 for(int z=-1;z<=1;z+=2)Shape("Solid_Drum_Rack_Leg",PrimitiveType.Cube,new Vector3(side*11,9,z*7),new Vector3(2,18,2),timber,Quaternion.Euler(0,0,-side*10));
                 Shape("Solid_Drum_Rack_Beam",PrimitiveType.Cube,new Vector3(0,8,side*7),new Vector3(27,2,2),timber);
                 Shape("Bronze_Drum_Rim",PrimitiveType.Cylinder,new Vector3(0,15,side*8.7f),new Vector3(17,.6f,17),iron,Quaternion.Euler(90,0,0));
-                Shape("Hide_Drum_Head",PrimitiveType.Cylinder,new Vector3(0,15,side*9.4f),new Vector3(15.5f,.12f,15.5f),skin,Quaternion.Euler(90,0,0));
+                var head=Shape("Hide_Drum_Head",PrimitiveType.Cylinder,new Vector3(0,15,side*9.4f),new Vector3(15.5f,.12f,15.5f),skin,Quaternion.Euler(90,0,0));
+                if(side<0){FrontHead=head.GetComponent<Renderer>();StrikeSurface=head.GetComponent<MeshCollider>();}
                 for(int i=0;i<12;i++)
                 {float angle=i*Mathf.PI/6;Shape("Bronze_Head_Stud",PrimitiveType.Sphere,new Vector3(Mathf.Cos(angle)*7.15f,15+Mathf.Sin(angle)*7.15f,side*9.65f),Vector3.one*.7f,iron);}
                 Shape("Solid_Training_Banner_Pole",PrimitiveType.Cylinder,new Vector3(side*18,15,17),new Vector3(1,15,1),timber);

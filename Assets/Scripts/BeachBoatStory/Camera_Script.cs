@@ -28,13 +28,13 @@ public class Camera_Script : MonoBehaviour
     public bool WorkFocusActive {get;private set;}
     public bool TableFocusActive {get;private set;}
     Vector3 workFocus,workForward;float workDistance;
-    bool handworkFocus;Vector3 handworkEye;
+    bool handworkFocus;Vector3 handworkEye;Transform handworkIgnore;
     public void FocusWork(Vector3 point,Vector3 forward,float closeDistance=24)
     {handworkFocus=false;workFocus=point;workForward=forward;workDistance=closeDistance;WorkFocusActive=true;TableFocusActive=false;}
     public void FocusTable(Vector3 point,Vector3 forward,float framing=1)
     {handworkFocus=false;workFocus=point;workForward=forward;workDistance=Mathf.Clamp(framing,.65f,1.2f);WorkFocusActive=TableFocusActive=true;}
-    public void FocusHandwork(Vector3 eye,Vector3 lookAt){handworkFocus=true;handworkEye=eye;workFocus=lookAt;workForward=target.forward;WorkFocusActive=TableFocusActive=true;workDistance=1;}
-    public void ClearWorkFocus(){if(!WorkFocusActive)return;WorkFocusActive=TableFocusActive=false;velocity=Vector3.zero;}
+    public void FocusHandwork(Vector3 eye,Vector3 lookAt,Transform ignoreRoot=null){handworkIgnore=ignoreRoot;handworkFocus=true;handworkEye=eye;workFocus=lookAt;workForward=target.forward;WorkFocusActive=TableFocusActive=true;workDistance=1;}
+    public void ClearWorkFocus(){if(!WorkFocusActive)return;WorkFocusActive=TableFocusActive=false;handworkIgnore=null;velocity=Vector3.zero;}
     public bool InputCaptured => Cursor.lockState == CursorLockMode.Locked && (!BeachBoatQuestSession.InputBlocked||StakeConstruction.AllowsCamera||VillagePhysicalWork.AllowsCamera||PhysicalTrainingCourse.AllowsMovement);
     float yaw, pitch = 12f, normalFieldOfView, nextTargetSearch;
     bool initialized;
@@ -130,6 +130,7 @@ public class Camera_Script : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             if (hits[i].collider == null || hits[i].transform == target || hits[i].transform.IsChildOf(target)) continue;
+            if(WorkFocusActive&&handworkFocus&&handworkIgnore!=null&&hits[i].transform.IsChildOf(handworkIgnore))continue;
             if (QuestRowboat.Instance != null && QuestRowboat.Instance.IsAboard &&
                 hits[i].transform.IsChildOf(QuestRowboat.Instance.transform)) continue;
             allowed = Mathf.Min(allowed, Mathf.Max(.1f, hits[i].distance - .2f));

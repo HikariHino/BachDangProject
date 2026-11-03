@@ -101,23 +101,22 @@ namespace BeachBoatStory
                 else {dst.SetPositionAndRotation(src.position,src.rotation);dst.localScale=Divide(src.lossyScale,dst.parent.lossyScale);}
             }
         }
-        public void Pose(Transform camera,Vector3 rightContact,Vector3 leftContact,bool flatLeft,bool flatRight,Vector3 rightShaft=default,Vector3 leftShaft=default,bool twoHandedRod=false)
+        public void Pose(Transform camera,Vector3 rightContact,Vector3 leftContact,bool flatLeft,bool flatRight,Vector3 rightShaft=default,Vector3 leftShaft=default,bool twoHandedRod=false,Vector3 rightForearm=default,Vector3 leftForearm=default,float displayScale=1.65f)
         {
             if(!Visible||camera==null)return;
             foreach(var rig in rigs)
             {
                 CopyPose(rig);
-                PoseArm(rig,rig.rightUpper,rig.rightLower,rig.rightHand,rightContact,camera,false,flatRight,rightShaft,twoHandedRod);
-                PoseArm(rig,rig.leftUpper,rig.leftLower,rig.leftHand,leftContact,camera,true,flatLeft,leftShaft,twoHandedRod);
+                PoseArm(rig,rig.rightUpper,rig.rightLower,rig.rightHand,rightContact,camera,false,flatRight,rightShaft,twoHandedRod,rightForearm,displayScale);
+                PoseArm(rig,rig.leftUpper,rig.leftLower,rig.leftHand,leftContact,camera,true,flatLeft,leftShaft,twoHandedRod,leftForearm,displayScale);
             }
         }
-        void PoseArm(DisplayRig rig,Transform originalUpper,Transform originalLower,Transform originalHand,Vector3 contact,Transform camera,bool left,bool flat,Vector3 shaft,bool twoHandedRod)
+        void PoseArm(DisplayRig rig,Transform originalUpper,Transform originalLower,Transform originalHand,Vector3 contact,Transform camera,bool left,bool flat,Vector3 shaft,bool twoHandedRod,Vector3 forearm,float displayScale)
         {
             if(!rig.bones.TryGetValue(originalUpper,out var upper)||!rig.bones.TryGetValue(originalLower,out var lower)||!rig.bones.TryGetValue(originalHand,out var hand))return;
             // Keep a natural bent arm below each contact, with the shoulder cap at the lower edge.
-            const float displayScale=1.65f;
             float spread=twoHandedRod?.45f:.05f;
-            var along=(camera.up*.82f+camera.forward*.57f+camera.right*(left?spread:-spread)).normalized;
+            var along=forearm.sqrMagnitude>.001f?forearm.normalized:(camera.up*.82f+camera.forward*.57f+camera.right*(left?spread:-spread)).normalized;
             var forward=profile!=null?(left?profile.leftForward:profile.rightForward):Vector3.up;
             var across=profile!=null?(left?profile.leftAcross:profile.rightAcross):Vector3.forward;
             var up=shaft.sqrMagnitude>.1f?shaft.normalized:flat?(left?Vector3.Cross(along,Vector3.down):Vector3.Cross(Vector3.down,along)):camera.up;

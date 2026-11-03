@@ -197,7 +197,7 @@ public class BachDangStoryManager : MonoBehaviour
 
             case StoryState.Act1_Training:
                 title = "Huấn luyện trước khi xuất quân";
-                desc = "- Tới trống trận trong doanh trại.\n- Đánh đúng nhịp số 1–2–3 trước khi hết giờ.";
+                desc = "- Tới thao trường, luyện hiệu lệnh trống trận.\n- Nghe nhịp mẫu rồi cầm dùi đánh lại để điều quân.";
                 break;
 
             case StoryState.Act2_CollectWoodInVillage:

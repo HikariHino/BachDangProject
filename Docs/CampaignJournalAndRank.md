@@ -96,9 +96,23 @@ camp yard, relative to CampLayoutOrigin (-48, -120 in X/Z). This leaves the
 main central path clear. It has a solid timber rack, hide drumheads, bronze
 rims/studs, banners and a training sign. The station name stays unchanged
 for save compatibility; nearby E interaction uses a 26-unit radius.
-The new command UI presents a drum face, eight-beat sequence, military
-signals, two-round progress, timer and exact rank deadlines. The existing
-1/2/3 input and mistake penalty are preserved.
+Training now uses first-person forearms and two physical drumsticks. Aim at
+one of the real hide heads, hold then release left/right mouse to strike.
+Contact, not mouse-down, scores each beat. Listen to four-beat demonstrations
+for Assemble, Advance and Hold; repeat each rhythm within a 0.28-second window.
+H repeats the current example. Off-head, early and late hits explain the error
+and cost 0.6 seconds without erasing correct hits. Numeric shortcuts are retired.
+
+Four existing nearby patrol soldiers assemble, advance and raise their swords
+in response to completed orders, then resume their original patrol controllers.
+No extra crowd is spawned. The compact HUD leaves the drum and soldiers visible;
+normal gameplay hints, medicine and the old number-button board stay hidden.
+
+The 55-second limit and S/A/B targets of 22/33/44 seconds remain. Demonstration
+and response time count toward the record; a clean physical run can achieve S.
+Cancel, timeout, retry, load and result cleanup restore the camera, player body,
+collisions and patrols. Saving is blocked during the lesson; previous completed
+activities and personal bests remain compatible with the new interaction.
 
 ## Battle behavior
 
