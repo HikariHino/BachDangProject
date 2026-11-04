@@ -84,6 +84,7 @@ namespace BeachBoatStory
             gameObject.AddComponent<ArcheryTraining>();
             gameObject.AddComponent<RiverBossEncounter>();
             gameObject.AddComponent<CampReadability>();
+            gameObject.AddComponent<PreparationCampaign>();
             StartCoroutine(NPCDailyActivity.AttachFixedWorkers());
         }
 

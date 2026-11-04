@@ -26,7 +26,7 @@ namespace BeachBoatStory
             foreach(Transform child in hand)if(child.localPosition.sqrMagnitude>1e-12f&&child.GetComponentInChildren<Renderer>(true)==null)return child;
             return null;
         }
-        public HumanoidHandGrip(Animator rig,bool left)
+        public HumanoidHandGrip(Animator rig,bool left,float maximumPalmFraction=0)
         {
             hand=rig.GetBoneTransform(left?HumanBodyBones.LeftHand:HumanBodyBones.RightHand);
             var index=rig.GetBoneTransform(left?HumanBodyBones.LeftIndexProximal:HumanBodyBones.RightIndexProximal);
@@ -37,7 +37,7 @@ namespace BeachBoatStory
                 forward=hand.InverseTransformDirection(knuckles-hand.position).normalized;
                 across=hand.InverseTransformDirection(index.position-little.position).normalized;
                 center=hand.InverseTransformPoint(Vector3.Lerp(hand.position,knuckles,.7f));
-                length=center.magnitude/.7f;palm=Vector3.Cross(forward,across)*(left?-1:1);
+                length=center.magnitude/.7f;palm=Vector3.Cross(forward,across)*(left?-1:1);center=FitPalm(rig,left,hand,center,maximumPalmFraction);
                 return;
             }
             var end=FindEnd(hand);
@@ -106,7 +106,14 @@ namespace BeachBoatStory
             }
             if(Vector3.Cross(forward,across).sqrMagnitude<.01f)across=Vector3.right;
             if(palm.sqrMagnitude<.1f)palm=Vector3.Cross(forward,across)*(left?-1:1);
-            center=forward*(length*.64f)+palm*(length*.16f);
+            center=FitPalm(rig,left,hand,forward*(length*.64f)+palm*(length*.16f),maximumPalmFraction);
+        }
+        static Vector3 FitPalm(Animator rig,bool left,Transform hand,Vector3 point,float fraction)
+        {
+            if(fraction<=0)return point;
+            var forearm=rig.GetBoneTransform(left?HumanBodyBones.LeftLowerArm:HumanBodyBones.RightLowerArm);
+            float limit=Vector3.Distance(forearm.position,hand.position)*fraction;float distance=hand.TransformVector(point).magnitude;
+            return distance>limit&&distance>.00001f?point*(limit/distance):point;
         }
         internal static float Weight(BoneWeight w,int hand,int end)=>(w.boneIndex0==hand||w.boneIndex0==end?w.weight0:0)+(w.boneIndex1==hand||w.boneIndex1==end?w.weight1:0)+(w.boneIndex2==hand||w.boneIndex2==end?w.weight2:0)+(w.boneIndex3==hand||w.boneIndex3==end?w.weight3:0);
         public void Align(Transform upper,Transform lower,Vector3 contact,Vector3 hint,Vector3 thumbUp)

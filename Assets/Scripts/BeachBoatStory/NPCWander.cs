@@ -44,6 +44,7 @@ namespace BeachBoatStory
         public float CurrentSpeed=>currentSpeed;
         public float NominalStrideSpeed {get;private set;}
         NPCWalkNavigation navigation;
+        public bool ExternalControl {get;set;}
         public NPCWalkNavigation Navigation=>navigation;
         readonly System.Collections.Generic.List<Vector3> route=new System.Collections.Generic.List<Vector3>();
         int routePoint;

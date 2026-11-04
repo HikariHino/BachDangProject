@@ -16,7 +16,7 @@ public static class BeachBoatWorkbenchGripAuthoring
         var renderer=UnityEngine.Object.FindAnyObjectByType<BeachBoatQuestSession>().player.GetComponentInChildren<SkinnedMeshRenderer>();
         var source=Forearms(profile.source,renderer.bones);
         var result=UnityEngine.Object.Instantiate(source);result.name="Workbench_segmented_finger_grips";result.ClearBlendShapes();
-        foreach(bool left in new[]{true,false})foreach(string pose in new[]{"Rod","Pinch","Support"})
+        foreach(bool left in new[]{true,false})foreach(string pose in new[]{"Rod","Pinch","Support","Drum"})
             Add(result,source,renderer.bones,profile,left,pose);
         const string path="Assets/Resources/BachDang938/Player/WorkbenchHandGrips.asset";
         var existing=AssetDatabase.LoadAssetAtPath<Mesh>(path);
@@ -52,25 +52,36 @@ public static class BeachBoatWorkbenchGripAuthoring
             // Wrist/cuff vertices stay untouched. The thumb is on the +wide side in both bind frames.
             if(s<.28f||s>1.12f||Mathf.Abs(u)>.65f||Mathf.Abs(n)>.45f)continue;
             bool thumb=u>.32f&&s<.73f;
-            float start=thumb?.32f:.48f;
+            float tw=Mathf.SmoothStep(0,1,Mathf.InverseLerp(.22f,.42f,u))*(1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(.64f,.82f,s)));
+            float start=pose=="Drum"?Mathf.Lerp(.48f,.32f,tw):thumb?.32f:.48f;
             if(s<=start)continue;
-            float curl=pose=="Rod"?1:pose=="Pinch"?(u>.18f||thumb?1.04f:.48f):.26f;
+            float curl=pose=="Drum"?1:pose=="Rod"?1:pose=="Pinch"?(u>.18f||thumb?1.04f:.48f):.26f;
             float a1=(thumb?32:48)*curl,a2=(thumb?38:65)*curl,a3=(thumb?12:42)*curl;
+            if(pose=="Drum"){a1=Mathf.Lerp(50,12,tw);a2=Mathf.Lerp(65,20,tw);a3=Mathf.Lerp(45,8,tw);}
+            float k2=pose=="Drum"?Mathf.Lerp(.69f,.46f,tw):thumb?.46f:.69f,k3=pose=="Drum"?Mathf.Lerp(.84f,.57f,tw):thumb?.57f:.84f;
+            float blendWidth2=pose=="Drum"?.06f:thumb?.05f:.06f,blendWidth3=pose=="Drum"?.06f:thumb?.04f:.06f;
             float span=s-start,advance=0,inward=0,theta=0;const int steps=24;
             for(int k=0;k<steps;k++)
             {
                 float at=start+span*(k+.5f)/steps;
                 theta=(a1*Mathf.SmoothStep(0,1,Mathf.InverseLerp(start,start+.07f,at))+
-                    a2*Mathf.SmoothStep(0,1,Mathf.InverseLerp(thumb?.46f:.69f,thumb?.51f:.75f,at))+
-                    a3*Mathf.SmoothStep(0,1,Mathf.InverseLerp(thumb?.57f:.84f,thumb?.61f:.9f,at)))*Mathf.Deg2Rad;
+                    a2*Mathf.SmoothStep(0,1,Mathf.InverseLerp(k2,k2+blendWidth2,at))+
+                    a3*Mathf.SmoothStep(0,1,Mathf.InverseLerp(k3,k3+blendWidth3,at)))*Mathf.Deg2Rad;
                 advance+=Mathf.Cos(theta)*span/steps;inward+=Mathf.Sin(theta)*span/steps;
             }
             float final=(a1*Mathf.SmoothStep(0,1,Mathf.InverseLerp(start,start+.07f,s))+
-                a2*Mathf.SmoothStep(0,1,Mathf.InverseLerp(thumb?.46f:.69f,thumb?.51f:.75f,s))+
-                a3*Mathf.SmoothStep(0,1,Mathf.InverseLerp(thumb?.57f:.84f,thumb?.61f:.9f,s)))*Mathf.Deg2Rad;
-            float thumbBlend=thumb?Mathf.SmoothStep(0,1,Mathf.InverseLerp(.32f,.5f,u))*Mathf.SmoothStep(0,1,Mathf.InverseLerp(.32f,.6f,s)):0;
-            float opposed=u-thumbBlend*(pose=="Support"?.04f:pose=="Pinch"?.2f:.14f);
+                a2*Mathf.SmoothStep(0,1,Mathf.InverseLerp(k2,k2+blendWidth2,s))+
+                a3*Mathf.SmoothStep(0,1,Mathf.InverseLerp(k3,k3+blendWidth3,s)))*Mathf.Deg2Rad;
+            float thumbBlend=pose=="Drum"?tw:thumb?Mathf.SmoothStep(0,1,Mathf.InverseLerp(.32f,.5f,u))*Mathf.SmoothStep(0,1,Mathf.InverseLerp(.32f,.6f,s)):0;
+            float opposed=u-thumbBlend*(pose=="Support"?.04f:pose=="Pinch"?.2f:pose=="Drum"?.24f:.14f);
             var q=wide*opposed+along*(start+advance-n*Mathf.Sin(final))+palm*(inward+n*Mathf.Cos(final));
+            if(pose=="Drum")
+            {
+                // Keep the closed finger pads outside the cylindrical stick. The thumb
+                // lies along its side rather than bending under the entire fist.
+                float qs=Vector3.Dot(q,along),qn=Vector3.Dot(q,palm);var radial=new Vector2(qs-.57f,qn-.17f);
+                if(radial.magnitude<.17f&&radial.sqrMagnitude>.00001f){var push=radial.normalized*(.17f-radial.magnitude);q+=along*push.x+palm*push.y;}
+            }
             float blend=Mathf.SmoothStep(0,1,Mathf.InverseLerp(.5f,.85f,weight));bent[i]=Vector3.Lerp(vertices[i],inverse.MultiplyPoint3x4(q*length),blend);affected++;
         }
         if(affected<250)throw new Exception("Work hand has insufficient finger vertices: "+name);

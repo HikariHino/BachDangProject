@@ -5,6 +5,13 @@ namespace BeachBoatStory
 {
     [Serializable] public sealed class BachDangSaveData
     {
+        public Preparation preparation;
+        [Serializable] public sealed class Preparation
+        {
+            public int version=1,preparedMask,qualityMask,deliveredMask,recoveredMask,choice;
+            public bool incidentStarted,incidentResolved,incidentSkipped;
+            public float rescueSeconds;public float[] transit={-1,-1,-1,-1};
+        }
         public Discipline discipline;
         [Serializable] public sealed class Discipline {public int warnings;public bool armyHostile;public string[] attackers;public DisciplineActor[] pursuers;}
         [Serializable] public sealed class DisciplineActor {public string id;public Vector3 position,home;public Quaternion rotation,homeRotation;}

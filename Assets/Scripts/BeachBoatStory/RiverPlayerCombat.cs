@@ -21,6 +21,8 @@ namespace BeachBoatStory
         public int HostileShots {get;private set;}
         public int DodgedShots {get;private set;}
         public int Arrows {get;private set;}=6;
+        public int QuiverCapacity=>PracticeActive?6:6+(PreparationCampaign.Instance?.ArrowBonus??0);
+        public void AddPreparedArrow(int count=1){if(!PracticeActive)Arrows=Mathf.Min(QuiverCapacity,Arrows+Mathf.Max(0,count));}
         public bool IsAiming {get;private set;}
         public bool IsReloading=>reloadUntil>Time.time;
         public bool PracticeActive=>ArcheryTraining.Active!=null;
@@ -102,7 +104,7 @@ namespace BeachBoatStory
         }
         public void RestoreSave(BachDangSaveData.Fleet data)
         {
-            Kills=data.kills;AlliedKills=data.alliedKills;Arrows=Mathf.Clamp(data.arrows,0,6);ShotsFired=data.shots;Hits=data.hits;
+            Kills=data.kills;AlliedKills=data.alliedKills;Arrows=Mathf.Clamp(data.arrows,0,QuiverCapacity);ShotsFired=data.shots;Hits=data.hits;
             suppressed.Clear();foreach(int wave in data.suppressed??System.Array.Empty<int>())suppressed.Add(wave);
             wasBattle=data.active;threat=null;charge=0;drawStarted=false;reloadUntil=nextShot=0;nextThreat=Time.time+4;
         }
@@ -124,7 +126,7 @@ namespace BeachBoatStory
         public void ResetForCheckpoint()
         {
             RiverBoardingCombat.Instance?.ResetBattle();
-            SetAim(false);Kills=AlliedKills=ShotsFired=Hits=HostileShots=DodgedShots=0;Arrows=6;charge=reloadUntil=nextShot=0;
+            SetAim(false);Kills=AlliedKills=ShotsFired=Hits=HostileShots=DodgedShots=0;Arrows=QuiverCapacity;charge=reloadUntil=nextShot=0;
             threat=null;suppressed.Clear();wasBattle=false;
             foreach(var arrow in arrows)if(arrow!=null){arrow.active=false;arrow.visual.gameObject.SetActive(false);}
         }
@@ -135,7 +137,7 @@ namespace BeachBoatStory
             if(!BattleActive&&wasBattle){SetAim(false);wasBattle=false;threat=null;}
             if(hud!=null)hud.SetActive(active);
             if(!active){SetAim(false);return;}
-            if(reloadUntil>0&&Time.time>=reloadUntil){reloadUntil=0;Arrows=6;Tell("Đã nạp đủ 6 mũi tên.");}
+            if(reloadUntil>0&&Time.time>=reloadUntil){reloadUntil=0;Arrows=QuiverCapacity;Tell($"Đã nạp đủ {QuiverCapacity} mũi tên.");}
             var boarding=RiverBoardingCombat.Instance;
             SetAim(PlayerShield.Instance?.Equipped!=true&&(boarding==null||!boarding.SwordDrawn&&!boarding.IsTraversing)&&Input.GetMouseButton(1)&&Cursor.lockState==CursorLockMode.Locked);
             if(Input.GetKeyDown(KeyCode.R))Reload();
@@ -179,7 +181,7 @@ namespace BeachBoatStory
         }
         public bool Reload()
         {
-            if(!CanUseBow||BeachBoatQuestSession.InputBlocked||IsReloading||Arrows>=6)return false;
+            if(!CanUseBow||BeachBoatQuestSession.InputBlocked||IsReloading||Arrows>=QuiverCapacity)return false;
             reloadUntil=Time.time+2;charge=0;Tell("Đang lấy tên từ bó tên trên thuyền…");return true;
         }
         public bool TryFire(Ray ray,float draw)
@@ -392,7 +394,7 @@ namespace BeachBoatStory
         }
         public void BeginPractice(){SetAim(false);Arrows=6;reloadUntil=nextShot=charge=0;}
         public void EndPractice(){SetAim(false);charge=0;foreach(var a in arrows)if(a!=null&&a.practice){a.active=false;a.visual.gameObject.SetActive(false);}}
-        public void RestorePracticeAmmo(int count){Arrows=Mathf.Clamp(count,0,6);}
+        public void RestorePracticeAmmo(int count){Arrows=Mathf.Clamp(count,0,QuiverCapacity);}
         void BuildHUD()
         {
             var go=new GameObject("RiverPlayerCombatHUD",typeof(Canvas),typeof(CanvasScaler));go.transform.SetParent(transform,false);var canvas=go.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.sortingOrder=110;

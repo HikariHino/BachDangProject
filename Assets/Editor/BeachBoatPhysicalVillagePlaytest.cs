@@ -56,7 +56,7 @@ public static class BeachBoatPhysicalVillagePlaytest
         bool moved=work.DragTool(Vector2.ClampMagnitude(work.ToolGoal-work.ToolPointer,.3f),.1f);
         if(work.Current==VillagePhysicalWork.Step.FillRice&&work.ScoopLoaded&&work.RiceOverBag)work.ReleaseTool();return moved;
     }
-    static Vector3 ToolWorld(VillagePhysicalWork work,Vector2 point)=>(Vector3)typeof(VillagePhysicalWork).GetMethod("ToolPoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(work,new object[]{point});
+    static Vector3 ToolWorld(VillagePhysicalWork work,Vector2 point)=>(Vector3)typeof(VillagePhysicalWork).GetMethod("PointerPoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(work,new object[]{point});
     static bool DrivePointer(VillagePhysicalWork work)
     {
         var camera=BeachBoatQuestSession.Instance.storyCamera;
@@ -171,7 +171,7 @@ public static class BeachBoatPhysicalVillagePlaytest
                     Check(rms>.005f&&rms<(louder?.084f:.035f)&&peak<=(louder?.535f:.225f),"Work clip has requested audible recorded content with bounded RMS and peaks: "+cue+" rms="+rms+" peak="+peak);
                     if(louder){float baseline=cue==VillageWorkFoley.Cue.Saw?.02244f:cue==VillageWorkFoley.Cue.Rope?.01095f:cue==VillageWorkFoley.Cue.Cloth?.01997f:cue==VillageWorkFoley.Cue.Knot?.01581f:.01948f;Check(Mathf.Abs(rms-baseline*2.4f)<.0002f,"Requested action recording is 2.4 times louder: "+cue);}
                 }
-                var workHands=Resources.Load<Mesh>("BachDang938/Player/WorkbenchHandGrips");Check(workHands!=null&&workHands.blendShapeCount==6,"Work hands have independent left/right rod, pinch and support shapes");
+                var workHands=Resources.Load<Mesh>("BachDang938/Player/WorkbenchHandGrips");Check(workHands!=null&&workHands.blendShapeCount==8,"Work hands have separate left/right rod, pinch, support and matched drum grips");
                 for(int n=0;n<workHands.blendShapeCount;n++){var delta=new Vector3[workHands.vertexCount];workHands.GetBlendShapeFrameVertices(n,0,delta,null,null);Check(delta.Count(v=>v.sqrMagnitude>1e-12f)>200,"Finger flexion changes actual mesh vertices: "+workHands.GetBlendShapeName(n));}
                 foreach(var p in Directory.GetFiles(Application.persistentDataPath,"campaign938*"))hashes[p]=Hash(p);
                 BachDangSaveSystem.TestDirectory=Path.GetFullPath(".utmp/PhysicalVillageQA/"+DateTime.Now.ToString("yyyyMMddHHmmssfff"));BachDangAutoSave.Instance.enabled=false;
@@ -338,7 +338,7 @@ public static class BeachBoatPhysicalVillagePlaytest
     }
     static void CheckScreenDirections(VillagePhysicalWork work,Camera camera)
     {
-        var point=typeof(VillagePhysicalWork).GetMethod("ToolPoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);
+        var point=typeof(VillagePhysicalWork).GetMethod("PointerPoint",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);
         Vector3 World(Vector2 p)=>(Vector3)point.Invoke(work,new object[]{p});
         var origin=(Vector2)camera.WorldToScreenPoint(World(Vector2.zero));
         foreach(var target in new[]{Vector2.zero,new Vector2(-.9f,-.7f),new Vector2(.85f,.6f)})

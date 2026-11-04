@@ -7,7 +7,7 @@ namespace BeachBoatStory
     /// <summary>First-person forearms made from the player's mesh, with an isolated display rig.</summary>
     public sealed class WorkbenchHands
     {
-        public enum GripPose { Support, Rod, Pinch }
+        public enum GripPose { Support, Rod, Pinch, Drum }
         readonly Dictionary<Renderer,bool> originalVisibility=new Dictionary<Renderer,bool>();
         readonly List<GameObject> objects=new List<GameObject>();
         readonly List<Mesh> meshes=new List<Mesh>();
@@ -78,7 +78,7 @@ namespace BeachBoatStory
                 RestFrames(true,out display.leftUpperFrame,out display.leftLowerFrame,out display.leftLowerAlong);RestFrames(false,out display.rightUpperFrame,out display.rightLowerFrame,out display.rightLowerAlong);
                 rigs.Add(display);CopyPose(display);
                 var view=go.AddComponent<SkinnedMeshRenderer>();view.sharedMesh=mesh;view.bones=source.bones.Select(b=>b!=null?map[b]:null).ToArray();view.rootBone=source.rootBone!=null&&map.TryGetValue(source.rootBone,out var root)?root:null;view.sharedMaterials=source.sharedMaterials;
-                view.localBounds=source.localBounds;view.updateWhenOffscreen=true;view.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;view.enabled=true;
+                view.localBounds=source.localBounds;view.updateWhenOffscreen=true;view.forceMatrixRecalculationPerRender=true;view.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;view.enabled=true;
                 go.SetActive(false);objects.Add(go);meshes.Add(mesh);
             }
             foreach(var renderer in player.GetComponentsInChildren<Renderer>(true))if(!objects.Contains(renderer.gameObject))originalVisibility[renderer]=renderer.forceRenderingOff;
@@ -101,17 +101,17 @@ namespace BeachBoatStory
                 else {dst.SetPositionAndRotation(src.position,src.rotation);dst.localScale=Divide(src.lossyScale,dst.parent.lossyScale);}
             }
         }
-        public void Pose(Transform camera,Vector3 rightContact,Vector3 leftContact,bool flatLeft,bool flatRight,Vector3 rightShaft=default,Vector3 leftShaft=default,bool twoHandedRod=false,Vector3 rightForearm=default,Vector3 leftForearm=default,float displayScale=1.65f)
+        public void Pose(Transform camera,Vector3 rightContact,Vector3 leftContact,bool flatLeft,bool flatRight,Vector3 rightShaft=default,Vector3 leftShaft=default,bool twoHandedRod=false,Vector3 rightForearm=default,Vector3 leftForearm=default,float displayScale=1.65f,Vector3 rightPalm=default,Vector3 leftPalm=default)
         {
             if(!Visible||camera==null)return;
             foreach(var rig in rigs)
             {
                 CopyPose(rig);
-                PoseArm(rig,rig.rightUpper,rig.rightLower,rig.rightHand,rightContact,camera,false,flatRight,rightShaft,twoHandedRod,rightForearm,displayScale);
-                PoseArm(rig,rig.leftUpper,rig.leftLower,rig.leftHand,leftContact,camera,true,flatLeft,leftShaft,twoHandedRod,leftForearm,displayScale);
+                PoseArm(rig,rig.rightUpper,rig.rightLower,rig.rightHand,rightContact,camera,false,flatRight,rightShaft,twoHandedRod,rightForearm,displayScale,rightPalm);
+                PoseArm(rig,rig.leftUpper,rig.leftLower,rig.leftHand,leftContact,camera,true,flatLeft,leftShaft,twoHandedRod,leftForearm,displayScale,leftPalm);
             }
         }
-        void PoseArm(DisplayRig rig,Transform originalUpper,Transform originalLower,Transform originalHand,Vector3 contact,Transform camera,bool left,bool flat,Vector3 shaft,bool twoHandedRod,Vector3 forearm,float displayScale)
+        void PoseArm(DisplayRig rig,Transform originalUpper,Transform originalLower,Transform originalHand,Vector3 contact,Transform camera,bool left,bool flat,Vector3 shaft,bool twoHandedRod,Vector3 forearm,float displayScale,Vector3 desiredPalm)
         {
             if(!rig.bones.TryGetValue(originalUpper,out var upper)||!rig.bones.TryGetValue(originalLower,out var lower)||!rig.bones.TryGetValue(originalHand,out var hand))return;
             // Keep a natural bent arm below each contact, with the shoulder cap at the lower edge.
@@ -121,12 +121,20 @@ namespace BeachBoatStory
             var across=profile!=null?(left?profile.leftAcross:profile.rightAcross):Vector3.forward;
             var up=shaft.sqrMagnitude>.1f?shaft.normalized:flat?(left?Vector3.Cross(along,Vector3.down):Vector3.Cross(Vector3.down,along)):camera.up;
             var handRotation=Quaternion.LookRotation(along,up)*Quaternion.Inverse(Quaternion.LookRotation(forward,across));
+            if(desiredPalm.sqrMagnitude>.1f)
+            {
+                var localPalm=Vector3.Cross(forward,across)*(left?-1:1);
+                var wanted=Vector3.ProjectOnPlane(desiredPalm,along).normalized;
+                float roll=Vector3.SignedAngle(handRotation*localPalm,wanted,along);
+                up=Quaternion.AngleAxis(roll,along)*up;
+                handRotation=Quaternion.AngleAxis(roll,along)*handRotation;
+            }
             var center=profile!=null?(left?profile.leftCenter:profile.rightRodCenter):Vector3.zero;
             if(profile!=null&&usesWorkMesh)
             {
                 var pose=left?leftGrip:rightGrip;float length=left?.00195941f:.00209216f;
                 var palm=Vector3.Cross(forward,across)*(left?-1:1);
-                center=(forward*(pose==GripPose.Pinch?.64f:pose==GripPose.Rod?.59f:.63f)+palm*(pose==GripPose.Pinch?.26f:pose==GripPose.Rod?.2f:.07f)+across*(pose==GripPose.Pinch?.26f:.1f))*length;
+                center=(forward*(pose==GripPose.Drum?.57f:pose==GripPose.Pinch?.64f:pose==GripPose.Rod?.59f:.63f)+palm*(pose==GripPose.Drum?.17f:pose==GripPose.Pinch?.26f:pose==GripPose.Rod?.2f:.07f)+across*(pose==GripPose.Drum?.04f:pose==GripPose.Pinch?.26f:.1f))*length;
             }
             var wrist=contact-handRotation*Vector3.Scale(center,originalHand.lossyScale*displayScale);
             float lowerLength=Vector3.Distance(originalLower.position,originalHand.position)*displayScale;
@@ -148,7 +156,7 @@ namespace BeachBoatStory
             MaxSegmentError=Mathf.Max(MaxSegmentError,Mathf.Abs(Vector3.Distance(lower.position,hand.position)/lowerLength-1),Mathf.Abs(Vector3.Distance(upper.position,lower.position)/upperLength-1));
             MaxWristAngle=Mathf.Max(MaxWristAngle,Vector3.Angle(hand.TransformDirection(forward),lower.TransformDirection(left?rig.leftLowerAlong:rig.rightLowerAlong)));
         }
-        public void Grip(GripPose left,GripPose right)
+        public void Grip(GripPose left,GripPose right,bool snap=false)
         {
             leftGrip=left;rightGrip=right;
             ActiveGripWeight=0;
@@ -159,7 +167,7 @@ namespace BeachBoatStory
                 {
                     int index=r.sharedMesh.GetBlendShapeIndex((side?"Left":"Right")+pose);if(index<0)continue;
                     float goal=(side?left:right)==pose?100:0;
-                    float current=Mathf.MoveTowards(r.GetBlendShapeWeight(index),goal,Time.unscaledDeltaTime*700);r.SetBlendShapeWeight(index,current);ActiveGripWeight=Mathf.Max(ActiveGripWeight,current);
+                    float current=snap?goal:Mathf.MoveTowards(r.GetBlendShapeWeight(index),goal,Time.unscaledDeltaTime*700);r.SetBlendShapeWeight(index,current);ActiveGripWeight=Mathf.Max(ActiveGripWeight,current);
                 }
             }
         }

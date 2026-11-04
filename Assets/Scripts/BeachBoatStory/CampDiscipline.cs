@@ -11,7 +11,7 @@ namespace BeachBoatStory
     public sealed class CampDiscipline:MonoBehaviour
     {
         public static CampDiscipline Instance {get;private set;}
-        public static bool WeaponsAvailable=>BeachBoatQuestSession.Instance?.storyMode==true&&!BeachBoatQuestSession.InputBlocked&&RiverBoardingCombat.Instance?.IsTraversing!=true;
+        public static bool WeaponsAvailable=>PreparationCampaign.Instance?.Carrying!=true&&BeachBoatQuestSession.Instance?.storyMode==true&&!BeachBoatQuestSession.InputBlocked&&RiverBoardingCombat.Instance?.IsTraversing!=true;
         public const string WarningLine="Hạ cung xuống! Không được chĩa vũ khí vào chủ tướng. Ta chỉ nhắc ngươi lần này.";
         public const string ExecutionLine="Quân đâu! Kẻ phản nghịch dám phạm thượng. Giết hắn!";
         public const string RetaliationLine="Có kẻ phản quân! Đừng để hắn chạy thoát!";

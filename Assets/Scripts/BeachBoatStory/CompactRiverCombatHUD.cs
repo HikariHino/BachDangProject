@@ -55,7 +55,7 @@ namespace BeachBoatStory
         public void Refresh(string message,bool threat)
         {
             enemy.text=combat.RemainingEnemies.ToString();kills.text=combat.Kills.ToString();allied.text=combat.AlliedKills.ToString();
-            ammo.text=combat.IsReloading?"ĐANG NẠP…":$"{combat.Arrows} <size=17><color=#9AAEAB>/ 6</color></size>";
+            ammo.text=combat.IsReloading?"ĐANG NẠP…":$"{combat.Arrows} <size=17><color=#9AAEAB>/ {combat.QuiverCapacity}</color></size>";
             bool duel=RiverBossEncounter.Instance?.IsFighting==true;
             if(duel!=duelActions)
             {
@@ -69,7 +69,7 @@ namespace BeachBoatStory
             actions[0].color=duel?RiverBossEncounter.Instance.IsRunning?Gold:White:boarding!=null&&boarding.SwordDrawn?Gold:White;
             actions[1].color=duel?White:boarding!=null&&boarding.State==RiverBoardingCombat.PlayerState.Swimming?Gold:White;
             actions[2].color=duel?RiverBossEncounter.Instance.IsAirborne?Gold:White:boarding!=null&&boarding.State==RiverBoardingCombat.PlayerState.Climbing?Gold:White;
-            actions[3].color=combat.IsReloading?Gold:combat.Arrows==6?new Color(.45f,.53f,.52f):White;
+            actions[3].color=combat.IsReloading?Gold:combat.Arrows==combat.QuiverCapacity?new Color(.45f,.53f,.52f):White;
             var shield=PlayerShield.Instance;shieldState.text=shield?.IsGuarding==true?"ĐANG ĐỠ TÊN • MỖI TÊN: 8 THỂ LỰC":shield?.Equipped==true?"KHIÊN ĐÃ RÚT • GIỮ CHUỘT PHẢI ĐỠ":"G • RÚT KHIÊN";
             notice.text=shield!=null&&Time.unscaledTime<shield.FeedbackUntil?shield.Feedback:message;notice.color=threat?new Color(1,.44f,.33f):White;
             var fleet=EnemyFleetDirector.Instance;var tide=TideSystem.Instance;float progress=0;

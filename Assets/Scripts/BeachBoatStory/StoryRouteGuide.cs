@@ -59,6 +59,8 @@ namespace BeachBoatStory
             if(state==BachDangStoryManager.StoryState.Act3_SearchPrisoners){title="Kiểm tra thuyền đắm • Tìm lính đầu hàng";return ThroughGate(RiverBossEncounter.Instance?.GuideTarget,ref title);}
             if(state==BachDangStoryManager.StoryState.Act3_CommanderDuel){title="Đấu tướng địch • Né rồi phản công";return null;}
             if(state==BachDangStoryManager.StoryState.Act3_FinalReport){title="Báo cáo Ngô Quyền • Tướng giặc đã bị hạ";return ThroughGate(boatForReport(),ref title);}
+            var preparation=PreparationCampaign.Instance;
+            if(preparation!=null&&preparation.RescueActive&&preparation.GuideTarget!=null&&QuestRowboat.Instance?.IsAboard!=true&&QuestRowboat.FlatDistance(session.player.transform.position,preparation.DockPosition)<180){title="Tùy chọn • Cứu chuyến hàng";return preparation.GuideTarget;}
             var range=ArcheryTraining.Instance;
             if(range!=null&&range.Required&&range.GuideTarget!=null){title="Bãi tập cung • Luyện cung trước khi nhận lệnh nhử địch";return ThroughGate(range.GuideTarget,ref title);}
             if (state == BachDangStoryManager.StoryState.Act2_Completed &&

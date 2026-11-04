@@ -77,6 +77,8 @@ namespace BeachBoatStory
                     }
                 }
                 Row("BẮT BUỘC TRƯỚC XUẤT QUÂN • Tập cung",$"Bãi tập trong doanh trại • 6 mũi, trúng ít nhất 4 bia • Kỷ lục {ArcheryTraining.Instance?.BestScore??0}/60 • Không phạt thời gian luyện tập",ArcheryTraining.Instance?.Completed??false,false,82);
+                var preparation=PreparationCampaign.Instance;
+                if(preparation!=null){Row("NHIỆM VỤ PHỤ • Cứu chuyến hàng trước giờ xuất quân",preparation.JournalText,preparation.Data.incidentResolved,preparation.RescueActive,82);Row("CHUẨN BỊ CHO TRẬN ĐÁNH",$"Bao tên: {6+preparation.ArrowBonus} mũi/lần nạp • Thưởng một lần tại mỗi sạp khi đạt thời gian A và không quá 2 lỗi.\nVật tư đang được vận chuyển từ kho làng tới bến.",preparation.Data.preparedMask==15,false,82);}
                 int trained=BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().CompletedTrainingLevels;
                 Row($"NHIỆM VỤ PHỤ • Luyện thể lực ({trained}/3)","TÙY CHỌN • Có thể bỏ qua • Không ảnh hưởng cốt truyện và hạng.",trained==3,false,68);
                 for(int level=1;level<=3;level++)Row("    Luyện thể lực • "+CampaignProgress.DifficultyNames[level-1],$"Thắng cấp này: +20 thể lực tối đa • Tổng sau cấp {level}: +{level*20}.",trained>=level,false,64);

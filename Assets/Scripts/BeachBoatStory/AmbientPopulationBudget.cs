@@ -44,6 +44,7 @@ namespace BeachBoatStory
                 int i=order[rank];bool visible=actualDistances[i]<visibleDistance*visibleDistance;
                 bool active=visible&&actualDistances[i]<activeDistance*activeDistance&&ActiveCount<maximumAnimated;
                 if(active)activeActors[ActiveCount++]=i;
+                if(citizens[i].ExternalControl){order[rank]=rank;continue;}
                 citizens[i].enabled=active;talkers[i].enabled=active;animators[i].enabled=active;
                 // Never leave an unanimated walking pose visible beyond the simulation budget.
                 foreach(var renderer in renderers[i])renderer.enabled=active;

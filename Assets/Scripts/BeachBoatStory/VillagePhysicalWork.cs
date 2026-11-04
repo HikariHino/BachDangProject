@@ -32,6 +32,7 @@ namespace BeachBoatStory
         public float HandGripWeight=>hands?.ActiveGripWeight??0;
         public float RightPalmDown=>hands==null?0:Vector3.Dot(hands.RightPalmNormal,Vector3.down);
         public bool SawGuidesVisible=>sawGuides.Count>0&&sawGuides.TrueForAll(g=>g!=null&&g.activeInHierarchy);
+        public VillageHandSaw Saw=>sawTool;
         public Vector3 ToolWorldPosition=>ToolPoint(ToolPointer);
         public bool RiceReady=>Current==Step.FillRice&&RiceFill>=.65f&&RiceFill<=.85f;
         public bool RiceExcess=>Current==Step.FillRice&&RiceFill>.85f;
@@ -76,6 +77,7 @@ namespace BeachBoatStory
             }
         }
         VillageWorkStall stall;Transform player;Animator rig;Transform[] arms;Quaternion[] armRest;Quaternion spineRest;Transform rightHand,leftHand,chest,spine;
+        VillageHandSaw sawTool;
         GameObject props,held,benchLog,bag,grain,blade,sawHandle,parcel,marker,foodTray,toolCursor,spoon,ladleRice;
         LineRenderer rope,pour,fillBand;TextMeshPro label;Material wood,fibre,cloth,rice,fish,salt,gold,green,red;
         readonly List<Material> owned=new List<Material>();
@@ -224,7 +226,7 @@ namespace BeachBoatStory
         {
             if(camera==null||!ToolStep||!float.IsFinite(delta.x)||!float.IsFinite(delta.y))return Vector2.zero;
             var view=camera.GetComponent<Camera>();const float step=.05f;
-            Vector2 Project(Vector2 p)=>view.WorldToScreenPoint(ToolPoint(p));
+            Vector2 Project(Vector2 p)=>view.WorldToScreenPoint(PointerPoint(p));
             // Keep the actual projected scale of both tool axes. Normalizing each
             // separately turns an upright mouse drag into diagonal world movement.
             var a=(Project(Vector2.right*step)-Project(Vector2.left*step))/(2*step);
@@ -241,7 +243,7 @@ namespace BeachBoatStory
             var view=camera.GetComponent<Camera>();
             Vector3 Project(Vector2 p)
             {
-                var s=view.WorldToScreenPoint(ToolPoint(p));float depth=view.orthographic?1:s.z;
+                var s=view.WorldToScreenPoint(PointerPoint(p));float depth=view.orthographic?1:s.z;
                 return new Vector3(s.x*depth,s.y*depth,depth);
             }
             // Invert the projected 3D tool plane in homogeneous screen coordinates.
@@ -254,12 +256,13 @@ namespace BeachBoatStory
             float det=a*e-b*d;if(Mathf.Abs(det)<.001f)return false;
             point=new Vector2((c*e-b*f)/det,(a*f-c*d)/det);return float.IsFinite(point.x)&&float.IsFinite(point.y);
         }
+        Vector3 PointerPoint(Vector2 point)=>ToolPoint(point)+(Current==Step.Saw&&sawTool!=null?sawTool.HandleOffset:Vector3.zero);
         public bool PressPointer(Vector2 screen)
         {
             if(!CanInteract||!ToolStep||!PointerCoordinates(screen,out var point))return false;
             var pick=ToolGrabPoint;
-            var projected=(Vector2)camera.GetComponent<Camera>().WorldToScreenPoint(ToolPoint(pick));
-            if(Vector2.Distance(screen,projected)>Mathf.Max(45,Screen.height*128f/720)){ToolFeedback=Current==Step.Wrap?"Bấm giữ ngay mép khăn có vòng sáng":"Bấm giữ ngay dụng cụ đang cầm";return false;}
+            var projected=(Vector2)camera.GetComponent<Camera>().WorldToScreenPoint(PointerPoint(pick));
+            if(Vector2.Distance(screen,projected)>Mathf.Max(45,Screen.height*128f/720)&&(Current!=Step.Saw||sawTool==null||Vector2.Distance(screen,(Vector2)camera.GetComponent<Camera>().WorldToScreenPoint(sawTool.HandleContact))>Mathf.Max(35,Screen.height*.12f))){ToolFeedback=Current==Step.Wrap?"Bấm giữ ngay mép khăn đang sáng":"Bấm giữ ngay dụng cụ đang cầm";return false;}
             if(Current==Step.Wrap&&!foldGrabbed)ToolPointer=pick;
             // A forgiving pick must not preserve a large invisible offset, which
             // previously made reaching the visible centre almost impossible.
@@ -372,8 +375,9 @@ namespace BeachBoatStory
                     if(stall.kind==VillageWorkStall.WorkKind.Timber)
                     {
                         benchLog=Shape("Log_on_saw_bench",PrimitiveType.Cylinder,new Vector3(0,11,-9.8f),new Vector3(3,10,3),wood);benchLog.transform.localRotation=Quaternion.Euler(0,0,90);
-                        blade=Shape("Hand_saw",PrimitiveType.Cube,new Vector3(0,14,-8),new Vector3(.35f,5,7),Make("Saw iron",new Color(.34f,.37f,.37f)));Current=Step.Saw;
-                        sawHandle=Shape("Saw_wooden_handle",PrimitiveType.Cube,Vector3.zero,new Vector3(4,.7f,1.2f),wood);
+                        sawTool=VillageHandSaw.Create(props.transform,wood,Make("Saw steel",new Color(.47f,.51f,.53f)));
+                        blade=sawTool.gameObject;sawHandle=null;Current=Step.Saw;
+                        sawTool.transform.SetPositionAndRotation(ToolPoint(ToolPointer),rotation*Quaternion.Euler(0,0,35));
                     }
                     else if(stall.kind==VillageWorkStall.WorkKind.Rope)Current=Step.Tie;
                     else
@@ -496,6 +500,7 @@ namespace BeachBoatStory
             label.gameObject.SetActive(!AtTable);
             if(held!=null){var at=chest.position+player.forward*4.5f+player.right*(stall.kind==VillageWorkStall.WorkKind.Timber?2:0);held.transform.position=TimberSplit?Vector3.Lerp(cutPickup,at,Mathf.SmoothStep(0,1,(Time.time-splitAt)/.4f)):at;held.transform.rotation=player.rotation*(stall.kind==VillageWorkStall.WorkKind.Timber?Quaternion.Euler(0,0,90):Quaternion.identity);}
             if(busy||AtTable){var facing=(AtTable?rotation*Vector3.forward:TargetPosition-player.position);facing.y=0;var body=player.GetComponent<Rigidbody>();if(body!=null&&facing.sqrMagnitude>.1f)body.MoveRotation(Quaternion.Slerp(body.rotation,Quaternion.LookRotation(facing),1-Mathf.Exp(-12*Time.deltaTime)));}
+            if(sawTool!=null&&Current==Step.Saw)sawTool.transform.SetPositionAndRotation(ToolPoint(ToolPointer),rotation*Quaternion.Euler(0,0,35));
             if(Carrying||busy||AtTable)
             {
                 if(busy&&!Carrying&&Time.timeScale>0&&spine!=null)spine.rotation=Quaternion.AngleAxis(Current==Step.Wrap?30:18,player.right)*spine.rotation;
@@ -512,7 +517,7 @@ namespace BeachBoatStory
                 }
                 var right=grip+player.right*2;var left=grip-player.right*2;
                 if(!Carrying&&Current==Step.FillRice){right=spoon.transform.TransformPoint(new Vector3(0,0,-3));left=World(new Vector3(-8.6f,12.1f,-10.2f));}
-                else if(!Carrying&&Current==Step.Saw)left=World(new Vector3(-4,12,-10));
+                else if(!Carrying&&Current==Step.Saw){left=World(new Vector3(-4,12.75f,-10));right=sawTool.HandleContact;}
                 else if(!Carrying&&Current==Step.Tie){right=grip;left=World(new Vector3(-13.5f+Knots*10,12.5f,-10.5f));}
                 else if(!Carrying&&Current==Step.Wrap)
                 {
@@ -528,9 +533,11 @@ namespace BeachBoatStory
                     if(Current==Step.Saw||Current==Step.FillRice)gripProfile.Align(arms[0],arms[1],rightHand,right,arms[0].position+player.right*4-Vector3.up*3,false,true,Current==Step.Saw?player.right:player.forward);
                 }
             }
-            if(AtTable&&camera!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,true,Current==Step.Wrap||Current==Step.FillRice,Current==Step.Saw?player.right:Vector3.zero);
-            if(blade!=null&&Current==Step.Saw)blade.transform.position=ToolPoint(ToolPointer);
-            if(sawHandle!=null&&Current==Step.Saw)sawHandle.transform.SetPositionAndRotation(ToolPoint(ToolPointer)+player.right*2,player.rotation);
+            if(AtTable&&camera!=null)
+            {
+                if(Current==Step.Saw&&sawTool!=null)hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,true,false,sawTool.HandleAxis,default,false,Vector3.ProjectOnPlane(camera.transform.forward,sawTool.HandleAxis).normalized,default,1.65f);
+                else hands?.Pose(camera.transform,RightGripPosition,LeftGripPosition,true,Current==Step.Wrap||Current==Step.FillRice);
+            }
             if(grain!=null){float level=Mathf.Clamp01(RiceFill);grain.transform.localScale=new Vector3(5.4f,Mathf.Max(.05f,level*2.5f),5.4f);grain.transform.localPosition=WorkLocal(new Vector3(4,9+level*2.5f,-10.2f));grain.GetComponent<Renderer>().sharedMaterial=rice;}
             if(fillBand!=null)fillBand.enabled=false; // Amount is already shown by the readable screen gauge.
             if(pour!=null){pour.enabled=Current==Step.FillRice&&Time.time<pourUntil;if(pour.enabled){pour.positionCount=9;for(int i=0;i<9;i++){float t=i/8f;pour.SetPosition(i,World(Vector3.Lerp(new Vector3(4,14,-10.2f),new Vector3(4,12,-10.2f),t)));}}}

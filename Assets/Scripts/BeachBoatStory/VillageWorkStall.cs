@@ -334,7 +334,7 @@ namespace BeachBoatStory
         public bool ClaimReward()
         {
             if(Active!=this||Phase!=WorkPhase.Won)return false;
-            Close();quest.Collect(this);VillageVendorSpeech.Say(kind,2);return true;
+            PreparationCampaign.Instance?.RegisterWork(this);Close();quest.Collect(this);VillageVendorSpeech.Say(kind,2);return true;
         }
         public void MarkCollected(){Completed=true;CompletedLevels=3;}
         public void ResetCollection(){RestoreLearningProgress(0);}

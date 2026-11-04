@@ -130,7 +130,7 @@ namespace BeachBoatStory
                 playerPosition=session.player.transform.position,playerRotation=session.player.transform.rotation,aboard=boat!=null&&boat.IsAboard,
                 boatPosition=boat!=null?boat.transform.position:Vector3.zero,boatRotation=boat!=null?boat.transform.rotation:Quaternion.identity,
                 health=vitals.Health,stamina=vitals.Stamina,maxHealth=vitals.maxHealth,maxStamina=vitals.maxStamina,armor=vitals.ArmorCharges,trainingLevels=vitals.CompletedTrainingLevels,healingItemsVersion=1,healingItems=vitals.HealingItems,lureBriefed=story.LureBriefed,
-                discipline=CampDiscipline.Instance?.Capture(),boss=RiverBossEncounter.Instance?.Capture(),shieldEquipped=PlayerShield.Instance?.Equipped??false,constructionSites=RiverConstructionCamp.Ensure(RiverStakeZone.Instance).Capture(),stakeSamplesVersion=1,stakeSamplePositions=RiverStakeZone.Instance?.CaptureSamplePositions(),stakeSampleRotations=RiverStakeZone.Instance?.CaptureSampleRotations(),
+                preparation=PreparationCampaign.Instance?.Capture(),discipline=CampDiscipline.Instance?.Capture(),boss=RiverBossEncounter.Instance?.Capture(),shieldEquipped=PlayerShield.Instance?.Equipped??false,constructionSites=RiverConstructionCamp.Ensure(RiverStakeZone.Instance).Capture(),stakeSamplesVersion=1,stakeSamplePositions=RiverStakeZone.Instance?.CaptureSamplePositions(),stakeSampleRotations=RiverStakeZone.Instance?.CaptureSampleRotations(),
                 woods=session.woodItems.Select(w=>w!=null&&w.IsCollected).ToArray(),stakes=RiverStakeZone.Instance?.CaptureCheckpoint()??Array.Empty<bool>(),
                 woodIds=session.woodItems.Select(w=>w.name).ToArray(),woodPositions=session.woodItems.Select(w=>w.transform.position).ToArray(),woodRotations=session.woodItems.Select(w=>w.transform.rotation).ToArray(),
                 stallLevels=VillagePreparationQuest.Instance.stalls.Select(s=>s.CompletedLevels).ToArray(),
@@ -147,6 +147,7 @@ namespace BeachBoatStory
         {
             if(!Valid(data))throw new InvalidDataException("Unsupported campaign save");
             var session=BeachBoatQuestSession.Instance;var story=BachDangStoryManager.Instance;var boat=QuestRowboat.Instance;
+            PreparationCampaign.Instance?.Restore(data);
             QuestCheckpoint.Instance?.PrepareForLoad();
             RiverBoardingCombat.Instance?.EndFreeWater();
             VillageVendorSpeech.Instance?.Stop();CampaignJournalUI.Instance?.Close();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();ArcheryTraining.Instance?.Restore(data.archeryBestScore,data.archeryTrainingCompleted);

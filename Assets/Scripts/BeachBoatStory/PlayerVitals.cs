@@ -31,6 +31,7 @@ namespace BeachBoatStory
             if(Health>=maxHealth-.01f||HealingItems<=0)return false;
             float amount=Mathf.Min(HealingPerItem,maxHealth-Health);Health+=amount;HealingItems--;nextHealing=Time.time+.75f;HealingFeedback=$"+{amount:0} máu";BeachBoatSoundscape.Instance?.PlayInteraction();return true;
         }
+        public void GrantHealingItems(int count){HealingItems=Mathf.Clamp(HealingItems+Mathf.Max(0,count),0,20);}
         public void RestockHealingItems(){HealingItems=Mathf.Max(HealingItems,3);}
         public string LastImpact { get; private set; }
         public float LastImpactDamage { get; private set; }

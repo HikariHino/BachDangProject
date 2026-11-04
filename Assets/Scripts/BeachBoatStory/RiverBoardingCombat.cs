@@ -335,6 +335,11 @@ namespace BeachBoatStory
             if(key==KeyCode.F&&State!=PlayerState.Swimming)return TryTraverse();
             return false;
         }
+        public void StowForCargo()
+        {
+            archery.SetAim(false);SwordDrawn=false;playerPose.SetSword(false);
+            if(State==PlayerState.Land)playerPose.Animator.runtimeAnimatorController=FootController;
+        }
         public bool ToggleSword()
         {
             if(!CampDiscipline.WeaponsAvailable||IsTraversing)return false;

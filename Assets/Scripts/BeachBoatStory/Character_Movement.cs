@@ -60,7 +60,7 @@ public class Character_Movement : MonoBehaviour
         input = allowed ? Vector2.ClampMagnitude(new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")), 1) : Vector2.zero;
         aim = allowed && (RiverPlayerCombat.Instance?.IsAiming==true||orbit != null && orbit.enableShoulderAim && Input.GetMouseButton(1));
         freeLook = allowed && !aim && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
-        bool wantsSprint = allowed && !aim && input.sqrMagnitude > .01f &&
+        bool wantsSprint = allowed && PreparationCampaign.Instance?.Carrying!=true && !aim && input.sqrMagnitude > .01f &&
             (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
         sprint = wantsSprint && (vitals == null || vitals.TryExert(13f, Time.deltaTime));
         if (allowed && Input.GetKeyDown(KeyCode.Space)) jumpUntil = Time.time + .15f;

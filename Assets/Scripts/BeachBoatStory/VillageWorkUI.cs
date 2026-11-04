@@ -37,7 +37,7 @@ namespace BeachBoatStory
             root=new GameObject("PhysicalWorkHUD",typeof(RectTransform));root.transform.SetParent(transform,false);var rt=root.GetComponent<RectTransform>();rt.anchorMin=Vector2.zero;rt.anchorMax=Vector2.one;rt.offsetMin=rt.offsetMax=Vector2.zero;
             header=Text("Title",new Vector2(.025f,.83f),new Vector2(.35f,.96f),20,TextAlignmentOptions.TopLeft);
             step=Text("Action",new Vector2(.23f,.045f),new Vector2(.77f,.15f),20,TextAlignmentOptions.Center);
-            record=Text("Rank",new Vector2(.025f,.75f),new Vector2(.35f,.825f),12,TextAlignmentOptions.Center);root.SetActive(false);
+            record=Text("Rank",new Vector2(.025f,.67f),new Vector2(.35f,.825f),12,TextAlignmentOptions.Center);root.SetActive(false);
             pressureLabel=Text("TensionLabel",new Vector2(.29f,.265f),new Vector2(.71f,.31f),16,TextAlignmentOptions.Center);
             pressurePanel=new GameObject("TensionGauge",typeof(RectTransform),typeof(Image));pressurePanel.transform.SetParent(root.transform,false);
             var rail=pressurePanel.GetComponent<RectTransform>();rail.anchorMin=new Vector2(.3f,.205f);rail.anchorMax=new Vector2(.7f,.26f);rail.offsetMin=rail.offsetMax=Vector2.zero;
@@ -90,8 +90,9 @@ namespace BeachBoatStory
                 pressureCursor.GetComponent<Image>().color=x>=.55f&&x<=.85f?new Color(.7f,1,.75f):Color.white;
             }
             header.text=CampaignProgress.WorkNames[(int)s.kind].ToUpperInvariant()+"\n"+$"Đã giao {s.Progress}/{s.Goal} • Còn {s.TimeRemaining:0}s";
-            int index=(int)s.kind+1;record.text=$"S ≤ {CampaignProgress.Clock(CampaignProgress.MiniTarget(index,3))} • A ≤ {CampaignProgress.Clock(CampaignProgress.MiniTarget(index,2))} • B ≤ {CampaignProgress.Clock(CampaignProgress.MiniTarget(index,1))}";
-            if(s.Phase==VillageWorkStall.WorkPhase.Won)step.text="ĐỦ VẬT TƯ • E nhận hàng • ESC rời đi";
+            ((RectTransform)step.transform.parent).anchorMax=new Vector2(.77f,s.Phase==VillageWorkStall.WorkPhase.Won?.20f:.15f);
+            int index=(int)s.kind+1;record.text=$"S ≤ {CampaignProgress.Clock(CampaignProgress.MiniTarget(index,3))} • A ≤ {CampaignProgress.Clock(CampaignProgress.MiniTarget(index,2))} • B ≤ {CampaignProgress.Clock(CampaignProgress.MiniTarget(index,1))}\n{PreparationCampaign.RewardGoal(s.kind)}";
+            if(s.Phase==VillageWorkStall.WorkPhase.Won)step.text="ĐỦ VẬT TƯ • E nhận hàng • ESC rời đi\n"+PreparationCampaign.Instance?.WorkResult(s);
             else if(s.Phase==VillageWorkStall.WorkPhase.Lost)step.text=s.Feedback+"\nR thử lại • ESC rời đi";
             else if(s.Phase==VillageWorkStall.WorkPhase.Instructions)step.text=s.Physical?.Hint+"\nWASD đi lại • Chuột xoay nhìn • ENTER tiếp tục";
             else

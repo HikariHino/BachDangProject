@@ -19,6 +19,7 @@ namespace BeachBoatStory
         public int SquadCount=>squad?.Count??0;public int SquadGuarding=>squad?.GuardingCount??0;public int SquadCommands=>squad?.CommandsReceived??0;public float SquadMovement=>squad?.DistanceMoved??0;
         public float Clock {get;private set;}public float NextHitTime=>anchor<0?Clock:anchor+Rhythm[CommandIndex][BeatIndex]-anchorOffset;
         public bool HandsOnly=>hands?.BodyHidden??false;public float HandStretch=>hands?.MaxSegmentError??0;public float HandGripError=>hands?.MaxContactError??0;
+        public float LeftPalmInward=>hands==null?0:Vector3.Dot(hands.LeftPalmNormal,view.transform.right);public float RightPalmInward=>hands==null?0:Vector3.Dot(hands.RightPalmNormal,-view.transform.right);
         public Vector3 StrikeCenter=>ground.StrikeCenter;public Vector3 HeadNormal=>ground.SurfaceNormal;
         public Ray AimAt(Vector3 point)=>new Ray(ground.Eye,(point-ground.Eye).normalized);
         sealed class Stick {public Transform root;public bool held,swing,done,demo,valid;public float hold,age,strength;public Vector3 hit,tip,shaft;}
@@ -43,8 +44,9 @@ namespace BeachBoatStory
                 sticks[i]=new Stick();var root=new GameObject(i==0?"Left_Drumstick":"Right_Drumstick").transform;root.SetParent(props.transform,false);sticks[i].root=root;
                 Part("Wooden_shaft",root,PrimitiveType.Cylinder,new Vector3(0,0,3),new Vector3(.48f,5,.48f),wood,Quaternion.Euler(90,0,0));Part("Rounded_tip",root,PrimitiveType.Sphere,new Vector3(0,0,8),Vector3.one*1.1f,wood);Part("Grip_wrap",root,PrimitiveType.Cylinder,Vector3.zero,new Vector3(.62f,1.5f,.62f),wrap,Quaternion.Euler(90,0,0));
             }
+            var fill=new GameObject("Drill_soft_lantern_fill").AddComponent<Light>();fill.transform.SetParent(props.transform,false);fill.transform.position=ground.Eye-ground.transform.right*8+Vector3.up*9+ground.transform.forward*5;fill.type=LightType.Point;fill.range=55;fill.intensity=70;fill.color=new Color(1,.87f,.68f);fill.shadows=LightShadows.None;
             cross=new GameObject("Physical_Drum_Aim_Cross");cross.transform.SetParent(props.transform,false);Part("Horizontal",cross.transform,PrimitiveType.Cube,Vector3.zero,new Vector3(.8f,.09f,.07f),mark);Part("Vertical",cross.transform,PrimitiveType.Cube,Vector3.zero,new Vector3(.09f,.8f,.07f),mark);
-            hands=new WorkbenchHands(player,rig);hands.Show(true);squad=new DrumDrillSquad(ground);headProperties=new MaterialPropertyBlock();
+            hands=new WorkbenchHands(player,rig);hands.Show(true);hands.Grip(WorkbenchHands.GripPose.Drum,WorkbenchHands.GripPose.Drum,true);squad=new DrumDrillSquad(ground);headProperties=new MaterialPropertyBlock();
             Running=true;Active=this;CommandIndex=BeatIndex=CorrectHits=ImpactCount=0;Clock=flash=0;feedbackUntil=0;aim=AimAt(ground.StrikeCenter);StartDemo();BuildHud();hud.SetActive(true);
             orbit.FocusHandwork(ground.Eye,ground.StrikeCenter,ground.transform);Cursor.lockState=CursorLockMode.Confined;Cursor.visible=true;
         }
@@ -100,21 +102,21 @@ namespace BeachBoatStory
         }
         void LateUpdate()
         {
-            if(!Running)return;squad?.FitFeet();hands.Show(true);hands.Grip(WorkbenchHands.GripPose.Rod,WorkbenchHands.GripPose.Rod);orbit.FocusHandwork(ground.Eye,ground.StrikeCenter,ground.transform);
+            if(!Running)return;squad?.FitFeet();hands.Show(true);hands.Grip(WorkbenchHands.GripPose.Drum,WorkbenchHands.GripPose.Drum);orbit.FocusHandwork(ground.Eye,ground.StrikeCenter,ground.transform);
             for(int i=0;i<2;i++)
             {
-                var s=sticks[i];float side=i==0?-1:1;var rest=ground.transform.TransformPoint(new Vector3(side*4,17,-14));var raised=s.hit+ground.SurfaceNormal*9+Vector3.up*7;
-                if(s.held){var plane=new Plane(ground.SurfaceNormal,ground.StrikeCenter);if(plane.Raycast(aim,out float d))s.hit=aim.GetPoint(d);raised=s.hit+ground.SurfaceNormal*9+Vector3.up*7;}
-                float lift=s.held?Mathf.Clamp01(s.hold/.22f):0;var dir=Vector3.Slerp((ground.transform.forward-Vector3.up*.2f).normalized,(ground.transform.forward*.3f+Vector3.up).normalized,lift);var tip=Vector3.Lerp(rest,raised,lift);
+                var s=sticks[i];float side=i==0?-1:1;var restDirection=(ground.transform.forward*.35f+Vector3.up).normalized;var rest=ground.transform.TransformPoint(new Vector3(side*5,16,-20))+restDirection*8;var raised=s.hit+ground.SurfaceNormal*12+Vector3.up*7+restDirection*8;
+                if(s.held){var plane=new Plane(ground.SurfaceNormal,ground.StrikeCenter);if(plane.Raycast(aim,out float d))s.hit=aim.GetPoint(d);raised=s.hit+ground.SurfaceNormal*12+Vector3.up*7+restDirection*8;}
+                float lift=s.held?Mathf.Clamp01(s.hold/.22f):0;var dir=restDirection;var tip=Vector3.Lerp(rest,raised,lift);
                 if(s.swing)
                 {
-                    float down=Mathf.SmoothStep(0,1,Mathf.Clamp01(s.age/.13f));var strike=s.hit+ground.SurfaceNormal*.55f;tip=Vector3.Lerp(raised,strike,down);dir=Vector3.Slerp((ground.transform.forward*.3f+Vector3.up).normalized,(ground.transform.forward-Vector3.up*.15f).normalized,down);
-                    if(s.age>.13f){float back=Mathf.SmoothStep(0,1,Mathf.InverseLerp(.13f,.38f,s.age));tip=Vector3.Lerp(strike,rest,back);dir=Vector3.Slerp(dir,(ground.transform.forward-Vector3.up*.2f).normalized,back);}
+                    float down=Mathf.SmoothStep(0,1,Mathf.Clamp01(s.age/.13f));var strike=s.hit+ground.SurfaceNormal*.55f;tip=Vector3.Lerp(raised,strike,down);dir=Vector3.Slerp(restDirection,(ground.transform.forward-Vector3.up*.15f).normalized,down);
+                    if(s.age>.13f){float back=Mathf.SmoothStep(0,1,Mathf.InverseLerp(.13f,.38f,s.age));tip=Vector3.Lerp(strike,rest,back);dir=Vector3.Slerp(dir,restDirection,back);}
                 }
                 s.tip=tip;s.shaft=dir;s.root.SetPositionAndRotation(tip-dir*8,Quaternion.LookRotation(dir));
             }
-            Vector3 Forearm(int i){var basis=view.transform.up;return Vector3.ProjectOnPlane(basis,sticks[i].shaft).normalized;}
-            hands.Pose(view.transform,sticks[1].root.position,sticks[0].root.position,false,false,sticks[1].shaft,sticks[0].shaft,false,Forearm(1),Forearm(0),1);
+            Vector3 Forearm(int i)=>Vector3.Cross(view.transform.right,sticks[i].shaft).normalized;
+            hands.Pose(view.transform,sticks[1].root.position,sticks[0].root.position,false,false,sticks[1].shaft,sticks[0].shaft,false,Forearm(1),Forearm(0),1,-view.transform.right,view.transform.right);
             bool onHead=ground.StrikeSurface.Raycast(aim,out var at,120);cross.SetActive(Phase==LessonPhase.Repeat&&onHead);if(onHead)cross.transform.SetPositionAndRotation(at.point+ground.SurfaceNormal*.15f,ground.transform.rotation);
             float glow=flash>0?flash/.18f:Phase==LessonPhase.Repeat&&anchor>=0&&Mathf.Abs(Clock-NextHitTime)<.15f?.28f:0;ground.FrontHead.GetPropertyBlock(headProperties);headProperties.SetColor("_BaseColor",Color.Lerp(ground.FrontHead.sharedMaterial.color,new Color(1,.77f,.32f),glow*.4f));ground.FrontHead.SetPropertyBlock(headProperties);
         }

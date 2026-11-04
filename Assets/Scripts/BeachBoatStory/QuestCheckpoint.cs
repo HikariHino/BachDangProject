@@ -58,6 +58,7 @@ namespace BeachBoatStory
             recoveryPoint=BachDangAutoSave.Instance?.RetryPoint;
             CampaignProgress.Instance?.RecordDefeat();
             if(!HasCheckpoint)Capture(BachDangStoryManager.Instance.currentState);
+            PreparationCampaign.Instance?.SuspendForDefeat();
             IsDefeated=true;previousTimeScale=Time.timeScale>0?Time.timeScale:1;
             RiverBoardingCombat.Instance?.ResetBattle();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();StoryDialogueUI.Instance?.DismissForCheckpoint();
             EnemyFleetDirector.Instance?.StopBattle();QuestRowboat.Instance?.LeaveForCheckpoint();

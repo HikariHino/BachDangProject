@@ -126,7 +126,7 @@ namespace BeachBoatStory
             sign.transform.rotation=BeachBoatQuestSession.Instance.storyCamera.transform.rotation;
             if(Active==this&&Shots<6&&NextTarget.IsDown&&NextTarget.DownSeconds>.75f)NextTarget.Raise();
             for(int i=0;i<Targets.Length;i++)Targets[i].highlight.SetActive(Active==this&&Shots<6&&i==order[Shots]&&Targets[i].IsReady);
-            if(Active==null&&Available&&near&&!BeachBoatQuestSession.InteractionBlocked)
+            if(Active==null&&Available&&near&&!BeachBoatQuestSession.InputBlocked)
             {
                 BachDangStoryManager.Instance.SetInteractPrompt(true,"[E] TẬP BẮN CUNG • 6 mũi, trúng ít nhất 4 bia"+(Required?" • BẮT BUỘC TRƯỚC XUẤT QUÂN":""),this);
                 if(Input.GetKeyDown(KeyCode.E)&&StoryDialogueUI.TryConsumeInput())Begin();
@@ -177,7 +177,7 @@ namespace BeachBoatStory
         }
         void OnGUI()
         {
-            if(!built||BachDangFrontEnd.IsBlocking||CampaignJournalUI.IsOpen)return;
+            if(!built||BachDangFrontEnd.IsBlocking||CampaignJournalUI.IsOpen||BeachBoatMinigameStation.Active!=null||VillageWorkStall.Active!=null)return;
             if(Active!=this)
             {
                 if(!Available||QuestRowboat.FlatDistance(player.position,Approach)>100||QuestRowboat.FlatDistance(player.position,Approach)<=24)return;
