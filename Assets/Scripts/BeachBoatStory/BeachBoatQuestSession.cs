@@ -159,7 +159,7 @@ namespace BeachBoatStory
         void Update()
         {
             var story = GetComponent<BachDangStoryManager>();
-            bool focusedOverlay = RiverInvasionIntro.IsRunning || BachDangFrontEnd.IsBlocking || StakeConstruction.Active!=null || ArcheryTraining.Active != null || CampRecoveryGame.Active != null || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
+            bool focusedOverlay = RiverInvasionIntro.IsRunning || BachDangFrontEnd.IsBlocking || StakeConstruction.Active!=null || StakeProofTrial.Active!=null || ArcheryTraining.Active != null || CampRecoveryGame.Active != null || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
                 (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen);
             if (story != null && story.objectiveUIPanel != null)
@@ -200,8 +200,8 @@ namespace BeachBoatStory
                 healthFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(vitals.HealthFraction), 1f);
                 staminaFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(vitals.StaminaFraction), 1f);
                 int hp = Mathf.CeilToInt(vitals.Health), sp = Mathf.CeilToInt(vitals.Stamina);
-                if (hp != shownHealth) { healthText.text = $"MÁU  {hp:0}/{vitals.maxHealth:0}"; shownHealth = hp; }
-                if (sp != shownStamina) { staminaText.text = $"THỂ LỰC  {sp:0}/{vitals.maxStamina:0}"; shownStamina = sp; }
+                if (hp != shownHealth) { healthText.text = $"<color=#B5C6BF>MÁU</color>  <b>{hp:0}</b><size=11><color=#819C95> / {vitals.maxHealth:0}</color></size>"; shownHealth = hp; }
+                if (sp != shownStamina) { staminaText.text = $"<color=#B5C6BF>THỂ LỰC</color>  <b>{sp:0}</b><size=11><color=#819C95> / {vitals.maxStamina:0}</color></size>"; shownStamina = sp; }
                 impactText.text = Time.unscaledTime < vitals.LastImpactUntil
                     ? vitals.LastImpact + (vitals.LastImpactDamage > 0 ? $"  -{vitals.LastImpactDamage:0} máu" : "")
                     : "";
@@ -290,6 +290,7 @@ namespace BeachBoatStory
             canvas.gameObject.AddComponent<BeachBoatMinimap>().Initialize(player.transform);
             canvas.gameObject.AddComponent<BeachBoatMinigameUI>().Initialize();
             canvas.gameObject.AddComponent<GameplayHUDLayout>().Initialize((RectTransform)vitalsPanel.transform,(RectTransform)controlsPanel.transform,(RectTransform)prompt.transform,(RectTransform)boatPanel.transform,impactText.rectTransform);
+            canvas.gameObject.AddComponent<CampaignHUDSkin>().Build();
         }
         void BuildIntro()
         {

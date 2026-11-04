@@ -52,9 +52,9 @@ namespace BeachBoatStory
         public bool LastCorrect {get;private set;}
         public int FeedbackVersion {get;private set;}
         public Vector3 InteractionPosition=>interactionPoint!=null?interactionPoint.position:transform.position;
-        public static float LimitFor(WorkKind work,int difficulty)=>work==WorkKind.Timber?75:work==WorkKind.Rope?60:work==WorkKind.Rice?75:90;
+        public static float LimitFor(WorkKind work,int difficulty)=>work==WorkKind.Timber?35:work==WorkKind.Rope?45:work==WorkKind.Rice?40:50;
         public float TimeLimit=>LimitFor(kind,Difficulty);
-        public int Goal=>kind==WorkKind.Timber?3:kind==WorkKind.Rope?1:2;
+        public int Goal=>1;
         public VillagePhysicalWork Physical {get;private set;}
         public VillageWorkstation Workstation {get;private set;}
         public VillageWorkstation EnsureWorkstation()
@@ -62,7 +62,7 @@ namespace BeachBoatStory
         void Start(){VillageStallLayout.ClearLaundry(this);EnsureWorkstation();}
         public int MistakeLimit=>kind==WorkKind.Timber||kind==WorkKind.Rice?3:Difficulty==2?2:3;
         public float TimeRemaining=>Mathf.Max(0,TimeLimit-Elapsed);
-        public string Instructions=>kind==WorkKind.Timber?"Đặt gỗ lên bàn để vào góc nhìn tay. Giữ chuột trái kéo LÊN / XUỐNG dọc rãnh xanh; rê ngang để đưa cưa về giữa nếu lệch. Cưa đủ tám nhịp và giao ba khúc.":
+        public string Instructions=>kind==WorkKind.Timber?"Đặt gỗ lên bàn để vào góc nhìn tay. Giữ chuột trái kéo LÊN / XUỐNG dọc rãnh xanh; rê ngang để đưa cưa về giữa nếu lệch. Cưa đủ tám nhịp rồi giao khúc gỗ.":
             kind==WorkKind.Rope?"Lấy dây, đặt lên bàn. Kéo quanh bốn điểm; tiếp tục giữ để siết và THẢ chuột khi lực trong dải xanh 55–85%. Thả sớm hoặc muộn làm tuột nút này. Buộc ba nút rồi giao.":
             kind==WorkKind.Rice?"Lấy bao rỗng trên thùng trái và đặt lên bàn. Bấm giữ gáo trong rổ, kéo sang miệng bao phải rồi THẢ chuột để đổ. Thanh vàng là thiếu, xanh là đủ, đỏ là dư. Đủ: E / Enter hoặc nút Nhấc bao. Dư: R bớt một gáo; C đổ lại. Mang bao tới giá phải để giao.":
             "Đặt gạo, cá và muối lên khăn. Kéo mép sáng vào giữa rồi giữ yên chuột trái gần nửa giây để ép nếp. Nhả sớm chưa kín nếp. Gấp bốn mép rồi giao gói.";
@@ -334,7 +334,7 @@ namespace BeachBoatStory
         public bool ClaimReward()
         {
             if(Active!=this||Phase!=WorkPhase.Won)return false;
-            PreparationCampaign.Instance?.RegisterWork(this);Close();quest.Collect(this);VillageVendorSpeech.Say(kind,2);return true;
+            PreparationCampaign.Instance?.RegisterWork(this);Close();quest.Collect(this);VillageVendorSpeech.Say(kind,2);VillageVendorReaction.Acknowledge(this);return true;
         }
         public void MarkCollected(){Completed=true;CompletedLevels=3;}
         public void ResetCollection(){RestoreLearningProgress(0);}

@@ -45,10 +45,15 @@ namespace BeachBoatStory
         Camera_Script camera;Vector3 cameraSettings,localStart,walkEnd;GameObject props;
         Material timber;
         LineRenderer impactRing;
-        StakeWorkCrew crew;
+        StakeWorkCrew crew;StakeHoldingPartner partner;
+        public float PartnerHammerClearance=>stake.position.y+stake.up.y*12-(partner?.HighestHand??0);
+        public string PartnerDiagnosis=>partner?.Diagnosis;
+        public bool PartnerHolding=>partner?.Holding??false;public float PartnerContactError=>partner?.ContactError??0;
         float workStarted;Transform walkway;BoxCollider[] walkingPlanks;int footBeat;Vector3 lastPlankPosition;Quaternion lastPlankRotation;
         public float BeatPosition=>Mathf.PingPong((Time.time-workStarted)/1.2f,1);
-        public bool IsBeatReady=>BeatPosition>=.38f&&BeatPosition<=.82f;
+        public bool PartnerReady=>Time.time<braceUntil;float braceUntil;
+        public bool IsBeatReady=>PartnerReady&&BeatPosition>=.38f&&BeatPosition<=.82f;
+        public bool BracePartner(){if(Active!=this||Step!=WorkStep.Hammer||Time.timeScale<=0||BachDangFrontEnd.IsBlocking)return false;braceUntil=Time.time+2.6f;workStarted=Time.time;Feedback="Đồng đội đã giữ chắc • Nện theo nhịp!";CampaignFieldCalls.Say("brace");return true;}
         public bool SupportedOnDeck {get;private set;}
         public int WorkingCrew=>crew?.Count??0;
         public Mesh StakeMesh=>stake!=null?stake.GetComponentInChildren<MeshFilter>().sharedMesh:null;
@@ -75,7 +80,7 @@ namespace BeachBoatStory
             bundles=hits=0;CarryProgress=0;Step=WorkStep.TakeBundle;Active=this;
             workStarted=Time.time;
             props=new GameObject("Stake_Work_3D_Props");props.transform.SetParent(boat.transform,true);timber=zone.fieldStakes[0].GetComponentInChildren<Renderer>(true).sharedMaterial;
-            BuildWalkway();
+            BuildWalkway();partner=new StakeHoldingPartner(props.transform);
             crew=RiverConstructionCamp.Ensure(zone).BeginSite(zone.WorkingIndex);
             stack=new GameObject("Bo_coc_tren_thuyen").transform;stack.SetParent(props.transform,false);
             for(int i=0;i<6;i++)
@@ -103,6 +108,7 @@ namespace BeachBoatStory
         public bool Interact()
         {
             if(Active!=this||BachDangFrontEnd.IsBlocking||Time.timeScale<=0)return false;
+            if(Step==WorkStep.Hammer)return BracePartner();
             if(Step==WorkStep.TakeBundle){Step=WorkStep.CarryBundle;CarryProgress=0;HasAimedStake=false;PlacementOffset=Vector2.zero;lean=RequiredLean;Feedback="";bundle.gameObject.SetActive(true);BeachBoatSoundscape.Instance?.PlayInteraction();return true;}
             if(Step==WorkStep.CarryBundle)
             {
@@ -112,7 +118,7 @@ namespace BeachBoatStory
                 else if(Mathf.Abs(lean-RequiredLean)>3)Feedback=$"Căn góc {RequiredLean:0}° • cuộn chuột hoặc A / D";
             }
             if(Step==WorkStep.CarryBundle&&CarryProgress>=1&&PlacementValid&&HasAimedStake&&Mathf.Abs(lean-RequiredLean)<=3)
-            {Step=WorkStep.Hammer;hits=0;HammerLift=visibleDepth=0;pendingStrike=false;Feedback="";bundle.gameObject.SetActive(false);stake.gameObject.SetActive(true);hammer.gameObject.SetActive(true);return true;}
+            {Step=WorkStep.Hammer;hits=0;HammerLift=visibleDepth=0;pendingStrike=false;Feedback="";bundle.gameObject.SetActive(false);stake.gameObject.SetActive(true);hammer.gameObject.SetActive(true);BracePartner();return true;}
             return false;
         }
         public void WalkBundle(float dt)
@@ -122,7 +128,7 @@ namespace BeachBoatStory
             if(Active!=this||Step!=WorkStep.Hammer||pendingStrike||HammerLift<.25f||Time.time<nextHit||Time.timeScale<=0||BachDangFrontEnd.IsBlocking)return false;
             pendingGood=PowerReady&&Mathf.Abs(AimError)<=.28f&&IsBeatReady;
             Feedback=!PowerReady?(HammerLift<.65f?"Lực nhẹ • nâng búa vào dải xanh":"Quá lực • nhả sớm hơn trong dải xanh"):Mathf.Abs(AimError)>.28f?"Lệch đầu cọc • kéo ngang để căn búa":"Đúng tâm, đủ lực";
-            if(PowerReady&&Mathf.Abs(AimError)<=.28f&&!IsBeatReady)Feedback="Lệch nhịp • thả khi vạch NHỊP NỆN vào xanh";
+            if(PowerReady&&Mathf.Abs(AimError)<=.28f&&!IsBeatReady)Feedback=PartnerReady?"Lệch nhịp • nện theo đồng đội giữ cọc":"E • Gọi đồng đội giữ chắc cọc trước khi nện";
             nextHit=Time.time+.65f;releaseLift=HammerLift;swing=.25f;HammerLift=0;pendingStrike=true;return true;
         }
         void Impact()
@@ -222,6 +228,7 @@ namespace BeachBoatStory
             float headHeight=Mathf.Max(work.y+9,chest.position.y-2);
             stake.position=work+Vector3.up*(headHeight-work.y-stake.up.y*12-visibleDepth);
             impactRing.gameObject.SetActive(Step==WorkStep.Hammer);impactRing.sharedMaterial=Mathf.Abs(AimError)<=.28f?previewGood:previewBad;
+            partner?.Pose(Step==WorkStep.Hammer,wanted,boat.transform.rotation,stake,BeatPosition);
             for(int n=0;n<33;n++){float a=n/32f*Mathf.PI*2;impactRing.SetPosition(n,stake.position+stake.up*12+Vector3.up*.15f+(boat.transform.right*Mathf.Cos(a)+boat.transform.forward*Mathf.Sin(a))*1.4f);}
             for(int i=0;i<4;i++)arms[i].localRotation=armPose[i];
             if(Step==WorkStep.CarryBundle)
@@ -253,7 +260,7 @@ namespace BeachBoatStory
             // Keep the actual walking leg animation while carrying on the continuous work planks.
             if(Step!=WorkStep.CarryBundle)for(int i=0;i<4;i++)legs[i].localRotation=legRest[i];
             // The scene-owned construction camp animates its teams after this session ends.
-            if(Step==WorkStep.Hammer)camera.FocusHandwork(rig.GetBoneTransform(HumanBodyBones.Head).position+player.forward*1.5f,stake.position+stake.up*12+Vector3.up*2);
+            if(Step==WorkStep.Hammer)camera.FocusHandwork(rig.GetBoneTransform(HumanBodyBones.Head).position+player.forward*1.5f,stake.position+stake.up*12+Vector3.up*2,props.transform);
             else if(Step==WorkStep.CarryBundle&&CarryProgress>=1)camera.FocusWork(Vector3.Lerp(chest.position,work+Vector3.up*12,.5f),boat.transform.right,27);
             else camera.ClearWorkFocus();
         }
@@ -262,7 +269,7 @@ namespace BeachBoatStory
             if(Active!=this||BachDangFrontEnd.IsBlocking)return;
             var style=new GUIStyle(GUI.skin.box){fontSize=Mathf.RoundToInt(Screen.height*.025f),alignment=TextAnchor.MiddleCenter,wordWrap=true};
             string hint=Step==WorkStep.TakeBundle?"[E] Lấy cọc mẫu trên thuyền":Step==WorkStep.CarryBundle?(CarryProgress<1?"Giữ W • Vác cọc tới mạn thuyền":$"Rê chọn chỗ • Cuộn chuột: nghiêng {lean:0}° / cần {RequiredLean:0}° ±3 • E dựng"):
-                    Step==WorkStep.Hammer?$"Giữ chuột trái • Kéo NGANG căn tâm, kéo LÊN nâng búa • THẢ trong dải xanh • Nện {hits}/3\n{Feedback}":"Cọc mẫu đã chắc • Chèo tới điểm tiếp theo";
+                    Step==WorkStep.Hammer?$"Giữ chuột trái • Kéo NGANG căn tâm, kéo LÊN nâng búa • THẢ trong dải xanh • Nện {hits}/3 • E gọi đồng đội giữ cọc\n{Feedback}":"Cọc mẫu đã chắc • Chèo tới điểm tiếp theo";
             if(Step==WorkStep.CarryBundle)hint+="\n"+(string.IsNullOrEmpty(Feedback)?"A / D hoặc cuộn chuột chỉnh góc • R chọn lại vị trí":Feedback);
             if(!string.IsNullOrEmpty(crew?.CurrentCall))hint+="\nCông binh: "+crew.CurrentCall;
             GUI.Box(new Rect(Screen.width*.12f,Screen.height*.81f,Screen.width*.76f,Screen.height*.14f),$"CÔNG BINH • Vị trí {zone.WorkingIndex+1}/{zone.ClusterCount} • Đã xong {zone.CompletedClusterCount}/{zone.ClusterCount} • X: hủy\n"+hint,style);

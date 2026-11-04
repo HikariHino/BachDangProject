@@ -30,7 +30,8 @@ public static class BeachBoatBatchRevision31
     static void Tick()
     {
         if(!SessionState.GetBool(Active,false)||SessionState.GetBool("Revision31BatchWaiting",false))return;
-        if(EditorApplication.timeSinceStartup-SessionState.GetFloat(Started,0)>190){SessionState.SetBool(Active,false);Debug.LogError("[Revision31 QA] Suite timeout");BeachBoatQAExit.AfterPlayMode(1);return;}
+        var suiteNames=SessionState.GetString(Suites,"").Split(',');int suiteIndex=SessionState.GetInt(Index,0);float timeout=suiteIndex<suiteNames.Length&&suiteNames[suiteIndex]=="ConcurrentBattle"?370:190;
+        if(EditorApplication.timeSinceStartup-SessionState.GetFloat(Started,0)>timeout){SessionState.SetBool(Active,false);Debug.LogError("[Revision31 QA] Suite timeout");BeachBoatQAExit.AfterPlayMode(1);return;}
         if(EditorApplication.isPlayingOrWillChangePlaymode||EditorApplication.isCompiling)return;
         var list=SessionState.GetString(Suites,"").Split(',');int index=SessionState.GetInt(Index,0);if(index>=list.Length)return;
         string path="Logs/"+list[index]+"Playtest.json";long stamp=long.Parse(SessionState.GetString(Stamp,"0"));if(!File.Exists(path)||File.GetLastWriteTimeUtc(path).Ticks<=stamp)return;

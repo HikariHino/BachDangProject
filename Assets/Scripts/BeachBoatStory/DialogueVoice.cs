@@ -11,6 +11,8 @@ namespace BeachBoatStory
         [Serializable] public sealed class Entry {public string line,male,female;public Variant[] variants;}
         [Serializable] sealed class Profile {public string id,voice;}
         [Serializable] sealed class Manifest {public Entry[] entries;public Profile[] profiles;}
+        static readonly HashSet<DialogueVoice> live=new HashSet<DialogueVoice>();
+        public static bool AnySpeaking {get{foreach(var voice in live)if(voice!=null&&voice.speech!=null&&voice.speech.isPlaying)return true;return false;}}
         static Entry[] entries;
         static Profile[] profiles;
         static readonly Dictionary<string,AudioClip> clips=new Dictionary<string,AudioClip>();
@@ -29,9 +31,10 @@ namespace BeachBoatStory
         public int SpokenLines {get;private set;}
         public float Duration=>CurrentClip!=null?CurrentClip.length/VoicePitch:0;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void Reset(){entries=null;profiles=null;clips.Clear();}
+        static void Reset(){entries=null;profiles=null;clips.Clear();live.Clear();}
         void Awake()
         {
+            live.Add(this);
             speech=gameObject.AddComponent<AudioSource>();speech.playOnAwake=false;speech.spatialBlend=0;speech.priority=16;speech.volume=.9f;
             letters=gameObject.AddComponent<AudioSource>();letters.playOnAwake=false;letters.spatialBlend=0;letters.priority=100;letters.volume=.055f;
             const int rate=22050;var samples=new float[(int)(rate*.018f)];
@@ -128,6 +131,6 @@ namespace BeachBoatStory
         }
         public void Stop(){if(speech!=null){speech.Stop();speech.clip=null;}if(letters!=null)letters.Stop();paused=false;}
         void OnDisable()=>Stop();
-        void OnDestroy(){if(tick!=null)Destroy(tick);}
+        void OnDestroy(){live.Remove(this);if(tick!=null)Destroy(tick);}
     }
 }

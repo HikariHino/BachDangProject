@@ -299,6 +299,7 @@ namespace BeachBoatStory
             }
         }
         public void FinishTraversal(){Traversal=Motion.Idle;ClimbProgress=0;ClimbRail=Vector3.zero;}
+        public void DisposeTemporaryProps(){SetRanged(false);SetSword(false);if(rangedBow!=null)Destroy(rangedBow.gameObject);if(weapon!=null)Destroy(weapon.gameObject);}
         public void SetRanged(bool value)
         {
             if(value&&SwordVisible)SetSword(false);

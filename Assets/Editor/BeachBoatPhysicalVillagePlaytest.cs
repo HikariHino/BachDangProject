@@ -227,7 +227,7 @@ public static class BeachBoatPhysicalVillagePlaytest
                     Check(foley.Count(cue)>0,"The trade's actual tool gesture plays its distinct foley: "+cue);
                     if(stall.kind==VillageWorkStall.WorkKind.Rope)Check(foley.Count(VillageWorkFoley.Cue.Knot)==3,"Each secured knot plays one tightening accent");
                     if(stall.kind==VillageWorkStall.WorkKind.Rice)Check(foley.Count(VillageWorkFoley.Cue.Scoop)>0,"Moving the ladle into grain plays scooping foley");
-                    if(stall.kind==VillageWorkStall.WorkKind.Provisions)Check(foley.Count(VillageWorkFoley.Cue.Crease)==8,"Four cloth folds per parcel each produce a crease accent");
+                    if(stall.kind==VillageWorkStall.WorkKind.Provisions)Check(foley.Count(VillageWorkFoley.Cue.Crease)==4*stall.Goal,"Four cloth folds per parcel each produce a crease accent");
                     Check(!stall.Physical.HandsOnly&&!BeachBoatQuestSession.Instance.storyCamera.GetComponent<BeachBoatStory.Camera_Script>().TableFocusActive,"Finishing goods restores third-person view before claiming the reward: "+stall.kind);
                     Check(stall.Progress==stall.Goal&&CampaignProgress.Instance.MiniRecord(index+1)?.id==CampaignProgress.MiniId(index+1),"Only actual deliveries finish and record the 3D trade: "+stall.kind);
                     Check(stall.ClaimReward()&&stall.Completed,"Confirming the result grants the required supplies: "+stall.kind);BeachBoatStory.StoryDialogueUI.Instance.DismissForCheckpoint();

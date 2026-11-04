@@ -41,7 +41,7 @@ public static class BeachBoatHudLayoutPlaytest
     static void Finish(string error)
     {
         SessionState.SetBool(Flag,false);ArcheryTraining.Active?.Close();RestoreView();
-        File.WriteAllText("Logs/HudLayout30Playtest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,checks},Newtonsoft.Json.Formatting.Indented));BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
+        File.WriteAllText("Logs/HudLayout30Playtest.json",Newtonsoft.Json.JsonConvert.SerializeObject(new{success=error==null,error,checks},Newtonsoft.Json.Formatting.Indented));File.Copy("Logs/HudLayout30Playtest.json","Logs/HudLayoutPlaytest.json",true);BachDangSaveSystem.TestDirectory=null;EditorApplication.isPlaying=false;
     }
     static void Tick()
     {

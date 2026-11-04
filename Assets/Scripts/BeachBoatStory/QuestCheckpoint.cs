@@ -54,7 +54,7 @@ namespace BeachBoatStory
         }
         public void Defeat(string title="BẠN ĐÃ GỤC NGÃ",string reason="")
         {
-            if(IsDefeated)return;
+            if(IsDefeated)return;CampaignFieldCalls.Silence();
             recoveryPoint=BachDangAutoSave.Instance?.RetryPoint;
             CampaignProgress.Instance?.RecordDefeat();
             if(!HasCheckpoint)Capture(BachDangStoryManager.Instance.currentState);

@@ -134,7 +134,7 @@ namespace BeachBoatStory
             {
                 CurrentCall="";foreach(var w in workers){w.chest.localRotation=w.chestRest;for(int a=0;a<4;a++)w.arms[a].localRotation=w.rest[a];if(w.hammer!=null)w.hammer.gameObject.SetActive(false);}return;
             }
-            if(calls<2&&time-began>(calls==0?1:13)){CurrentCall=calls==0?"Giữ chắc cọc! Một, hai, nện!":"Cọc đã chắc! Chuyển sang hàng tiếp theo!";callVoice.Play("Công binh",CurrentCall,"stake_crew",false,"crew_work");callVoice.SpeechSource.volume=.42f;callVoice.SpeechSource.spatialBlend=1;callVoice.SpeechSource.minDistance=45;callVoice.SpeechSource.maxDistance=350;callUntil=time+4;calls++;}
+            if(!CampaignFieldCalls.IsSpeaking&&calls<2&&time-began>(calls==0?1:13)){CurrentCall=calls==0?"Giữ chắc cọc! Một, hai, nện!":"Cọc đã chắc! Chuyển sang hàng tiếp theo!";callVoice.Play("Công binh",CurrentCall,"stake_crew",false,"crew_work");callVoice.SpeechSource.volume=.42f;callVoice.SpeechSource.spatialBlend=1;callVoice.SpeechSource.minDistance=45;callVoice.SpeechSource.maxDistance=350;callUntil=time+4;calls++;}
             if(time>callUntil)CurrentCall="";
             foreach(var w in workers)
             {

@@ -24,12 +24,13 @@ namespace BeachBoatStory
         public void BeginVolley()
         {
             if(Pending||Completed||Volleys>=Goal)return;Build();var boat=QuestRowboat.Instance;
-            Landing=boat.transform.position+boat.transform.forward*boat.Speed*(WarningSeconds+FlightSeconds);Landing=new Vector3(Landing.x,TideSystem.CurrentWaterHeight+3,Landing.z);
+            Landing=boat.transform.position+boat.transform.forward*boat.Speed*(Telegraph+FlightSeconds);Landing=new Vector3(Landing.x,TideSystem.CurrentWaterHeight+3,Landing.z);pursuit.Routes.Call("Tên tới! Bẻ lái ra khỏi chỗ tên sắp rơi!");
             from=Landing+Vector3.forward*250+Vector3.up*90;float nearest=float.PositiveInfinity;
             foreach(var ship in EnemyFleetDirector.Instance.enemyShips)if(ship!=null&&ship.gameObject.activeInHierarchy&&!ship.isDestroyed){float d=QuestRowboat.FlatDistance(ship.transform.position,boat.transform.position);if(d<nearest){nearest=d;from=ship.transform.position+Vector3.up*65;}}
-            shotTime=0;Pending=true;Volleys++;nextVolley=elapsed+3.5f;System.Array.Clear(blocked,0,blocked.Length);foreach(var a in arrows)a.gameObject.SetActive(false);foreach(var w in warnings)w.gameObject.SetActive(true);BeachBoatSoundscape.Instance?.PlayBow(true);
+            shotTime=0;Pending=true;Volleys++;nextVolley=elapsed+(pursuit.Routes.Choice==1?4.3f:2.6f);System.Array.Clear(blocked,0,blocked.Length);foreach(var a in arrows)a.gameObject.SetActive(false);foreach(var w in warnings)w.gameObject.SetActive(true);BeachBoatSoundscape.Instance?.PlayBow(true);
         }
-        public int WarningCount=>2+Volleys%2;
+        public int WarningCount=>pursuit.Routes.Choice==1?1:pursuit.Routes.Choice==2?3:2;
+        public float Telegraph=>pursuit.Routes.Choice==1?1.65f:WarningSeconds;
         float Width{get{var h=BoatHullCollision.Get(QuestRowboat.Instance.transform).SolidHull;return Mathf.Max(8,h.size.x*Mathf.Abs(h.transform.lossyScale.x)*.55f);}}
         public Vector3 WarningCenter(int index)=>Landing+(index==0?Vector3.zero:new Vector3((index==1?1:-1)*(Volleys%2==0?1:-1)*(Width*2+35),0,index==2?100:12));
         Vector3 End(int i)=>WarningCenter(i/7)+new Vector3((i%7%3-1)*6,0,(i%7/3-1)*5);
@@ -43,15 +44,15 @@ namespace BeachBoatStory
             if(!Pending)return;Build();shotTime+=dt;
             var hull=BoatHullCollision.Get(boat.transform).SolidHull;float width=Mathf.Max(8,hull.size.x*Mathf.Abs(hull.transform.lossyScale.x)*.55f);
             var corners=new[]{new Vector3(-width,0,-13),new Vector3(width,0,-13),new Vector3(width,0,13),new Vector3(-width,0,13),new Vector3(-width,0,-13)};
-            for(int w=0;w<warnings.Length;w++){for(int i=0;i<5;i++)warnings[w].SetPosition(i,WarningCenter(w)+corners[i]-Vector3.up*2.7f);warnings[w].gameObject.SetActive(w<WarningCount&&shotTime<WarningSeconds);}
-            float t=Mathf.Clamp01((shotTime-WarningSeconds)/FlightSeconds);
+            for(int w=0;w<warnings.Length;w++){for(int i=0;i<5;i++)warnings[w].SetPosition(i,WarningCenter(w)+corners[i]-Vector3.up*2.7f);warnings[w].gameObject.SetActive(w<WarningCount&&shotTime<Telegraph);}
+            float t=Mathf.Clamp01((shotTime-Telegraph)/FlightSeconds);
             for(int i=0;i<arrows.Length;i++)
             {
-                bool flying=i/7<WarningCount&&shotTime>=WarningSeconds&&!blocked[i];var end=End(i);var point=Vector3.Lerp(from+Vector3.right*(i-3)*3,end,t)+Vector3.up*(Mathf.Sin(t*Mathf.PI)*20);
+                bool flying=i/7<WarningCount&&shotTime>=Telegraph&&!blocked[i];var end=End(i);var point=Vector3.Lerp(from+Vector3.right*(i-3)*3,end,t)+Vector3.up*(Mathf.Sin(t*Mathf.PI)*20);
                 if(flying&&arrows[i].gameObject.activeSelf&&Physics.Linecast(arrows[i].position,point,out var hit,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore)&&!hit.transform.IsChildOf(boat.transform)&&hit.collider.GetComponentInParent<EnemyShip>()==null){blocked[i]=true;flying=false;}
                 arrows[i].gameObject.SetActive(flying);arrows[i].SetPositionAndRotation(point,Quaternion.FromToRotation(Vector3.up,end-from));
             }
-            if(shotTime<WarningSeconds+FlightSeconds)return;
+            if(shotTime<Telegraph+FlightSeconds)return;
             bool struck=false;for(int i=0;i<arrows.Length;i++)if(i/7<WarningCount&&!blocked[i]&&Vector3.Distance(hull.ClosestPoint(End(i)),End(i))<2){struck=true;break;}
             if(struck&&boat.TakeChaseArrow(Damage))Hits++;Resolved++;Pending=false;root.SetActive(false);feedback=struck?"Trúng tên • Đổi hướng sớm khi vùng đỏ xuất hiện":"Đã né loạt tên";feedbackUntil=Time.unscaledTime+2.5f;
         }
@@ -62,14 +63,14 @@ namespace BeachBoatStory
             Reset();if(committed){Volleys=Resolved=Goal;return;}
             if(data.baitVersion==0){if(pursuit.Stage==RiverFleetPursuit.LureStage.Pursuit&&QuestRowboat.Instance.transform.position.z-RiverStakeZone.Instance.FieldBounds.center.z<350)Volleys=Resolved=Goal;return;}
             Volleys=Mathf.Clamp(data.baitVolleys,0,Goal);Resolved=Mathf.Clamp(data.baitResolved,0,Volleys);Hits=Mathf.Clamp(data.baitHits,0,Resolved);started=data.baitStarted;startZ=data.baitStartZ;elapsed=data.baitElapsed;nextVolley=elapsed+Mathf.Max(0,data.baitDelay);Landing=data.baitTarget;from=data.baitFrom;
-            Pending=data.baitPending&&Volleys>Resolved;if(Pending){Build();shotTime=Mathf.Clamp(data.baitTime,0,WarningSeconds+FlightSeconds-.01f);}
+            Pending=data.baitPending&&Volleys>Resolved;if(Pending){Build();shotTime=Mathf.Clamp(data.baitTime,0,Telegraph+FlightSeconds-.01f);}
         }
         public void Draw()
         {
             if(pursuit.Stage!=RiverFleetPursuit.LureStage.Pursuit||EnemyFleetDirector.Instance?.BattleStarted!=true||BachDangFrontEnd.IsBlocking||RiverInvasionIntro.IsRunning)return;
             var style=new GUIStyle(GUI.skin.box){fontSize=Mathf.RoundToInt(Screen.height*.022f),alignment=TextAnchor.MiddleCenter,wordWrap=true};
             string instruction=Pending?"VÙNG ĐỎ: TÊN SẮP RƠI • A / D đổi hướng để né":Completed?"ĐÃ VƯỢT MƯA TÊN • Tiếp tục dẫn địch vào bãi cọc":"Giữ thuyền chạy về bãi cọc • Né vùng tên đỏ trên mặt nước";
-            GUI.Box(new Rect(Screen.width*.29f,Screen.height*.15f,Screen.width*.42f,Screen.height*.09f),$"NHỬ ĐỊCH • Qua {Resolved}/{Goal} loạt tên • Trúng {Hits}\n"+(Time.unscaledTime<feedbackUntil?feedback:instruction),style);
+            string route=pursuit.Routes.Name;GUI.Box(new Rect(Screen.width*.28f,Screen.height*.14f,Screen.width*.44f,Screen.height*.08f),$"{route} • {Resolved}/{Goal} loạt tên\n"+(pursuit.Routes.ShowingCall?pursuit.Routes.Warning:Time.unscaledTime<feedbackUntil?feedback:instruction),style);
         }
         public void Dispose(){if(root!=null)Object.Destroy(root);if(red!=null)Object.Destroy(red);if(wood!=null)Object.Destroy(wood);}
     }

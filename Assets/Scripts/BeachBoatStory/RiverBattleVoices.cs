@@ -12,6 +12,7 @@ namespace BeachBoatStory
         TMP_Text caption;
         bool entryPlayed;
         public bool EntryPlayed=>entryPlayed;
+        public bool Speaking=>busy>0||speech!=null&&speech.isPlaying;
         public const string TrapEntryLine="Giết!";
         bool invasionPlayed,ambushPlayed,counterattackPlayed,pursuitPlayed,active,paused,secondCommand;
         float nextEnemy,commandTime,nextCommand,busy;
@@ -129,7 +130,7 @@ namespace BeachBoatStory
             bool ambush=fleet.AmbushStarted||BachDangBattleTimeline.Instance?.CurrentMoment==BachDangBattleTimeline.BattleMoment.Ambush;
             busy=Mathf.Max(0,busy-dt);commandTime=Mathf.Max(0,commandTime-dt);nextEnemy-=dt;nextCommand-=dt;
             if(ambush&&!ambushPlayed){ambushPlayed=invasionPlayed=true;secondCommand=!counterattackPlayed;nextCommand=0;if(wreckCalls==0&&queuedWreck==null)queuedWreck=Resources.Load<AudioClip>("BachDang938/WreckAudio/Shipwreck_Ambush_Crowd");}
-            bool ready=busy<=0&&!speech.isPlaying;
+            bool ready=busy<=0&&!speech.isPlaying&&!CampaignFieldCalls.IsSpeaking;
             if(!ambush&&!invasionPlayed&&ready){invasionPlayed=true;EnemyCue(false);}
             else if(!ambush&&!pursuitPlayed&&fleet.Pursuit.IsPursuing&&ready)
             {pursuitPlayed=true;PursuitCues++;Play(pursuitCommand,false,"Giết! Đuổi theo bọn chúng cho ta!");nextEnemy=busy+4;}

@@ -18,7 +18,7 @@ namespace BeachBoatStory
         {
             var go=new GameObject(name,typeof(RectTransform));go.transform.SetParent(parent,false);var r=(RectTransform)go.transform;r.anchorMin=r.anchorMax=Vector2.zero;r.pivot=Vector2.zero;r.anchoredPosition=new Vector2(x,y);r.sizeDelta=new Vector2(width,height);return go;
         }
-        static Image Back(GameObject go,Color color){var i=go.AddComponent<Image>();i.color=color;i.raycastTarget=false;return i;}
+        static Image Back(GameObject go,Color color){var i=go.AddComponent<Image>();i.color=color;i.raycastTarget=false;if(((RectTransform)go.transform).sizeDelta.y>20)CampaignHUDTheme.Plate(go);return i;}
         static TMP_Text Text(string name,Transform parent,float x,float y,float width,float height,float size,string value="")
         {
             var t=Rect(name,parent,x,y,width,height).AddComponent<TextMeshProUGUI>();StoryFont.Apply(t);t.fontSize=size;t.text=value;t.color=White;t.alignment=TextAlignmentOptions.MidlineLeft;t.raycastTarget=false;t.textWrappingMode=TextWrappingModes.Normal;return t;
@@ -30,7 +30,7 @@ namespace BeachBoatStory
         public void Initialize(RiverPlayerCombat owner)
         {
             combat=owner;var group=Rect("CompactBattleCluster",transform,0,0,224,198);Cluster=(RectTransform)group.transform;
-            Cluster.anchorMin=Cluster.anchorMax=new Vector2(1,0);Cluster.pivot=new Vector2(1,0);Cluster.anchoredPosition=new Vector2(-14,14);
+            Cluster.anchorMin=Cluster.anchorMax=new Vector2(1,0);Cluster.pivot=new Vector2(1,0);Cluster.anchoredPosition=new Vector2(-22,24);
             var stats=Rect("CombatCounters",group.transform,0,104,224,36);Back(stats,Panel);
             Icon("EnemyIcon",stats.transform,7,8,21,CombatHudIcon.Symbol.Enemy,new Color(1,.56f,.44f));enemy=Text("EnemyRemaining",stats.transform,32,2,39,32,20);
             Icon("PlayerKillsIcon",stats.transform,77,8,21,CombatHudIcon.Symbol.Sword,Gold);kills=Text("PlayerKills",stats.transform,103,2,30,32,18);

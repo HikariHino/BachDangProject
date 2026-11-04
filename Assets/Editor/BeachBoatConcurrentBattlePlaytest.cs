@@ -15,7 +15,7 @@ public static class BeachBoatConcurrentBattlePlaytest
 {
     const string Flag="ConcurrentFleet938QA";
     static double started;
-    static int phase;
+    static int phase;static double nextStatus;
     static float launched,ebbTime,ambushTime,highWater;
     static float entryTime,peakPursuitSpeed;
     static bool approachSaveChecked,sawApproachDrop;
@@ -35,7 +35,7 @@ public static class BeachBoatConcurrentBattlePlaytest
     static readonly List<string> checks=new List<string>();
     static readonly Dictionary<string,string> hashes=new Dictionary<string,string>();
     static string Hash(string p){using(var sha=SHA256.Create())return Convert.ToBase64String(sha.ComputeHash(File.ReadAllBytes(p)));}
-    public static void RunInEditor(){supportHands.Clear();supportHandMotion=0;phase=0;lastFrame=-1;boatDistance=0;ebbTime=entryTime=ambushTime=peakPursuitSpeed=0;approachSaveChecked=sawApproachDrop=false;previousPositions=null;previousRotations=null;maxYawRate=maxSlip=0;motionSamples=0;started=0;runtimeError=null;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
+    public static void RunInEditor(){supportHands.Clear();supportHandMotion=0;phase=0;nextStatus=0;lastFrame=-1;boatDistance=0;ebbTime=entryTime=ambushTime=peakPursuitSpeed=0;approachSaveChecked=sawApproachDrop=false;previousPositions=null;previousRotations=null;maxYawRate=maxSlip=0;motionSamples=0;started=0;runtimeError=null;checks.Clear();hashes.Clear();SessionState.SetBool(Flag,true);EditorApplication.isPlaying=true;}
     public static void RunWithConstructionField(){SessionState.SetBool("UseConstructionField30QA",true);RunInEditor();}
     public static void RunBatch(){UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/beachBoat.unity");RunInEditor();}
     [InitializeOnLoadMethod]static void Register(){EditorApplication.update-=Tick;EditorApplication.update+=Tick;Application.logMessageReceived-=Record;Application.logMessageReceived+=Record;}
@@ -65,6 +65,11 @@ public static class BeachBoatConcurrentBattlePlaytest
         var boat=QuestRowboat.Instance;
         float remaining=boat.transform.position.z-stopZ;
         if(remaining>0){BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().RestoreCheckpoint(0);boat.Step(1,0,Mathf.Min(Time.deltaTime,remaining/(boat.maxSpeed*boat.sprintMultiplier+1)),true);}
+    }
+    static void RowToward(Vector3 target)
+    {
+        var boat=QuestRowboat.Instance;var delta=target-boat.transform.position;delta.y=0;float angle=Vector3.SignedAngle(boat.transform.forward,delta,Vector3.up);float throttle=delta.magnitude<25?0:delta.magnitude<90?.25f:Mathf.Abs(angle)>70?.18f:Mathf.Abs(angle)>30?.45f:1;
+        BeachBoatQuestSession.Instance.player.GetComponent<PlayerVitals>().RestoreCheckpoint(0);boat.Step(throttle,Mathf.Clamp(angle/20,-1,1),Time.deltaTime,Mathf.Abs(angle)<25&&delta.magnitude>150);
     }
     static bool HullsSeparate(EnemyFleetDirector fleet)
     {
@@ -105,8 +110,13 @@ public static class BeachBoatConcurrentBattlePlaytest
         try
         {
             if(runtimeError!=null)throw new Exception(runtimeError);
-            if(EditorApplication.timeSinceStartup-started>220)throw new Exception("Concurrent battle timed out at phase "+phase);
+            if(EditorApplication.timeSinceStartup-started>350)throw new Exception("Concurrent battle timed out at phase "+phase);
             var fleet=EnemyFleetDirector.Instance;var zone=StakeZone.Instance;var story=Story.Instance;
+            if(EditorApplication.timeSinceStartup>=nextStatus)
+            {
+                nextStatus=EditorApplication.timeSinceStartup+10;
+                File.WriteAllText("Logs/FleetEngagementProgress.json",JsonConvert.SerializeObject(new{phase,elapsed=EditorApplication.timeSinceStartup-started,time=Time.time,route=fleet.Pursuit.Routes.Choice,passed=fleet.Pursuit.Routes.Passed,stage=fleet.Pursuit.Stage.ToString(),volleys=fleet.Pursuit.Chase.Resolved,boat=QuestRowboat.Instance.transform.position.ToString(),heading=QuestRowboat.Instance.transform.eulerAngles.y,speed=QuestRowboat.Instance.Speed,health=QuestRowboat.Instance.Durability,guide=fleet.Pursuit.Routes.Guide.ToString(),inside=fleet.ShipsInside,ebb=fleet.EbbStarted,defeated=QuestCheckpoint.Instance.IsDefeated},Formatting.Indented));
+            }
             if(phase>=11||phase>=2&&phase<=3)MeasureMotion(fleet);
             if(phase==0)
             {
@@ -177,10 +187,12 @@ public static class BeachBoatConcurrentBattlePlaytest
             {
                 var boat=QuestRowboat.Instance;var before=boat.transform.position;
                 // Exercise the production hull sweep/rowing controls along a straight return lane.
-                RowUntil(zone.FieldBounds.max.z+200);
+                var routes=fleet.Pursuit.Routes;
+                if(!routes.Completed)RowToward(routes.Gate(routes.Choice==0?2:routes.Choice,routes.Choice==0?0:routes.Passed));
+                else RowToward(new Vector3(routes.Origin.x,TideSystem.CurrentWaterHeight,zone.FieldBounds.max.z+120));
                 boatDistance+=QuestRowboat.FlatDistance(before,boat.transform.position);
-                if(Time.time-phaseTime<12)return;
-                Check(QuestRowboat.FlatDistance(chaseStart,fleet.enemyShips[0].transform.position)>80,"The enemy formation physically follows the retreating rower");
+                if(Time.time-phaseTime<12||!fleet.Pursuit.Routes.Completed)return;
+                Check(QuestRowboat.FlatDistance(chaseStart,fleet.enemyShips[0].transform.position)>80,"The enemy formation physically follows the rower through the chosen flagged route");
                 Check(HullsSeparate(fleet),"The pursuing enemy fleet retains separate solid hulls");
                 Check(!fleet.Pursuit.HasEnteredTrap&&!fleet.EbbStarted,"Pursuit outside the stake field does not trigger the ambush");
                 Check(fleet.GetComponent<RiverBattleVoices>().PursuitPlayed,"The pursuit cry is issued after the enemy meets the bait");
@@ -211,7 +223,7 @@ public static class BeachBoatConcurrentBattlePlaytest
             if(phase==13)
             {
                 var boat=QuestRowboat.Instance;var before=boat.transform.position;
-                RowUntil(zone.FieldBounds.min.z-180);
+                RowToward(new Vector3(zone.FieldBounds.center.x,TideSystem.CurrentWaterHeight,zone.FieldBounds.min.z-180));
                 boatDistance+=QuestRowboat.FlatDistance(before,boat.transform.position);
                 if(!fleet.Pursuit.HasEnteredTrap)return;
                 Check(boatDistance>500,"The player rows a substantial real distance from the enemy approach into the trap");
@@ -221,7 +233,7 @@ public static class BeachBoatConcurrentBattlePlaytest
             {
                 var boat=QuestRowboat.Instance;
                 if(boat.transform.position.z>zone.FieldBounds.min.z-180)
-                    RowUntil(zone.FieldBounds.min.z-180);
+                    RowToward(new Vector3(zone.FieldBounds.center.x,TideSystem.CurrentWaterHeight,zone.FieldBounds.min.z-180));
                 else if(phaseTime>=0)
                 {
                     Check(!boat.IsBroken,"The rower can pass across the submerged stakes before the falling tide");

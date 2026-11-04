@@ -16,6 +16,7 @@ namespace BeachBoatStory
         public static PhysicalDrumGame Active {get;private set;}
         public bool Running {get;private set;}public LessonPhase Phase {get;private set;}
         public int CommandIndex {get;private set;}public int BeatIndex {get;private set;}public int ImpactCount {get;private set;}public int CorrectHits {get;private set;}
+        public int SquadArrows=>squad?.ArrowsFired??0;public int SquadLanded=>squad?.ArrowsLanded??0;
         public int SquadCount=>squad?.Count??0;public int SquadGuarding=>squad?.GuardingCount??0;public int SquadCommands=>squad?.CommandsReceived??0;public float SquadMovement=>squad?.DistanceMoved??0;
         public float Clock {get;private set;}public float NextHitTime=>anchor<0?Clock:anchor+Rhythm[CommandIndex][BeatIndex]-anchorOffset;
         public bool HandsOnly=>hands?.BodyHidden??false;public float HandStretch=>hands?.MaxSegmentError??0;public float HandGripError=>hands?.MaxContactError??0;
@@ -78,7 +79,7 @@ namespace BeachBoatStory
                 if(demoBeat<4&&phaseTime>=Rhythm[CommandIndex][demoBeat]){int hand=demoBeat%2;sticks[hand].hold=.2f;BeginSwing(hand,AimAt(ground.StrikeCenter+ground.transform.right*(hand==0?-2:2)),true);demoBeat++;}
                 if(demoBeat==4&&phaseTime>=Rhythm[CommandIndex][3]+.75f){Phase=LessonPhase.Repeat;phaseTime=0;anchor=-1;BeatIndex=0;feedback="Đánh lại hiệu lệnh vừa nghe";feedbackUntil=Clock+1;}
             }
-            else if(Phase==LessonPhase.Response&&phaseTime>=1.1f)
+            else if(Phase==LessonPhase.Response&&phaseTime>=(CommandIndex==2?2.2f:1.1f))
             {if(CommandIndex==2){owner.CompletePhysicalDrum();return;}CommandIndex++;StartDemo();}
             else if(Phase==LessonPhase.Repeat&&anchor>=0&&BeatIndex<4&&Clock>NextHitTime+.28f)
             {owner.RecordPhysicalBeat(false);if(!Running)return;anchor=-1;feedback="Chậm nhịp • đánh tiếp từ nhịp đang sáng";feedbackUntil=Clock+1.2f;}
@@ -98,7 +99,7 @@ namespace BeachBoatStory
             bool correct=anchor<0||Mathf.Abs(Clock-NextHitTime)<=.28f;owner.RecordPhysicalBeat(correct);if(!Running||owner.Failed)return;
             if(!correct){anchor=-1;feedback="Sớm nhịp • giữ bình tĩnh, đánh tiếp";feedbackUntil=Clock+1;return;}
             if(anchor<0){anchor=Clock;anchorOffset=Rhythm[CommandIndex][BeatIndex];}BeatIndex++;CorrectHits++;feedback="Đúng nhịp";feedbackUntil=Clock+.55f;
-            if(BeatIndex>=4){owner.CompletedPhysicalCommand();squad?.Receive(CommandIndex);Phase=LessonPhase.Response;phaseTime=0;anchor=-1;feedback="Quân đã nhận lệnh";feedbackUntil=Clock+1.1f;}
+            if(BeatIndex>=4){owner.CompletedPhysicalCommand();squad?.Receive(CommandIndex);Phase=LessonPhase.Response;phaseTime=0;anchor=-1;feedback=CommandIndex==2?"Hàng trước giữ trận • Cung thủ bắn bia!":CommandIndex==1?"Quân tiến lên theo hiệu trống!":"Quân tập hợp theo hiệu trống!";feedbackUntil=Clock+1.1f;}
         }
         void LateUpdate()
         {

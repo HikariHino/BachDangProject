@@ -58,7 +58,7 @@ namespace BeachBoatStory
             if(Record.finished||MiniIndex(id)<0||float.IsNaN(seconds)||float.IsInfinity(seconds)||seconds<0||!FinitePositive(limit)||seconds>=limit)return;
             var old=Record.minigames.FirstOrDefault(x=>x.id==id);
             if(old==null){old=new BachDangSaveData.MiniRecord{id=id,seconds=seconds,limit=limit};Record.minigames=Record.minigames.Concat(new[]{old}).ToArray();}
-            else if(seconds<old.seconds){old.seconds=seconds;old.limit=limit;}
+            else if(seconds/limit<old.seconds/old.limit){old.seconds=seconds;old.limit=limit;}
         }
         public void BeginBattle(){Record.enemyCount=Mathf.Max(1,RiverPlayerCombat.Instance.guards.Length);}
         public int KillTarget=>Mathf.Max(1,Mathf.CeilToInt(Record.enemyCount*.25f));
@@ -98,7 +98,7 @@ namespace BeachBoatStory
             var legacy=index==0?null:Record.minigames.FirstOrDefault(m=>Valid(m)&&m.id==$"village:{index-1}:1");
             return current==null?legacy:legacy==null||current.seconds/current.limit<=legacy.seconds/legacy.limit?current:legacy;
         }
-        float RecordedTarget(int index,int tier){var m=MiniRecord(index);return index>0&&m!=null&&m.id!=MiniId(index)?m.limit*(tier==3?.6f:tier==2?.8f:.95f):MiniTarget(index,tier);}
+        float RecordedTarget(int index,int tier){var m=MiniRecord(index);return index>0&&m!=null?m.limit*(tier==3?.6f:tier==2?.8f:.95f):MiniTarget(index,tier);}
         public bool MeetsMini(int index,int tier){var m=MiniRecord(index);return m!=null&&m.seconds<=RecordedTarget(index,tier)+.0001f;}
         public int MiniRank(int index){for(int tier=3;tier>=1;tier--)if(MeetsMini(index,tier))return tier;return 0;}
         public int RecordedMinigames=>Enumerable.Range(0,ScoredMinigames).Count(i=>MiniRecord(i)!=null);

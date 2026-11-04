@@ -87,7 +87,7 @@ namespace BeachBoatStory
             if(Save(location))return true;
             ActiveSlot=previous;return false;
         }
-        public static bool CanSave=>(BeachBoatMinigameStation.Active==null||BeachBoatMinigameStation.Active.kind!=BeachBoatMinigameStation.ActivityKind.WarDrum)&&!(RiverBossEncounter.Instance?.IntroActive??false)&&CampRecoveryGame.Active==null&&ArcheryTraining.Active==null&&!RiverInvasionIntro.IsRunning&&StakeConstruction.Active==null&&VillageWorkStall.Active==null&&BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
+        public static bool CanSave=>(BeachBoatMinigameStation.Active==null||BeachBoatMinigameStation.Active.kind!=BeachBoatMinigameStation.ActivityKind.WarDrum)&&!(RiverBossEncounter.Instance?.IntroActive??false)&&CampRecoveryGame.Active==null&&ArcheryTraining.Active==null&&!RiverInvasionIntro.IsRunning&&StakeConstruction.Active==null&&StakeProofTrial.Active==null&&VillageWorkStall.Active==null&&BeachBoatQuestSession.Instance!=null&&BeachBoatQuestSession.Instance.storyMode&&
             !(QuestCheckpoint.Instance?.IsDefeated??false)&&!(QuestRowboat.Instance?.IsBroken??false)&&!(ScreenFader.Instance?.IsTransitioning??false);
         static bool WriteData(string path,BachDangSaveData data)
         {
@@ -148,7 +148,7 @@ namespace BeachBoatStory
             if(!Valid(data))throw new InvalidDataException("Unsupported campaign save");
             var session=BeachBoatQuestSession.Instance;var story=BachDangStoryManager.Instance;var boat=QuestRowboat.Instance;
             PreparationCampaign.Instance?.Restore(data);
-            QuestCheckpoint.Instance?.PrepareForLoad();
+            QuestCheckpoint.Instance?.PrepareForLoad();CampaignFieldCalls.Silence();
             RiverBoardingCombat.Instance?.EndFreeWater();
             VillageVendorSpeech.Instance?.Stop();CampaignJournalUI.Instance?.Close();CampRecoveryGame.Active?.Close();VillageWorkStall.Active?.Close();BeachBoatMinigameStation.Active?.CancelActivity();ArcheryTraining.Instance?.Restore(data.archeryBestScore,data.archeryTrainingCompleted);
             BachDangFrontEnd.Instance?.ReleaseHiddenUI();

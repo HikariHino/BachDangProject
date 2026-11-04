@@ -178,6 +178,7 @@ namespace BeachBoatStory
 
         void OnGUI()
         {
+            if(CampaignHUDSkin.Ready)return;
             if (RiverInvasionIntro.IsRunning || BachDangFrontEnd.IsBlocking || OpeningEvent.IsOpeningActive || BeachBoatMinigameStation.Active != null || VillageWorkStall.Active != null ||
                 (QuestCheckpoint.Instance != null && QuestCheckpoint.Instance.IsDefeated) ||
                 (StoryDialogueUI.Instance != null && StoryDialogueUI.Instance.IsOpen) ||

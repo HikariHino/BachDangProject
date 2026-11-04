@@ -72,7 +72,7 @@ namespace BeachBoatStory
             {
                 if(state==BachDangStoryManager.StoryState.Act2_SupplyPreparation&&villageWork!=null)
                 {
-                    var stall=villageWork.NearestUnfinished(session.player.transform.position);
+                    var stall=villageWork.SelectedStall??villageWork.NearestUnfinished(session.player.transform.position);
                     title=stall!=null?$"{stall.stallName} • Chuẩn bị {villageWork.CompletedCount}/{villageWork.stalls.Length} sạp":"Vật tư đã đủ";
                     return ThroughGate(stall!=null?(stall.interactionPoint!=null?stall.interactionPoint:stall.transform):null,ref title);
                 }

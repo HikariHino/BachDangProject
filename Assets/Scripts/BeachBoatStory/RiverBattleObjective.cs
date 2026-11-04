@@ -21,12 +21,13 @@ namespace BeachBoatStory
                     $"- Nước đang rút khi hạm đội tiến vào: {fleet.ShipsInside}/{fleet.ShipCount} thuyền đã vào sâu.\n- Giữ thuyền nhử ngoài bãi cọc.\n- Chờ cọc lộ và lệnh phản công của Ngô Quyền.":
                     "- Địch đã vào trận địa. Giữ ngoài bãi cọc.\n- Cọc đang lộ — chuẩn bị phản công theo lệnh Ngô Quyền.\n- Chưa cần áp sát hay leo thuyền địch.";
                 if(Pursuit?.HasEnteredTrap==true)return $"- Đã dẫn địch vào bẫy. Chờ đủ {fleet?.ShipsInside??0}/{fleet?.ShipCount??0} thuyền vào sâu.\n- Rời bãi cọc theo mũi tên, chờ nước rút.\n- Chưa tấn công; chờ lệnh Ngô Quyền.";
+                if(Pursuit?.IsPursuing==true&&Pursuit.Routes.Initialized&&!Pursuit.Routes.Completed)return $"- {Pursuit.Routes.Name}.\n- Lái qua hai cờ để chọn luồng: xanh đi vòng ít tên; vàng đi thẳng nhiều tên.\n- Theo luồng đã chọn, rồi dẫn cả hạm đội vào bãi cọc.";
                 if(Pursuit?.IsPursuing==true)return "- Địch đang đuổi theo! Quay thuyền về bãi cọc theo mũi tên.\n- Chèo xuyên qua trận địa, giữ khoảng cách với thuyền lớn.\n- Chưa tấn công; dụ cả đội hình vào sâu.";
                 return "- Chèo ra tiếp cận hạm đội Nam Hán ở ngoài xa theo mũi tên.\n- Khi địch hô truy đuổi, quay lại dẫn chúng vào bãi cọc.\n- Chưa tấn công; giữ thuyền nguyên vẹn.";
             }
         }
         public static string DirectionTitle=>Counterattack?"Tiêu diệt lính Nam Hán":WaitingForEbb?"Giữ ngoài bãi cọc • Chờ nước rút":
-            Pursuit?.IsPursuing==true?"Dẫn địch qua bãi cọc • Tiếp tục chèo":"Tiếp cận hạm đội • Chèo ra nhử địch";
+            Pursuit?.IsPursuing==true?(Pursuit.Routes.Initialized&&!Pursuit.Routes.Completed?Pursuit.Routes.Name:"Dẫn địch qua bãi cọc • Tiếp tục chèo"):"Tiếp cận hạm đội • Chèo ra nhử địch";
         public static string ControlHint=>Counterattack?"Cung/kiếm • SPACE leo tàu":"WASD chèo • Chưa tấn công";
     }
 }

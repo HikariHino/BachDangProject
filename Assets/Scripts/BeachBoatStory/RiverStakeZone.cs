@@ -211,6 +211,10 @@ namespace BeachBoatStory
             StakeConstruction.Active.FinishWork();planting=null;workingIndex=-1;
             var done=CaptureCheckpoint();done[index]=true;RestoreCheckpoint(done,false);SetSample(index,position,rotation);
             if(CompletedClusterCount<ClusterCount){BachDangStoryManager.Instance?.UpdateUI();yield break;}
+            IsPlanting=true;var proof=gameObject.AddComponent<StakeProofTrial>();proof.Begin(samplePosts[index]);Physics.SyncTransforms();
+            while(StakeProofTrial.Active==proof&&!proof.Completed)yield return null;
+            if(StakeProofTrial.Active!=proof){IsPlanting=false;yield break;}
+            proof.Close();IsPlanting=false;
             void CompleteField()
             {
                 var all=new bool[placements.Length];for(int i=0;i<all.Length;i++)all[i]=true;
@@ -276,7 +280,7 @@ namespace BeachBoatStory
         }
         public void RestoreCheckpoint(bool[] states,bool reveal=true)
         {
-            StakeConstruction.Active?.FinishWork();
+            StakeConstruction.Active?.FinishWork();StakeProofTrial.Active?.Close();
             if(planting!=null)StopCoroutine(planting);planting=null;IsPlanting=false;workingIndex=-1;
             PlantedCount=CompletedClusterCount=0;RecoveryRequired=false;recoveryTriggered=false;
             fieldRevealed=reveal&&states!=null&&states.Length>=placements.Length;
@@ -312,6 +316,7 @@ namespace BeachBoatStory
             samplePosts[index].SetPositionAndRotation(position,rotation);
             samplePosts[index].gameObject.SetActive(placements[index].planted&&!fieldRevealed);
         }
+        public Transform SampleAt(int index)=>samplePosts!=null&&index>=0&&index<samplePosts.Length?samplePosts[index]:null;
         public Vector3[] CaptureSamplePositions()
         {var result=new Vector3[ClusterCount];for(int i=0;i<result.Length;i++)result[i]=samplePosts!=null&&samplePosts[i]!=null?samplePosts[i].position:DefaultSamplePosition(i);return result;}
         public Quaternion[] CaptureSampleRotations()
@@ -373,7 +378,7 @@ namespace BeachBoatStory
 
         void OnDisable()
         {
-            StakeConstruction.Active?.FinishWork();
+            StakeConstruction.Active?.FinishWork();StakeProofTrial.Active?.Close();
             if (planting != null) StopCoroutine(planting);
             if (IsPlanting && workingIndex >= 0)
             {
