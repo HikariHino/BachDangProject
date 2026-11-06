@@ -53,7 +53,7 @@ namespace BeachBoatStory
         public float BeatPosition=>Mathf.PingPong((Time.time-workStarted)/1.2f,1);
         public bool PartnerReady=>Time.time<braceUntil;float braceUntil;
         public bool IsBeatReady=>PartnerReady&&BeatPosition>=.38f&&BeatPosition<=.82f;
-        public bool BracePartner(){if(Active!=this||Step!=WorkStep.Hammer||Time.timeScale<=0||BachDangFrontEnd.IsBlocking)return false;braceUntil=Time.time+2.6f;workStarted=Time.time;Feedback="Đồng đội đã giữ chắc • Nện theo nhịp!";CampaignFieldCalls.Say("brace");return true;}
+        public bool BracePartner(){if(Active!=this||Step!=WorkStep.Hammer||Time.timeScale<=0||BachDangFrontEnd.IsBlocking)return false;braceUntil=Time.time+BraceSeconds;workStarted=Time.time;Feedback="Đồng đội đã giữ chắc • Nện theo nhịp!";CampaignFieldCalls.Say("brace");return true;}
         public bool SupportedOnDeck {get;private set;}
         public int WorkingCrew=>crew?.Count??0;
         public Mesh StakeMesh=>stake!=null?stake.GetComponentInChildren<MeshFilter>().sharedMesh:null;
@@ -264,21 +264,108 @@ namespace BeachBoatStory
             else if(Step==WorkStep.CarryBundle&&CarryProgress>=1)camera.FocusWork(Vector3.Lerp(chest.position,work+Vector3.up*12,.5f),boat.transform.right,27);
             else camera.ClearWorkFocus();
         }
+        static readonly Color CueGold=new Color(1,.74f,.32f),CueGreen=new Color(.33f,.94f,.61f);
+        const float BraceSeconds=2.6f;
+        GUIStyle cueText,cueKey,cueSmall,cueCentered,cueWrapped;
+
         void OnGUI()
         {
-            if(Active!=this||BachDangFrontEnd.IsBlocking)return;
-            var style=new GUIStyle(GUI.skin.box){fontSize=Mathf.RoundToInt(Screen.height*.025f),alignment=TextAnchor.MiddleCenter,wordWrap=true};
-            string hint=Step==WorkStep.TakeBundle?"[E] Lấy cọc mẫu trên thuyền":Step==WorkStep.CarryBundle?(CarryProgress<1?"Giữ W • Vác cọc tới mạn thuyền":$"Rê chọn chỗ • Cuộn chuột: nghiêng {lean:0}° / cần {RequiredLean:0}° ±3 • E dựng"):
-                    Step==WorkStep.Hammer?$"Giữ chuột trái • Kéo NGANG căn tâm, kéo LÊN nâng búa • THẢ trong dải xanh • Nện {hits}/3 • E gọi đồng đội giữ cọc\n{Feedback}":"Cọc mẫu đã chắc • Chèo tới điểm tiếp theo";
-            if(Step==WorkStep.CarryBundle)hint+="\n"+(string.IsNullOrEmpty(Feedback)?"A / D hoặc cuộn chuột chỉnh góc • R chọn lại vị trí":Feedback);
-            if(!string.IsNullOrEmpty(crew?.CurrentCall))hint+="\nCông binh: "+crew.CurrentCall;
-            GUI.Box(new Rect(Screen.width*.12f,Screen.height*.81f,Screen.width*.76f,Screen.height*.14f),$"CÔNG BINH • Vị trí {zone.WorkingIndex+1}/{zone.ClusterCount} • Đã xong {zone.CompletedClusterCount}/{zone.ClusterCount} • X: hủy\n"+hint,style);
-            if(Step==WorkStep.Hammer)
+            if(Active!=this||BachDangFrontEnd.IsBlocking||Event.current.type!=EventType.Repaint)return;
+
+            float unit=Mathf.Max(.65f,Mathf.Min(Screen.height/720f,Screen.width/900f));
+            if(cueText==null)
             {
-                void Gauge(float y,float value,float min,float max,string label){float x=Screen.width*.31f,w=Screen.width*.38f;GUI.color=Color.black;GUI.Box(new Rect(x,y,w,22),"");GUI.color=new Color(.2f,.8f,.4f);GUI.DrawTexture(new Rect(x+w*min,y,w*(max-min),22),Texture2D.whiteTexture);GUI.color=Color.white;GUI.DrawTexture(new Rect(x+w*Mathf.Clamp01(value)-3,y-3,6,28),Texture2D.whiteTexture);GUI.Label(new Rect(x,y-25,w,25),label,style);}
-                Gauge(Screen.height*.66f,(AimError+1)*.5f,.36f,.64f,"CĂN TÂM • KÉO NGANG");Gauge(Screen.height*.75f,HammerLift,.65f,.95f,"LỰC NỆN • KÉO LÊN RỒI THẢ TRONG XANH");GUI.color=Color.white;
-                Gauge(Screen.height*.57f,BeatPosition,.38f,.82f,"NHỊP NỆN • THẢ KHI VẠCH VÀO XANH");
+                cueText=new GUIStyle(GUI.skin.label){fontStyle=FontStyle.Bold,alignment=TextAnchor.MiddleLeft};
+                cueKey=new GUIStyle(cueText){alignment=TextAnchor.MiddleCenter};
+                cueSmall=new GUIStyle(cueText){fontStyle=FontStyle.Normal};
+                cueCentered=new GUIStyle(cueKey);
+                cueWrapped=new GUIStyle(cueSmall){wordWrap=true,padding=new RectOffset(8,8,2,2)};
             }
+            var text=cueText;var key=cueKey;var small=cueSmall;
+            text.fontSize=cueCentered.fontSize=Mathf.RoundToInt(16*unit);
+            key.fontSize=Mathf.RoundToInt(23*unit);
+            small.fontSize=cueWrapped.fontSize=Mathf.RoundToInt(13*unit);
+            var savedColor=GUI.color;
+
+            void Block(Rect rect,Color color)
+            {
+                GUI.color=color;
+                GUI.DrawTexture(rect,Texture2D.whiteTexture);
+            }
+            void Caption(Rect rect,string label,GUIStyle style,Color color)
+            {
+                GUI.color=color;
+                GUI.Label(rect,label,style);
+            }
+
+            float x=22*unit,y=Screen.height*.32f,width=250*unit;
+            bool hammering=Step==WorkStep.Hammer;
+            Block(new Rect(x,y,width,(hammering?220:104)*unit),new Color(.025f,.06f,.055f,.94f));
+            Caption(new Rect(x+12*unit,y,width-24*unit,28*unit),
+                $"CỌC {zone.WorkingIndex+1}/{zone.ClusterCount}"+(hammering?$"   •   NỆN {hits}/3":""),small,CueGold);
+            Caption(new Rect(x+12*unit,y+(hammering?193:77)*unit,width-24*unit,22*unit),"X  •  Hủy thao tác",small,new Color(.76f,.83f,.78f));
+            y+=28*unit;
+
+            void Action(string button,string label,string detail,Color accent)
+            {
+                Block(new Rect(x+12*unit,y,44*unit,40*unit),accent);
+                Caption(new Rect(x+12*unit,y,44*unit,40*unit),button,key,new Color(.06f,.09f,.08f));
+                Caption(new Rect(x+65*unit,y,width-72*unit,22*unit),label,text,Color.white);
+                Caption(new Rect(x+65*unit,y+21*unit,width-72*unit,19*unit),detail,small,accent);
+            }
+
+            if(hammering)
+            {
+                Action(PartnerReady?"✓":"E",PartnerReady?"ĐÃ GIỮ CHẮC":"GỌI GIỮ CỌC",
+                    PartnerReady?"Canh nhịp để nện":"Bấm E để đồng đội giữ",PartnerReady?CueGreen:CueGold);
+                Block(new Rect(x+12*unit,y+45*unit,width-24*unit,4*unit),new Color(.20f,.26f,.22f));
+                if(PartnerReady)
+                    Block(new Rect(x+12*unit,y+45*unit,(width-24*unit)*Mathf.Clamp01((braceUntil-Time.time)/BraceSeconds),4*unit),CueGreen);
+
+                void Gauge(float top,float value,float min,float max,string label,bool ready)
+                {
+                    float left=x+12*unit,span=width-24*unit;
+                    Caption(new Rect(left,top,span,18*unit),label,small,ready?CueGreen:Color.white);
+                    top+=19*unit;
+                    Block(new Rect(left,top,span,8*unit),new Color(.17f,.24f,.22f));
+                    Block(new Rect(left+span*min,top,span*(max-min),8*unit),new Color(.21f,.58f,.38f));
+                    Block(new Rect(left+span*Mathf.Clamp01(value)-2*unit,top-2*unit,4*unit,12*unit),Color.white);
+                }
+
+                bool aligned=Mathf.Abs(AimError)<=.28f;
+                Gauge(y+56*unit,(AimError+1)*.5f,.36f,.64f,"Tâm  •  Kéo ngang",aligned);
+                Gauge(y+90*unit,HammerLift,.65f,.95f,"Lực  •  Kéo lên",PowerReady);
+                Gauge(y+124*unit,BeatPosition,.38f,.82f,"Nhịp  •  Canh vạch xanh",IsBeatReady);
+
+                bool release=hammerHeld&&aligned&&PowerReady&&IsBeatReady&&!pendingStrike;
+                string command=release?"THẢ CHUỘT ĐỂ NỆN":pendingStrike?"ĐANG NỆN…":PartnerReady?"GIỮ CHUỘT TRÁI ĐỂ NÂNG BÚA":"BẤM E ĐỂ GỌI GIỮ CỌC";
+                var cue=new Rect((Screen.width-310*unit)*.5f,Screen.height*.77f,310*unit,42*unit);
+                Block(cue,new Color(.025f,.06f,.055f,.94f));
+                Caption(cue,command,cueCentered,release?CueGreen:CueGold);
+                if(!pendingGood&&Time.time<nextHit)
+                {
+                    var note=new Rect(x,y+197*unit,width,48*unit);
+                    Block(note,new Color(.025f,.06f,.055f,.94f));
+                    Caption(note,Feedback,cueWrapped,CueGold);
+                }
+            }
+            else if(Step==WorkStep.TakeBundle)Action("E","LẤY CỌC MẪU","Bó cọc trên thuyền",CueGold);
+            else if(Step==WorkStep.CarryBundle)
+            {
+                if(CarryProgress<1)Action("W","VÁC CỌC","Giữ W để đi tới mạn",CueGold);
+                else if(!HasAimedStake||!PlacementValid)Action("↔","CHỌN CHỖ DỰNG","Rê chuột bên mạn thuyền",CueGold);
+                else if(Mathf.Abs(lean-RequiredLean)>3)Action("A/D","CHỈNH GÓC",$"{lean:0}°  →  {RequiredLean:0}°",CueGold);
+                else Action("E","DỰNG CỌC","Bấm E để chuyển sang nện",CueGreen);
+            }
+            else Caption(new Rect(x+12*unit,y,width-24*unit,40*unit),"ĐÃ ĐÓNG CHẮC",text,CueGreen);
+
+            if(!hammering&&!string.IsNullOrEmpty(Feedback))
+            {
+                var note=new Rect(x,y+81*unit,width,52*unit);
+                Block(note,new Color(.025f,.06f,.055f,.94f));
+                Caption(note,Feedback,cueWrapped,CueGold);
+            }
+            GUI.color=savedColor;
         }
         public void FinishWork()
         {

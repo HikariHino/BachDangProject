@@ -12,17 +12,22 @@ namespace BeachBoatStory
     [DefaultExecutionOrder(-900)]
     public sealed class BachDangFrontEnd : MonoBehaviour
     {
-        public enum MenuPage { None, Home, Pause, Settings, ConfirmExit, Loading, Slots, ConfirmOverwrite }
+        public enum MenuPage { None, Home, Pause, Settings, ConfirmExit, Loading, Slots, ConfirmOverwrite, QuickPlay }
         public static BachDangFrontEnd Instance {get;private set;}
         public static bool IsBlocking=>(Instance!=null&&Instance.Page!=MenuPage.None)||CampaignJournalUI.IsOpen;
         public static bool AtTitle=>Instance!=null&&!Instance.GameStarted;
         public MenuPage Page {get;private set;}
         public bool GameStarted {get;private set;}
+        public bool IsQuickPlay {get;private set;}
         public bool QuitRequested {get;private set;}
 #if UNITY_EDITOR
         public bool SuppressQuitForTests;
 #endif
         GameObject background,home,pause,settings,confirm,loading,toast,slots,overwrite;
+        GameObject quickPlay, pauseSave, pauseLoad;
+        TMP_Text pauseExitLabel;
+        Button quickPlayArchery;
+        static bool reopenQuickPlay;
         TMP_Text slotsTitle,overwriteText;
         readonly Button[] slotButtons=new Button[BachDangSaveSystem.SlotCount];
         readonly TMP_Text[] slotLabels=new TMP_Text[BachDangSaveSystem.SlotCount];
@@ -41,11 +46,16 @@ namespace BeachBoatStory
         CursorLockMode savedCursor;
         bool savedVisible;
         static readonly Color Gold=new Color(.88f,.69f,.38f),Cream=new Color(.95f,.90f,.78f),Ink=new Color(.025f,.06f,.055f,.96f);
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetQuickPlayReturn() => reopenQuickPlay = false;
+
         void Awake()
         {
             Instance=this;gameObject.AddComponent<BachDangMenuAudio>();gameObject.AddComponent<BachDangAutoSave>();Build();BachDangPreferences.Apply();
             GameStarted=BachDangSaveSystem.PendingLoad!=null;
-            SetPage(GameStarted?MenuPage.Loading:MenuPage.Home);RefreshSaveInfo();
+            SetPage(GameStarted ? MenuPage.Loading : reopenQuickPlay ? MenuPage.QuickPlay : MenuPage.Home);
+            reopenQuickPlay = false;
+            RefreshSaveInfo();
         }
         IEnumerator Start()
         {
@@ -61,13 +71,21 @@ namespace BeachBoatStory
         void Update()
         {
             if(toast!=null)toast.SetActive(Time.unscaledTime<toastUntil);
+            if (Page == MenuPage.QuickPlay)
+                quickPlayArchery.interactable = CampaignQuickPlay.ArcheryReady;
             if(CampaignJournalUI.IsOpen||StoryDialogueUI.InputConsumedThisFrame)return;
             if(Input.GetKeyDown(KeyCode.Escape))HandleEscape();
-            if(GameStarted&&Page==MenuPage.None&&Input.GetKeyDown(KeyCode.F5))SaveNow();
+            if(GameStarted&&!IsQuickPlay&&Page==MenuPage.None&&Input.GetKeyDown(KeyCode.F5))SaveNow();
         }
         /// <summary>One Escape press belongs to the topmost current activity, never two screens.</summary>
         public bool HandleEscape()
         {
+            if (Page == MenuPage.QuickPlay && !StoryDialogueUI.InputConsumedThisFrame)
+            {
+                SetPage(MenuPage.Home);
+                StoryDialogueUI.TryConsumeInput();
+                return true;
+            }
             if(CampaignJournalUI.IsOpen||StoryDialogueUI.InputConsumedThisFrame||
                 !(GameStarted||Page==MenuPage.Slots||Page==MenuPage.ConfirmOverwrite)||
                 (QuestCheckpoint.Instance?.IsDefeated??false)||(ScreenFader.Instance?.IsTransitioning??false))return false;
@@ -94,6 +112,32 @@ namespace BeachBoatStory
             if(Page!=MenuPage.Home)return;
             GameStarted=true;SetPage(MenuPage.None);BachDangAutoSave.Instance.BeginNewJourney();
         }
+
+        void StartQuickPlay(CampaignQuickPlay.Scenario scenario)
+        {
+            if (Page != MenuPage.QuickPlay ||
+                (scenario == CampaignQuickPlay.Scenario.Archery && !CampaignQuickPlay.ArcheryReady)) return;
+            IsQuickPlay = true;
+            GameStarted = true;
+            SetPage(MenuPage.None);
+            try
+            {
+                CampaignQuickPlay.SetUp(scenario);
+            }
+            catch (Exception error)
+            {
+                Debug.LogException(error, this);
+                ReturnToQuickPlay();
+            }
+        }
+
+        void ReturnToQuickPlay()
+        {
+            reopenQuickPlay = true;
+            SetPage(MenuPage.Loading);
+            SceneManager.LoadSceneAsync(gameObject.scene.path);
+        }
+
         public void Resume(){if(GameStarted)SetPage(MenuPage.None);}
         public void OpenSettings(){settingsReturn=GameStarted?MenuPage.Pause:MenuPage.Home;SetPage(MenuPage.Settings);}
         public void BackFromSettings(){SetPage(settingsReturn);}
@@ -108,19 +152,21 @@ namespace BeachBoatStory
         }
         public bool LoadGame()
         {
+            if (IsQuickPlay) return false;
             if(!BachDangSaveSystem.TryReadLatest(out _)){Notify("Chưa có tiến trình đã lưu.");RefreshSaveInfo();return false;}
             choosingLoad=true;quitAfterSave=false;slotsReturn=GameStarted?MenuPage.Pause:MenuPage.Home;
             ShowSlots();return true;
         }
         public bool ContinueGame()
         {
+            if (IsQuickPlay) return false;
             if(!BachDangSaveSystem.TryReadResume(out var data,out int slot)){Notify("Chưa có tiến trình để tiếp tục.");return false;}
             if(slot>0)BachDangSaveSystem.SelectSlot(slot);
             return LoadSnapshot(data,false);
         }
         public bool LoadSnapshot(BachDangSaveData data,bool selectedManual)
         {
-            if(data==null||Page==MenuPage.Loading)return false;
+            if(data==null||IsQuickPlay||Page==MenuPage.Loading)return false;
             GameStarted=true;SetPage(MenuPage.Loading);
             if(data.scene!=gameObject.scene.name)
             {
@@ -188,6 +234,11 @@ namespace BeachBoatStory
         public void AskExit()
         {
             if(!GameStarted)return;
+            if (IsQuickPlay)
+            {
+                ReturnToQuickPlay();
+                return;
+            }
             SetPage(MenuPage.ConfirmExit);confirmSave.interactable=BachDangSaveSystem.CanSave;
             confirmText.text="Bạn có muốn lưu tiến trình hiện tại trước khi thoát?\n\nVị trí đang đứng, nhiệm vụ và những phần việc đã hoàn thành sẽ được lưu.";
         }
@@ -240,6 +291,13 @@ namespace BeachBoatStory
                 StoryDialogueUI.TryConsumeInput();
             }
             background.SetActive(blocking);home.SetActive(next==MenuPage.Home);pause.SetActive(next==MenuPage.Pause);settings.SetActive(next==MenuPage.Settings);confirm.SetActive(next==MenuPage.ConfirmExit);loading.SetActive(next==MenuPage.Loading);slots.SetActive(next==MenuPage.Slots);overwrite.SetActive(next==MenuPage.ConfirmOverwrite);
+            quickPlay.SetActive(next == MenuPage.QuickPlay);
+            if (next == MenuPage.Pause)
+            {
+                pauseSave.SetActive(!IsQuickPlay);
+                pauseLoad.SetActive(!IsQuickPlay);
+                pauseExitLabel.text = IsQuickPlay ? "VỀ CHỌN ĐOẠN TEST" : "THOÁT GAME";
+            }
             if(next==MenuPage.Settings){volumeSlider.SetValueWithoutNotify(BachDangPreferences.Volume);mouseSlider.SetValueWithoutNotify(BachDangPreferences.Sensitivity);RefreshSettingsLabels();}
         }
         void RefreshSettingsLabels(){volumeValue.text=Mathf.RoundToInt(BachDangPreferences.Volume*100)+"%";mouseValue.text=BachDangPreferences.Sensitivity.ToString("0.00")+"×";}
@@ -261,18 +319,21 @@ namespace BeachBoatStory
             var heading=Label("Title",home.transform,new Vector2(.07f,.69f),new Vector2(.59f,.83f),64,Cream,"BẠCH ĐẰNG");heading.fontStyle=FontStyles.Bold;heading.characterSpacing=3;
             var year=Label("Year",home.transform,new Vector2(.075f,.58f),new Vector2(.4f,.70f),52,Gold,"938");year.characterSpacing=1;
             Box("TitleRule",home.transform,new Vector2(.077f,.565f),new Vector2(.35f,.568f),Gold);
-            Click("Play",home.transform,new Vector2(.077f,.44f),new Vector2(.365f,.515f),"PLAY  /  CHƠI MỚI",Play,true);
-            continueButton=Click("Continue",home.transform,new Vector2(.077f,.35f),new Vector2(.365f,.425f),"TIẾP TỤC",()=>ContinueGame());
-            loadButton=Click("LoadGame",home.transform,new Vector2(.077f,.26f),new Vector2(.365f,.335f),"LOAD GAME  /  Ô LƯU",()=>LoadGame());
-            Click("Settings",home.transform,new Vector2(.077f,.17f),new Vector2(.365f,.245f),"SETTINGS  /  CÀI ĐẶT",OpenSettings);
-            Click("RankingGuide",home.transform,new Vector2(.077f,.08f),new Vector2(.365f,.155f),"HƯỚNG DẪN XẾP HẠNG",()=>CampaignJournalUI.Instance?.OpenRules());
-            saveInfo=Label("SaveDetails",home.transform,new Vector2(.077f,.012f),new Vector2(.48f,.068f),13,new Color(.70f,.76f,.69f),"");
+            Click("Play",home.transform,new Vector2(.077f,.44f),new Vector2(.365f,.501f),"PLAY  /  CHƠI MỚI",Play,true);
+            continueButton=Click("Continue",home.transform,new Vector2(.077f,.367f),new Vector2(.365f,.428f),"TIẾP TỤC",()=>ContinueGame());
+            loadButton=Click("LoadGame",home.transform,new Vector2(.077f,.294f),new Vector2(.365f,.355f),"LOAD GAME  /  Ô LƯU",()=>LoadGame());
+            Click("Settings",home.transform,new Vector2(.077f,.221f),new Vector2(.365f,.282f),"SETTINGS  /  CÀI ĐẶT",OpenSettings);
+            Click("RankingGuide",home.transform,new Vector2(.077f,.148f),new Vector2(.365f,.209f),"HƯỚNG DẪN XẾP HẠNG",()=>CampaignJournalUI.Instance?.OpenRules());
+            Click("QuickPlay",home.transform,new Vector2(.077f,.075f),new Vector2(.365f,.136f),"TEST NHANH",()=>SetPage(MenuPage.QuickPlay));
+            saveInfo=Label("SaveDetails",home.transform,new Vector2(.077f,.012f),new Vector2(.48f,.062f),13,new Color(.70f,.76f,.69f),"");
+            BuildQuickPlay();
             pause=Card("Pause","TẠM DỪNG");
             Click("Resume",pause.transform,new Vector2(.12f,.67f),new Vector2(.88f,.77f),"TIẾP TỤC  [ESC]",Resume,true);
             Click("Settings",pause.transform,new Vector2(.12f,.54f),new Vector2(.88f,.64f),"CÀI ĐẶT",OpenSettings);
-            Click("Save",pause.transform,new Vector2(.12f,.41f),new Vector2(.88f,.51f),"LƯU TIẾN TRÌNH  [F5]",()=>SaveNow());
-            Click("Load",pause.transform,new Vector2(.12f,.28f),new Vector2(.88f,.38f),"LOAD GAME",()=>LoadGame());
-            Click("Exit",pause.transform,new Vector2(.12f,.12f),new Vector2(.88f,.22f),"THOÁT GAME",AskExit);
+            pauseSave=Click("Save",pause.transform,new Vector2(.12f,.41f),new Vector2(.88f,.51f),"LƯU TIẾN TRÌNH  [F5]",()=>SaveNow()).gameObject;
+            pauseLoad=Click("Load",pause.transform,new Vector2(.12f,.28f),new Vector2(.88f,.38f),"LOAD GAME",()=>LoadGame()).gameObject;
+            pauseExitLabel=Click("Exit",pause.transform,new Vector2(.12f,.12f),new Vector2(.88f,.22f),"THOÁT GAME",AskExit)
+                .transform.Find("Label").GetComponent<TMP_Text>();
             settings=Card("Settings","CÀI ĐẶT");
             Label("Volume",settings.transform,new Vector2(.10f,.65f),new Vector2(.72f,.75f),22,Cream,"ÂM LƯỢNG");volumeValue=Label("VolumeValue",settings.transform,new Vector2(.75f,.65f),new Vector2(.90f,.75f),22,Gold,"");
             volumeSlider=MakeSlider("VolumeSlider",settings.transform,new Vector2(.10f,.56f),new Vector2(.90f,.63f),0,1,BachDangPreferences.Volume);
@@ -307,6 +368,37 @@ namespace BeachBoatStory
             Click("No",overwrite.transform,new Vector2(.10f,.07f),new Vector2(.90f,.19f),"KHÔNG • CHỌN Ô KHÁC",CancelOverwrite);
             loading=Box("Loading",transform,new Vector2(.3f,.4f),new Vector2(.7f,.6f),Ink);Label("Label",loading.transform,Vector2.zero,Vector2.one,25,Gold,"ĐANG TẢI HÀNH TRÌNH…",TextAlignmentOptions.Center);
             toast=Box("SaveNotice",transform,new Vector2(.25f,.02f),new Vector2(.75f,.10f),Ink);notice=Label("Text",toast.transform,new Vector2(.03f,.05f),new Vector2(.97f,.95f),17,Cream,"",TextAlignmentOptions.Center);toast.SetActive(false);
+        }
+
+        void BuildQuickPlay()
+        {
+            quickPlay = Box("QuickPlayPicker", transform, new Vector2(.22f,.14f), new Vector2(.78f,.87f), Ink);
+            Box("TopBorder", quickPlay.transform, new Vector2(0,.995f), Vector2.one, Gold);
+            Label("Heading", quickPlay.transform, new Vector2(.06f,.84f), new Vector2(.94f,.97f), 30, Gold,
+                "CHỌN ĐOẠN TEST", TextAlignmentOptions.Center);
+            Label("Hint", quickPlay.transform, new Vector2(.06f,.76f), new Vector2(.94f,.84f), 16, Cream,
+                "Vào thẳng nhiệm vụ • Chơi thử không ghi vào ô lưu", TextAlignmentOptions.Center);
+            string[] labels = { "HIỆU LỆNH TRỐNG", "CƯA GỖ", "BUỘC DÂY", "ĐONG GẠO",
+                "GÓI LƯƠNG KHÔ", "ĐÓNG CỌC", "NHỬ ĐỊCH", "TẬP BẮN CUNG" };
+            for (int i = 0; i < labels.Length; i++)
+            {
+                var scenario = (CampaignQuickPlay.Scenario)i;
+                float x = i % 2 == 0 ? .06f : .52f;
+                float y = .63f - i / 2 * .133f;
+                var button = Click(scenario.ToString(), quickPlay.transform, new Vector2(x,y),
+                    new Vector2(x + .42f,y + .105f), labels[i], () => StartQuickPlay(scenario));
+                if (scenario == CampaignQuickPlay.Scenario.Archery)
+                {
+                    quickPlayArchery = button;
+                    button.interactable = CampaignQuickPlay.ArcheryReady;
+                }
+                var label = button.transform.Find("Label").GetComponent<TMP_Text>();
+                label.enableAutoSizing = true;
+                label.fontSizeMin = 13;
+                label.fontSizeMax = 21;
+            }
+            Click("Back", quickPlay.transform, new Vector2(.29f,.055f), new Vector2(.71f,.16f),
+                "QUAY LẠI  [ESC]", () => SetPage(MenuPage.Home));
         }
         GameObject Card(string name,string title)
         {

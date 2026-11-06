@@ -1,15 +1,19 @@
-﻿using TMPro;
-using UnityEngine;
+﻿using UnityEngine;
 namespace BeachBoatStory
 {
     /// <summary>The helmsman chooses a water route by sailing between its two flags, not by a menu.</summary>
     public sealed class RiverLureRoutes
     {
-        readonly RiverFleetPursuit owner;GameObject root;Material safeMaterial,fastMaterial;Transform[] flags;TMP_Text[] labels;
+        static readonly Color SafeColor=new Color(.34f,1,.66f),FastColor=new Color(1,.72f,.24f);
+        readonly RiverFleetPursuit owner;
+        readonly Transform[] gates=new Transform[2];
+        GameObject root;
+        Material safeMaterial,fastMaterial;
+        GUIStyle badgeStyle;
         public int Choice {get;private set;}public int Passed {get;private set;}public bool Initialized {get;private set;}
         public bool Completed=>Initialized&&Choice!=0&&Passed>=(Choice==1?3:2);
         public Vector3 Origin {get;private set;}public string Name=>Choice==1?"LUỒNG VÒNG • ÍT TÊN":Choice==2?"LUỒNG THẲNG • NGUY HIỂM":"CHỌN LUỒNG NHỬ ĐỊCH";
-        public string Warning {get;private set;}="";float callUntil;Vector3 previous;bool havePrevious;
+        Vector3 previous;bool havePrevious;
         public RiverLureRoutes(RiverFleetPursuit pursuit){owner=pursuit;}
         public void Begin(Vector3 at)
         {if(Initialized)return;Initialized=true;Origin=at;Origin=new Vector3(Mathf.Clamp(at.x,RiverStakeZone.Instance.FieldBounds.min.x+400,RiverStakeZone.Instance.FieldBounds.max.x-400),TideSystem.CurrentWaterHeight,Mathf.Min(at.z-180,Mathf.Max(at.z-320,RiverStakeZone.Instance.FieldBounds.max.z+280)));Build();Call("Hai luồng phía trước! Vòng qua cờ xanh để tránh tầm tên, hoặc đi thẳng để nhử địch nhanh hơn!");}
@@ -25,16 +29,91 @@ namespace BeachBoatStory
         public Vector3 Guide=>!Initialized?owner.FormationAnchor:Completed?new Vector3(Origin.x,TideSystem.CurrentWaterHeight,RiverStakeZone.Instance.FieldBounds.min.z-180):Choice==0?Gate(2,0):Gate(Choice,Passed);
         void Build()
         {
-            if(root!=null){root.SetActive(true);return;}root=new GameObject("Lua_chon_luong_nhu_dich");root.transform.SetParent(owner.transform,false);
-            safeMaterial=new Material(Shader.Find("Universal Render Pipeline/Unlit")){color=new Color(.24f,.79f,.6f)};fastMaterial=new Material(safeMaterial){color=new Color(.96f,.56f,.22f)};
-            flags=new Transform[4];labels=new TMP_Text[2];
-            for(int i=0;i<4;i++)
+            if(root!=null){root.SetActive(true);return;}
+            root=new GameObject("Lua_chon_luong_nhu_dich");
+            root.transform.SetParent(owner.transform,false);
+            safeMaterial=new Material(Shader.Find("Universal Render Pipeline/Unlit")){color=SafeColor};
+            fastMaterial=new Material(safeMaterial){color=FastColor};
+            for(int i=0;i<gates.Length;i++)
             {
-                var gate=new GameObject("Co_luong_"+i).transform;gate.SetParent(root.transform,false);flags[i]=gate;
-                void Part(PrimitiveType shape,Vector3 pos,Vector3 size){var go=GameObject.CreatePrimitive(shape);go.transform.SetParent(gate,false);go.transform.localPosition=pos;go.transform.localScale=size;go.GetComponent<Collider>().enabled=false;Object.Destroy(go.GetComponent<Collider>());go.GetComponent<Renderer>().sharedMaterial=i<2?safeMaterial:fastMaterial;}
-                Part(PrimitiveType.Cylinder,new Vector3(0,8,0),new Vector3(.6f,8,.6f));Part(PrimitiveType.Cube,new Vector3(3,13,0),new Vector3(6,4,.2f));
-                if(i%2==0){var go=new GameObject("Ten_luong");go.transform.SetParent(gate,false);go.transform.localPosition=new Vector3(65,28,0);labels[i/2]=go.AddComponent<TextMeshPro>();StoryFont.Apply(labels[i/2]);labels[i/2].fontSize=18;labels[i/2].alignment=TextAlignmentOptions.Center;labels[i/2].rectTransform.sizeDelta=new Vector2(145,30);}
+                var gate=new GameObject("Cong_luong_"+i).transform;
+                gates[i]=gate;
+                gate.SetParent(root.transform,false);
+                var material=i==0?safeMaterial:fastMaterial;
+                for(int side=-1;side<=1;side+=2)
+                {
+                    AddBeaconPart(gate,PrimitiveType.Cylinder,new Vector3(side*65,13,0),new Vector3(4,13,4),material);
+                    AddBeaconPart(gate,PrimitiveType.Sphere,new Vector3(side*65,27,0),Vector3.one*13,material);
+                }
+                for(int row=0;row<3;row++)
+                {
+                    var arrow=new GameObject("Mui_ten_tren_mat_nuoc").AddComponent<LineRenderer>();
+                    arrow.transform.SetParent(gate,false);
+                    arrow.useWorldSpace=false;
+                    arrow.sharedMaterial=material;
+                    arrow.widthMultiplier=4;
+                    arrow.numCornerVertices=3;
+                    float z=24+row*18;
+                    arrow.positionCount=3;
+                    arrow.SetPositions(new[]{new Vector3(-28,.7f,z),new Vector3(0,.7f,z-13),new Vector3(28,.7f,z)});
+                }
             }
+            RefreshMarkers();
+        }
+        static void AddBeaconPart(Transform gate,PrimitiveType shape,Vector3 position,Vector3 scale,Material material)
+        {
+            var part=GameObject.CreatePrimitive(shape);
+            part.transform.SetParent(gate,false);
+            part.transform.localPosition=position;
+            part.transform.localScale=scale;
+            var collider=part.GetComponent<Collider>();
+            collider.enabled=false;
+            Object.Destroy(collider);
+            var renderer=part.GetComponent<Renderer>();
+            renderer.sharedMaterial=material;
+            renderer.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        void RefreshMarkers()
+        {
+            for(int i=0;i<gates.Length;i++)
+            {
+                int route=i+1;
+                bool visible=!Completed&&(Choice==0||Choice==route);
+                gates[i].gameObject.SetActive(visible);
+                if(visible)gates[i].position=Gate(route,Choice==0?0:Passed);
+            }
+            if(Completed)root.SetActive(false);
+        }
+        public void DrawMarkers()
+        {
+            if(!Initialized||Completed||root==null||!root.activeInHierarchy)return;
+            var camera=BeachBoatQuestSession.Instance.storyCamera;
+            float unit=Mathf.Max(.65f,Mathf.Min(Screen.height/720f,Screen.width/900f));
+            if(badgeStyle==null)
+                badgeStyle=new GUIStyle(GUI.skin.label){alignment=TextAnchor.MiddleCenter,fontStyle=FontStyle.Bold};
+            badgeStyle.fontSize=Mathf.RoundToInt(19*unit);
+            var oldColor=GUI.color;
+            Rect previous=new Rect();
+            for(int i=0;i<gates.Length;i++)
+            {
+                if(!gates[i].gameObject.activeSelf)continue;
+                var point=camera.WorldToViewportPoint(gates[i].position+Vector3.up*36);
+                bool behind=point.z<=0;
+                float x=behind?(point.x>.5f?.08f:.92f):Mathf.Clamp(point.x,.08f,.92f);
+                float y=behind?.5f:Mathf.Clamp(1-point.y,.26f,.69f);
+                var badge=new Rect(x*Screen.width-48*unit,y*Screen.height-17*unit,96*unit,34*unit);
+                if(i==1&&badge.Overlaps(previous))badge.y=previous.yMax+5*unit;
+                var accent=i==0?SafeColor:FastColor;
+                GUI.color=new Color(.025f,.06f,.055f,.94f);
+                GUI.DrawTexture(badge,Texture2D.whiteTexture);
+                GUI.color=accent;
+                GUI.DrawTexture(new Rect(badge.x,badge.y,badge.width,3*unit),Texture2D.whiteTexture);
+                string name=i==0?"VÒNG":"TẮT";
+                if(behind||point.x<.08f||point.x>.92f)name=x<.5f?"‹ "+name:name+" ›";
+                GUI.Label(badge,name,badgeStyle);
+                previous=badge;
+            }
+            GUI.color=oldColor;
         }
         public void Step(float dt,Vector3 position)
         {
@@ -43,12 +122,7 @@ namespace BeachBoatStory
             {for(int route=1;route<=2;route++)if(Crossed(position,Gate(route,0))){Choice=route;Passed=1;BeachBoatSoundscape.Instance?.PlayInteraction();Call(route==1?"Bám luồng vòng! Giữ khoảng cách, quân địch đang áp sát!":"Đi thẳng! Coi chừng tên phía trước, đổi hướng sớm!");break;}}
             else if(Crossed(position,Gate(Choice,Passed))){Passed++;BeachBoatSoundscape.Instance?.PlayInteraction();if(Completed)Call("Đã qua luồng nhử! Dẫn chúng vào giữa trận địa, quân ta đã sẵn sàng!");}
             previous=position;havePrevious=true;
-            for(int r=1;r<=2;r++)for(int side=0;side<2;side++)
-            {
-                bool visible=Choice==0||Choice==r;flags[(r-1)*2+side].gameObject.SetActive(visible);if(!visible)continue;var at=Gate(r,Choice==0?0:Passed);flags[(r-1)*2+side].position=at+Vector3.right*(side==0?-65:65);
-                if(side==0){labels[r-1].text=r==1?"LUỒNG VÒNG\nÍt tên • đường dài":"LUỒNG THẲNG\nNhiều tên • đường ngắn";labels[r-1].transform.rotation=BeachBoatQuestSession.Instance.storyCamera.transform.rotation;}
-            }
-            if(Completed&&root!=null)root.SetActive(false);
+            RefreshMarkers();
         }
         bool Crossed(Vector3 point,Vector3 gate)
         {
@@ -57,17 +131,15 @@ namespace BeachBoatStory
         }
         public void Call(string text)
         {
-            Warning=text;callUntil=Time.time+5;
             string id=text.StartsWith("Hai luồng")?"route_intro":text.StartsWith("Bám luồng")?"safe_route":text.StartsWith("Đi thẳng")?"fast_route":text.StartsWith("Tên tới")?"arrows":"route_done";CampaignFieldCalls.Say(id);
         }
-        public bool ShowingCall=>Time.time<callUntil;
         public void FillSave(BachDangSaveData.Fleet data){data.routeVersion=1;data.baitRoute=Choice;data.routePassed=Passed;data.routeInitialized=Initialized;data.routeOrigin=Origin;}
         public void RestoreSave(BachDangSaveData.Fleet data,bool committed)
         {
             Reset();if(committed){Initialized=true;Choice=2;Passed=2;return;}if(data.routeVersion==0){if(owner.IsPursuing){Initialized=true;Choice=2;Passed=2;}return;}
             Initialized=data.routeInitialized;Choice=Mathf.Clamp(data.baitRoute,0,2);Passed=Mathf.Clamp(data.routePassed,0,Choice==1?3:2);Origin=data.routeOrigin;if(Initialized&&!Completed)Build();
         }
-        public void Reset(){Choice=Passed=0;Initialized=havePrevious=false;Warning="";callUntil=0;if(root!=null)root.SetActive(false);}
+        public void Reset(){Choice=Passed=0;Initialized=havePrevious=false;if(root!=null)root.SetActive(false);}
         public void Dispose(){if(root!=null)Object.Destroy(root);if(safeMaterial!=null)Object.Destroy(safeMaterial);if(fastMaterial!=null)Object.Destroy(fastMaterial);}
     }
 }
